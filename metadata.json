@@ -1,0 +1,6 @@
+{
+  "name": "Planificador de Rutinas",
+  "description": "Planificador y ejecutor minimalista de rutinas de entrenamiento con gestión de series, cálculo de tiempos y modo workout.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
