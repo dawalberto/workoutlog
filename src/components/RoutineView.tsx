@@ -47,8 +47,6 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showReorderModal, setShowReorderModal] = useState(false);
-  const [draggedCardIndex, setDraggedCardIndex] = useState<number | null>(null);
-  const [dragOverCardIndex, setDragOverCardIndex] = useState<number | null>(null);
 
   const totalWorkoutSeconds = getRoutineTotalSeconds(routine);
 
@@ -324,17 +322,17 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
             </h2>
 
             {subMode === 'edit' && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 {routine.exercises.length > 1 && (
                   <button
                     id="btn-show-reorder-exercises"
                     type="button"
                     onClick={() => setShowReorderModal(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors active:scale-95 shadow-2xs"
-                    title="Reordenar la lista completa de ejercicios"
+                    className="p-1.5 sm:p-2 rounded-lg border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors active:scale-95 shadow-2xs"
+                    title="Ordenar ejercicios"
+                    aria-label="Ordenar ejercicios"
                   >
-                    <ArrowUpDown className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Ordenar</span>
+                    <ArrowUpDown className="w-4 h-4 text-emerald-600" />
                   </button>
                 )}
 
@@ -344,7 +342,7 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
                   onClick={() => setShowAddModal(true)}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 transition-colors active:scale-95 shadow-2xs"
                 >
-                  <Plus className="w-3.5 h-3.5" /> Añadir Ejercicio
+                  <Plus className="w-3.5 h-3.5" /> Ejercicio
                 </button>
               </div>
             )}
@@ -375,30 +373,7 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
                 onToggleSetComplete={handleToggleSetComplete}
                 onUpdateExercise={(updated) => handleUpdateExercise(index, updated)}
                 onDeleteExercise={() => handleDeleteExercise(index)}
-                onMoveUp={() => handleMoveExercise(index, index - 1)}
-                onMoveDown={() => handleMoveExercise(index, index + 1)}
                 onMoveToPosition={(targetIndex) => handleMoveExercise(index, targetIndex)}
-                onDragStart={() => setDraggedCardIndex(index)}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  if (dragOverCardIndex !== index) {
-                    setDragOverCardIndex(index);
-                  }
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  if (draggedCardIndex !== null && draggedCardIndex !== index) {
-                    handleMoveExercise(draggedCardIndex, index);
-                  }
-                  setDraggedCardIndex(null);
-                  setDragOverCardIndex(null);
-                }}
-                onDragEnd={() => {
-                  setDraggedCardIndex(null);
-                  setDragOverCardIndex(null);
-                }}
-                isDragging={draggedCardIndex === index}
-                isDragOver={dragOverCardIndex === index && draggedCardIndex !== index}
               />
             ))
           )}

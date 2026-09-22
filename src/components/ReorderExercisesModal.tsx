@@ -28,11 +28,17 @@ export const ReorderExercisesModal: React.FC<ReorderExercisesModalProps> = ({
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
+  // Mobile touch drag states
+  const [touchActiveIndex, setTouchActiveIndex] = useState<number | null>(null);
+  const [touchOverIndex, setTouchOverIndex] = useState<number | null>(null);
+
   useEffect(() => {
     if (isOpen) {
       setItems([...exercises]);
       setDraggedIndex(null);
       setDragOverIndex(null);
+      setTouchActiveIndex(null);
+      setTouchOverIndex(null);
     }
   }, [isOpen, exercises]);
 
@@ -51,6 +57,7 @@ export const ReorderExercisesModal: React.FC<ReorderExercisesModalProps> = ({
     handleMove(fromIndex, toIndex);
   };
 
+  // Mouse Drag Handlers
   const handleDragStart = (index: number) => {
     setDraggedIndex(index);
   };
@@ -73,6 +80,34 @@ export const ReorderExercisesModal: React.FC<ReorderExercisesModalProps> = ({
   const handleDragEnd = () => {
     setDraggedIndex(null);
     setDragOverIndex(null);
+  };
+
+  // Mobile Touch Handlers
+  const handleTouchStart = (index: number) => {
+    setTouchActiveIndex(index);
+    setTouchOverIndex(index);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchActiveIndex === null) return;
+    const touch = e.touches[0];
+    if (!touch) return;
+    const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+    const itemEl = elem?.closest('[data-reorder-index]');
+    if (itemEl) {
+      const targetIdx = Number(itemEl.getAttribute('data-reorder-index'));
+      if (!isNaN(targetIdx) && targetIdx !== touchOverIndex) {
+        setTouchOverIndex(targetIdx);
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (touchActiveIndex !== null && touchOverIndex !== null && touchActiveIndex !== touchOverIndex) {
+      handleMove(touchActiveIndex, touchOverIndex);
+    }
+    setTouchActiveIndex(null);
+    setTouchOverIndex(null);
   };
 
   const handleReset = () => {
@@ -128,28 +163,35 @@ export const ReorderExercisesModal: React.FC<ReorderExercisesModalProps> = ({
             items.map((ex, index) => {
               const isDraggingThis = draggedIndex === index;
               const isTargetThis = dragOverIndex === index && !isDraggingThis;
+              const isTouchActiveThis = touchActiveIndex === index;
+              const isTouchTargetThis = touchOverIndex === index && !isTouchActiveThis;
 
               return (
                 <div
                   key={ex.id}
                   id={`reorder-item-${ex.id}`}
+                  data-reorder-index={index}
                   draggable
                   onDragStart={() => handleDragStart(index)}
                   onDragOver={(e) => handleDragOver(e, index)}
                   onDrop={(e) => handleDrop(e, index)}
                   onDragEnd={handleDragEnd}
                   className={`flex items-center gap-2.5 p-2.5 sm:p-3 rounded-xl border transition-all ${
-                    isDraggingThis
-                      ? 'opacity-40 border-dashed border-emerald-500 bg-emerald-50/30'
-                      : isTargetThis
-                      ? 'border-emerald-500 bg-emerald-50/50 shadow-md scale-[1.01]'
+                    isDraggingThis || isTouchActiveThis
+                      ? 'opacity-40 border-dashed border-emerald-500 bg-emerald-50/40 scale-[0.99]'
+                      : isTargetThis || isTouchTargetThis
+                      ? 'border-emerald-500 bg-emerald-50/60 shadow-md ring-2 ring-emerald-400/50 scale-[1.01]'
                       : 'border-zinc-200 bg-white hover:border-zinc-300 shadow-2xs'
                   }`}
                 >
-                  {/* Drag Handle */}
+                  {/* Drag Handle (Supports Mouse Drag & Mobile Touch Drag) */}
                   <div
-                    className="cursor-grab active:cursor-grabbing text-zinc-400 hover:text-zinc-700 p-1 shrink-0"
+                    className="cursor-grab active:cursor-grabbing text-zinc-400 hover:text-zinc-700 p-2 -m-1 shrink-0 touch-none select-none"
                     title="Mantén pulsado y arrastra para reordenar"
+                    onTouchStart={() => handleTouchStart(index)}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                    onTouchCancel={handleTouchEnd}
                   >
                     <GripVertical className="w-4 h-4" />
                   </div>

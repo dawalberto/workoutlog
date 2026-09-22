@@ -11,7 +11,6 @@ import {
   Dumbbell, 
   Video,
   FileText,
-  GripVertical,
   Image as ImageIcon
 } from 'lucide-react';
 import { Exercise, WorkoutSet } from '../types';
@@ -27,15 +26,7 @@ interface ExerciseCardProps {
   onToggleSetComplete: (setId: string, restSeconds: number, exerciseName: string, setNumber: number) => void;
   onUpdateExercise: (updated: Exercise) => void;
   onDeleteExercise: () => void;
-  onMoveUp?: () => void;
-  onMoveDown?: () => void;
   onMoveToPosition?: (targetIndex: number) => void;
-  onDragStart?: (e: React.DragEvent) => void;
-  onDragOver?: (e: React.DragEvent) => void;
-  onDrop?: (e: React.DragEvent) => void;
-  onDragEnd?: () => void;
-  isDragging?: boolean;
-  isDragOver?: boolean;
 }
 
 export const ExerciseCard: React.FC<ExerciseCardProps> = ({
@@ -47,15 +38,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
   onToggleSetComplete,
   onUpdateExercise,
   onDeleteExercise,
-  onMoveUp,
-  onMoveDown,
   onMoveToPosition,
-  onDragStart,
-  onDragOver,
-  onDrop,
-  onDragEnd,
-  isDragging,
-  isDragOver,
 }) => {
   const [showVideoInput, setShowVideoInput] = useState(false);
   const [showImageInput, setShowImageInput] = useState(false);
@@ -125,17 +108,8 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
   return (
     <div
       id={`exercise-card-${exercise.id}`}
-      draggable={!isExecutionMode && totalExercises > 1}
-      onDragStart={onDragStart}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-      onDragEnd={onDragEnd}
       className={`rounded-2xl border transition-all duration-200 shadow-sm overflow-hidden ${
-        isDragging
-          ? 'opacity-40 border-dashed border-emerald-500 bg-emerald-50/20'
-          : isDragOver
-          ? 'border-emerald-500 ring-2 ring-emerald-400/50 shadow-md scale-[1.008]'
-          : isAllCompleted
+        isAllCompleted
           ? 'bg-emerald-50/50 border-emerald-400/80 shadow-emerald-500/10'
           : 'bg-white border-zinc-200 hover:border-zinc-300'
       }`}
@@ -149,31 +123,23 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
           {/* Main Title & Notes Section */}
           <div className="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1">
-            {/* Reorder Grip Handle & Position Select in Edit Mode */}
+            {/* Position Select in Edit Mode / Static Badge in Execution */}
             {!isExecutionMode && totalExercises > 1 ? (
-              <div className="flex items-center gap-1 shrink-0 mt-0.5">
-                <div
-                  className="cursor-grab active:cursor-grabbing text-zinc-400 hover:text-zinc-700 p-0.5 rounded transition-colors"
-                  title="Arrastra para reordenar este ejercicio"
+              <div className="relative group shrink-0 mt-0.5">
+                <select
+                  id={`select-exercise-position-${exercise.id}`}
+                  aria-label={`Cambiar posición de ${exercise.name || 'ejercicio'}`}
+                  value={exerciseIndex}
+                  onChange={(e) => onMoveToPosition && onMoveToPosition(Number(e.target.value))}
+                  className="cursor-pointer appearance-none w-7 h-7 rounded-lg text-xs font-black flex items-center justify-center text-center bg-zinc-900 text-white hover:bg-emerald-600 border border-transparent focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-colors"
+                  title={`Posición actual: ${exerciseIndex + 1} de ${totalExercises}. Clic para cambiar de lugar rápidamente.`}
                 >
-                  <GripVertical className="w-4 h-4" />
-                </div>
-                <div className="relative group">
-                  <select
-                    id={`select-exercise-position-${exercise.id}`}
-                    aria-label={`Cambiar posición de ${exercise.name || 'ejercicio'}`}
-                    value={exerciseIndex}
-                    onChange={(e) => onMoveToPosition && onMoveToPosition(Number(e.target.value))}
-                    className="cursor-pointer appearance-none w-7 h-7 rounded-lg text-xs font-black flex items-center justify-center text-center bg-zinc-900 text-white hover:bg-emerald-600 border border-transparent focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-colors"
-                    title={`Posición actual: ${exerciseIndex + 1} de ${totalExercises}. Clic para cambiar de lugar rápidamente.`}
-                  >
-                    {Array.from({ length: totalExercises }, (_, idx) => (
-                      <option key={idx} value={idx} className="bg-white text-zinc-900 font-semibold py-1">
-                        #{idx + 1}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                  {Array.from({ length: totalExercises }, (_, idx) => (
+                    <option key={idx} value={idx} className="bg-white text-zinc-900 font-semibold py-1">
+                      #{idx + 1}
+                    </option>
+                  ))}
+                </select>
               </div>
             ) : (
               <span
@@ -295,30 +261,6 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                   >
                     <Video className="w-4 h-4" />
                   </button>
-
-                  {totalExercises > 1 && (
-                    <>
-                      <button
-                        type="button"
-                        disabled={exerciseIndex === 0}
-                        onClick={onMoveUp}
-                        title="Subir ejercicio (un puesto)"
-                        className="p-1.5 rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 disabled:opacity-25 disabled:pointer-events-none transition-colors"
-                      >
-                        <ChevronUp className="w-4 h-4" />
-                      </button>
-
-                      <button
-                        type="button"
-                        disabled={exerciseIndex >= totalExercises - 1}
-                        onClick={onMoveDown}
-                        title="Bajar ejercicio (un puesto)"
-                        className="p-1.5 rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 disabled:opacity-25 disabled:pointer-events-none transition-colors"
-                      >
-                        <ChevronDown className="w-4 h-4" />
-                      </button>
-                    </>
-                  )}
 
                   <button
                     type="button"
