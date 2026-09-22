@@ -183,18 +183,168 @@ export function mergeCatalogs(
   };
 }
 
+export interface MergeRoutinesOptions {
+  importedCatalog?: ExerciseDefinition[];
+  existingCatalog?: ExerciseDefinition[];
+  replaceDuplicates?: boolean;
+}
+
+/**
+ * Synchronizes routine exercise metadata (name, category, images, video, notes)
+ * with the exercise catalog definitions matching by normalized title,
+ * preserving sets and numbers.
+ */
+export function syncRoutinesWithCatalog(routines: Routine[], catalog: ExerciseDefinition[]): Routine[] {
+  const catMap = new Map<string, ExerciseDefinition>();
+  catalog.forEach((def) => {
+    const key = normalizeExerciseTitle(def.name);
+    if (key) catMap.set(key, def);
+  });
+
+  return routines.map((r) => ({
+    ...r,
+    exercises: r.exercises.map((ex) => {
+      const match = catMap.get(normalizeExerciseTitle(ex.name));
+      if (!match) return ex;
+      return {
+        ...ex,
+        name: match.name || ex.name,
+        category: match.category && match.category.trim() ? match.category : ex.category,
+        imageUrl: match.imageUrl !== undefined && match.imageUrl !== '' ? match.imageUrl : ex.imageUrl,
+        videoUrl: match.videoUrl !== undefined && match.videoUrl !== '' ? match.videoUrl : ex.videoUrl,
+        notes: match.notes !== undefined && match.notes !== '' ? match.notes : ex.notes,
+        sets: ex.sets,
+      };
+    }),
+  }));
+}
+
 /**
  * Merges imported routines into existing routines, generating safe IDs to prevent clashes.
  * Note: Routines are merged even if they share titles, as requested.
+ * When replaceDuplicates is true, exercises in existing routines that match imported exercises
+ * by title (case-insensitive & accent-insensitive) are updated with the imported exercise's
+ * metadata (name, category, image, video, notes) while keeping all recorded sets intact.
  */
 export function mergeRoutines(
   existing: Routine[],
-  imported: Routine[]
-): { merged: Routine[]; addedCount: number } {
+  imported: Routine[],
+  options?: MergeRoutinesOptions
+): { merged: Routine[]; addedCount: number; updatedExercisesCount: number } {
+  const replaceDuplicates = options?.replaceDuplicates ?? false;
+  const importedCatalog = options?.importedCatalog ?? [];
+  const existingCatalog = options?.existingCatalog ?? [];
+
+  // Map of imported exercise metadata
+  const importedExMap = new Map<string, {
+    name: string;
+    category?: string;
+    imageUrl?: string;
+    videoUrl?: string;
+    notes?: string;
+  }>();
+
+  // Populate from imported routines first
+  imported.forEach((r) => {
+    r.exercises.forEach((ex) => {
+      const norm = normalizeExerciseTitle(ex.name);
+      if (norm && !importedExMap.has(norm)) {
+        importedExMap.set(norm, {
+          name: ex.name,
+          category: ex.category,
+          imageUrl: ex.imageUrl,
+          videoUrl: ex.videoUrl,
+          notes: ex.notes,
+        });
+      }
+    });
+  });
+
+  // Populate from imported catalog definitions (higher priority)
+  importedCatalog.forEach((def) => {
+    const norm = normalizeExerciseTitle(def.name);
+    if (norm) {
+      importedExMap.set(norm, {
+        name: def.name,
+        category: def.category,
+        imageUrl: def.imageUrl,
+        videoUrl: def.videoUrl,
+        notes: def.notes,
+      });
+    }
+  });
+
+  // Map of existing exercise metadata (from current catalog & existing routines)
+  const existingExMap = new Map<string, {
+    name: string;
+    category?: string;
+    imageUrl?: string;
+    videoUrl?: string;
+    notes?: string;
+  }>();
+
+  existing.forEach((r) => {
+    r.exercises.forEach((ex) => {
+      const norm = normalizeExerciseTitle(ex.name);
+      if (norm && !existingExMap.has(norm)) {
+        existingExMap.set(norm, {
+          name: ex.name,
+          category: ex.category,
+          imageUrl: ex.imageUrl,
+          videoUrl: ex.videoUrl,
+          notes: ex.notes,
+        });
+      }
+    });
+  });
+
+  existingCatalog.forEach((def) => {
+    const norm = normalizeExerciseTitle(def.name);
+    if (norm) {
+      existingExMap.set(norm, {
+        name: def.name,
+        category: def.category,
+        imageUrl: def.imageUrl,
+        videoUrl: def.videoUrl,
+        notes: def.notes,
+      });
+    }
+  });
+
+  let updatedExercisesCount = 0;
+
+  // Process existing routines
+  const updatedExisting = existing.map((routine) => {
+    const updatedExercises = routine.exercises.map((ex) => {
+      const norm = normalizeExerciseTitle(ex.name);
+      // If user chose to replace duplicates with imported exercise and match found
+      if (replaceDuplicates && importedExMap.has(norm)) {
+        const match = importedExMap.get(norm)!;
+        updatedExercisesCount++;
+        return {
+          ...ex,
+          name: match.name || ex.name,
+          category: match.category && match.category.trim() ? match.category : ex.category,
+          imageUrl: match.imageUrl !== undefined && match.imageUrl !== '' ? match.imageUrl : ex.imageUrl,
+          videoUrl: match.videoUrl !== undefined && match.videoUrl !== '' ? match.videoUrl : ex.videoUrl,
+          notes: match.notes !== undefined && match.notes !== '' ? match.notes : ex.notes,
+          sets: ex.sets, // Preserve workout sets!
+        };
+      }
+      return ex;
+    });
+
+    return {
+      ...routine,
+      exercises: updatedExercises,
+    };
+  });
+
+  // Process imported routines
   const existingIds = new Set(existing.map((r) => r.id));
 
   const safeImported = imported.map((routine) => {
-    // If ID collision, assign a fresh ID and refresh set/exercise IDs
+    // If ID collision, assign a fresh ID
     let routineId = routine.id;
     if (existingIds.has(routineId)) {
       routineId = 'routine-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6);
@@ -204,20 +354,59 @@ export function mergeRoutines(
     return {
       ...routine,
       id: routineId,
-      exercises: routine.exercises.map((ex, exIdx) => ({
-        ...ex,
-        id: `ex-${Date.now()}-${exIdx}-${Math.random().toString(36).substring(2, 6)}`,
-        sets: ex.sets.map((s, sIdx) => ({
-          ...s,
-          id: `set-${Date.now()}-${sIdx}-${Math.random().toString(36).substring(2, 6)}`,
-        })),
-      })),
+      exercises: routine.exercises.map((ex, exIdx) => {
+        const norm = normalizeExerciseTitle(ex.name);
+        let finalMeta = {
+          name: ex.name,
+          category: ex.category,
+          imageUrl: ex.imageUrl,
+          videoUrl: ex.videoUrl,
+          notes: ex.notes,
+        };
+
+        // If user chose to keep existing app exercise when duplicate exists
+        if (!replaceDuplicates && existingExMap.has(norm)) {
+          const match = existingExMap.get(norm)!;
+          finalMeta = {
+            name: match.name || ex.name,
+            category: match.category && match.category.trim() ? match.category : ex.category,
+            imageUrl: match.imageUrl !== undefined && match.imageUrl !== '' ? match.imageUrl : ex.imageUrl,
+            videoUrl: match.videoUrl !== undefined && match.videoUrl !== '' ? match.videoUrl : ex.videoUrl,
+            notes: match.notes !== undefined && match.notes !== '' ? match.notes : ex.notes,
+          };
+        } else if (replaceDuplicates && importedExMap.has(norm)) {
+          // Sync with the latest definition from imported catalog if available
+          const match = importedExMap.get(norm)!;
+          finalMeta = {
+            name: match.name || ex.name,
+            category: match.category && match.category.trim() ? match.category : ex.category,
+            imageUrl: match.imageUrl !== undefined && match.imageUrl !== '' ? match.imageUrl : ex.imageUrl,
+            videoUrl: match.videoUrl !== undefined && match.videoUrl !== '' ? match.videoUrl : ex.videoUrl,
+            notes: match.notes !== undefined && match.notes !== '' ? match.notes : ex.notes,
+          };
+        }
+
+        return {
+          ...ex,
+          id: `ex-${Date.now()}-${exIdx}-${Math.random().toString(36).substring(2, 6)}`,
+          name: finalMeta.name,
+          category: finalMeta.category,
+          imageUrl: finalMeta.imageUrl,
+          videoUrl: finalMeta.videoUrl,
+          notes: finalMeta.notes,
+          sets: ex.sets.map((s, sIdx) => ({
+            ...s,
+            id: `set-${Date.now()}-${sIdx}-${Math.random().toString(36).substring(2, 6)}`,
+          })),
+        };
+      }),
     };
   });
 
   return {
-    merged: [...safeImported, ...existing],
+    merged: [...safeImported, ...updatedExisting],
     addedCount: safeImported.length,
+    updatedExercisesCount,
   };
 }
 

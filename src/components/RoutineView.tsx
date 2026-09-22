@@ -10,13 +10,15 @@ import {
   CheckCircle2, 
   Dumbbell,
   FileText,
-  BookOpen
+  BookOpen,
+  ArrowUpDown
 } from 'lucide-react';
 import { Exercise, ExerciseDefinition, Routine, RoutineSubMode, WorkoutSet } from '../types';
 import { getRoutineTotalSeconds, formatSecondsToTime } from '../utils/timeCalculations';
 import { ExerciseCard } from './ExerciseCard';
 import { RestTimerBar } from './RestTimerBar';
 import { AddExerciseModal } from './AddExerciseModal';
+import { ReorderExercisesModal } from './ReorderExercisesModal';
 
 interface RoutineViewProps {
   routine: Routine;
@@ -44,6 +46,9 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
   } | null>(null);
 
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showReorderModal, setShowReorderModal] = useState(false);
+  const [draggedCardIndex, setDraggedCardIndex] = useState<number | null>(null);
+  const [dragOverCardIndex, setDragOverCardIndex] = useState<number | null>(null);
 
   const totalWorkoutSeconds = getRoutineTotalSeconds(routine);
 
@@ -122,13 +127,21 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
   };
 
   const handleMoveExercise = (fromIndex: number, toIndex: number) => {
-    if (toIndex < 0 || toIndex >= routine.exercises.length) return;
+    if (toIndex < 0 || toIndex >= routine.exercises.length || fromIndex === toIndex) return;
     const updatedExercises = [...routine.exercises];
     const [moved] = updatedExercises.splice(fromIndex, 1);
     updatedExercises.splice(toIndex, 0, moved);
     onSaveRoutine({
       ...routine,
       exercises: updatedExercises,
+      updatedAt: new Date().toISOString(),
+    });
+  };
+
+  const handleReorderAllExercises = (newOrderedExercises: Exercise[]) => {
+    onSaveRoutine({
+      ...routine,
+      exercises: newOrderedExercises,
       updatedAt: new Date().toISOString(),
     });
   };
@@ -311,14 +324,29 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
             </h2>
 
             {subMode === 'edit' && (
-              <button
-                id="btn-show-add-exercise"
-                type="button"
-                onClick={() => setShowAddModal(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 transition-colors active:scale-95"
-              >
-                <Plus className="w-3.5 h-3.5" /> Añadir Ejercicio
-              </button>
+              <div className="flex items-center gap-2">
+                {routine.exercises.length > 1 && (
+                  <button
+                    id="btn-show-reorder-exercises"
+                    type="button"
+                    onClick={() => setShowReorderModal(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors active:scale-95 shadow-2xs"
+                    title="Reordenar la lista completa de ejercicios"
+                  >
+                    <ArrowUpDown className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Ordenar</span>
+                  </button>
+                )}
+
+                <button
+                  id="btn-show-add-exercise"
+                  type="button"
+                  onClick={() => setShowAddModal(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 transition-colors active:scale-95 shadow-2xs"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Añadir Ejercicio
+                </button>
+              </div>
             )}
           </div>
 
@@ -341,13 +369,36 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
                 key={exercise.id}
                 exercise={exercise}
                 exerciseIndex={index}
+                totalExercises={routine.exercises.length}
                 isExecutionMode={subMode === 'execute'}
                 completedSetIds={completedSetIds}
                 onToggleSetComplete={handleToggleSetComplete}
                 onUpdateExercise={(updated) => handleUpdateExercise(index, updated)}
                 onDeleteExercise={() => handleDeleteExercise(index)}
-                onMoveUp={index > 0 ? () => handleMoveExercise(index, index - 1) : undefined}
-                onMoveDown={index < routine.exercises.length - 1 ? () => handleMoveExercise(index, index + 1) : undefined}
+                onMoveUp={() => handleMoveExercise(index, index - 1)}
+                onMoveDown={() => handleMoveExercise(index, index + 1)}
+                onMoveToPosition={(targetIndex) => handleMoveExercise(index, targetIndex)}
+                onDragStart={() => setDraggedCardIndex(index)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (dragOverCardIndex !== index) {
+                    setDragOverCardIndex(index);
+                  }
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (draggedCardIndex !== null && draggedCardIndex !== index) {
+                    handleMoveExercise(draggedCardIndex, index);
+                  }
+                  setDraggedCardIndex(null);
+                  setDragOverCardIndex(null);
+                }}
+                onDragEnd={() => {
+                  setDraggedCardIndex(null);
+                  setDragOverCardIndex(null);
+                }}
+                isDragging={draggedCardIndex === index}
+                isDragOver={dragOverCardIndex === index && draggedCardIndex !== index}
               />
             ))
           )}
@@ -360,6 +411,14 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
         onClose={() => setShowAddModal(false)}
         catalog={catalog}
         onAddExercise={handleAddExerciseFromModal}
+      />
+
+      {/* Reorder Exercises Modal */}
+      <ReorderExercisesModal
+        isOpen={showReorderModal}
+        onClose={() => setShowReorderModal(false)}
+        exercises={routine.exercises}
+        onSaveOrder={handleReorderAllExercises}
       />
 
       {/* Floating Rest Timer Bar when active */}

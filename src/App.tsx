@@ -162,7 +162,13 @@ export default function App() {
   const handleImportComplete = (
     newCatalog: ExerciseDefinition[],
     newRoutines: Routine[],
-    summary: { exercisesAdded: number; exercisesReplaced: number; routinesAdded: number; mode: 'merge' | 'overwrite' }
+    summary: {
+      exercisesAdded: number;
+      exercisesReplaced: number;
+      routinesAdded: number;
+      exercisesInRoutinesUpdated?: number;
+      mode: 'merge' | 'overwrite';
+    }
   ) => {
     setCatalog(newCatalog);
     setRoutines(newRoutines);
@@ -174,6 +180,9 @@ export default function App() {
       const parts: string[] = [];
       if (summary.exercisesAdded > 0) parts.push(`${summary.exercisesAdded} ejerc. añadidos`);
       if (summary.exercisesReplaced > 0) parts.push(`${summary.exercisesReplaced} ejerc. actualizados`);
+      if (summary.exercisesInRoutinesUpdated && summary.exercisesInRoutinesUpdated > 0) {
+        parts.push(`${summary.exercisesInRoutinesUpdated} en rutinas`);
+      }
       if (summary.routinesAdded > 0) parts.push(`${summary.routinesAdded} rutinas añadidas`);
       msg = parts.length > 0
         ? `Importación completada: ${parts.join(', ')}.`

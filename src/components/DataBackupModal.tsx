@@ -17,6 +17,7 @@ import {
   parseImportedData,
   mergeCatalogs,
   mergeRoutines,
+  syncRoutinesWithCatalog,
   downloadJsonFile,
   ParsedBackupData
 } from '../utils/backup';
@@ -29,7 +30,13 @@ interface DataBackupModalProps {
   onImportComplete: (
     newCatalog: ExerciseDefinition[],
     newRoutines: Routine[],
-    summary: { exercisesAdded: number; exercisesReplaced: number; routinesAdded: number; mode: 'merge' | 'overwrite' }
+    summary: {
+      exercisesAdded: number;
+      exercisesReplaced: number;
+      routinesAdded: number;
+      exercisesInRoutinesUpdated?: number;
+      mode: 'merge' | 'overwrite';
+    }
   ) => void;
 }
 
@@ -145,24 +152,30 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
     try {
       if (importMode === 'overwrite') {
         const newCatalog = parsedData.catalog;
-        const newRoutines = parsedData.routines;
+        const newRoutines = syncRoutinesWithCatalog(parsedData.routines, newCatalog);
 
         onImportComplete(newCatalog, newRoutines, {
           exercisesAdded: newCatalog.length,
           exercisesReplaced: 0,
           routinesAdded: newRoutines.length,
+          exercisesInRoutinesUpdated: 0,
           mode: 'overwrite',
         });
         onClose();
       } else {
         // Merge mode
         const catalogMerge = mergeCatalogs(catalog, parsedData.catalog, replaceDuplicateExercises);
-        const routinesMerge = mergeRoutines(routines, parsedData.routines);
+        const routinesMerge = mergeRoutines(routines, parsedData.routines, {
+          importedCatalog: parsedData.catalog,
+          existingCatalog: catalog,
+          replaceDuplicates: replaceDuplicateExercises,
+        });
 
         onImportComplete(catalogMerge.merged, routinesMerge.merged, {
           exercisesAdded: catalogMerge.addedCount,
           exercisesReplaced: catalogMerge.replacedCount,
           routinesAdded: routinesMerge.addedCount,
+          exercisesInRoutinesUpdated: routinesMerge.updatedExercisesCount,
           mode: 'merge',
         });
         onClose();
@@ -456,11 +469,11 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
                                 </span>
                                 <span className="text-zinc-500 block mt-0.5">
                                   {replaceDuplicateExercises
-                                    ? 'Se actualizarán las notas, imagen o series predeterminadas del ejercicio con la versión importada.'
+                                    ? 'Se actualizarán las notas, imagen o vídeos tanto en la biblioteca como en tus rutinas con la versión importada (conservando tus series grabadas).'
                                     : 'Se conservará intacto el ejercicio que ya tienes guardado en la app.'}
                                 </span>
                                 <span className="text-[10px] text-zinc-400 block mt-0.5 italic">
-                                  * Detectado por título (sin distinguir mayúsculas ni acentos). Las rutinas y sus series siempre se añadirán completas.
+                                  * Detectado por título (sin distinguir mayúsculas ni acentos). Las series y cargas de tus rutinas siempre se conservan.
                                 </span>
                               </div>
                             </label>
