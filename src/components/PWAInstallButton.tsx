@@ -18,12 +18,11 @@ export const PWAInstallButton: React.FC = () => {
         id="btn-pwa-install"
         type="button"
         onClick={install}
-        className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-bold rounded-lg bg-zinc-950 hover:bg-zinc-800 text-white shadow-xs transition-all active:scale-95 shrink-0"
+        className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-zinc-950 hover:bg-zinc-800 text-white shadow-xs transition-all active:scale-95 shrink-0"
         title="Instalar WorkoutLog como aplicación"
       >
         <Download className="w-3.5 h-3.5 text-emerald-400" />
-        <span className="hidden sm:inline">Instalar App</span>
-        <span className="sm:hidden">Instalar</span>
+        <span>Instalar App</span>
       </button>
     );
   }
@@ -36,12 +35,11 @@ export const PWAInstallButton: React.FC = () => {
           id="btn-pwa-install-ios"
           type="button"
           onClick={() => setShowIOSGuide(true)}
-          className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-bold rounded-lg border border-zinc-300 bg-white hover:bg-zinc-50 text-zinc-800 shadow-2xs transition-all active:scale-95 shrink-0"
+          className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border border-zinc-300 bg-white hover:bg-zinc-50 text-zinc-800 shadow-2xs transition-all active:scale-95 shrink-0"
           title="Instalar en iPhone o iPad"
         >
           <Download className="w-3.5 h-3.5 text-emerald-600" />
-          <span className="hidden sm:inline">Instalar en iPhone</span>
-          <span className="sm:hidden">Instalar</span>
+          <span>Instalar en iPhone</span>
         </button>
 
         {showIOSGuide && (

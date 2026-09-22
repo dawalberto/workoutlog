@@ -10,6 +10,7 @@ import { RoutineList } from './components/RoutineList';
 import { RoutineView } from './components/RoutineView';
 import { ExerciseCatalog } from './components/ExerciseCatalog';
 import { PWAInstallButton } from './components/PWAInstallButton';
+import { PWAInstallBanner } from './components/PWAInstallBanner';
 
 const ROUTINES_STORAGE_KEY = 'workout_planner_routines_v2';
 const CATALOG_STORAGE_KEY = 'workout_planner_catalog_v2';
@@ -157,7 +158,7 @@ export default function App() {
   const activeRoutine = routines.find((r) => r.id === activeRoutineId);
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900 font-sans antialiased selection:bg-emerald-500 selection:text-white">
+    <div className="min-h-screen bg-zinc-50 text-zinc-900 font-sans antialiased selection:bg-emerald-500 selection:text-white overflow-x-hidden">
       {activeRoutineId && activeRoutine ? (
         <RoutineView
           routine={activeRoutine}
@@ -168,7 +169,7 @@ export default function App() {
           onBack={() => setActiveRoutineId(null)}
         />
       ) : (
-        <div>
+        <div className="overflow-x-hidden">
           {/* Main Top Navigation Bar */}
           <header className="bg-white border-b border-zinc-200 sticky top-0 z-20 shadow-2xs">
             <div className="max-w-4xl mx-auto px-3 sm:px-6">
@@ -235,6 +236,9 @@ export default function App() {
               </div>
             </div>
           </header>
+
+          {/* Mobile PWA Install Banner */}
+          <PWAInstallBanner />
 
           {/* Active View Screen */}
           {activeTab === AppTab.ROUTINES ? (
