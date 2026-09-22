@@ -4,13 +4,14 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Flame, Dumbbell } from 'lucide-react';
+import { Flame, Dumbbell, ArrowDownUp, CheckCircle2, X } from 'lucide-react';
 import { Routine, RoutineSubMode, ExerciseDefinition, AppTab } from './types';
 import { RoutineList } from './components/RoutineList';
 import { RoutineView } from './components/RoutineView';
 import { ExerciseCatalog } from './components/ExerciseCatalog';
 import { PWAInstallButton } from './components/PWAInstallButton';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
+import { DataBackupModal } from './components/DataBackupModal';
 
 const ROUTINES_STORAGE_KEY = 'workout_planner_routines_v2';
 const CATALOG_STORAGE_KEY = 'workout_planner_catalog_v2';
@@ -53,6 +54,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<AppTab>(AppTab.ROUTINES);
   const [activeRoutineId, setActiveRoutineId] = useState<string | null>(null);
   const [routineSubMode, setRoutineSubMode] = useState<RoutineSubMode>('edit');
+  const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
+  const [importFeedback, setImportFeedback] = useState<string | null>(null);
 
   // Save routines to localStorage whenever they change
   useEffect(() => {
@@ -155,6 +158,31 @@ export default function App() {
     }
   };
 
+  // Complete data import
+  const handleImportComplete = (
+    newCatalog: ExerciseDefinition[],
+    newRoutines: Routine[],
+    summary: { exercisesAdded: number; exercisesReplaced: number; routinesAdded: number; mode: 'merge' | 'overwrite' }
+  ) => {
+    setCatalog(newCatalog);
+    setRoutines(newRoutines);
+
+    let msg = '';
+    if (summary.mode === 'overwrite') {
+      msg = `Copia restaurada: ${newCatalog.length} ejercicios y ${newRoutines.length} rutinas guardadas.`;
+    } else {
+      const parts: string[] = [];
+      if (summary.exercisesAdded > 0) parts.push(`${summary.exercisesAdded} ejerc. añadidos`);
+      if (summary.exercisesReplaced > 0) parts.push(`${summary.exercisesReplaced} ejerc. actualizados`);
+      if (summary.routinesAdded > 0) parts.push(`${summary.routinesAdded} rutinas añadidas`);
+      msg = parts.length > 0
+        ? `Importación completada: ${parts.join(', ')}.`
+        : 'Datos combinados con éxito.';
+    }
+    setImportFeedback(msg);
+    setTimeout(() => setImportFeedback(null), 5000);
+  };
+
   const activeRoutine = routines.find((r) => r.id === activeRoutineId);
 
   return (
@@ -169,7 +197,7 @@ export default function App() {
           onBack={() => setActiveRoutineId(null)}
         />
       ) : (
-        <div className="overflow-x-hidden">
+        <div className="overflow-x-hidden flex flex-col min-h-screen">
           {/* Main Top Navigation Bar */}
           <header className="bg-white border-b border-zinc-200 sticky top-0 z-20 shadow-2xs">
             <div className="max-w-4xl mx-auto px-3 sm:px-6">
@@ -189,8 +217,8 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Right controls: Main Views Navigation + PWA Install */}
-                <div className="flex items-center gap-2">
+                {/* Right controls: Main Views Navigation + Subtle Backup Icon + PWA Install */}
+                <div className="flex items-center gap-1.5 sm:gap-2">
                   <nav className="flex items-center p-1 bg-zinc-100 rounded-xl border border-zinc-200/80 shrink-0">
                     <button
                       id="tab-nav-routines"
@@ -231,6 +259,18 @@ export default function App() {
                     </button>
                   </nav>
 
+                  {/* Subtle Backup / Data Button */}
+                  <button
+                    id="btn-open-backup-modal"
+                    type="button"
+                    onClick={() => setIsBackupModalOpen(true)}
+                    className="p-1.5 sm:p-2 text-zinc-500 hover:text-zinc-900 rounded-xl hover:bg-zinc-100 active:scale-95 transition-colors shrink-0"
+                    title="Copia de seguridad (Importar / Exportar datos)"
+                    aria-label="Copia de seguridad (Importar / Exportar datos)"
+                  >
+                    <ArrowDownUp className="w-4 h-4" />
+                  </button>
+
                   <PWAInstallButton />
                 </div>
               </div>
@@ -241,22 +281,62 @@ export default function App() {
           <PWAInstallBanner />
 
           {/* Active View Screen */}
-          {activeTab === AppTab.ROUTINES ? (
-            <RoutineList
-              routines={routines}
-              onCreateRoutine={handleCreateRoutine}
-              onSelectRoutine={handleSelectRoutine}
-              onDuplicateRoutine={handleDuplicateRoutine}
-              onDeleteRoutine={handleDeleteRoutine}
-            />
-          ) : (
-            <ExerciseCatalog
-              exercises={catalog}
-              onCreateExercise={handleCreateCatalogExercise}
-              onUpdateExercise={handleUpdateCatalogExercise}
-              onDeleteExercise={handleDeleteCatalogExercise}
-            />
-          )}
+          <main className="flex-1">
+            {activeTab === AppTab.ROUTINES ? (
+              <RoutineList
+                routines={routines}
+                onCreateRoutine={handleCreateRoutine}
+                onSelectRoutine={handleSelectRoutine}
+                onDuplicateRoutine={handleDuplicateRoutine}
+                onDeleteRoutine={handleDeleteRoutine}
+              />
+            ) : (
+              <ExerciseCatalog
+                exercises={catalog}
+                onCreateExercise={handleCreateCatalogExercise}
+                onUpdateExercise={handleUpdateCatalogExercise}
+                onDeleteExercise={handleDeleteCatalogExercise}
+              />
+            )}
+          </main>
+
+          {/* Subtle footer link for non-intrusive backup access */}
+          <footer className="mt-auto py-6 px-4 text-center">
+            <button
+              id="btn-footer-backup-link"
+              type="button"
+              onClick={() => setIsBackupModalOpen(true)}
+              className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-600 transition-colors"
+            >
+              <ArrowDownUp className="w-3.5 h-3.5" />
+              <span>Copia de seguridad (Importar / Exportar JSON)</span>
+            </button>
+          </footer>
+        </div>
+      )}
+
+      {/* Import / Export Modal */}
+      <DataBackupModal
+        isOpen={isBackupModalOpen}
+        onClose={() => setIsBackupModalOpen(false)}
+        catalog={catalog}
+        routines={routines}
+        onImportComplete={handleImportComplete}
+      />
+
+      {/* Success / Feedback Toast Notification */}
+      {importFeedback && (
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 bg-zinc-950 text-white rounded-2xl shadow-xl border border-zinc-800 text-xs font-semibold flex items-center gap-2.5 max-w-md animate-in fade-in slide-in-from-bottom-3">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span className="flex-1 truncate">{importFeedback}</span>
+          <button
+            type="button"
+            onClick={() => setImportFeedback(null)}
+            className="p-0.5 text-zinc-400 hover:text-white rounded"
+            aria-label="Cerrar notificación"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
     </div>
