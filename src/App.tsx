@@ -12,6 +12,7 @@ import { ExerciseCatalog } from './components/ExerciseCatalog';
 import { PWAInstallButton } from './components/PWAInstallButton';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { DataBackupModal } from './components/DataBackupModal';
+import { normalizeExerciseTitle } from './utils/backup';
 
 const ROUTINES_STORAGE_KEY = 'workout_planner_routines_v2';
 const CATALOG_STORAGE_KEY = 'workout_planner_catalog_v2';
@@ -88,7 +89,64 @@ export default function App() {
   };
 
   const handleUpdateCatalogExercise = (exercise: ExerciseDefinition) => {
+    // 1. Get old definition to match by previous title if definitionId was not set yet
+    const oldDef = catalog.find((e) => e.id === exercise.id);
+    const oldNorm = oldDef ? normalizeExerciseTitle(oldDef.name) : '';
+    const newNorm = normalizeExerciseTitle(exercise.name);
+
+    // 2. Update catalog
     setCatalog((prev) => prev.map((e) => (e.id === exercise.id ? exercise : e)));
+
+    // 3. Update all routines that contain this exercise
+    let updatedRoutinesCount = 0;
+
+    setRoutines((prevRoutines) => {
+      const updated = prevRoutines.map((routine) => {
+        let routineChanged = false;
+
+        const updatedExercises = routine.exercises.map((ex) => {
+          const exNorm = normalizeExerciseTitle(ex.name);
+          const matchesById = Boolean(ex.definitionId && ex.definitionId === exercise.id);
+          const matchesByOldName = Boolean(oldNorm && exNorm === oldNorm);
+          const matchesByNewName = Boolean(newNorm && exNorm === newNorm);
+
+          if (matchesById || matchesByOldName || matchesByNewName) {
+            routineChanged = true;
+            return {
+              ...ex,
+              definitionId: exercise.id,
+              name: exercise.name,
+              category: exercise.category,
+              imageUrl: exercise.imageUrl || '',
+              videoUrl: exercise.videoUrl || '',
+              notes: exercise.notes || '',
+            };
+          }
+          return ex;
+        });
+
+        if (routineChanged) {
+          updatedRoutinesCount++;
+          return {
+            ...routine,
+            exercises: updatedExercises,
+            updatedAt: new Date().toISOString(),
+          };
+        }
+        return routine;
+      });
+
+      return updatedRoutinesCount > 0 ? updated : prevRoutines;
+    });
+
+    if (updatedRoutinesCount > 0) {
+      setImportFeedback(
+        `"${exercise.name}" actualizado en biblioteca y en ${updatedRoutinesCount} rutina${updatedRoutinesCount > 1 ? 's' : ''}`
+      );
+      setTimeout(() => {
+        setImportFeedback((curr) => (curr && curr.includes(exercise.name) ? null : curr));
+      }, 3500);
+    }
   };
 
   const handleDeleteCatalogExercise = (id: string) => {

@@ -71,6 +71,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
 
     const newExercise: Exercise = {
       id: 'ex-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+      definitionId: item.id,
       name: item.name,
       category: item.category,
       imageUrl: item.imageUrl || '',
@@ -97,9 +98,15 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
       restSeconds: Math.max(0, customRest),
     }));
 
+    const defId = saveToLibrary
+      ? 'def-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6)
+      : undefined;
+
     const newExercise: Exercise = {
       id: 'ex-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+      definitionId: defId,
       name: customName.trim(),
+      category: customCategory,
       imageUrl: customImageUrl.trim(),
       videoUrl: customVideoUrl.trim(),
       notes: customNotes.trim(),
@@ -107,9 +114,9 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
     };
 
     let templateToSave: ExerciseDefinition | undefined;
-    if (saveToLibrary) {
+    if (saveToLibrary && defId) {
       templateToSave = {
-        id: 'def-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+        id: defId,
         name: customName.trim(),
         category: customCategory,
         imageUrl: customImageUrl.trim(),
