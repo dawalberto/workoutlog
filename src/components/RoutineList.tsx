@@ -8,8 +8,7 @@ import {
   Clock, 
   Dumbbell, 
   Layers, 
-  Flame,
-  RotateCcw
+  Flame
 } from 'lucide-react';
 import { Routine } from '../types';
 import { getRoutineTotalSeconds, formatSecondsToTime } from '../utils/timeCalculations';
@@ -20,7 +19,6 @@ interface RoutineListProps {
   onSelectRoutine: (routineId: string, mode: 'edit' | 'execute') => void;
   onDuplicateRoutine: (routineId: string) => void;
   onDeleteRoutine: (routineId: string) => void;
-  onResetToDefaults: () => void;
 }
 
 export const RoutineList: React.FC<RoutineListProps> = ({
@@ -29,24 +27,18 @@ export const RoutineList: React.FC<RoutineListProps> = ({
   onSelectRoutine,
   onDuplicateRoutine,
   onDeleteRoutine,
-  onResetToDefaults,
 }) => {
   return (
     <div id="routine-list-page" className="min-h-screen bg-zinc-50 pb-20">
-      {/* Header */}
-      <header className="bg-white border-b border-zinc-200">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      {/* Sub-header */}
+      <div className="bg-white border-b border-zinc-200/80">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-5 sm:py-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2">
-                <span className="p-2 rounded-xl bg-emerald-600 text-white shadow-xs">
-                  <Flame className="w-5 h-5 fill-current" />
-                </span>
-                <h1 className="text-2xl sm:text-3xl font-black text-zinc-900 tracking-tight">
-                  Mis Rutinas
-                </h1>
-              </div>
-              <p className="text-xs sm:text-sm text-zinc-600 mt-1">
+              <h1 className="text-xl sm:text-2xl font-black text-zinc-900 tracking-tight">
+                Mis Rutinas
+              </h1>
+              <p className="text-xs sm:text-sm text-zinc-600 mt-0.5">
                 Planifica tus series, descansos y registra cada repetición en directo.
               </p>
             </div>
@@ -56,14 +48,14 @@ export const RoutineList: React.FC<RoutineListProps> = ({
                 id="btn-new-routine"
                 type="button"
                 onClick={onCreateRoutine}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-zinc-900 hover:bg-zinc-800 text-white shadow-sm transition-colors active:scale-95"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-zinc-900 hover:bg-zinc-800 text-white shadow-sm transition-colors active:scale-95"
               >
                 <Plus className="w-4 h-4" /> Nueva Rutina
               </button>
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Routine Cards Grid */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8">
@@ -74,24 +66,16 @@ export const RoutineList: React.FC<RoutineListProps> = ({
             </div>
             <h2 className="text-lg font-bold text-zinc-900">No hay rutinas guardadas</h2>
             <p className="text-xs sm:text-sm text-zinc-600 mt-1.5 mb-6">
-              Empieza creando tu primera rutina de entrenamiento o carga las rutinas de ejemplo para comenzar.
+              Empieza creando tu primera rutina de entrenamiento personalizada.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5">
+            <div className="flex items-center justify-center">
               <button
                 id="btn-create-first-routine"
                 type="button"
                 onClick={onCreateRoutine}
-                className="w-full sm:w-auto px-4 py-2 text-xs font-bold rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+                className="px-5 py-2.5 text-xs font-bold rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-xs active:scale-95"
               >
                 + Crear Rutina
-              </button>
-              <button
-                id="btn-load-defaults"
-                type="button"
-                onClick={onResetToDefaults}
-                className="w-full sm:w-auto px-4 py-2 text-xs font-semibold rounded-xl text-zinc-700 bg-zinc-100 hover:bg-zinc-200 transition-colors inline-flex items-center justify-center gap-1.5"
-              >
-                <RotateCcw className="w-3.5 h-3.5" /> Cargar Ejemplos
               </button>
             </div>
           </div>
@@ -99,17 +83,6 @@ export const RoutineList: React.FC<RoutineListProps> = ({
           <div className="space-y-4">
             <div className="flex items-center justify-between text-xs text-zinc-600 px-1">
               <span>{routines.length} {routines.length === 1 ? 'rutina disponible' : 'rutinas disponibles'}</span>
-              <button
-                type="button"
-                onClick={() => {
-                  if (window.confirm('¿Restaurar las rutinas de ejemplo iniciales? Se añadirán a tu lista.')) {
-                    onResetToDefaults();
-                  }
-                }}
-                className="text-zinc-600 hover:text-zinc-800 hover:underline inline-flex items-center gap-1"
-              >
-                <RotateCcw className="w-3 h-3" /> Restaurar ejemplos
-              </button>
             </div>
 
             <div className="grid grid-cols-1 gap-4">
@@ -148,7 +121,7 @@ export const RoutineList: React.FC<RoutineListProps> = ({
                         </div>
                       </div>
 
-                      {/* Exercises summary chips */}
+                      {/* Exercises summary chips & cover previews */}
                       <div className="mt-4 flex flex-wrap items-center gap-2">
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-zinc-100 text-zinc-700">
                           <Dumbbell className="w-3 h-3 text-zinc-600" />
@@ -166,6 +139,37 @@ export const RoutineList: React.FC<RoutineListProps> = ({
                           </span>
                         )}
                       </div>
+
+                      {/* Visual covers row */}
+                      {exerciseCount > 0 && (
+                        <div className="flex items-center gap-1.5 mt-3 pt-2">
+                          {routine.exercises.slice(0, 6).map((ex, idx) => (
+                            <div
+                              key={ex.id || idx}
+                              title={ex.name}
+                              className="w-8 h-8 rounded-lg border border-zinc-200 bg-zinc-100 overflow-hidden shrink-0 flex items-center justify-center relative shadow-2xs"
+                            >
+                              {ex.imageUrl ? (
+                                <img
+                                  src={ex.imageUrl}
+                                  alt={ex.name}
+                                  className="w-full h-full object-cover"
+                                  onError={(ev) => {
+                                    (ev.target as HTMLElement).style.display = 'none';
+                                  }}
+                                />
+                              ) : (
+                                <Dumbbell className="w-3.5 h-3.5 text-zinc-400" />
+                              )}
+                            </div>
+                          ))}
+                          {routine.exercises.length > 6 && (
+                            <span className="text-[11px] font-semibold text-zinc-500 pl-1">
+                              +{routine.exercises.length - 6} más
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Card Actions */}

@@ -10,7 +10,8 @@ import {
   CheckCircle2, 
   Dumbbell, 
   Video,
-  FileText
+  FileText,
+  Image as ImageIcon
 } from 'lucide-react';
 import { Exercise, WorkoutSet } from '../types';
 import { getExerciseTotalSeconds, getSetTotalSeconds, formatSecondsToTime } from '../utils/timeCalculations';
@@ -40,6 +41,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
   onMoveDown,
 }) => {
   const [showVideoInput, setShowVideoInput] = useState(false);
+  const [showImageInput, setShowImageInput] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Check if all sets of this exercise are completed in the current session
@@ -113,13 +115,14 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
       }`}
     >
       {/* Exercise Header */}
-      <div className={`p-4 sm:p-5 border-b transition-colors ${
+      <div className={`p-3.5 sm:p-5 border-b transition-colors ${
         isAllCompleted
           ? 'bg-emerald-100/40 border-emerald-200'
           : 'bg-zinc-50/80 border-zinc-100'
       }`}>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex items-start gap-3 min-w-0 flex-1">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+          {/* Main Title & Notes Section */}
+          <div className="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1">
             <span
               className={`w-7 h-7 rounded-lg text-xs font-bold flex items-center justify-center shrink-0 mt-0.5 ${
                 isAllCompleted
@@ -130,53 +133,73 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
               {exerciseIndex + 1}
             </span>
 
+            {/* Visual Cover Thumbnail */}
+            <div className="w-12 h-12 rounded-xl border border-zinc-200 bg-zinc-100 overflow-hidden shrink-0 flex items-center justify-center relative shadow-xs">
+              {exercise.imageUrl ? (
+                <img
+                  src={exercise.imageUrl}
+                  alt={exercise.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
+              ) : (
+                <Dumbbell className="w-5 h-5 text-zinc-400" />
+              )}
+              {exercise.videoUrl && (
+                <span className="absolute bottom-0.5 right-0.5 p-0.5 rounded bg-black/75 text-white">
+                  <Video className="w-2.5 h-2.5" />
+                </span>
+              )}
+            </div>
+
             <div className="min-w-0 flex-1">
               {isExecutionMode ? (
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className={`text-base sm:text-lg font-bold tracking-tight ${
-                    isAllCompleted ? 'text-emerald-950 line-through opacity-85' : 'text-zinc-900'
-                  }`}>
-                    {exercise.name || 'Ejercicio sin nombre'}
-                  </h3>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className={`text-base sm:text-lg font-bold tracking-tight ${
+                      isAllCompleted ? 'text-emerald-950 line-through opacity-85' : 'text-zinc-900'
+                    }`}>
+                      {exercise.name || 'Ejercicio sin nombre'}
+                    </h3>
 
-                  {isAllCompleted && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-600 text-white shadow-xs">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Completado ({completedSetsCount}/{totalSetsCount})
-                    </span>
+                    {isAllCompleted && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-600 text-white shadow-xs">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Completado ({completedSetsCount}/{totalSetsCount})
+                      </span>
+                    )}
+                  </div>
+                  {exercise.notes && (
+                    <p className="text-xs sm:text-sm text-zinc-600 mt-1 flex items-start gap-1">
+                      <FileText className="w-3.5 h-3.5 shrink-0 mt-0.5 text-zinc-600" />
+                      <span>{exercise.notes}</span>
+                    </p>
                   )}
                 </div>
               ) : (
-                <input
-                  type="text"
-                  value={exercise.name}
-                  onChange={(e) => onUpdateExercise({ ...exercise, name: e.target.value })}
-                  placeholder="Nombre del ejercicio (ej. Press banca, Sentadilla...)"
-                  className="w-full text-base sm:text-lg font-bold text-zinc-900 bg-transparent border-b border-transparent hover:border-zinc-300 focus:border-emerald-600 focus:outline-none transition-colors"
-                />
-              )}
-
-              {/* Notes display or input */}
-              {isExecutionMode ? (
-                exercise.notes && (
-                  <p className="text-xs sm:text-sm text-zinc-600 mt-1 flex items-start gap-1">
-                    <FileText className="w-3.5 h-3.5 shrink-0 mt-0.5 text-zinc-600" />
-                    <span>{exercise.notes}</span>
-                  </p>
-                )
-              ) : (
-                <input
-                  type="text"
-                  value={exercise.notes || ''}
-                  onChange={(e) => onUpdateExercise({ ...exercise, notes: e.target.value })}
-                  placeholder="Notas de técnica o consejos (opcional)"
-                  className="w-full text-xs sm:text-sm text-zinc-600 placeholder:text-zinc-600 bg-transparent border-b border-transparent hover:border-zinc-200 focus:border-zinc-400 focus:outline-none mt-1 transition-colors"
-                />
+                <div className="space-y-1">
+                  <input
+                    type="text"
+                    value={exercise.name}
+                    onChange={(e) => onUpdateExercise({ ...exercise, name: e.target.value })}
+                    placeholder="Nombre del ejercicio (ej. Press banca, Sentadilla...)"
+                    className="w-full text-base sm:text-lg font-bold text-zinc-900 bg-transparent border-b border-zinc-200/80 hover:border-zinc-300 focus:border-emerald-600 focus:bg-white/60 focus:outline-none px-1 py-0.5 rounded transition-colors"
+                  />
+                  <input
+                    type="text"
+                    value={exercise.notes || ''}
+                    onChange={(e) => onUpdateExercise({ ...exercise, notes: e.target.value })}
+                    placeholder="Notas de técnica o consejos (opcional)"
+                    className="w-full text-xs sm:text-sm text-zinc-600 placeholder:text-zinc-600 bg-transparent border-b border-zinc-200/60 hover:border-zinc-300 focus:border-zinc-400 focus:bg-white/60 focus:outline-none px-1 py-0.5 rounded transition-colors"
+                  />
+                </div>
               )}
             </div>
           </div>
 
-          {/* Right Header Actions */}
-          <div className="flex items-center gap-1.5 shrink-0">
+          {/* Action Toolbar - Separate row on mobile, right-aligned on desktop */}
+          <div className="flex items-center justify-between sm:justify-end gap-1.5 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-200/60 shrink-0">
             {/* Estimated Exercise Duration Badge */}
             <div
               className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold ${
@@ -190,66 +213,118 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
               <span>~{formatSecondsToTime(totalExerciseSeconds)}</span>
             </div>
 
-            {!isExecutionMode && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setShowVideoInput(!showVideoInput)}
-                  title="Configurar enlace de video"
-                  className={`p-1.5 rounded-lg border text-xs transition-colors ${
-                    exercise.videoUrl
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                      : 'bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-100'
-                  }`}
-                >
-                  <Video className="w-4 h-4" />
-                </button>
-
-                {onMoveUp && (
+            <div className="flex items-center gap-1">
+              {!isExecutionMode && (
+                <>
                   <button
                     type="button"
-                    onClick={onMoveUp}
-                    title="Mover arriba"
-                    className="p-1.5 rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 transition-colors"
+                    onClick={() => setShowImageInput(!showImageInput)}
+                    title="Configurar imagen miniatura / preview"
+                    className={`p-1.5 rounded-lg border text-xs transition-colors ${
+                      exercise.imageUrl
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : 'bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-100'
+                    }`}
                   >
-                    <ChevronUp className="w-4 h-4" />
+                    <ImageIcon className="w-4 h-4" />
                   </button>
-                )}
 
-                {onMoveDown && (
                   <button
                     type="button"
-                    onClick={onMoveDown}
-                    title="Mover abajo"
-                    className="p-1.5 rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 transition-colors"
+                    onClick={() => setShowVideoInput(!showVideoInput)}
+                    title="Configurar enlace de video"
+                    className={`p-1.5 rounded-lg border text-xs transition-colors ${
+                      exercise.videoUrl
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : 'bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-100'
+                    }`}
                   >
-                    <ChevronDown className="w-4 h-4" />
+                    <Video className="w-4 h-4" />
                   </button>
-                )}
 
+                  {onMoveUp && (
+                    <button
+                      type="button"
+                      onClick={onMoveUp}
+                      title="Mover arriba"
+                      className="p-1.5 rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 transition-colors"
+                    >
+                      <ChevronUp className="w-4 h-4" />
+                    </button>
+                  )}
+
+                  {onMoveDown && (
+                    <button
+                      type="button"
+                      onClick={onMoveDown}
+                      title="Mover abajo"
+                      className="p-1.5 rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 transition-colors"
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={onDeleteExercise}
+                    title="Eliminar ejercicio"
+                    className="p-1.5 rounded-lg border border-red-200 bg-white text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </>
+              )}
+
+              {isExecutionMode && (
                 <button
                   type="button"
-                  onClick={onDeleteExercise}
-                  title="Eliminar ejercicio"
-                  className="p-1.5 rounded-lg border border-red-200 bg-white text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                  onClick={() => setIsCollapsed(!isCollapsed)}
+                  className="p-1.5 rounded-lg text-zinc-500 hover:bg-zinc-200/60 transition-colors"
+                  title={isCollapsed ? 'Desplegar ejercicio' : 'Plegar ejercicio'}
                 >
-                  <Trash2 className="w-4 h-4" />
+                  {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
                 </button>
-              </>
-            )}
+              )}
+            </div>
+          </div>
+        </div>
 
-            {isExecutionMode && (
+        {/* Image input field in Edit mode */}
+        {!isExecutionMode && showImageInput && (
+          <div className="mt-3 pt-3 border-t border-zinc-200 flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg border border-zinc-200 bg-zinc-100 shrink-0 overflow-hidden flex items-center justify-center">
+              {exercise.imageUrl ? (
+                <img
+                  src={exercise.imageUrl}
+                  alt="Preview"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
+              ) : (
+                <ImageIcon className="w-4 h-4 text-zinc-400" />
+              )}
+            </div>
+            <input
+              type="url"
+              value={exercise.imageUrl || ''}
+              onChange={(e) => onUpdateExercise({ ...exercise, imageUrl: e.target.value })}
+              placeholder="URL de imagen preview / cover (ej: https://...)..."
+              className="flex-1 text-xs px-3 py-1.5 rounded-lg border border-zinc-300 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            />
+            {exercise.imageUrl && (
               <button
                 type="button"
-                onClick={() => setIsCollapsed(!isCollapsed)}
-                className="p-1.5 rounded-lg text-zinc-500 hover:bg-zinc-200/60 transition-colors"
-                title={isCollapsed ? 'Desplegar ejercicio' : 'Plegar ejercicio'}
+                onClick={() => onUpdateExercise({ ...exercise, imageUrl: '' })}
+                className="text-xs text-zinc-400 hover:text-red-500 px-1"
+                title="Quitar imagen"
               >
-                {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                Quitar
               </button>
             )}
           </div>
-        </div>
+        )}
 
         {/* Video input field in Edit mode */}
         {!isExecutionMode && showVideoInput && (
@@ -272,19 +347,19 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
       {/* Sets Section */}
       {!isCollapsed && (
         <div className="p-3 sm:p-5">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[340px]">
+          <div className="overflow-x-auto -mx-1 px-1 scrollbar-none">
+            <table className="w-full text-left border-collapse min-w-[310px] sm:min-w-full">
               <thead>
-                <tr className="border-b border-zinc-200 text-[11px] font-bold uppercase tracking-wider text-zinc-600">
-                  <th className="py-2 px-2 text-center w-12">Serie</th>
-                  <th className="py-2 px-2 text-center">Reps</th>
-                  <th className="py-2 px-2 text-center">Peso</th>
-                  <th className="py-2 px-2 text-center">Descanso</th>
-                  <th className="py-2 px-2 text-center hidden sm:table-cell">Tiempo</th>
+                <tr className="border-b border-zinc-200 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-zinc-500">
+                  <th className="py-2.5 px-1 sm:px-2 text-center w-10 sm:w-12">Serie</th>
+                  <th className="py-2.5 px-1 sm:px-2 text-center min-w-[65px] sm:min-w-[80px]">Reps</th>
+                  <th className="py-2.5 px-1 sm:px-2 text-center min-w-[65px] sm:min-w-[80px]">Peso</th>
+                  <th className="py-2.5 px-1 sm:px-2 text-center min-w-[75px] sm:min-w-[90px]">Descanso</th>
+                  <th className="py-2.5 px-1 sm:px-2 text-center hidden md:table-cell">Tiempo</th>
                   {isExecutionMode ? (
-                    <th className="py-2 px-2 text-center w-16">Estado</th>
+                    <th className="py-2.5 px-1 sm:px-2 text-center w-14 sm:w-16">Estado</th>
                   ) : (
-                    <th className="py-2 px-2 text-right w-24">Acciones</th>
+                    <th className="py-2.5 px-1 sm:px-2 text-right w-18 sm:w-24">Acciones</th>
                   )}
                 </tr>
               </thead>
@@ -303,7 +378,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                       }`}
                     >
                       {/* Set Index */}
-                      <td className="py-2.5 px-2 text-center">
+                      <td className="py-2.5 px-1 sm:px-2 text-center">
                         <span
                           className={`inline-block w-6 h-6 leading-6 text-xs font-bold rounded-full ${
                             isCompleted
@@ -316,10 +391,10 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                       </td>
 
                       {/* Reps */}
-                      <td className="py-2.5 px-2 text-center">
+                      <td className="py-2.5 px-1 sm:px-2 text-center">
                         {isExecutionMode ? (
-                          <span className={`text-sm font-semibold ${isCompleted ? 'text-zinc-500' : 'text-zinc-900'}`}>
-                            {set.reps} <span className="text-xs font-normal text-zinc-600">reps</span>
+                          <span className={`text-xs sm:text-sm font-semibold ${isCompleted ? 'text-zinc-500' : 'text-zinc-900'}`}>
+                            {set.reps} <span className="text-[10px] sm:text-xs font-normal text-zinc-500">reps</span>
                           </span>
                         ) : (
                           <div className="flex items-center justify-center">
@@ -329,17 +404,17 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                               max="999"
                               value={set.reps}
                               onChange={(e) => handleUpdateSet(set.id, 'reps', Math.max(1, parseInt(e.target.value) || 1))}
-                              className="w-16 text-center text-sm font-semibold py-1 px-1.5 rounded-lg border border-zinc-200 bg-zinc-50 focus:bg-white focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                              className="w-14 sm:w-16 text-center text-xs sm:text-sm font-semibold py-1 px-1 rounded-lg border border-zinc-200 bg-zinc-50 focus:bg-white focus:ring-1 focus:ring-emerald-500 focus:outline-none"
                             />
                           </div>
                         )}
                       </td>
 
                       {/* Weight */}
-                      <td className="py-2.5 px-2 text-center">
+                      <td className="py-2.5 px-1 sm:px-2 text-center">
                         {isExecutionMode ? (
-                          <span className={`text-sm font-semibold ${isCompleted ? 'text-zinc-500' : 'text-zinc-900'}`}>
-                            {set.weight} <span className="text-xs font-normal text-zinc-600">kg</span>
+                          <span className={`text-xs sm:text-sm font-semibold ${isCompleted ? 'text-zinc-500' : 'text-zinc-900'}`}>
+                            {set.weight} <span className="text-[10px] sm:text-xs font-normal text-zinc-500">kg</span>
                           </span>
                         ) : (
                           <div className="flex items-center justify-center">
@@ -350,16 +425,16 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                               max="999"
                               value={set.weight}
                               onChange={(e) => handleUpdateSet(set.id, 'weight', Math.max(0, parseFloat(e.target.value) || 0))}
-                              className="w-16 text-center text-sm font-semibold py-1 px-1.5 rounded-lg border border-zinc-200 bg-zinc-50 focus:bg-white focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                              className="w-14 sm:w-16 text-center text-xs sm:text-sm font-semibold py-1 px-1 rounded-lg border border-zinc-200 bg-zinc-50 focus:bg-white focus:ring-1 focus:ring-emerald-500 focus:outline-none"
                             />
                           </div>
                         )}
                       </td>
 
                       {/* Rest */}
-                      <td className="py-2.5 px-2 text-center">
+                      <td className="py-2.5 px-1 sm:px-2 text-center">
                         {isExecutionMode ? (
-                          <span className={`text-xs font-medium px-2 py-0.5 rounded-md ${
+                          <span className={`text-[11px] sm:text-xs font-medium px-2 py-0.5 rounded-md ${
                             isCompleted ? 'text-zinc-400 bg-zinc-100' : 'text-zinc-700 bg-zinc-100'
                           }`}>
                             {set.restSeconds}s
@@ -373,20 +448,20 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                               max="600"
                               value={set.restSeconds}
                               onChange={(e) => handleUpdateSet(set.id, 'restSeconds', Math.max(0, parseInt(e.target.value) || 0))}
-                              className="w-16 text-center text-sm font-semibold py-1 px-1.5 rounded-lg border border-zinc-200 bg-zinc-50 focus:bg-white focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                              className="w-13 sm:w-16 text-center text-xs sm:text-sm font-semibold py-1 px-1 rounded-lg border border-zinc-200 bg-zinc-50 focus:bg-white focus:ring-1 focus:ring-emerald-500 focus:outline-none"
                             />
-                            <span className="text-xs text-zinc-400 ml-1">s</span>
+                            <span className="text-[11px] text-zinc-400 ml-0.5">s</span>
                           </div>
                         )}
                       </td>
 
                       {/* Estimated Set Time */}
-                      <td className="py-2.5 px-2 text-center hidden sm:table-cell text-xs text-zinc-600">
+                      <td className="py-2.5 px-1 sm:px-2 text-center hidden md:table-cell text-xs text-zinc-600">
                         ~{formatSecondsToTime(setSeconds)}
                       </td>
 
                       {/* Actions or Checkbox */}
-                      <td className="py-2.5 px-2 text-right">
+                      <td className="py-2.5 px-1 sm:px-2 text-right">
                         {isExecutionMode ? (
                           <div className="flex justify-center">
                             <button
