@@ -9,6 +9,7 @@ import { Routine, RoutineSubMode, ExerciseDefinition, AppTab } from './types';
 import { RoutineList } from './components/RoutineList';
 import { RoutineView } from './components/RoutineView';
 import { ExerciseCatalog } from './components/ExerciseCatalog';
+import { PWAInstallButton } from './components/PWAInstallButton';
 
 const ROUTINES_STORAGE_KEY = 'workout_planner_routines_v2';
 const CATALOG_STORAGE_KEY = 'workout_planner_catalog_v2';
@@ -179,7 +180,7 @@ export default function App() {
                   </span>
                   <div>
                     <span className="text-sm sm:text-base font-black tracking-tight text-zinc-900 block leading-tight">
-                      FitRoutine
+                      WorkoutLog
                     </span>
                     <span className="hidden sm:block text-[10px] text-zinc-500 -mt-0.5 font-medium">
                       Planificador & Ejecutor
@@ -187,46 +188,50 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Main Views Navigation */}
-                <nav className="flex items-center p-1 bg-zinc-100 rounded-xl border border-zinc-200/80 shrink-0">
-                  <button
-                    id="tab-nav-routines"
-                    type="button"
-                    onClick={() => setActiveTab(AppTab.ROUTINES)}
-                    className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shrink-0 ${
-                      activeTab === AppTab.ROUTINES
-                        ? 'bg-white text-zinc-900 shadow-xs'
-                        : 'text-zinc-600 hover:text-zinc-900'
-                    }`}
-                  >
-                    <Flame className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Rutinas</span>
-                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                      activeTab === AppTab.ROUTINES ? 'bg-zinc-100 text-zinc-700' : 'bg-zinc-200 text-zinc-600'
-                    }`}>
-                      {routines.length}
-                    </span>
-                  </button>
+                {/* Right controls: Main Views Navigation + PWA Install */}
+                <div className="flex items-center gap-2">
+                  <nav className="flex items-center p-1 bg-zinc-100 rounded-xl border border-zinc-200/80 shrink-0">
+                    <button
+                      id="tab-nav-routines"
+                      type="button"
+                      onClick={() => setActiveTab(AppTab.ROUTINES)}
+                      className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shrink-0 ${
+                        activeTab === AppTab.ROUTINES
+                          ? 'bg-white text-zinc-900 shadow-xs'
+                          : 'text-zinc-600 hover:text-zinc-900'
+                      }`}
+                    >
+                      <Flame className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>Rutinas</span>
+                      <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                        activeTab === AppTab.ROUTINES ? 'bg-zinc-100 text-zinc-700' : 'bg-zinc-200 text-zinc-600'
+                      }`}>
+                        {routines.length}
+                      </span>
+                    </button>
 
-                  <button
-                    id="tab-nav-catalog"
-                    type="button"
-                    onClick={() => setActiveTab(AppTab.EXERCISES)}
-                    className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shrink-0 ${
-                      activeTab === AppTab.EXERCISES
-                        ? 'bg-white text-zinc-900 shadow-xs'
-                        : 'text-zinc-600 hover:text-zinc-900'
-                    }`}
-                  >
-                    <Dumbbell className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span><span className="hidden sm:inline">Biblioteca </span>Ejercicios</span>
-                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                      activeTab === AppTab.EXERCISES ? 'bg-zinc-100 text-zinc-700' : 'bg-zinc-200 text-zinc-600'
-                    }`}>
-                      {catalog.length}
-                    </span>
-                  </button>
-                </nav>
+                    <button
+                      id="tab-nav-catalog"
+                      type="button"
+                      onClick={() => setActiveTab(AppTab.EXERCISES)}
+                      className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shrink-0 ${
+                        activeTab === AppTab.EXERCISES
+                          ? 'bg-white text-zinc-900 shadow-xs'
+                          : 'text-zinc-600 hover:text-zinc-900'
+                      }`}
+                    >
+                      <Dumbbell className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span><span className="hidden sm:inline">Biblioteca </span>Ejercicios</span>
+                      <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                        activeTab === AppTab.EXERCISES ? 'bg-zinc-100 text-zinc-700' : 'bg-zinc-200 text-zinc-600'
+                      }`}>
+                        {catalog.length}
+                      </span>
+                    </button>
+                  </nav>
+
+                  <PWAInstallButton />
+                </div>
               </div>
             </div>
           </header>

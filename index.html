@@ -1,16 +1,84 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Planificador de Rutinas</title>
-    <meta name="description" content="Planificador y ejecutor minimalista de rutinas de entrenamiento con gestión de series, cálculo de tiempos y modo workout." />
-    <meta property="og:title" content="Planificador de Rutinas" />
-    <meta property="og:description" content="Planificador y ejecutor minimalista de rutinas de entrenamiento con gestión de series, cálculo de tiempos y modo workout." />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    
+    <!-- Primary Title & Meta Description -->
+    <title>WorkoutLog – Planificador y Ejecutor de Rutinas</title>
+    <meta name="description" content="WorkoutLog: planifica y ejecuta tus rutinas de entrenamiento de fuerza y gimnasio. Control de series, repeticiones, pesos, cronómetro de descansos y catálogo de ejercicios." />
+    <meta name="keywords" content="workout log, planificador de rutinas, gimnasio, series y repeticiones, cronómetro descanso gimnasio, entrenamiento de fuerza, fitness app, pwa" />
+    <meta name="author" content="Alberto" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://dawalberto.github.io/workoutlog/" />
+
+    <!-- Favicon & Touch Icons -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="alternate icon" type="image/png" href="favicon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+
+    <!-- Mobile & PWA Meta -->
+    <meta name="theme-color" content="#09090b" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="WorkoutLog" />
+    <meta name="application-name" content="WorkoutLog" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- OpenGraph / Facebook / WhatsApp / LinkedIn -->
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="WorkoutLog" />
+    <meta property="og:url" content="https://dawalberto.github.io/workoutlog/" />
+    <meta property="og:title" content="WorkoutLog – Planificador y Ejecutor de Rutinas" />
+    <meta property="og:description" content="Planifica y ejecuta tus rutinas de entrenamiento de fuerza y gimnasio. Gestión de series, pesos, descansos automáticos con cronómetro y catálogo de ejercicios." />
+    <meta property="og:image" content="https://dawalberto.github.io/workoutlog/og-image.png" />
+    <meta property="og:image:secure_url" content="https://dawalberto.github.io/workoutlog/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="WorkoutLog - Planificador de Rutinas de Entrenamiento" />
+    <meta property="og:locale" content="es_ES" />
+
+    <!-- Twitter / X Cards -->
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://dawalberto.github.io/workoutlog/" />
+    <meta name="twitter:title" content="WorkoutLog – Planificador y Ejecutor de Rutinas" />
+    <meta name="twitter:description" content="Planifica y ejecuta tus rutinas de entrenamiento de fuerza y gimnasio. Gestión de series, pesos, descansos automáticos con cronómetro y catálogo de ejercicios." />
+    <meta name="twitter:image" content="https://dawalberto.github.io/workoutlog/og-image.png" />
+    <meta name="twitter:image:alt" content="WorkoutLog - Planificador de Rutinas de Entrenamiento" />
+
+    <!-- Schema.org JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "WorkoutLog",
+      "alternateName": "WorkoutLog App",
+      "url": "https://dawalberto.github.io/workoutlog/",
+      "applicationCategory": "HealthAndFitnessApplication",
+      "operatingSystem": "All",
+      "browserRequirements": "Requires JavaScript. Requires HTML5.",
+      "description": "Planificador y ejecutor de rutinas de entrenamiento con gestión de series, cálculo de tiempos, cronómetro de descansos y catálogo de ejercicios.",
+      "screenshot": "https://dawalberto.github.io/workoutlog/og-image.png",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "EUR"
+      },
+      "featureList": [
+        "Planificador de rutinas de fuerza y musculación",
+        "Modo entrenamiento con checklist de series en tiempo real",
+        "Temporizador de descanso automático con alertas sonoras",
+        "Biblioteca y catálogo de ejercicios con portada personalizada",
+        "Cálculo automático de duración estimada del entrenamiento",
+        "Instalable como PWA con funcionamiento offline"
+      ]
+    }
+    </script>
   </head>
-  <body>
+  <body class="bg-zinc-50 text-zinc-900 antialiased selection:bg-emerald-500 selection:text-white">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
