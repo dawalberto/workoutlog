@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   Search, 
@@ -43,6 +43,19 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
   const [customRest, setCustomRest] = useState(90);
   const [saveToLibrary, setSaveToLibrary] = useState(true);
 
+  // Visual feedback states for continuous exercise adding
+  const [justAddedId, setJustAddedId] = useState<string | null>(null);
+  const [addedNotification, setAddedNotification] = useState<string | null>(null);
+  const [addedCount, setAddedCount] = useState<number>(0);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setJustAddedId(null);
+      setAddedNotification(null);
+      setAddedCount(0);
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const categories = ['Todos', 'Pecho', 'Espalda', 'Pierna', 'Hombro', 'Brazos', 'Core'];
@@ -81,7 +94,19 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
     };
 
     onAddExercise(newExercise);
-    onClose();
+
+    // Keep modal open, provide visual confirmation and toast feedback
+    setJustAddedId(item.id);
+    setAddedCount((prev) => prev + 1);
+    setAddedNotification(`"${item.name}" añadido a la rutina`);
+
+    setTimeout(() => {
+      setJustAddedId((curr) => (curr === item.id ? null : curr));
+    }, 2200);
+
+    setTimeout(() => {
+      setAddedNotification((curr) => (curr && curr.includes(item.name) ? null : curr));
+    }, 3200);
   };
 
   // Add created in-the-moment
@@ -102,10 +127,12 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
       ? 'def-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6)
       : undefined;
 
+    const createdName = customName.trim();
+
     const newExercise: Exercise = {
       id: 'ex-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
       definitionId: defId,
-      name: customName.trim(),
+      name: createdName,
       category: customCategory,
       imageUrl: customImageUrl.trim(),
       videoUrl: customVideoUrl.trim(),
@@ -117,7 +144,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
     if (saveToLibrary && defId) {
       templateToSave = {
         id: defId,
-        name: customName.trim(),
+        name: createdName,
         category: customCategory,
         imageUrl: customImageUrl.trim(),
         videoUrl: customVideoUrl.trim(),
@@ -131,7 +158,18 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
     }
 
     onAddExercise(newExercise, templateToSave);
-    onClose();
+
+    // Keep modal open, reset form for next exercise, and show visual notification
+    setCustomName('');
+    setCustomImageUrl('');
+    setCustomVideoUrl('');
+    setCustomNotes('');
+    setAddedCount((prev) => prev + 1);
+    setAddedNotification(`"${createdName}" añadido a la rutina`);
+
+    setTimeout(() => {
+      setAddedNotification((curr) => (curr && curr.includes(createdName) ? null : curr));
+    }, 3200);
   };
 
   return (
@@ -139,19 +177,37 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
       <div className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 shadow-2xl max-w-xl w-full max-h-[92vh] sm:max-h-[88vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Header - Fixed at top, never covered */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-zinc-100 shrink-0 bg-white">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 min-w-0">
             <span className="p-1.5 rounded-xl bg-emerald-100 text-emerald-800 shrink-0">
               <Dumbbell className="w-4 h-4" />
             </span>
-            <h2 className="text-base sm:text-lg font-bold text-zinc-900 truncate">Añadir Ejercicio a la Rutina</h2>
+            <div className="min-w-0">
+              <h2 className="text-base sm:text-lg font-bold text-zinc-900 truncate">Añadir Ejercicio a la Rutina</h2>
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors shrink-0"
-          >
-            <X className="w-5 h-5" />
-          </button>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {addedCount > 0 && (
+              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 animate-in zoom-in-75">
+                +{addedCount} añadido{addedCount > 1 ? 's' : ''}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3 py-1.5 text-xs font-bold bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl transition-colors shadow-2xs active:scale-95"
+            >
+              Listo
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors shrink-0"
+              aria-label="Cerrar modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Tab switch: Catalog vs Custom */}
@@ -181,6 +237,23 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
             </button>
           </div>
         </div>
+
+        {/* Floating Notification inside modal when an exercise is added */}
+        {addedNotification && (
+          <div className="mx-4 sm:mx-6 mt-2 px-3.5 py-2 bg-emerald-600 text-white rounded-xl shadow-md text-xs font-semibold flex items-center justify-between gap-2 animate-in fade-in slide-in-from-top-2 duration-150 shrink-0">
+            <div className="flex items-center gap-2 truncate">
+              <Check className="w-4 h-4 stroke-[3] shrink-0 text-white" />
+              <span className="truncate">{addedNotification}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAddedNotification(null)}
+              className="p-0.5 hover:bg-emerald-700 rounded text-emerald-100 hover:text-white"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Content - Single dedicated scroll container */}
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-3 overscroll-contain">
@@ -238,52 +311,86 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {filteredCatalog.map((item) => (
-                    <div
-                      key={item.id}
-                      className="p-2.5 rounded-xl border border-zinc-200 hover:border-emerald-500 hover:bg-emerald-50/30 transition-all flex items-center justify-between gap-3 group"
-                    >
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        {/* Thumbnail */}
-                        <div className="w-12 h-12 rounded-lg bg-zinc-100 border border-zinc-200 overflow-hidden shrink-0 flex items-center justify-center">
-                          {item.imageUrl ? (
-                            <img
-                              src={item.imageUrl}
-                              alt={item.name}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLElement).style.display = 'none';
-                              }}
-                            />
-                          ) : (
-                            <Dumbbell className="w-5 h-5 text-zinc-400" />
-                          )}
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-zinc-100 text-zinc-600 uppercase">
-                              {item.category || 'General'}
-                            </span>
-                          </div>
-                          <h4 className="text-xs sm:text-sm font-bold text-zinc-900 truncate mt-0.5">
-                            {item.name}
-                          </h4>
-                          <p className="text-[11px] text-zinc-500 truncate">
-                            {item.defaultSetsCount || 3} series • {item.defaultReps || 10} reps • {item.defaultWeight || 0} kg • {item.defaultRestSeconds || 90}s rest
-                          </p>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleSelectFromCatalog(item)}
-                        className="px-3 py-1.5 text-xs font-bold rounded-lg bg-zinc-900 text-white group-hover:bg-emerald-600 transition-colors shrink-0 flex items-center gap-1 active:scale-95"
+                  {filteredCatalog.map((item) => {
+                    const isJustAdded = justAddedId === item.id;
+                    return (
+                      <div
+                        key={item.id}
+                        className={`p-2.5 rounded-xl border transition-all flex items-center justify-between gap-3 group ${
+                          isJustAdded
+                            ? 'border-emerald-500 bg-emerald-100/70 ring-2 ring-emerald-400 shadow-md scale-[1.01]'
+                            : 'border-zinc-200 hover:border-emerald-500 hover:bg-emerald-50/30'
+                        }`}
                       >
-                        <Plus className="w-3.5 h-3.5" /> Añadir
-                      </button>
-                    </div>
-                  ))}
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          {/* Thumbnail */}
+                          <div
+                            className={`w-12 h-12 rounded-lg border overflow-hidden shrink-0 flex items-center justify-center transition-colors ${
+                              isJustAdded ? 'bg-emerald-50 border-emerald-300' : 'bg-zinc-100 border-zinc-200'
+                            }`}
+                          >
+                            {item.imageUrl ? (
+                              <img
+                                src={item.imageUrl}
+                                alt={item.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLElement).style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              <Dumbbell className={`w-5 h-5 ${isJustAdded ? 'text-emerald-700' : 'text-zinc-400'}`} />
+                            )}
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md uppercase ${
+                                  isJustAdded ? 'bg-emerald-200/80 text-emerald-900' : 'bg-zinc-100 text-zinc-600'
+                                }`}
+                              >
+                                {item.category || 'General'}
+                              </span>
+                              {isJustAdded && (
+                                <span className="text-[10px] font-bold text-emerald-700 animate-in fade-in">
+                                  ✓ Añadido
+                                </span>
+                              )}
+                            </div>
+                            <h4 className="text-xs sm:text-sm font-bold text-zinc-900 truncate mt-0.5">
+                              {item.name}
+                            </h4>
+                            <p className="text-[11px] text-zinc-500 truncate">
+                              {item.defaultSetsCount || 3} series • {item.defaultReps || 10} reps • {item.defaultWeight || 0} kg • {item.defaultRestSeconds || 90}s rest
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleSelectFromCatalog(item)}
+                          className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all shrink-0 flex items-center gap-1.5 active:scale-95 ${
+                            isJustAdded
+                              ? 'bg-emerald-600 text-white shadow-xs'
+                              : 'bg-zinc-900 text-white group-hover:bg-emerald-600'
+                          }`}
+                        >
+                          {isJustAdded ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 stroke-[3] animate-in zoom-in-50 duration-150" />
+                              <span>¡Añadido!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>Añadir</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

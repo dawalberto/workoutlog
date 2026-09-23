@@ -19,6 +19,7 @@ import { ExerciseCard } from './ExerciseCard';
 import { RestTimerBar } from './RestTimerBar';
 import { AddExerciseModal } from './AddExerciseModal';
 import { ReorderExercisesModal } from './ReorderExercisesModal';
+import { primeAudioContext, requestNotificationPermission } from '../utils/audioBeep';
 
 interface RoutineViewProps {
   routine: Routine;
@@ -43,6 +44,7 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
     initialSeconds: number;
     exerciseName?: string;
     setNumber?: number;
+    key?: number;
   } | null>(null);
 
   const [showAddModal, setShowAddModal] = useState(false);
@@ -64,12 +66,17 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
       const isNowCompleted = !next.has(setId);
       if (isNowCompleted) {
         next.add(setId);
+        // Prime audio & request notification permission during user interaction
+        primeAudioContext();
+        requestNotificationPermission();
+
         // Start rest timer if rest seconds > 0
         if (restSeconds > 0) {
           setActiveTimer({
             initialSeconds: restSeconds,
             exerciseName,
             setNumber,
+            key: Date.now(),
           });
         }
       } else {
@@ -399,6 +406,7 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
       {/* Floating Rest Timer Bar when active */}
       {activeTimer && (
         <RestTimerBar
+          key={activeTimer.key || `${activeTimer.exerciseName}-${activeTimer.setNumber}`}
           initialSeconds={activeTimer.initialSeconds}
           exerciseName={activeTimer.exerciseName}
           setNumber={activeTimer.setNumber}
