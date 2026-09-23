@@ -37,10 +37,10 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
   const [customImageUrl, setCustomImageUrl] = useState('');
   const [customVideoUrl, setCustomVideoUrl] = useState('');
   const [customNotes, setCustomNotes] = useState('');
-  const [customSetsCount, setCustomSetsCount] = useState(3);
-  const [customReps, setCustomReps] = useState(10);
-  const [customWeight, setCustomWeight] = useState(40);
-  const [customRest, setCustomRest] = useState(90);
+  const [customSetsCount, setCustomSetsCount] = useState<number | string>(3);
+  const [customReps, setCustomReps] = useState<number | string>(10);
+  const [customWeight, setCustomWeight] = useState<number | string>(40);
+  const [customRest, setCustomRest] = useState<number | string>(90);
   const [saveToLibrary, setSaveToLibrary] = useState(true);
 
   // Visual feedback states for continuous exercise adding
@@ -102,11 +102,11 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
 
     setTimeout(() => {
       setJustAddedId((curr) => (curr === item.id ? null : curr));
-    }, 2200);
+    }, 1400);
 
     setTimeout(() => {
       setAddedNotification((curr) => (curr && curr.includes(item.name) ? null : curr));
-    }, 3200);
+    }, 1600);
   };
 
   // Add created in-the-moment
@@ -114,13 +114,17 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
     e.preventDefault();
     if (!customName.trim()) return;
 
-    const count = Math.max(1, customSetsCount);
+    const count = Math.max(1, Number(customSetsCount) || 1);
+    const numReps = Math.max(1, Number(customReps) || 1);
+    const numWeight = Math.max(0, Number(customWeight) || 0);
+    const numRest = Math.max(0, Number(customRest) || 0);
+
     const sets: WorkoutSet[] = Array.from({ length: count }, (_, i) => ({
       id: 'set-' + Date.now() + '-' + (i + 1) + '-' + Math.random().toString(36).substring(2, 5),
       setNumber: i + 1,
-      reps: Math.max(1, customReps),
-      weight: Math.max(0, customWeight),
-      restSeconds: Math.max(0, customRest),
+      reps: numReps,
+      weight: numWeight,
+      restSeconds: numRest,
     }));
 
     const defId = saveToLibrary
@@ -150,9 +154,9 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
         videoUrl: customVideoUrl.trim(),
         notes: customNotes.trim(),
         defaultSetsCount: count,
-        defaultReps: customReps,
-        defaultWeight: customWeight,
-        defaultRestSeconds: customRest,
+        defaultReps: numReps,
+        defaultWeight: numWeight,
+        defaultRestSeconds: numRest,
         createdAt: new Date().toISOString(),
       };
     }
@@ -169,7 +173,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
 
     setTimeout(() => {
       setAddedNotification((curr) => (curr && curr.includes(createdName) ? null : curr));
-    }, 3200);
+    }, 1600);
   };
 
   return (
@@ -238,10 +242,10 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
           </div>
         </div>
 
-        {/* Floating Notification inside modal when an exercise is added - Absolute overlay, does NOT displace DOM */}
+        {/* Fixed Notification at top of screen when an exercise is added - Fixed position, does NOT displace DOM */}
         {addedNotification && (
-          <div className="absolute bottom-5 left-4 right-4 sm:left-6 sm:right-6 z-40 pointer-events-none flex justify-center animate-in fade-in slide-in-from-bottom-3 duration-200">
-            <div className="pointer-events-auto bg-zinc-900/95 text-white backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-2xl border border-zinc-700/80 text-xs font-semibold flex items-center justify-between gap-3 max-w-md w-full">
+          <div className="fixed top-3 sm:top-4 left-1/2 -translate-x-1/2 z-[100] w-[calc(100%-2rem)] max-w-md pointer-events-none flex justify-center animate-in fade-in slide-in-from-top-3 duration-150">
+            <div className="pointer-events-auto bg-zinc-950/95 text-white backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-2xl border border-zinc-800 text-xs sm:text-sm font-semibold flex items-center justify-between gap-3 w-full">
               <div className="flex items-center gap-2.5 truncate">
                 <span className="p-1 rounded-lg bg-emerald-500 text-white shrink-0">
                   <Check className="w-3.5 h-3.5 stroke-[3]" />
@@ -252,8 +256,9 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                 type="button"
                 onClick={() => setAddedNotification(null)}
                 className="p-1 hover:bg-white/20 rounded-lg text-zinc-400 hover:text-white shrink-0 transition-colors"
+                aria-label="Cerrar notificación"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -489,7 +494,13 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                       min="1"
                       max="12"
                       value={customSetsCount}
-                      onChange={(e) => setCustomSetsCount(parseInt(e.target.value) || 1)}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => setCustomSetsCount(e.target.value)}
+                      onBlur={() => {
+                        if (!customSetsCount || Number(customSetsCount) < 1) {
+                          setCustomSetsCount(1);
+                        }
+                      }}
                       className="w-full text-center text-xs font-bold py-1.5 rounded-lg border border-zinc-300 bg-white"
                     />
                   </div>
@@ -502,7 +513,13 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                       min="1"
                       max="100"
                       value={customReps}
-                      onChange={(e) => setCustomReps(parseInt(e.target.value) || 1)}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => setCustomReps(e.target.value)}
+                      onBlur={() => {
+                        if (!customReps || Number(customReps) < 1) {
+                          setCustomReps(1);
+                        }
+                      }}
                       className="w-full text-center text-xs font-bold py-1.5 rounded-lg border border-zinc-300 bg-white"
                     />
                   </div>
@@ -516,7 +533,13 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                       min="0"
                       max="500"
                       value={customWeight}
-                      onChange={(e) => setCustomWeight(parseFloat(e.target.value) || 0)}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => setCustomWeight(e.target.value)}
+                      onBlur={() => {
+                        if (customWeight === '' || isNaN(Number(customWeight)) || Number(customWeight) < 0) {
+                          setCustomWeight(0);
+                        }
+                      }}
                       className="w-full text-center text-xs font-bold py-1.5 rounded-lg border border-zinc-300 bg-white"
                     />
                   </div>
@@ -530,7 +553,13 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                       min="0"
                       max="600"
                       value={customRest}
-                      onChange={(e) => setCustomRest(parseInt(e.target.value) || 0)}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => setCustomRest(e.target.value)}
+                      onBlur={() => {
+                        if (customRest === '' || isNaN(Number(customRest)) || Number(customRest) < 0) {
+                          setCustomRest(0);
+                        }
+                      }}
                       className="w-full text-center text-xs font-bold py-1.5 rounded-lg border border-zinc-300 bg-white"
                     />
                   </div>

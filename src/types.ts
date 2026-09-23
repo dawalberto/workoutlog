@@ -1,9 +1,9 @@
 export interface WorkoutSet {
   id: string;
   setNumber: number;
-  reps: number;
-  weight: number; // in kg
-  restSeconds: number; // in seconds (e.g. 60, 90, 120)
+  reps: number | string;
+  weight: number | string; // in kg
+  restSeconds: number | string; // in seconds (e.g. 60, 90, 120)
 }
 
 export interface Exercise {

@@ -166,7 +166,7 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
   return (
     <div id="routine-view-container" className="min-h-screen bg-zinc-50 pb-28">
       {/* Top sticky bar */}
-      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-zinc-200 shadow-2xs">
+      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-zinc-200 shadow-2xs pt-[env(safe-area-inset-top,0px)]">
         <div className="max-w-4xl mx-auto px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-3">
           <button
             id="btn-back-to-routines"

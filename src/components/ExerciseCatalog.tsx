@@ -41,10 +41,10 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
   const [formImageUrl, setFormImageUrl] = useState('');
   const [formVideoUrl, setFormVideoUrl] = useState('');
   const [formNotes, setFormNotes] = useState('');
-  const [formDefaultSets, setFormDefaultSets] = useState(3);
-  const [formDefaultReps, setFormDefaultReps] = useState(10);
-  const [formDefaultWeight, setFormDefaultWeight] = useState(50);
-  const [formDefaultRest, setFormDefaultRest] = useState(90);
+  const [formDefaultSets, setFormDefaultSets] = useState<number | string>(3);
+  const [formDefaultReps, setFormDefaultReps] = useState<number | string>(10);
+  const [formDefaultWeight, setFormDefaultWeight] = useState<number | string>(50);
+  const [formDefaultRest, setFormDefaultRest] = useState<number | string>(90);
   const [imageError, setImageError] = useState(false);
 
   const filteredExercises = exercises.filter((ex) => {
@@ -456,7 +456,13 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
                       min="1"
                       max="12"
                       value={formDefaultSets}
-                      onChange={(e) => setFormDefaultSets(parseInt(e.target.value) || 1)}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => setFormDefaultSets(e.target.value)}
+                      onBlur={() => {
+                        if (!formDefaultSets || Number(formDefaultSets) < 1) {
+                          setFormDefaultSets(1);
+                        }
+                      }}
                       className="w-full text-center text-xs font-bold py-1.5 rounded-lg border border-zinc-300 bg-white"
                     />
                   </div>
@@ -469,7 +475,13 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
                       min="1"
                       max="100"
                       value={formDefaultReps}
-                      onChange={(e) => setFormDefaultReps(parseInt(e.target.value) || 1)}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => setFormDefaultReps(e.target.value)}
+                      onBlur={() => {
+                        if (!formDefaultReps || Number(formDefaultReps) < 1) {
+                          setFormDefaultReps(1);
+                        }
+                      }}
                       className="w-full text-center text-xs font-bold py-1.5 rounded-lg border border-zinc-300 bg-white"
                     />
                   </div>
@@ -483,7 +495,13 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
                       min="0"
                       max="500"
                       value={formDefaultWeight}
-                      onChange={(e) => setFormDefaultWeight(parseFloat(e.target.value) || 0)}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => setFormDefaultWeight(e.target.value)}
+                      onBlur={() => {
+                        if (formDefaultWeight === '' || isNaN(Number(formDefaultWeight)) || Number(formDefaultWeight) < 0) {
+                          setFormDefaultWeight(0);
+                        }
+                      }}
                       className="w-full text-center text-xs font-bold py-1.5 rounded-lg border border-zinc-300 bg-white"
                     />
                   </div>
@@ -497,7 +515,13 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
                       min="0"
                       max="600"
                       value={formDefaultRest}
-                      onChange={(e) => setFormDefaultRest(parseInt(e.target.value) || 0)}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => setFormDefaultRest(e.target.value)}
+                      onBlur={() => {
+                        if (formDefaultRest === '' || isNaN(Number(formDefaultRest)) || Number(formDefaultRest) < 0) {
+                          setFormDefaultRest(0);
+                        }
+                      }}
                       className="w-full text-center text-xs font-bold py-1.5 rounded-lg border border-zinc-300 bg-white"
                     />
                   </div>

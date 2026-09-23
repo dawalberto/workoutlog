@@ -4,9 +4,10 @@ import { Exercise, Routine, WorkoutSet } from '../types';
  * Calculates estimated active work time in seconds for a set based on repetitions.
  * Assuming average 4 seconds per rep (2s eccentric, 1s pause/concentric).
  */
-export function getSetActiveTimeSeconds(reps: number): number {
-  if (!reps || reps <= 0) return 20;
-  return Math.max(15, reps * 4);
+export function getSetActiveTimeSeconds(reps: number | string): number {
+  const num = Number(reps) || 0;
+  if (num <= 0) return 20;
+  return Math.max(15, num * 4);
 }
 
 /**
@@ -14,7 +15,7 @@ export function getSetActiveTimeSeconds(reps: number): number {
  */
 export function getSetTotalSeconds(set: WorkoutSet): number {
   const activeTime = getSetActiveTimeSeconds(set.reps);
-  const restTime = set.restSeconds || 0;
+  const restTime = Number(set.restSeconds) || 0;
   return activeTime + restTime;
 }
 

@@ -68,7 +68,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
   const totalExerciseSeconds = getExerciseTotalSeconds(exercise);
 
   // Handlers for Sets CRUD
-  const handleUpdateSet = (setId: string, field: keyof WorkoutSet, value: number) => {
+  const handleUpdateSet = (setId: string, field: keyof WorkoutSet, value: number | string) => {
     const updatedSets = exercise.sets.map((s) => {
       if (s.id === setId) {
         return { ...s, [field]: value };
@@ -419,7 +419,13 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                               min="1"
                               max="999"
                               value={set.reps}
-                              onChange={(e) => handleUpdateSet(set.id, 'reps', Math.max(1, parseInt(e.target.value) || 1))}
+                              onFocus={(e) => e.target.select()}
+                              onChange={(e) => handleUpdateSet(set.id, 'reps', e.target.value)}
+                              onBlur={() => {
+                                if (!set.reps || isNaN(Number(set.reps)) || Number(set.reps) < 1) {
+                                  handleUpdateSet(set.id, 'reps', 1);
+                                }
+                              }}
                               className="w-14 sm:w-16 text-center text-xs sm:text-sm font-semibold py-1 px-1 rounded-lg border border-zinc-200 bg-zinc-50 focus:bg-white focus:ring-1 focus:ring-emerald-500 focus:outline-none"
                             />
                           </div>
@@ -442,7 +448,13 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                               min="0"
                               max="999"
                               value={set.weight}
-                              onChange={(e) => handleUpdateSet(set.id, 'weight', Math.max(0, parseFloat(e.target.value) || 0))}
+                              onFocus={(e) => e.target.select()}
+                              onChange={(e) => handleUpdateSet(set.id, 'weight', e.target.value)}
+                              onBlur={() => {
+                                if (set.weight === '' || isNaN(Number(set.weight)) || Number(set.weight) < 0) {
+                                  handleUpdateSet(set.id, 'weight', 0);
+                                }
+                              }}
                               className="w-14 sm:w-16 text-center text-xs sm:text-sm font-semibold py-1 px-1 rounded-lg border border-zinc-200 bg-zinc-50 focus:bg-white focus:ring-1 focus:ring-emerald-500 focus:outline-none"
                             />
                           </div>
@@ -467,7 +479,13 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                               min="0"
                               max="600"
                               value={set.restSeconds}
-                              onChange={(e) => handleUpdateSet(set.id, 'restSeconds', Math.max(0, parseInt(e.target.value) || 0))}
+                              onFocus={(e) => e.target.select()}
+                              onChange={(e) => handleUpdateSet(set.id, 'restSeconds', e.target.value)}
+                              onBlur={() => {
+                                if (set.restSeconds === '' || isNaN(Number(set.restSeconds)) || Number(set.restSeconds) < 0) {
+                                  handleUpdateSet(set.id, 'restSeconds', 0);
+                                }
+                              }}
                               className="w-13 sm:w-16 text-center text-xs sm:text-sm font-semibold py-1 px-1 rounded-lg border border-zinc-200 bg-zinc-50 focus:bg-white focus:ring-1 focus:ring-emerald-500 focus:outline-none"
                             />
                             <span className="text-[11px] text-zinc-400 ml-0.5">s</span>
@@ -487,7 +505,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                             <button
                               id={`btn-toggle-set-${set.id}`}
                               type="button"
-                              onClick={() => onToggleSetComplete(set.id, set.restSeconds, exercise.name, set.setNumber)}
+                              onClick={() => onToggleSetComplete(set.id, Number(set.restSeconds) || 0, exercise.name, set.setNumber)}
                               className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 active:scale-90 ${
                                 isCompleted
                                   ? 'bg-emerald-500 text-white shadow-xs'

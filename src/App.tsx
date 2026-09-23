@@ -266,7 +266,7 @@ export default function App() {
       ) : (
         <div className="overflow-x-hidden flex flex-col min-h-screen">
           {/* Main Top Navigation Bar */}
-          <header className="bg-white border-b border-zinc-200 sticky top-0 z-20 shadow-2xs">
+          <header className="bg-white border-b border-zinc-200 sticky top-0 z-20 shadow-2xs pt-[env(safe-area-inset-top,0px)]">
             <div className="max-w-4xl mx-auto px-3 sm:px-6">
               <div className="flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-4">
                 {/* Brand / Logo */}
