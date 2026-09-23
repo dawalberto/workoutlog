@@ -4,6 +4,127 @@
  */
 
 let sharedAudioContext: AudioContext | null = null;
+let lastBeepTime = 0;
+let lastNotificationTime = 0;
+
+let keepAliveAudio: HTMLAudioElement | null = null;
+let silentBlobUrl: string | null = null;
+
+function getSilentAudioBlobUrl(): string {
+  if (silentBlobUrl) return silentBlobUrl;
+  try {
+    const sampleRate = 8000;
+    const numSamples = sampleRate; // 1 second
+    const buffer = new ArrayBuffer(44 + numSamples);
+    const view = new DataView(buffer);
+
+    const writeString = (offset: number, str: string) => {
+      for (let i = 0; i < str.length; i++) {
+        view.setUint8(offset + i, str.charCodeAt(i));
+      }
+    };
+
+    writeString(0, 'RIFF');
+    view.setUint32(4, 36 + numSamples, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true); // PCM
+    view.setUint16(22, 1, true); // mono
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate, true);
+    view.setUint16(32, 1, true);
+    view.setUint16(34, 8, true); // 8-bit
+    writeString(36, 'data');
+    view.setUint32(40, numSamples, true);
+
+    const u8 = new Uint8Array(buffer, 44, numSamples);
+    u8.fill(128); // 8-bit silence
+
+    const blob = new Blob([buffer], { type: 'audio/wav' });
+    silentBlobUrl = URL.createObjectURL(blob);
+    return silentBlobUrl;
+  } catch {
+    return 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+  }
+}
+
+/**
+ * Starts a silent background audio session with MediaSession API support.
+ * This keeps the mobile OS (iOS & Android) from sleeping the web tab / PWA
+ * while the rest countdown is running with the screen locked.
+ */
+export function startRestAudioSession(exerciseName?: string, setNumber?: number): void {
+  primeAudioContext();
+
+  try {
+    if (typeof Audio !== 'undefined') {
+      if (!keepAliveAudio) {
+        const url = getSilentAudioBlobUrl();
+        keepAliveAudio = new Audio(url);
+        keepAliveAudio.loop = true;
+        keepAliveAudio.volume = 0.001; // virtually inaudible / silent
+      }
+      const playPromise = keepAliveAudio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          // Autoplay handled quietly
+        });
+      }
+    }
+  } catch {
+    // Ignore audio initialization errors
+  }
+
+  try {
+    if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
+      const exerciseTitle = exerciseName
+        ? `${exerciseName}${setNumber ? ` (Serie ${setNumber})` : ''}`
+        : 'WorkoutLog';
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: 'Descanso en curso ⏱️',
+        artist: exerciseTitle,
+        album: 'WorkoutLog – Entrenamiento',
+      });
+      navigator.mediaSession.playbackState = 'playing';
+    }
+  } catch {
+    // Ignore mediaSession errors
+  }
+}
+
+/**
+ * Pauses background audio when the user pauses the rest timer.
+ */
+export function pauseRestAudioSession(): void {
+  try {
+    if (keepAliveAudio) {
+      keepAliveAudio.pause();
+    }
+    if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
+      navigator.mediaSession.playbackState = 'paused';
+    }
+  } catch {
+    // Ignore
+  }
+}
+
+/**
+ * Completely stops the background audio when the rest timer finishes or is dismissed.
+ */
+export function stopRestAudioSession(): void {
+  try {
+    if (keepAliveAudio) {
+      keepAliveAudio.pause();
+      keepAliveAudio.currentTime = 0;
+    }
+    if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
+      navigator.mediaSession.playbackState = 'none';
+    }
+  } catch {
+    // Ignore
+  }
+}
 
 function getAudioContext(): AudioContext | null {
   try {
@@ -50,6 +171,10 @@ export function primeAudioContext(): void {
  * Triggers an energetic 3-tone chime immediately: D5 -> G5 -> High C6.
  */
 export function playTimerFinishBeep(): void {
+  const now = Date.now();
+  if (now - lastBeepTime < 2000) return;
+  lastBeepTime = now;
+
   const ctx = getAudioContext();
   if (!ctx) return;
 
@@ -58,7 +183,7 @@ export function playTimerFinishBeep(): void {
       ctx.resume().catch(() => {});
     }
 
-    const now = ctx.currentTime;
+    const audioNow = ctx.currentTime;
     const notes = [
       { freq: 587.33, time: 0, dur: 0.14 },   // D5
       { freq: 783.99, time: 0.15, dur: 0.14 }, // G5
@@ -70,16 +195,16 @@ export function playTimerFinishBeep(): void {
       const gain = ctx.createGain();
 
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, now + time);
+      osc.frequency.setValueAtTime(freq, audioNow + time);
 
-      gain.gain.setValueAtTime(0.45, now + time);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + time + dur);
+      gain.gain.setValueAtTime(0.45, audioNow + time);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioNow + time + dur);
 
       osc.connect(gain);
       gain.connect(ctx.destination);
 
-      osc.start(now + time);
-      osc.stop(now + time + dur);
+      osc.start(audioNow + time);
+      osc.stop(audioNow + time + dur);
     });
   } catch {
     // Ignore
@@ -174,6 +299,7 @@ export function requestNotificationPermission(): void {
 
 /**
  * Shows a native system notification with sound/vibration when the rest ends.
+ * Enforces a 3.5s debounce to guarantee notifications can never fire twice.
  */
 export async function showTimerFinishNotification(
   exerciseName?: string,
@@ -182,30 +308,55 @@ export async function showTimerFinishNotification(
   if (typeof window === 'undefined' || !('Notification' in window)) return;
   if (Notification.permission !== 'granted') return;
 
+  const now = Date.now();
+  if (now - lastNotificationTime < 3500) {
+    return;
+  }
+  lastNotificationTime = now;
+
   const title = '¡Tiempo de descanso terminado! ⏱️';
   const body = exerciseName
     ? `${exerciseName}${setNumber ? ` • Serie ${setNumber}` : ''}: ¡Es hora de la siguiente serie!`
     : '¡Descanso completado! Es hora de la siguiente serie.';
 
+  let iconUrl = 'favicon.png';
+  try {
+    iconUrl = new URL('pwa-192x192.png', window.location.href).href;
+  } catch {
+    iconUrl = 'favicon.png';
+  }
+
+  const notificationOptions = {
+    body,
+    icon: iconUrl,
+    badge: iconUrl,
+    tag: 'workoutlog-rest-timer',
+    renotify: true,
+    requireInteraction: false,
+    silent: false,
+    vibrate: [400, 150, 400, 150, 700],
+  };
+
   try {
     if ('serviceWorker' in navigator) {
-      const reg = await navigator.serviceWorker.ready;
+      // Race getRegistration with a 600ms timeout to prevent hanging if SW is transitioning
+      const regPromise = navigator.serviceWorker.getRegistration();
+      const timeoutPromise = new Promise<undefined>((resolve) => setTimeout(() => resolve(undefined), 600));
+      const reg = await Promise.race([regPromise, timeoutPromise]);
       if (reg && reg.showNotification) {
-        await reg.showNotification(title, {
-          body,
-          icon: 'favicon.png',
-          badge: 'favicon.png',
-          tag: 'rest-timer-finished',
-          silent: false,
-        } as NotificationOptions);
+        await reg.showNotification(title, notificationOptions as NotificationOptions);
         return;
       }
     }
+  } catch (err) {
+    console.warn('Service worker notification error, falling back to Notification:', err);
+  }
 
+  try {
     new Notification(title, {
       body,
-      icon: 'favicon.png',
-      tag: 'rest-timer-finished',
+      icon: iconUrl,
+      tag: 'workoutlog-rest-timer',
     });
   } catch {
     // Ignore notification errors

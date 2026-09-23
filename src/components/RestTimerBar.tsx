@@ -6,6 +6,9 @@ import {
   scheduleTimerFinishBeep,
   triggerTimerVibration,
   showTimerFinishNotification,
+  startRestAudioSession,
+  pauseRestAudioSession,
+  stopRestAudioSession,
 } from '../utils/audioBeep';
 
 interface RestTimerBarProps {
@@ -26,6 +29,9 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [hasFinished, setHasFinished] = useState<boolean>(false);
 
+  // Synchronous ref to prevent double-firing when returning from background / screen lock
+  const hasFinishedRef = useRef<boolean>(false);
+
   // Accurate target timestamp (ms since epoch)
   const targetEndTimeRef = useRef<number>(Date.now() + initialSeconds * 1000);
   const remainingWhenPausedRef = useRef<number>(initialSeconds * 1000);
@@ -33,8 +39,15 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
   const workerRef = useRef<Worker | null>(null);
 
   const handleFinish = useCallback(() => {
+    // Strictly execute only once per timer run
+    if (hasFinishedRef.current) return;
+    hasFinishedRef.current = true;
     setHasFinished(true);
     setSecondsLeft(0);
+
+    // Stop keep-alive background audio session
+    stopRestAudioSession();
+
     // 1. Play finish chime
     playTimerFinishBeep();
     // 2. Trigger device vibration
@@ -56,19 +69,20 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
 
   // Update check based on wall-clock time
   const checkTick = useCallback(() => {
-    if (isPaused || hasFinished) return;
+    if (isPaused || hasFinishedRef.current) return;
     const now = Date.now();
     const remainingMs = targetEndTimeRef.current - now;
     const remainingSec = Math.max(0, Math.ceil(remainingMs / 1000));
     setSecondsLeft(remainingSec);
 
-    if (remainingMs <= 0 && !hasFinished) {
+    if (remainingMs <= 0) {
       handleFinish();
     }
-  }, [isPaused, hasFinished, handleFinish]);
+  }, [isPaused, handleFinish]);
 
   // Reset when initialSeconds changes
   useEffect(() => {
+    hasFinishedRef.current = false;
     targetEndTimeRef.current = Date.now() + initialSeconds * 1000;
     remainingWhenPausedRef.current = initialSeconds * 1000;
     setSecondsLeft(initialSeconds);
@@ -77,14 +91,16 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
     setHasFinished(false);
 
     scheduleAudio(initialSeconds);
+    startRestAudioSession(exerciseName, setNumber);
 
     return () => {
       if (scheduledAudioCancelRef.current) {
         scheduledAudioCancelRef.current();
         scheduledAudioCancelRef.current = null;
       }
+      stopRestAudioSession();
     };
-  }, [initialSeconds, scheduleAudio]);
+  }, [initialSeconds, scheduleAudio, exerciseName, setNumber]);
 
   // Setup inline background Web Worker + Page Visibility listeners
   useEffect(() => {
@@ -157,10 +173,12 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
       setIsPaused(false);
       const remainingSec = Math.max(0, Math.ceil(remainingWhenPausedRef.current / 1000));
       scheduleAudio(remainingSec);
+      startRestAudioSession(exerciseName, setNumber);
     } else {
       // Pausing
       remainingWhenPausedRef.current = Math.max(0, targetEndTimeRef.current - Date.now());
       setIsPaused(true);
+      pauseRestAudioSession();
       if (scheduledAudioCancelRef.current) {
         scheduledAudioCancelRef.current();
         scheduledAudioCancelRef.current = null;
@@ -170,6 +188,7 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
 
   // Handle Add Extra Time (+30s)
   const addExtraTime = (extra: number) => {
+    hasFinishedRef.current = false;
     if (hasFinished) {
       targetEndTimeRef.current = Date.now() + extra * 1000;
       setSecondsLeft(extra);
@@ -177,6 +196,7 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
       setHasFinished(false);
       setIsPaused(false);
       scheduleAudio(extra);
+      startRestAudioSession(exerciseName, setNumber);
     } else if (isPaused) {
       remainingWhenPausedRef.current += extra * 1000;
       const newSec = Math.ceil(remainingWhenPausedRef.current / 1000);
@@ -188,6 +208,7 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
       setSecondsLeft(newRemainingSec);
       setTotalSeconds((prev) => Math.max(prev, newRemainingSec));
       scheduleAudio(newRemainingSec);
+      startRestAudioSession(exerciseName, setNumber);
     }
   };
 
