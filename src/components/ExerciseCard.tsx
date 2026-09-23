@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Check, 
   Trash2, 
@@ -42,12 +42,28 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
 }) => {
   const [showVideoInput, setShowVideoInput] = useState(false);
   const [showImageInput, setShowImageInput] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Check if all sets of this exercise are completed in the current session
   const totalSetsCount = exercise.sets.length;
   const completedSetsCount = exercise.sets.filter((s) => completedSetIds.has(s.id)).length;
   const isAllCompleted = totalSetsCount > 0 && completedSetsCount === totalSetsCount;
+
+  // Auto-collapse when all sets are completed in execution mode
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => isExecutionMode && isAllCompleted);
+  const prevAllCompletedRef = useRef<boolean>(isAllCompleted);
+  const prevExecutionModeRef = useRef<boolean>(isExecutionMode);
+
+  useEffect(() => {
+    if (isExecutionMode) {
+      if (isAllCompleted && (!prevAllCompletedRef.current || !prevExecutionModeRef.current)) {
+        setIsCollapsed(true);
+      } else if (!isAllCompleted && prevAllCompletedRef.current) {
+        setIsCollapsed(false);
+      }
+    }
+    prevAllCompletedRef.current = isAllCompleted;
+    prevExecutionModeRef.current = isExecutionMode;
+  }, [isExecutionMode, isAllCompleted]);
 
   const totalExerciseSeconds = getExerciseTotalSeconds(exercise);
 
@@ -398,6 +414,8 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                           <div className="flex items-center justify-center">
                             <input
                               type="number"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
                               min="1"
                               max="999"
                               value={set.reps}
@@ -418,6 +436,8 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                           <div className="flex items-center justify-center">
                             <input
                               type="number"
+                              inputMode="decimal"
+                              pattern="[0-9]*[.,]?[0-9]*"
                               step="0.5"
                               min="0"
                               max="999"
@@ -441,6 +461,8 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                           <div className="flex items-center justify-center">
                             <input
                               type="number"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
                               step="5"
                               min="0"
                               max="600"

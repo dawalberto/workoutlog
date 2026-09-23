@@ -451,6 +451,8 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
                     <label className="block text-[10px] font-bold text-zinc-600 mb-1">Nº Series</label>
                     <input
                       type="number"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       min="1"
                       max="12"
                       value={formDefaultSets}
@@ -462,6 +464,8 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
                     <label className="block text-[10px] font-bold text-zinc-600 mb-1">Reps / Serie</label>
                     <input
                       type="number"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       min="1"
                       max="100"
                       value={formDefaultReps}
@@ -473,6 +477,8 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
                     <label className="block text-[10px] font-bold text-zinc-600 mb-1">Peso (kg)</label>
                     <input
                       type="number"
+                      inputMode="decimal"
+                      pattern="[0-9]*[.,]?[0-9]*"
                       step="0.5"
                       min="0"
                       max="500"
@@ -485,6 +491,8 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
                     <label className="block text-[10px] font-bold text-zinc-600 mb-1">Descanso (s)</label>
                     <input
                       type="number"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       step="5"
                       min="0"
                       max="600"

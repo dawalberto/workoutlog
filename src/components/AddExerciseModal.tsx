@@ -174,7 +174,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-hidden">
-      <div className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 shadow-2xl max-w-xl w-full max-h-[92vh] sm:max-h-[88vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      <div className="relative bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 shadow-2xl max-w-xl w-full max-h-[92vh] sm:max-h-[88vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Header - Fixed at top, never covered */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-zinc-100 shrink-0 bg-white">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -238,20 +238,24 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
           </div>
         </div>
 
-        {/* Floating Notification inside modal when an exercise is added */}
+        {/* Floating Notification inside modal when an exercise is added - Absolute overlay, does NOT displace DOM */}
         {addedNotification && (
-          <div className="mx-4 sm:mx-6 mt-2 px-3.5 py-2 bg-emerald-600 text-white rounded-xl shadow-md text-xs font-semibold flex items-center justify-between gap-2 animate-in fade-in slide-in-from-top-2 duration-150 shrink-0">
-            <div className="flex items-center gap-2 truncate">
-              <Check className="w-4 h-4 stroke-[3] shrink-0 text-white" />
-              <span className="truncate">{addedNotification}</span>
+          <div className="absolute bottom-5 left-4 right-4 sm:left-6 sm:right-6 z-40 pointer-events-none flex justify-center animate-in fade-in slide-in-from-bottom-3 duration-200">
+            <div className="pointer-events-auto bg-zinc-900/95 text-white backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-2xl border border-zinc-700/80 text-xs font-semibold flex items-center justify-between gap-3 max-w-md w-full">
+              <div className="flex items-center gap-2.5 truncate">
+                <span className="p-1 rounded-lg bg-emerald-500 text-white shrink-0">
+                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                </span>
+                <span className="truncate">{addedNotification}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAddedNotification(null)}
+                className="p-1 hover:bg-white/20 rounded-lg text-zinc-400 hover:text-white shrink-0 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => setAddedNotification(null)}
-              className="p-0.5 hover:bg-emerald-700 rounded text-emerald-100 hover:text-white"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
           </div>
         )}
 
@@ -480,6 +484,8 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                     <label className="block text-[10px] font-bold text-zinc-500 mb-1">Series</label>
                     <input
                       type="number"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       min="1"
                       max="12"
                       value={customSetsCount}
@@ -491,6 +497,8 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                     <label className="block text-[10px] font-bold text-zinc-500 mb-1">Reps</label>
                     <input
                       type="number"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       min="1"
                       max="100"
                       value={customReps}
@@ -502,6 +510,8 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                     <label className="block text-[10px] font-bold text-zinc-500 mb-1">Peso (kg)</label>
                     <input
                       type="number"
+                      inputMode="decimal"
+                      pattern="[0-9]*[.,]?[0-9]*"
                       step="0.5"
                       min="0"
                       max="500"
@@ -514,6 +524,8 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                     <label className="block text-[10px] font-bold text-zinc-500 mb-1">Descanso (s)</label>
                     <input
                       type="number"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       step="5"
                       min="0"
                       max="600"
