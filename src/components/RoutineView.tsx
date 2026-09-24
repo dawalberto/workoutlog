@@ -19,12 +19,7 @@ import { ExerciseCard } from './ExerciseCard';
 import { RestTimerBar } from './RestTimerBar';
 import { AddExerciseModal } from './AddExerciseModal';
 import { ReorderExercisesModal } from './ReorderExercisesModal';
-import {
-  primeAudioContext,
-  requestNotificationPermission,
-  startRestAudioSession,
-  stopRestAudioSession,
-} from '../utils/audioBeep';
+import { initRestAudioContext } from '../utils/audioBeep';
 
 interface RoutineViewProps {
   routine: Routine;
@@ -71,13 +66,11 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
       const isNowCompleted = !next.has(setId);
       if (isNowCompleted) {
         next.add(setId);
-        // Prime audio, start background session & request notification permission during user interaction
-        primeAudioContext();
-        requestNotificationPermission();
+        // Ensure ambient audio context is initialized on user gesture without interrupting music
+        initRestAudioContext();
 
         // Start rest timer if rest seconds > 0
         if (restSeconds > 0) {
-          startRestAudioSession(exerciseName, setNumber);
           setActiveTimer({
             initialSeconds: restSeconds,
             exerciseName,
@@ -94,7 +87,6 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
 
   const handleResetSession = () => {
     if (window.confirm('¿Reiniciar el progreso de la sesión actual?')) {
-      stopRestAudioSession();
       setCompletedSetIds(new Set());
       setActiveTimer(null);
     }

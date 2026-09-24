@@ -1,17 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Play, Pause, X, Plus, Bell } from 'lucide-react';
 import { formatStopwatch } from '../utils/timeCalculations';
-import {
-  playTimerFinishBeep,
-  scheduleTimerFinishBeep,
-  triggerTimerVibration,
-  showTimerFinishNotification,
-  scheduleRestTimerNotification,
-  cancelScheduledNotification,
-  startRestAudioSession,
-  pauseRestAudioSession,
-  stopRestAudioSession,
-} from '../utils/audioBeep';
+import { playTimerFinishBeep, triggerTimerVibration } from '../utils/audioBeep';
 
 interface RestTimerBarProps {
   initialSeconds: number;
@@ -31,47 +21,30 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [hasFinished, setHasFinished] = useState<boolean>(false);
 
-  // Synchronous ref to prevent double-firing when returning from background / screen lock
+  // Synchronous ref to prevent double-firing
   const hasFinishedRef = useRef<boolean>(false);
 
-  // Accurate target timestamp (ms since epoch)
+  // Accurate target timestamp (wall-clock ms since epoch)
   const targetEndTimeRef = useRef<number>(Date.now() + initialSeconds * 1000);
   const remainingWhenPausedRef = useRef<number>(initialSeconds * 1000);
-  const scheduledAudioCancelRef = useRef<(() => void) | null>(null);
   const workerRef = useRef<Worker | null>(null);
 
-  const handleFinish = useCallback(() => {
+  const handleFinish = useCallback((shouldPlaySound: boolean = false) => {
     // Strictly execute only once per timer run
     if (hasFinishedRef.current) return;
     hasFinishedRef.current = true;
     setHasFinished(true);
     setSecondsLeft(0);
 
-    // Stop keep-alive background audio session
-    stopRestAudioSession();
-
-    // 1. Play finish chime
-    playTimerFinishBeep();
-    // 2. Trigger device vibration
-    triggerTimerVibration();
-    // 3. Post system notification with vibration and alert
-    showTimerFinishNotification(exerciseName, setNumber);
-  }, [exerciseName, setNumber]);
-
-  // Schedule audio chime whenever active and running
-  const scheduleAudio = useCallback((remainingSeconds: number) => {
-    if (scheduledAudioCancelRef.current) {
-      scheduledAudioCancelRef.current();
-      scheduledAudioCancelRef.current = null;
+    // Only play sound & vibration if the user was actively inside the app when it ended.
+    // No push notification, no background wake, no music interruption.
+    if (shouldPlaySound) {
+      playTimerFinishBeep();
+      triggerTimerVibration();
     }
-    if (remainingSeconds > 0) {
-      scheduledAudioCancelRef.current = scheduleTimerFinishBeep(remainingSeconds, () => {
-        handleFinish();
-      });
-    }
-  }, [handleFinish]);
+  }, []);
 
-  // Update check based on wall-clock time
+  // Update check based on real wall-clock time
   const checkTick = useCallback(() => {
     if (isPaused || hasFinishedRef.current) return;
     const now = Date.now();
@@ -80,11 +53,14 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
     setSecondsLeft(remainingSec);
 
     if (remainingMs <= 0) {
-      handleFinish();
+      // If the app is active/visible and the timer finished just now (not hours/minutes ago in background)
+      const isInsideApp = typeof document !== 'undefined' && !document.hidden;
+      const wasJustReached = remainingMs > -1500;
+      handleFinish(isInsideApp && wasJustReached);
     }
   }, [isPaused, handleFinish]);
 
-  // Reset when initialSeconds changes
+  // Reset when initialSeconds or exercise/set changes
   useEffect(() => {
     hasFinishedRef.current = false;
     const target = Date.now() + initialSeconds * 1000;
@@ -94,24 +70,9 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
     setTotalSeconds(initialSeconds);
     setIsPaused(false);
     setHasFinished(false);
+  }, [initialSeconds, exerciseName, setNumber]);
 
-    scheduleAudio(initialSeconds);
-    startRestAudioSession(exerciseName, setNumber);
-
-    // Schedule notification in OS AlarmManager via Notification Triggers API if available
-    scheduleRestTimerNotification(target, exerciseName, setNumber);
-
-    return () => {
-      if (scheduledAudioCancelRef.current) {
-        scheduledAudioCancelRef.current();
-        scheduledAudioCancelRef.current = null;
-      }
-      stopRestAudioSession();
-      cancelScheduledNotification();
-    };
-  }, [initialSeconds, scheduleAudio, exerciseName, setNumber]);
-
-  // Setup inline background Web Worker + Page Visibility listeners
+  // Setup ticking Web Worker + fallback interval + Page Visibility / Focus listeners
   useEffect(() => {
     if (isPaused || hasFinished) return;
 
@@ -181,27 +142,16 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
       const target = Date.now() + remainingWhenPausedRef.current;
       targetEndTimeRef.current = target;
       setIsPaused(false);
-      const remainingSec = Math.max(0, Math.ceil(remainingWhenPausedRef.current / 1000));
-      scheduleAudio(remainingSec);
-      startRestAudioSession(exerciseName, setNumber);
-      scheduleRestTimerNotification(target, exerciseName, setNumber);
     } else {
       // Pausing
       remainingWhenPausedRef.current = Math.max(0, targetEndTimeRef.current - Date.now());
       setIsPaused(true);
-      pauseRestAudioSession();
-      cancelScheduledNotification();
-      if (scheduledAudioCancelRef.current) {
-        scheduledAudioCancelRef.current();
-        scheduledAudioCancelRef.current = null;
-      }
     }
   };
 
   // Handle Add Extra Time (+30s)
   const addExtraTime = (extra: number) => {
     hasFinishedRef.current = false;
-    cancelScheduledNotification();
 
     if (hasFinished) {
       const target = Date.now() + extra * 1000;
@@ -210,9 +160,6 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
       setTotalSeconds(extra);
       setHasFinished(false);
       setIsPaused(false);
-      scheduleAudio(extra);
-      startRestAudioSession(exerciseName, setNumber);
-      scheduleRestTimerNotification(target, exerciseName, setNumber);
     } else if (isPaused) {
       remainingWhenPausedRef.current += extra * 1000;
       const newSec = Math.ceil(remainingWhenPausedRef.current / 1000);
@@ -224,9 +171,6 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
       const newRemainingSec = Math.max(0, Math.ceil((target - Date.now()) / 1000));
       setSecondsLeft(newRemainingSec);
       setTotalSeconds((prev) => Math.max(prev, newRemainingSec));
-      scheduleAudio(newRemainingSec);
-      startRestAudioSession(exerciseName, setNumber);
-      scheduleRestTimerNotification(target, exerciseName, setNumber);
     }
   };
 
