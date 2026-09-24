@@ -117,7 +117,7 @@ export const WorkoutSummaryModal: React.FC<WorkoutSummaryModalProps> = ({ summar
             onClick={onClose}
             className="w-full sm:w-auto px-6 py-2.5 text-xs sm:text-sm font-bold text-white bg-zinc-900 hover:bg-zinc-800 rounded-xl transition-all shadow-sm active:scale-95 text-center"
           >
-            Aceptar y guardar
+            Aceptar
           </button>
         </div>
       </div>

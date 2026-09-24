@@ -200,11 +200,6 @@ export default function App() {
 
     // 2. Open summary celebration modal
     setWorkoutSummary(summary);
-
-    // 3. Show confirmation feedback toast
-    setImportFeedback(
-      `🏆 ¡Entrenamiento "${summary.routineName}" finalizado! ${summary.completedSetsCount}/${summary.totalSetsCount} series en ${formatDetailedDuration(summary.durationSeconds)}`
-    );
   };
 
   // Catalog CRUD handlers
