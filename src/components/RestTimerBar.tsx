@@ -63,9 +63,11 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
       scheduledAudioCancelRef.current = null;
     }
     if (remainingSeconds > 0) {
-      scheduledAudioCancelRef.current = scheduleTimerFinishBeep(remainingSeconds);
+      scheduledAudioCancelRef.current = scheduleTimerFinishBeep(remainingSeconds, () => {
+        handleFinish();
+      });
     }
-  }, []);
+  }, [handleFinish]);
 
   // Update check based on wall-clock time
   const checkTick = useCallback(() => {

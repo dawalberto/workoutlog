@@ -7,122 +7,89 @@ let sharedAudioContext: AudioContext | null = null;
 let lastBeepTime = 0;
 let lastNotificationTime = 0;
 
-let keepAliveAudio: HTMLAudioElement | null = null;
-let silentBlobUrl: string | null = null;
+let silentAudioSource: AudioBufferSourceNode | null = null;
+let silentGain: GainNode | null = null;
 
-function getSilentAudioBlobUrl(): string {
-  if (silentBlobUrl) return silentBlobUrl;
+function stopSilentAudio(): void {
   try {
-    const sampleRate = 8000;
-    const numSamples = sampleRate; // 1 second
-    const buffer = new ArrayBuffer(44 + numSamples);
-    const view = new DataView(buffer);
-
-    const writeString = (offset: number, str: string) => {
-      for (let i = 0; i < str.length; i++) {
-        view.setUint8(offset + i, str.charCodeAt(i));
-      }
-    };
-
-    writeString(0, 'RIFF');
-    view.setUint32(4, 36 + numSamples, true);
-    writeString(8, 'WAVE');
-    writeString(12, 'fmt ');
-    view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true); // PCM
-    view.setUint16(22, 1, true); // mono
-    view.setUint32(24, sampleRate, true);
-    view.setUint32(28, sampleRate, true);
-    view.setUint16(32, 1, true);
-    view.setUint16(34, 8, true); // 8-bit
-    writeString(36, 'data');
-    view.setUint32(40, numSamples, true);
-
-    const u8 = new Uint8Array(buffer, 44, numSamples);
-    u8.fill(128); // 8-bit silence
-
-    const blob = new Blob([buffer], { type: 'audio/wav' });
-    silentBlobUrl = URL.createObjectURL(blob);
-    return silentBlobUrl;
+    if (silentAudioSource) {
+      silentAudioSource.stop();
+      silentAudioSource.disconnect();
+      silentAudioSource = null;
+    }
+    if (silentGain) {
+      silentGain.disconnect();
+      silentGain = null;
+    }
   } catch {
-    return 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+    // Ignore
   }
 }
 
 /**
- * Starts a silent background audio session with MediaSession API support.
- * This keeps the mobile OS (iOS & Android) from sleeping the web tab / PWA
- * while the rest countdown is running with the screen locked.
+ * Starts a silent Web Audio buffer loop.
+ * Unlike HTML5 <audio> or navigator.mediaSession:
+ * 1. Web Audio API does NOT take exclusive audio focus, so Spotify, Apple Music, and Podcasts are NEVER paused!
+ * 2. Web Audio API does NOT create a lock screen music player widget!
+ * 3. It keeps the browser's audio rendering clock running in the background.
  */
-export function startRestAudioSession(exerciseName?: string, setNumber?: number): void {
-  primeAudioContext();
+export function startRestAudioSession(_exerciseName?: string, _setNumber?: number): void {
+  const ctx = getAudioContext();
+  if (!ctx) return;
 
   try {
-    if (typeof Audio !== 'undefined') {
-      if (!keepAliveAudio) {
-        const url = getSilentAudioBlobUrl();
-        keepAliveAudio = new Audio(url);
-        keepAliveAudio.loop = true;
-        keepAliveAudio.volume = 0.001; // virtually inaudible / silent
-      }
-      const playPromise = keepAliveAudio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(() => {
-          // Autoplay handled quietly
-        });
-      }
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
     }
+
+    // Explicitly clear any existing MediaSession metadata so mobile OS never displays a playback widget
+    if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
+      try {
+        navigator.mediaSession.metadata = null;
+        navigator.mediaSession.playbackState = 'none';
+      } catch {}
+    }
+
+    // Stop previous silent loop if any
+    stopSilentAudio();
+
+    // Create 1-second silent AudioBuffer and loop it
+    const buffer = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+    silentAudioSource = ctx.createBufferSource();
+    silentAudioSource.buffer = buffer;
+    silentAudioSource.loop = true;
+
+    silentGain = ctx.createGain();
+    silentGain.gain.value = 0.00001; // Inaudible, maintains active audio pipeline without stealing focus
+
+    silentAudioSource.connect(silentGain);
+    silentGain.connect(ctx.destination);
+
+    silentAudioSource.start(0);
   } catch {
     // Ignore audio initialization errors
   }
-
-  try {
-    if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
-      const exerciseTitle = exerciseName
-        ? `${exerciseName}${setNumber ? ` (Serie ${setNumber})` : ''}`
-        : 'WorkoutLog';
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: 'Descanso en curso ⏱️',
-        artist: exerciseTitle,
-        album: 'WorkoutLog – Entrenamiento',
-      });
-      navigator.mediaSession.playbackState = 'playing';
-    }
-  } catch {
-    // Ignore mediaSession errors
-  }
 }
 
 /**
- * Pauses background audio when the user pauses the rest timer.
+ * Pauses background audio session when the user pauses the rest timer.
  */
 export function pauseRestAudioSession(): void {
-  try {
-    if (keepAliveAudio) {
-      keepAliveAudio.pause();
-    }
-    if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
-      navigator.mediaSession.playbackState = 'paused';
-    }
-  } catch {
-    // Ignore
-  }
+  stopSilentAudio();
 }
 
 /**
- * Completely stops the background audio when the rest timer finishes or is dismissed.
+ * Completely stops the background audio session when the rest timer finishes or is dismissed.
  */
 export function stopRestAudioSession(): void {
-  try {
-    if (keepAliveAudio) {
-      keepAliveAudio.pause();
-      keepAliveAudio.currentTime = 0;
-    }
-    if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
+  stopSilentAudio();
+
+  // Clear any MediaSession state
+  if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
+    try {
+      navigator.mediaSession.metadata = null;
       navigator.mediaSession.playbackState = 'none';
-    }
-  } catch {
-    // Ignore
+    } catch {}
   }
 }
 
@@ -216,7 +183,10 @@ export function playTimerFinishBeep(): void {
  * at `secondsInFuture`. This allows the sound to play even if the screen is locked!
  * Returns a cancel function.
  */
-export function scheduleTimerFinishBeep(secondsInFuture: number): () => void {
+export function scheduleTimerFinishBeep(
+  secondsInFuture: number,
+  onAudioFinish?: () => void
+): () => void {
   const ctx = getAudioContext();
   if (!ctx || secondsInFuture <= 0) return () => {};
 
@@ -234,7 +204,7 @@ export function scheduleTimerFinishBeep(secondsInFuture: number): () => void {
 
     const activeOscillators: OscillatorNode[] = [];
 
-    notes.forEach(({ freq, time, dur }) => {
+    notes.forEach(({ freq, time, dur }, index) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
@@ -250,6 +220,12 @@ export function scheduleTimerFinishBeep(secondsInFuture: number): () => void {
       osc.start(startTime + time);
       osc.stop(startTime + time + dur);
 
+      if (index === notes.length - 1 && onAudioFinish) {
+        osc.onended = () => {
+          onAudioFinish();
+        };
+      }
+
       activeOscillators.push(osc);
     });
 
@@ -257,6 +233,7 @@ export function scheduleTimerFinishBeep(secondsInFuture: number): () => void {
       try {
         activeOscillators.forEach((osc) => {
           try {
+            osc.onended = null;
             osc.stop();
             osc.disconnect();
           } catch {}
