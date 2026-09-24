@@ -9,6 +9,40 @@ let lastNotificationTime = 0;
 
 let silentAudioSource: AudioBufferSourceNode | null = null;
 let silentGain: GainNode | null = null;
+let wakeLockSentinel: any = null;
+
+/**
+ * Requests the Screen Wake Lock API to prevent the device screen from turning off
+ * while a rest timer is counting down.
+ */
+export async function requestScreenWakeLock(): Promise<boolean> {
+  if (typeof navigator !== 'undefined' && 'wakeLock' in navigator) {
+    try {
+      if (!wakeLockSentinel) {
+        wakeLockSentinel = await (navigator as any).wakeLock.request('screen');
+        wakeLockSentinel.addEventListener('release', () => {
+          wakeLockSentinel = null;
+        });
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
+/**
+ * Releases the screen wake lock when timer finishes or closes.
+ */
+export function releaseScreenWakeLock(): void {
+  if (wakeLockSentinel) {
+    try {
+      wakeLockSentinel.release();
+    } catch {}
+    wakeLockSentinel = null;
+  }
+}
 
 function stopSilentAudio(): void {
   try {
@@ -31,13 +65,20 @@ function stopSilentAudio(): void {
  * Unlike HTML5 <audio> or navigator.mediaSession:
  * 1. Web Audio API does NOT take exclusive audio focus, so Spotify, Apple Music, and Podcasts are NEVER paused!
  * 2. Web Audio API does NOT create a lock screen music player widget!
- * 3. It keeps the browser's audio rendering clock running in the background.
+ * 3. It keeps the browser's audio rendering clock running.
  */
 export function startRestAudioSession(_exerciseName?: string, _setNumber?: number): void {
   const ctx = getAudioContext();
   if (!ctx) return;
 
   try {
+    // Set iOS 16.4+ audioSession to playback for background execution without pausing other apps
+    if (typeof navigator !== 'undefined' && 'audioSession' in navigator) {
+      try {
+        (navigator as any).audioSession.type = 'playback';
+      } catch {}
+    }
+
     if (ctx.state === 'suspended') {
       ctx.resume().catch(() => {});
     }
@@ -76,6 +117,7 @@ export function startRestAudioSession(_exerciseName?: string, _setNumber?: numbe
  */
 export function pauseRestAudioSession(): void {
   stopSilentAudio();
+  releaseScreenWakeLock();
 }
 
 /**
@@ -83,6 +125,7 @@ export function pauseRestAudioSession(): void {
  */
 export function stopRestAudioSession(): void {
   stopSilentAudio();
+  releaseScreenWakeLock();
 
   // Clear any MediaSession state
   if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
@@ -339,4 +382,74 @@ export async function showTimerFinishNotification(
     // Ignore notification errors
   }
 }
+
+/**
+ * Schedules a future notification using the native Notification Triggers API (if supported).
+ * In modern Chromium/Android browsers, this lets the OS AlarmManager fire the notification
+ * at the exact timestamp even if the device is locked in Deep Sleep/Doze mode!
+ */
+export async function scheduleRestTimerNotification(
+  targetTimestampMs: number,
+  exerciseName?: string,
+  setNumber?: number
+): Promise<void> {
+  if (typeof window === 'undefined' || !('Notification' in window)) return;
+  if (Notification.permission !== 'granted') return;
+
+  const title = '¡Tiempo de descanso terminado! ⏱️';
+  const body = exerciseName
+    ? `${exerciseName}${setNumber ? ` • Serie ${setNumber}` : ''}: ¡Es hora de la siguiente serie!`
+    : '¡Descanso completado! Es hora de la siguiente serie.';
+
+  let iconUrl = 'favicon.png';
+  try {
+    iconUrl = new URL('pwa-192x192.png', window.location.href).href;
+  } catch {
+    iconUrl = 'favicon.png';
+  }
+
+  try {
+    if ('serviceWorker' in navigator) {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg && reg.showNotification) {
+        const TimestampTriggerClass = (window as unknown as { TimestampTrigger?: new (time: number) => unknown })
+          .TimestampTrigger;
+        if (TimestampTriggerClass) {
+          await reg.showNotification(title, {
+            body,
+            icon: iconUrl,
+            badge: iconUrl,
+            tag: 'workoutlog-rest-timer',
+            renotify: true,
+            silent: false,
+            vibrate: [400, 150, 400, 150, 700],
+            showTrigger: new TimestampTriggerClass(targetTimestampMs),
+          } as NotificationOptions);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Could not schedule notification trigger:', err);
+  }
+}
+
+/**
+ * Cancels any pending scheduled notification if the timer is reset, paused, or dismissed.
+ */
+export async function cancelScheduledNotification(): Promise<void> {
+  try {
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg && reg.getNotifications) {
+        const notifications = await reg.getNotifications({
+          tag: 'workoutlog-rest-timer',
+        });
+        notifications.forEach((n) => n.close());
+      }
+    }
+  } catch {
+    // Ignore
+  }
+}
+
 
