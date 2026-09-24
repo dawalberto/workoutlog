@@ -27,6 +27,7 @@ interface ExerciseCardProps {
   onUpdateExercise: (updated: Exercise) => void;
   onDeleteExercise: () => void;
   onMoveToPosition?: (targetIndex: number) => void;
+  onCheckRmWeight?: (exerciseName: string, newWeight: number) => void;
 }
 
 export const ExerciseCard: React.FC<ExerciseCardProps> = ({
@@ -39,6 +40,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
   onUpdateExercise,
   onDeleteExercise,
   onMoveToPosition,
+  onCheckRmWeight,
 }) => {
   const [showVideoInput, setShowVideoInput] = useState(false);
   const [showImageInput, setShowImageInput] = useState(false);
@@ -434,31 +436,35 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
 
                       {/* Weight */}
                       <td className="py-2.5 px-1 sm:px-2 text-center">
-                        {isExecutionMode ? (
-                          <span className={`text-xs sm:text-sm font-semibold ${isCompleted ? 'text-zinc-500' : 'text-zinc-900'}`}>
-                            {set.weight} <span className="text-[10px] sm:text-xs font-normal text-zinc-500">kg</span>
-                          </span>
-                        ) : (
-                          <div className="flex items-center justify-center">
-                            <input
-                              type="number"
-                              inputMode="decimal"
-                              pattern="[0-9]*[.,]?[0-9]*"
-                              step="0.5"
-                              min="0"
-                              max="999"
-                              value={set.weight}
-                              onFocus={(e) => e.target.select()}
-                              onChange={(e) => handleUpdateSet(set.id, 'weight', e.target.value)}
-                              onBlur={() => {
-                                if (set.weight === '' || isNaN(Number(set.weight)) || Number(set.weight) < 0) {
-                                  handleUpdateSet(set.id, 'weight', 0);
-                                }
-                              }}
-                              className="w-14 sm:w-16 text-center text-xs sm:text-sm font-semibold py-1 px-1 rounded-lg border border-zinc-200 bg-zinc-50 focus:bg-white focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-                            />
-                          </div>
-                        )}
+                        <div className="flex items-center justify-center">
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            pattern="[0-9]*[.,]?[0-9]*"
+                            step="0.5"
+                            min="0"
+                            max="999"
+                            value={set.weight}
+                            onFocus={(e) => e.target.select()}
+                            onChange={(e) => handleUpdateSet(set.id, 'weight', e.target.value)}
+                            onBlur={() => {
+                              const val = Number(set.weight);
+                              if (set.weight === '' || isNaN(val) || val < 0) {
+                                handleUpdateSet(set.id, 'weight', 0);
+                              } else if (val > 0 && onCheckRmWeight) {
+                                onCheckRmWeight(exercise.name, val);
+                              }
+                            }}
+                            className={`w-14 sm:w-16 text-center text-xs sm:text-sm font-semibold py-1 px-1 rounded-lg border focus:bg-white focus:ring-1 focus:ring-emerald-500 focus:outline-none transition-colors ${
+                              isExecutionMode
+                                ? isCompleted
+                                  ? 'bg-emerald-100/50 border-emerald-300 text-zinc-600'
+                                  : 'bg-white border-zinc-300 text-zinc-900 font-bold'
+                                : 'bg-zinc-50 border-zinc-200 focus:bg-white'
+                            }`}
+                          />
+                          <span className="text-[10px] sm:text-xs text-zinc-400 ml-0.5">kg</span>
+                        </div>
                       </td>
 
                       {/* Rest */}
@@ -505,7 +511,16 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                             <button
                               id={`btn-toggle-set-${set.id}`}
                               type="button"
-                              onClick={() => onToggleSetComplete(set.id, Number(set.restSeconds) || 0, exercise.name, set.setNumber)}
+                              onClick={() => {
+                                const isCompleting = !isCompleted;
+                                if (isCompleting && onCheckRmWeight) {
+                                  const val = Number(set.weight);
+                                  if (val > 0) {
+                                    onCheckRmWeight(exercise.name, val);
+                                  }
+                                }
+                                onToggleSetComplete(set.id, Number(set.restSeconds) || 0, exercise.name, set.setNumber);
+                              }}
                               className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 active:scale-90 ${
                                 isCompleted
                                   ? 'bg-emerald-500 text-white shadow-xs'

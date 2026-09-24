@@ -3,19 +3,24 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
-import { Flame, Dumbbell, ArrowDownUp, CheckCircle2, X, Trophy } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Flame, Dumbbell, ArrowDownUp, CheckCircle2, X, Trophy, Menu } from 'lucide-react';
 import { 
   Routine, 
   RoutineSubMode, 
   ExerciseDefinition, 
   AppTab, 
   ActiveWorkoutSession, 
-  WorkoutCompletionSummary 
+  WorkoutCompletionSummary,
+  ExerciseRmLog,
+  RmRecord
 } from './types';
 import { RoutineList } from './components/RoutineList';
 import { RoutineView } from './components/RoutineView';
 import { ExerciseCatalog } from './components/ExerciseCatalog';
+import { RmLogsView } from './components/RmLogsView';
+import { SidebarMenu } from './components/SidebarMenu';
+import { RmRecordAlertModal } from './components/RmRecordAlertModal';
 import { PWAInstallButton } from './components/PWAInstallButton';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { DataBackupModal } from './components/DataBackupModal';
@@ -23,10 +28,16 @@ import { WorkoutSummaryModal } from './components/WorkoutSummaryModal';
 import { normalizeExerciseTitle } from './utils/backup';
 import { formatWorkoutDuration, formatDetailedDuration } from './utils/timeCalculations';
 import { useWorkoutTimer } from './hooks/useWorkoutTimer';
+import { 
+  findRmLogForExercise, 
+  getLatestRmRecord, 
+  getTodayDateString 
+} from './utils/rmCalculations';
 
 const ROUTINES_STORAGE_KEY = 'workout_planner_routines_v2';
 const CATALOG_STORAGE_KEY = 'workout_planner_catalog_v2';
 const ACTIVE_SESSIONS_STORAGE_KEY = 'workout_active_sessions_v1';
+const RM_LOGS_STORAGE_KEY = 'workout_planner_rm_logs_v1';
 
 // Top banner shown when an active routine is in progress and the user is browsing elsewhere
 const ActiveWorkoutTopBanner: React.FC<{
@@ -117,8 +128,35 @@ export default function App() {
   const [activeRoutineId, setActiveRoutineId] = useState<string | null>(null);
   const [routineSubMode, setRoutineSubMode] = useState<RoutineSubMode>('edit');
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [importFeedback, setImportFeedback] = useState<string | null>(null);
   const [workoutSummary, setWorkoutSummary] = useState<WorkoutCompletionSummary | null>(null);
+
+  // Persistent RM logs
+  const [rmLogs, setRmLogs] = useState<ExerciseRmLog[]>(() => {
+    try {
+      const saved = localStorage.getItem(RM_LOGS_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+      }
+    } catch {
+      // Fallback
+    }
+    return [];
+  });
+
+  // RM New Record Alert Modal state
+  const [pendingRmAlert, setPendingRmAlert] = useState<{
+    exerciseName: string;
+    newWeight: number;
+    previousRmWeight: number;
+    previousRmDate?: string;
+  } | null>(null);
+
+  const alertedWeightsRef = useRef<Set<string>>(new Set());
 
   // Save routines to localStorage whenever they change
   useEffect(() => {
@@ -146,6 +184,72 @@ export default function App() {
       console.error('Error saving active sessions to localStorage', e);
     }
   }, [activeSessions]);
+
+  // Save RM logs to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(RM_LOGS_STORAGE_KEY, JSON.stringify(rmLogs));
+    } catch (e) {
+      console.error('Error saving rmLogs to localStorage', e);
+    }
+  }, [rmLogs]);
+
+  // Check if a newly entered weight exceeds the last logged RM for that exercise
+  const handleCheckRmWeight = (exerciseName: string, newWeight: number) => {
+    if (!exerciseName || !newWeight || newWeight <= 0) return;
+    const matchingLog = findRmLogForExercise(rmLogs, exerciseName);
+    if (!matchingLog || matchingLog.records.length === 0) return;
+
+    const latestRecord = getLatestRmRecord(matchingLog);
+    if (!latestRecord) return;
+
+    if (newWeight > latestRecord.weight) {
+      const alertKey = `${normalizeExerciseTitle(exerciseName)}_${newWeight}`;
+      if (alertedWeightsRef.current.has(alertKey)) return;
+      alertedWeightsRef.current.add(alertKey);
+
+      setPendingRmAlert({
+        exerciseName: matchingLog.exerciseName,
+        newWeight,
+        previousRmWeight: latestRecord.weight,
+        previousRmDate: latestRecord.date,
+      });
+    }
+  };
+
+  const handleConfirmRmAlert = (shouldUpdateRm: boolean) => {
+    if (!pendingRmAlert) return;
+    if (shouldUpdateRm) {
+      const matchingLog = findRmLogForExercise(rmLogs, pendingRmAlert.exerciseName);
+      const newRecord: RmRecord = {
+        id: `rm-rec-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        weight: pendingRmAlert.newWeight,
+        date: getTodayDateString(),
+        notes: 'Superado en rutina / ejercicio',
+      };
+
+      if (matchingLog) {
+        setRmLogs((prev) =>
+          prev.map((log) => {
+            if (log.id === matchingLog.id) {
+              const newRecords = [newRecord, ...log.records].sort(
+                (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+              );
+              return {
+                ...log,
+                records: newRecords,
+                updatedAt: new Date().toISOString(),
+              };
+            }
+            return log;
+          })
+        );
+      }
+      setImportFeedback(`🏆 ¡Nuevo RM de ${pendingRmAlert.newWeight} kg registrado en ${pendingRmAlert.exerciseName}!`);
+      setTimeout(() => setImportFeedback(null), 4000);
+    }
+    setPendingRmAlert(null);
+  };
 
   // Workout Session Handlers
   const handleStartSession = (routineId: string) => {
@@ -342,20 +446,24 @@ export default function App() {
   const handleImportComplete = (
     newCatalog: ExerciseDefinition[],
     newRoutines: Routine[],
+    newRmLogs: ExerciseRmLog[],
     summary: {
       exercisesAdded: number;
       exercisesReplaced: number;
       routinesAdded: number;
       exercisesInRoutinesUpdated?: number;
+      rmLogsAdded?: number;
+      rmLogsUpdated?: number;
       mode: 'merge' | 'overwrite';
     }
   ) => {
     setCatalog(newCatalog);
     setRoutines(newRoutines);
+    setRmLogs(newRmLogs);
 
     let msg = '';
     if (summary.mode === 'overwrite') {
-      msg = `Copia restaurada: ${newCatalog.length} ejercicios y ${newRoutines.length} rutinas guardadas.`;
+      msg = `Copia restaurada: ${newCatalog.length} ejercicios, ${newRoutines.length} rutinas y ${newRmLogs.length} RMs guardados.`;
     } else {
       const parts: string[] = [];
       if (summary.exercisesAdded > 0) parts.push(`${summary.exercisesAdded} ejerc. añadidos`);
@@ -364,6 +472,8 @@ export default function App() {
         parts.push(`${summary.exercisesInRoutinesUpdated} en rutinas`);
       }
       if (summary.routinesAdded > 0) parts.push(`${summary.routinesAdded} rutinas añadidas`);
+      if (summary.rmLogsAdded && summary.rmLogsAdded > 0) parts.push(`${summary.rmLogsAdded} RMs añadidos`);
+      if (summary.rmLogsUpdated && summary.rmLogsUpdated > 0) parts.push(`${summary.rmLogsUpdated} RMs actualizados`);
       msg = parts.length > 0
         ? `Importación completada: ${parts.join(', ')}.`
         : 'Datos combinados con éxito.';
@@ -397,84 +507,78 @@ export default function App() {
           onToggleSetComplete={handleToggleSetComplete}
           onResetSession={handleResetSession}
           onFinishSession={handleFinishSession}
+          onCheckRmWeight={handleCheckRmWeight}
         />
       ) : (
         <div className="flex flex-col min-h-screen">
-          {/* Main Top Navigation Bar */}
-          <header className="bg-white border-b border-zinc-200 sticky top-0 z-20 shadow-2xs pt-[env(safe-area-inset-top,0px)]">
+          {/* Main Top Navigation Bar: | LOGO   RUTINAS/EJERCICIOS   MENU BURGER | */}
+          <header className="bg-white border-b border-zinc-200 sticky top-0 z-40 shadow-2xs pt-[env(safe-area-inset-top,0px)]">
             <div className="max-w-4xl mx-auto px-3 sm:px-6">
-              <div className="flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-4">
-                {/* Brand / Logo */}
-                <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-                  <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-zinc-950 text-white flex items-center justify-center shadow-xs shrink-0">
-                    <Flame className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 fill-current" />
-                  </span>
-                  <div>
-                    <span className="text-sm sm:text-base font-black tracking-tight text-zinc-900 block leading-tight">
-                      WorkoutLog
-                    </span>
-                    <span className="hidden sm:block text-[10px] text-zinc-500 -mt-0.5 font-medium">
-                      Planificador & Ejecutor
-                    </span>
-                  </div>
-                </div>
+              <div className="flex items-center justify-between h-14 sm:h-16 gap-2">
+                {/* Left: LOGO ONLY */}
+                <button
+                  id="btn-nav-logo"
+                  type="button"
+                  onClick={() => setActiveTab(AppTab.ROUTINES)}
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-zinc-950 text-white flex items-center justify-center shadow-xs shrink-0 hover:bg-zinc-800 transition-colors active:scale-95"
+                  title="WorkoutLog - Rutinas"
+                  aria-label="WorkoutLog"
+                >
+                  <Flame className="w-5 h-5 text-emerald-400 fill-current" />
+                </button>
 
-                {/* Right controls: Main Views Navigation + Backup Icon + PWA Install */}
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <nav className="flex items-center p-1 bg-zinc-100 rounded-xl border border-zinc-200/80 shrink-0">
-                    <button
-                      id="tab-nav-routines"
-                      type="button"
-                      onClick={() => setActiveTab(AppTab.ROUTINES)}
-                      className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shrink-0 ${
-                        activeTab === AppTab.ROUTINES
-                          ? 'bg-white text-zinc-900 shadow-xs'
-                          : 'text-zinc-600 hover:text-zinc-900'
-                      }`}
-                    >
-                      <Flame className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span>Rutinas</span>
-                      <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                        activeTab === AppTab.ROUTINES ? 'bg-zinc-100 text-zinc-700' : 'bg-zinc-200 text-zinc-600'
-                      }`}>
-                        {routines.length}
-                      </span>
-                    </button>
-
-                    <button
-                      id="tab-nav-catalog"
-                      type="button"
-                      onClick={() => setActiveTab(AppTab.EXERCISES)}
-                      className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shrink-0 ${
-                        activeTab === AppTab.EXERCISES
-                          ? 'bg-white text-zinc-900 shadow-xs'
-                          : 'text-zinc-600 hover:text-zinc-900'
-                      }`}
-                    >
-                      <Dumbbell className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span><span className="hidden sm:inline">Biblioteca </span>Ejercicios</span>
-                      <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                        activeTab === AppTab.EXERCISES ? 'bg-zinc-100 text-zinc-700' : 'bg-zinc-200 text-zinc-600'
-                      }`}>
-                        {catalog.length}
-                      </span>
-                    </button>
-                  </nav>
-
-                  {/* Backup / Data Button */}
+                {/* Center: RUTINAS / EJERCICIOS */}
+                <nav className="flex items-center p-1 bg-zinc-100 rounded-xl border border-zinc-200/80 shrink-0 shadow-2xs">
                   <button
-                    id="btn-open-backup-modal"
+                    id="tab-nav-routines"
                     type="button"
-                    onClick={() => setIsBackupModalOpen(true)}
-                    className="p-1.5 sm:p-2 text-zinc-500 hover:text-zinc-900 rounded-xl hover:bg-zinc-100 active:scale-95 transition-colors shrink-0"
-                    title="Copia de seguridad (Importar / Exportar datos)"
-                    aria-label="Copia de seguridad (Importar / Exportar datos)"
+                    onClick={() => setActiveTab(AppTab.ROUTINES)}
+                    className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shrink-0 active:scale-95 ${
+                      activeTab === AppTab.ROUTINES
+                        ? 'bg-white text-zinc-950 shadow-xs'
+                        : 'text-zinc-600 hover:text-zinc-900'
+                    }`}
                   >
-                    <ArrowDownUp className="w-4 h-4" />
+                    <Flame className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>Rutinas</span>
+                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                      activeTab === AppTab.ROUTINES ? 'bg-zinc-100 text-zinc-700' : 'bg-zinc-200 text-zinc-600'
+                    }`}>
+                      {routines.length}
+                    </span>
                   </button>
 
-                  <PWAInstallButton />
-                </div>
+                  <button
+                    id="tab-nav-catalog"
+                    type="button"
+                    onClick={() => setActiveTab(AppTab.EXERCISES)}
+                    className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shrink-0 active:scale-95 ${
+                      activeTab === AppTab.EXERCISES
+                        ? 'bg-white text-zinc-950 shadow-xs'
+                        : 'text-zinc-600 hover:text-zinc-900'
+                    }`}
+                  >
+                    <Dumbbell className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>Ejercicios</span>
+                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                      activeTab === AppTab.EXERCISES ? 'bg-zinc-100 text-zinc-700' : 'bg-zinc-200 text-zinc-600'
+                    }`}>
+                      {catalog.length}
+                    </span>
+                  </button>
+                </nav>
+
+                {/* Right: MENU BURGER */}
+                <button
+                  id="btn-open-sidebar-menu"
+                  type="button"
+                  onClick={() => setIsMenuOpen(true)}
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 flex items-center justify-center transition-colors active:scale-95 shadow-2xs shrink-0"
+                  title="Menú principal"
+                  aria-label="Menú principal"
+                >
+                  <Menu className="w-5 h-5" />
+                </button>
               </div>
             </div>
           </header>
@@ -505,12 +609,20 @@ export default function App() {
                 onDuplicateRoutine={handleDuplicateRoutine}
                 onDeleteRoutine={handleDeleteRoutine}
               />
-            ) : (
+            ) : activeTab === AppTab.EXERCISES ? (
               <ExerciseCatalog
                 exercises={catalog}
                 onCreateExercise={handleCreateCatalogExercise}
                 onUpdateExercise={handleUpdateCatalogExercise}
                 onDeleteExercise={handleDeleteCatalogExercise}
+                onCheckRmWeight={handleCheckRmWeight}
+              />
+            ) : (
+              <RmLogsView
+                catalog={catalog}
+                rmLogs={rmLogs}
+                onSaveRmLogs={setRmLogs}
+                onGoToCatalog={() => setActiveTab(AppTab.EXERCISES)}
               />
             )}
           </main>
@@ -530,6 +642,29 @@ export default function App() {
         </div>
       )}
 
+      {/* Sidebar Navigation Drawer */}
+      <SidebarMenu
+        isOpen={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
+        routinesCount={routines.length}
+        catalogCount={catalog.length}
+        rmCount={rmLogs.length}
+        onOpenBackup={() => setIsBackupModalOpen(true)}
+      />
+
+      {/* RM New Record Detection Alert Modal */}
+      <RmRecordAlertModal
+        isOpen={Boolean(pendingRmAlert)}
+        exerciseName={pendingRmAlert?.exerciseName || ''}
+        newWeight={pendingRmAlert?.newWeight || 0}
+        previousRmWeight={pendingRmAlert?.previousRmWeight || 0}
+        previousRmDate={pendingRmAlert?.previousRmDate}
+        onConfirm={handleConfirmRmAlert}
+        onClose={() => setPendingRmAlert(null)}
+      />
+
       {/* Workout Completion Summary Modal */}
       <WorkoutSummaryModal
         summary={workoutSummary}
@@ -542,6 +677,7 @@ export default function App() {
         onClose={() => setIsBackupModalOpen(false)}
         catalog={catalog}
         routines={routines}
+        rmLogs={rmLogs}
         onImportComplete={handleImportComplete}
       />
 

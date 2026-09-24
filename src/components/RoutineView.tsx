@@ -45,6 +45,7 @@ interface RoutineViewProps {
   onToggleSetComplete: (routineId: string, setId: string) => void;
   onResetSession: (routineId: string) => void;
   onFinishSession: (summary: WorkoutCompletionSummary) => void;
+  onCheckRmWeight?: (exerciseName: string, newWeight: number) => void;
 }
 
 export const RoutineView: React.FC<RoutineViewProps> = ({
@@ -59,6 +60,7 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
   onToggleSetComplete,
   onResetSession,
   onFinishSession,
+  onCheckRmWeight,
 }) => {
   const [subMode, setSubMode] = useState<RoutineSubMode>(initialMode);
   const [isFinishConfirmOpen, setIsFinishConfirmOpen] = useState(false);
@@ -505,6 +507,7 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
                 onUpdateExercise={(updated) => handleUpdateExercise(index, updated)}
                 onDeleteExercise={() => handleDeleteExercise(index)}
                 onMoveToPosition={(targetIndex) => handleMoveExercise(index, targetIndex)}
+                onCheckRmWeight={onCheckRmWeight}
               />
             ))
           )}

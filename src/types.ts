@@ -43,6 +43,24 @@ export interface Routine {
 export enum AppTab {
   ROUTINES = 'routines',
   EXERCISES = 'exercises',
+  RMS = 'rms',
+}
+
+export interface RmRecord {
+  id: string;
+  weight: number; // in kg
+  date: string; // YYYY-MM-DD
+  notes?: string;
+}
+
+export interface ExerciseRmLog {
+  id: string;
+  exerciseId?: string; // ID of ExerciseDefinition if linked
+  exerciseName: string; // name in catalog
+  category?: string;
+  records: RmRecord[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type ViewMode = 'list' | 'detail';

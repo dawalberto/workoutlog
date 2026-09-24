@@ -1,19 +1,22 @@
-import { ExerciseDefinition, Routine } from '../types';
+import { ExerciseDefinition, Routine, ExerciseRmLog, RmRecord } from '../types';
 
 export interface WorkoutLogBackupFile {
   app: 'WorkoutLog';
   version: number;
   exportedAt: string;
-  type: 'all' | 'exercises' | 'routines';
+  type: 'all' | 'exercises' | 'routines' | 'rms';
   catalog: ExerciseDefinition[];
   routines?: Routine[];
+  rmLogs?: ExerciseRmLog[];
 }
 
 export interface ParsedBackupData {
   catalog: ExerciseDefinition[];
   routines: Routine[];
+  rmLogs: ExerciseRmLog[];
   hasExercises: boolean;
   hasRoutines: boolean;
+  hasRmLogs: boolean;
 }
 
 /**
@@ -37,6 +40,7 @@ export function parseImportedData(rawJson: string): ParsedBackupData {
 
   let catalog: ExerciseDefinition[] = [];
   let routines: Routine[] = [];
+  let rmLogs: ExerciseRmLog[] = [];
 
   // Case 1: Standard WorkoutLog backup object
   if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
@@ -50,16 +54,24 @@ export function parseImportedData(rawJson: string): ParsedBackupData {
     if (Array.isArray(parsed.routines)) {
       routines = sanitizeRoutines(parsed.routines);
     }
+
+    if (Array.isArray(parsed.rmLogs)) {
+      rmLogs = sanitizeRmLogs(parsed.rmLogs);
+    } else if (Array.isArray(parsed.rms)) {
+      rmLogs = sanitizeRmLogs(parsed.rms);
+    }
   }
 
-  // Case 2: User uploaded raw array of exercises or routines
+  // Case 2: User uploaded raw array of exercises, routines, or RM logs
   if (Array.isArray(parsed)) {
     if (parsed.length > 0) {
-      // Check first item to determine type
-      const first = parsed[0];
+      const first = parsed[0] as Record<string, unknown>;
       if (first && Array.isArray(first.exercises)) {
         // It's an array of routines
         routines = sanitizeRoutines(parsed);
+      } else if (first && Array.isArray(first.records) && typeof first.exerciseName === 'string') {
+        // It's an array of RM logs
+        rmLogs = sanitizeRmLogs(parsed);
       } else {
         // It's an array of exercise definitions
         catalog = sanitizeCatalog(parsed);
@@ -70,9 +82,37 @@ export function parseImportedData(rawJson: string): ParsedBackupData {
   return {
     catalog,
     routines,
+    rmLogs,
     hasExercises: catalog.length > 0,
     hasRoutines: routines.length > 0,
+    hasRmLogs: rmLogs.length > 0,
   };
+}
+
+export function sanitizeRmLogs(items: unknown[]): ExerciseRmLog[] {
+  return items
+    .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object' && typeof (item as { exerciseName?: unknown }).exerciseName === 'string')
+    .map((item) => {
+      const recordsRaw = Array.isArray(item.records) ? item.records : [];
+      const records: RmRecord[] = recordsRaw
+        .filter((r): r is Record<string, unknown> => !!r && typeof r === 'object' && (typeof r.weight === 'number' || typeof r.weight === 'string'))
+        .map((r, rIdx) => ({
+          id: typeof r.id === 'string' && r.id.trim() ? r.id : `rm-rec-${Date.now()}-${rIdx}-${Math.random().toString(36).substring(2, 6)}`,
+          weight: typeof r.weight === 'number' ? r.weight : parseFloat(String(r.weight)) || 0,
+          date: typeof r.date === 'string' && r.date.trim() ? r.date.trim() : new Date().toISOString().split('T')[0],
+          notes: typeof r.notes === 'string' ? r.notes : undefined,
+        }));
+
+      return {
+        id: typeof item.id === 'string' && item.id.trim() ? item.id : 'rm-log-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+        exerciseId: typeof item.exerciseId === 'string' ? item.exerciseId : undefined,
+        exerciseName: String(item.exerciseName || '').trim(),
+        category: typeof item.category === 'string' ? item.category : undefined,
+        records,
+        createdAt: typeof item.createdAt === 'string' ? item.createdAt : new Date().toISOString(),
+        updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : new Date().toISOString(),
+      };
+    });
 }
 
 function sanitizeCatalog(items: unknown[]): ExerciseDefinition[] {
@@ -407,6 +447,76 @@ export function mergeRoutines(
     merged: [...safeImported, ...updatedExisting],
     addedCount: safeImported.length,
     updatedExercisesCount,
+  };
+}
+
+/**
+ * Merges imported RM logs with existing RM logs.
+ * Matches exercises by normalized title or ID.
+ */
+export function mergeRmLogs(
+  existing: ExerciseRmLog[],
+  imported: ExerciseRmLog[],
+  replaceDuplicates: boolean
+): { merged: ExerciseRmLog[]; addedCount: number; updatedCount: number } {
+  const result: ExerciseRmLog[] = [...existing];
+  const nameToIndex = new Map<string, number>();
+
+  result.forEach((item, index) => {
+    nameToIndex.set(normalizeExerciseTitle(item.exerciseName), index);
+  });
+
+  let addedCount = 0;
+  let updatedCount = 0;
+
+  imported.forEach((importedLog) => {
+    const norm = normalizeExerciseTitle(importedLog.exerciseName);
+    if (!norm) return;
+
+    if (nameToIndex.has(norm)) {
+      const targetIndex = nameToIndex.get(norm)!;
+      const target = result[targetIndex];
+
+      if (replaceDuplicates) {
+        // Replace records or merge unique date records
+        const existingRecordSignatures = new Set(target.records.map((r) => `${r.date}_${r.weight}`));
+        const newRecords = [...target.records];
+
+        importedLog.records.forEach((rec) => {
+          const sig = `${rec.date}_${rec.weight}`;
+          if (!existingRecordSignatures.has(sig)) {
+            newRecords.push(rec);
+            existingRecordSignatures.add(sig);
+          }
+        });
+
+        // Sort by date descending
+        newRecords.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        result[targetIndex] = {
+          ...target,
+          category: importedLog.category || target.category,
+          exerciseId: importedLog.exerciseId || target.exerciseId,
+          records: newRecords,
+          updatedAt: new Date().toISOString(),
+        };
+        updatedCount++;
+      }
+    } else {
+      // New exercise RM log
+      result.push({
+        ...importedLog,
+        id: 'rm-log-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+      });
+      nameToIndex.set(norm, result.length - 1);
+      addedCount++;
+    }
+  });
+
+  return {
+    merged: result,
+    addedCount,
+    updatedCount,
   };
 }
 

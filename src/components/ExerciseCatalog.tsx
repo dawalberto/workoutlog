@@ -20,6 +20,7 @@ interface ExerciseCatalogProps {
   onCreateExercise: (exercise: ExerciseDefinition) => void;
   onUpdateExercise: (exercise: ExerciseDefinition) => void;
   onDeleteExercise: (id: string) => void;
+  onCheckRmWeight?: (exerciseName: string, newWeight: number) => void;
 }
 
 const CATEGORIES = ['Todos', 'Pecho', 'Espalda', 'Pierna', 'Hombro', 'Brazos', 'Core'];
@@ -29,6 +30,7 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
   onCreateExercise,
   onUpdateExercise,
   onDeleteExercise,
+  onCheckRmWeight,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
@@ -116,6 +118,11 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
         createdAt: new Date().toISOString(),
       };
       onCreateExercise(newDef);
+    }
+
+    const savedWeight = Number(formDefaultWeight) || 0;
+    if (savedWeight > 0 && onCheckRmWeight) {
+      onCheckRmWeight(formName.trim(), savedWeight);
     }
 
     setIsEditing(false);
