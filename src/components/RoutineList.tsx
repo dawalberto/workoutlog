@@ -10,11 +10,12 @@ import {
   Layers, 
   Flame
 } from 'lucide-react';
-import { Routine } from '../types';
+import { Routine, ActiveWorkoutSession } from '../types';
 import { getRoutineTotalSeconds, formatSecondsToTime } from '../utils/timeCalculations';
 
 interface RoutineListProps {
   routines: Routine[];
+  activeSessions?: Record<string, ActiveWorkoutSession>;
   onCreateRoutine: () => void;
   onSelectRoutine: (routineId: string, mode: 'edit' | 'execute') => void;
   onDuplicateRoutine: (routineId: string) => void;
@@ -23,6 +24,7 @@ interface RoutineListProps {
 
 export const RoutineList: React.FC<RoutineListProps> = ({
   routines,
+  activeSessions = {},
   onCreateRoutine,
   onSelectRoutine,
   onDuplicateRoutine,
@@ -90,17 +92,32 @@ export const RoutineList: React.FC<RoutineListProps> = ({
                 const totalSeconds = getRoutineTotalSeconds(routine);
                 const exerciseCount = routine.exercises.length;
                 const totalSets = routine.exercises.reduce((acc, ex) => acc + ex.sets.length, 0);
+                const session = activeSessions[routine.id];
+                const isSessionActive = Boolean(session && session.startTime);
+                const completedSessionSets = session?.completedSetIds?.length || 0;
 
                 return (
                   <div
                     key={routine.id}
                     id={`routine-card-${routine.id}`}
-                    className="bg-white rounded-2xl border border-zinc-200 hover:border-zinc-300 p-5 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between"
+                    className={`bg-white rounded-2xl border p-5 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between ${
+                      isSessionActive
+                        ? 'border-emerald-500/80 ring-2 ring-emerald-500/20 bg-emerald-50/10'
+                        : 'border-zinc-200 hover:border-zinc-300'
+                    }`}
                   >
                     <div>
                       {/* Card Top */}
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            {isSessionActive && (
+                              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wide bg-emerald-100 text-emerald-800 border border-emerald-300/50">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                                En curso ({completedSessionSets}/{totalSets} series)
+                              </span>
+                            )}
+                          </div>
                           <h2 className="text-lg sm:text-xl font-bold text-zinc-900 tracking-tight truncate">
                             {routine.name || 'Rutina sin título'}
                           </h2>
@@ -210,9 +227,14 @@ export const RoutineList: React.FC<RoutineListProps> = ({
                         id={`btn-start-workout-${routine.id}`}
                         type="button"
                         onClick={() => onSelectRoutine(routine.id, 'execute')}
-                        className="inline-flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all active:scale-95"
+                        className={`inline-flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all active:scale-95 shadow-xs ${
+                          isSessionActive
+                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white ring-2 ring-emerald-500/40'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                        }`}
                       >
-                        <Play className="w-4 h-4 fill-current" /> Entrenar
+                        <Play className="w-4 h-4 fill-current" />
+                        <span>{isSessionActive ? 'Continuar entrenamiento' : 'Entrenar'}</span>
                       </button>
                     </div>
                   </div>

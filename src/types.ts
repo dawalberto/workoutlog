@@ -48,3 +48,25 @@ export enum AppTab {
 export type ViewMode = 'list' | 'detail';
 export type RoutineSubMode = 'edit' | 'execute';
 
+export interface ActiveWorkoutSession {
+  routineId: string;
+  startTime: number; // Date.now() timestamp when started (ms)
+  completedSetIds: string[]; // array of set IDs marked complete
+}
+
+export interface WorkoutCompletionSummary {
+  routineId: string;
+  routineName: string;
+  startTime: number;
+  endTime: number;
+  durationSeconds: number;
+  completedSetsCount: number;
+  totalSetsCount: number;
+  completionPercentage: number;
+  exercisesSummary: {
+    name: string;
+    completedSets: number;
+    totalSets: number;
+  }[];
+}
+

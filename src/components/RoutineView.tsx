@@ -6,40 +6,62 @@ import {
   Plus, 
   Clock, 
   RotateCcw, 
-  Sparkles, 
   CheckCircle2, 
   Dumbbell,
   FileText,
-  BookOpen,
-  ArrowUpDown
+  ArrowUpDown,
+  Flag
 } from 'lucide-react';
-import { Exercise, ExerciseDefinition, Routine, RoutineSubMode, WorkoutSet } from '../types';
-import { getRoutineTotalSeconds, formatSecondsToTime } from '../utils/timeCalculations';
+import { 
+  Exercise, 
+  ExerciseDefinition, 
+  Routine, 
+  RoutineSubMode, 
+  ActiveWorkoutSession,
+  WorkoutCompletionSummary 
+} from '../types';
+import { 
+  getRoutineTotalSeconds, 
+  formatSecondsToTime, 
+  formatWorkoutDuration 
+} from '../utils/timeCalculations';
+import { useWorkoutTimer } from '../hooks/useWorkoutTimer';
 import { ExerciseCard } from './ExerciseCard';
 import { RestTimerBar } from './RestTimerBar';
 import { AddExerciseModal } from './AddExerciseModal';
 import { ReorderExercisesModal } from './ReorderExercisesModal';
+import { WorkoutFinishConfirmModal } from './WorkoutFinishConfirmModal';
 import { initRestAudioContext } from '../utils/audioBeep';
 
 interface RoutineViewProps {
   routine: Routine;
   catalog: ExerciseDefinition[];
   initialMode: RoutineSubMode;
+  session?: ActiveWorkoutSession | null;
   onSaveRoutine: (updatedRoutine: Routine) => void;
   onSaveToCatalog: (def: ExerciseDefinition) => void;
   onBack: () => void;
+  onStartSession: (routineId: string) => void;
+  onToggleSetComplete: (routineId: string, setId: string) => void;
+  onResetSession: (routineId: string) => void;
+  onFinishSession: (summary: WorkoutCompletionSummary) => void;
 }
 
 export const RoutineView: React.FC<RoutineViewProps> = ({
   routine,
   catalog,
   initialMode,
+  session,
   onSaveRoutine,
   onSaveToCatalog,
   onBack,
+  onStartSession,
+  onToggleSetComplete,
+  onResetSession,
+  onFinishSession,
 }) => {
   const [subMode, setSubMode] = useState<RoutineSubMode>(initialMode);
-  const [completedSetIds, setCompletedSetIds] = useState<Set<string>>(new Set());
+  const [isFinishConfirmOpen, setIsFinishConfirmOpen] = useState(false);
   const [activeTimer, setActiveTimer] = useState<{
     initialSeconds: number;
     exerciseName?: string;
@@ -50,9 +72,13 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
   const [showAddModal, setShowAddModal] = useState(false);
   const [showReorderModal, setShowReorderModal] = useState(false);
 
+  // Infallible absolute live elapsed time (based on epoch ms Date.now() - session.startTime)
+  const elapsedSeconds = useWorkoutTimer(session?.startTime);
+
   const totalWorkoutSeconds = getRoutineTotalSeconds(routine);
 
-  // Overall workout completion calculation
+  // Overall workout completion calculation based on persistent session state
+  const completedSetIds = new Set(session?.completedSetIds || []);
   const allSetsInRoutine = routine.exercises.flatMap((ex) => ex.sets);
   const totalSetsCount = allSetsInRoutine.length;
   const completedSetsCount = allSetsInRoutine.filter((s) => completedSetIds.has(s.id)).length;
@@ -61,35 +87,62 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
 
   // Toggle set completion (Execution Mode only)
   const handleToggleSetComplete = (setId: string, restSeconds: number, exerciseName: string, setNumber: number) => {
-    setCompletedSetIds((prev) => {
-      const next = new Set(prev);
-      const isNowCompleted = !next.has(setId);
-      if (isNowCompleted) {
-        next.add(setId);
-        // Ensure ambient audio context is initialized on user gesture without interrupting music
-        initRestAudioContext();
+    const isNowCompleted = !completedSetIds.has(setId);
 
-        // Start rest timer if rest seconds > 0
-        if (restSeconds > 0) {
-          setActiveTimer({
-            initialSeconds: restSeconds,
-            exerciseName,
-            setNumber,
-            key: Date.now(),
-          });
-        }
-      } else {
-        next.delete(setId);
+    // Rule: "Si el usuario no le da a iniciar manualmente se activará automáticamente en cuanto marque cualquier serie como completada."
+    if (isNowCompleted && (!session || !session.startTime)) {
+      onStartSession(routine.id);
+    }
+
+    onToggleSetComplete(routine.id, setId);
+
+    if (isNowCompleted) {
+      // Ensure ambient audio context is initialized on user gesture without interrupting music
+      initRestAudioContext();
+
+      // Start rest timer if rest seconds > 0
+      if (restSeconds > 0) {
+        setActiveTimer({
+          initialSeconds: restSeconds,
+          exerciseName,
+          setNumber,
+          key: Date.now(),
+        });
       }
-      return next;
-    });
+    }
   };
 
   const handleResetSession = () => {
     if (window.confirm('¿Reiniciar el progreso de la sesión actual?')) {
-      setCompletedSetIds(new Set());
       setActiveTimer(null);
+      onResetSession(routine.id);
     }
+  };
+
+  const handleConfirmFinish = () => {
+    setIsFinishConfirmOpen(false);
+    const now = Date.now();
+    const startTime = session?.startTime || now;
+    const durationSeconds = Math.max(0, Math.floor((now - startTime) / 1000));
+
+    const summary: WorkoutCompletionSummary = {
+      routineId: routine.id,
+      routineName: routine.name || 'Rutina de entrenamiento',
+      startTime,
+      endTime: now,
+      durationSeconds,
+      completedSetsCount,
+      totalSetsCount,
+      completionPercentage,
+      exercisesSummary: routine.exercises.map((ex) => ({
+        name: ex.name,
+        completedSets: ex.sets.filter((s) => completedSetIds.has(s.id)).length,
+        totalSets: ex.sets.length,
+      })),
+    };
+
+    setActiveTimer(null);
+    onFinishSession(summary);
   };
 
   // Routine Updates
@@ -286,14 +339,30 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
             </div>
           </div>
 
-          {/* Progress bar in Execution Mode */}
+          {/* Progress bar and Live Elapsed Stopwatch in Execution Mode */}
           {subMode === 'execute' && (
             <div className="mt-5 pt-4 border-t border-zinc-100">
-              <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
+              <div className="flex items-center justify-between text-xs font-semibold mb-1.5 flex-wrap gap-2">
                 <span className="text-zinc-600">
                   Progreso: <strong className="text-zinc-900">{completedSetsCount}</strong> de {totalSetsCount} series completadas
                 </span>
-                <span className="text-emerald-600 font-bold">{completionPercentage}%</span>
+
+                <div className="flex items-center gap-2 sm:gap-3">
+                  {session?.startTime ? (
+                    <div
+                      id="workout-live-stopwatch"
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 font-mono font-bold text-xs shadow-2xs"
+                      title="Tiempo transcurrido desde el inicio de la rutina"
+                    >
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>{formatWorkoutDuration(elapsedSeconds)}</span>
+                    </div>
+                  ) : (
+                    <span className="text-[11px] text-zinc-500 italic">No iniciada</span>
+                  )}
+                  <span className="text-emerald-600 font-bold">{completionPercentage}%</span>
+                </div>
               </div>
 
               <div className="w-full h-2.5 bg-zinc-100 rounded-full overflow-hidden border border-zinc-200/60">
@@ -303,18 +372,60 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
                 />
               </div>
 
-              {completedSetsCount > 0 && (
-                <div className="mt-2.5 flex justify-end">
-                  <button
-                    id="btn-reset-session"
-                    type="button"
-                    onClick={handleResetSession}
-                    className="inline-flex items-center gap-1 text-xs text-zinc-600 hover:text-zinc-800 transition-colors"
-                  >
-                    <RotateCcw className="w-3 h-3" /> Reiniciar progreso de hoy
-                  </button>
-                </div>
-              )}
+              {/* Workout Session Controls: Start / Finish / Reset */}
+              <div className={`mt-3.5 flex flex-wrap items-center justify-between gap-2.5 p-3 rounded-2xl border transition-colors ${
+                session?.startTime
+                  ? 'bg-emerald-50/40 border-emerald-200/80'
+                  : 'bg-zinc-50 border-zinc-200/80'
+              }`}>
+                {!session?.startTime ? (
+                  <>
+                    <div className="text-xs text-zinc-600 flex items-center gap-1.5">
+                      <Play className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>Pulsa iniciar o marca cualquier serie para comenzar automáticamente.</span>
+                    </div>
+                    <button
+                      id="btn-start-workout-session"
+                      type="button"
+                      onClick={() => onStartSession(routine.id)}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all active:scale-95"
+                    >
+                      <Play className="w-3.5 h-3.5 fill-current" /> Iniciar rutina
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping shrink-0" />
+                      <span className="font-bold text-zinc-900">Entrenamiento en curso</span>
+                      <span className="text-emerald-700 font-mono font-bold">
+                        ({formatWorkoutDuration(elapsedSeconds)})
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        id="btn-reset-session"
+                        type="button"
+                        onClick={handleResetSession}
+                        className="inline-flex items-center gap-1 text-xs text-zinc-600 hover:text-zinc-800 px-2.5 py-1.5 rounded-lg hover:bg-zinc-200/60 transition-colors"
+                        title="Reiniciar progreso"
+                      >
+                        <RotateCcw className="w-3 h-3" /> Reiniciar
+                      </button>
+
+                      <button
+                        id="btn-finish-workout-session"
+                        type="button"
+                        onClick={() => setIsFinishConfirmOpen(true)}
+                        className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white shadow-xs transition-all active:scale-95"
+                      >
+                        <Flag className="w-3.5 h-3.5 text-emerald-400" /> Finalizar rutina
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -386,7 +497,7 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
         </div>
       </div>
 
-      {/* Add Exercise Modal (From Library or Custom on-the-fly) */}
+      {/* Add Exercise Modal */}
       <AddExerciseModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
@@ -400,6 +511,17 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
         onClose={() => setShowReorderModal(false)}
         exercises={routine.exercises}
         onSaveOrder={handleReorderAllExercises}
+      />
+
+      {/* Confirmation Modal before finishing workout */}
+      <WorkoutFinishConfirmModal
+        isOpen={isFinishConfirmOpen}
+        routineName={routine.name}
+        elapsedSeconds={elapsedSeconds}
+        completedSetsCount={completedSetsCount}
+        totalSetsCount={totalSetsCount}
+        onConfirm={handleConfirmFinish}
+        onCancel={() => setIsFinishConfirmOpen(false)}
       />
 
       {/* Floating Rest Timer Bar when active */}

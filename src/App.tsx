@@ -4,23 +4,69 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Flame, Dumbbell, ArrowDownUp, CheckCircle2, X } from 'lucide-react';
-import { Routine, RoutineSubMode, ExerciseDefinition, AppTab } from './types';
+import { Flame, Dumbbell, ArrowDownUp, CheckCircle2, X, Trophy } from 'lucide-react';
+import { 
+  Routine, 
+  RoutineSubMode, 
+  ExerciseDefinition, 
+  AppTab, 
+  ActiveWorkoutSession, 
+  WorkoutCompletionSummary 
+} from './types';
 import { RoutineList } from './components/RoutineList';
 import { RoutineView } from './components/RoutineView';
 import { ExerciseCatalog } from './components/ExerciseCatalog';
 import { PWAInstallButton } from './components/PWAInstallButton';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { DataBackupModal } from './components/DataBackupModal';
+import { WorkoutSummaryModal } from './components/WorkoutSummaryModal';
 import { normalizeExerciseTitle } from './utils/backup';
+import { formatWorkoutDuration, formatDetailedDuration } from './utils/timeCalculations';
+import { useWorkoutTimer } from './hooks/useWorkoutTimer';
 
 const ROUTINES_STORAGE_KEY = 'workout_planner_routines_v2';
 const CATALOG_STORAGE_KEY = 'workout_planner_catalog_v2';
+const ACTIVE_SESSIONS_STORAGE_KEY = 'workout_active_sessions_v1';
+
+// Top banner shown when an active routine is in progress and the user is browsing elsewhere
+const ActiveWorkoutTopBanner: React.FC<{
+  routine: Routine;
+  session: ActiveWorkoutSession;
+  onOpenRoutine: () => void;
+}> = ({ routine, session, onOpenRoutine }) => {
+  const elapsed = useWorkoutTimer(session.startTime);
+  const totalSets = routine.exercises.reduce((acc, ex) => acc + ex.sets.length, 0);
+  const completedCount = session.completedSetIds.length;
+
+  return (
+    <div
+      id="active-workout-top-banner"
+      className="bg-emerald-700 text-white px-3 sm:px-6 py-2 shadow-md flex items-center justify-between gap-3 text-xs sm:text-sm animate-in fade-in"
+    >
+      <div className="flex items-center gap-2 min-w-0">
+        <span className="w-2.5 h-2.5 rounded-full bg-emerald-300 animate-ping shrink-0" />
+        <span className="font-bold truncate">Entrenamiento en curso: {routine.name}</span>
+        <span className="hidden sm:inline text-emerald-200">
+          ({completedCount}/{totalSets} series)
+        </span>
+        <span className="font-mono bg-emerald-800/90 border border-emerald-600/60 px-2 py-0.5 rounded-md font-bold text-white shrink-0 text-xs">
+          ⏱️ {formatWorkoutDuration(elapsed)}
+        </span>
+      </div>
+      <button
+        type="button"
+        onClick={onOpenRoutine}
+        className="shrink-0 px-3 py-1 bg-white text-emerald-900 font-bold rounded-lg hover:bg-emerald-50 active:scale-95 transition-all shadow-xs text-xs"
+      >
+        Volver a la rutina
+      </button>
+    </div>
+  );
+};
 
 export default function App() {
   const [routines, setRoutines] = useState<Routine[]>(() => {
     try {
-      // Clear legacy storage keys with example data
       localStorage.removeItem('workout_planner_routines_v1');
       const saved = localStorage.getItem(ROUTINES_STORAGE_KEY);
       if (saved) {
@@ -37,7 +83,6 @@ export default function App() {
 
   const [catalog, setCatalog] = useState<ExerciseDefinition[]>(() => {
     try {
-      // Clear legacy storage keys with example data
       localStorage.removeItem('workout_planner_catalog_v1');
       const saved = localStorage.getItem(CATALOG_STORAGE_KEY);
       if (saved) {
@@ -52,11 +97,28 @@ export default function App() {
     return [];
   });
 
+  // Persistent active workout sessions: Record<routineId, ActiveWorkoutSession>
+  const [activeSessions, setActiveSessions] = useState<Record<string, ActiveWorkoutSession>>(() => {
+    try {
+      const saved = localStorage.getItem(ACTIVE_SESSIONS_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          return parsed;
+        }
+      }
+    } catch {
+      // Fallback
+    }
+    return {};
+  });
+
   const [activeTab, setActiveTab] = useState<AppTab>(AppTab.ROUTINES);
   const [activeRoutineId, setActiveRoutineId] = useState<string | null>(null);
   const [routineSubMode, setRoutineSubMode] = useState<RoutineSubMode>('edit');
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
   const [importFeedback, setImportFeedback] = useState<string | null>(null);
+  const [workoutSummary, setWorkoutSummary] = useState<WorkoutCompletionSummary | null>(null);
 
   // Save routines to localStorage whenever they change
   useEffect(() => {
@@ -76,10 +138,78 @@ export default function App() {
     }
   }, [catalog]);
 
+  // Save active workout sessions to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(ACTIVE_SESSIONS_STORAGE_KEY, JSON.stringify(activeSessions));
+    } catch (e) {
+      console.error('Error saving active sessions to localStorage', e);
+    }
+  }, [activeSessions]);
+
+  // Workout Session Handlers
+  const handleStartSession = (routineId: string) => {
+    setActiveSessions((prev) => ({
+      ...prev,
+      [routineId]: {
+        routineId,
+        startTime: prev[routineId]?.startTime || Date.now(),
+        completedSetIds: prev[routineId]?.completedSetIds || [],
+      },
+    }));
+  };
+
+  const handleToggleSetComplete = (routineId: string, setId: string) => {
+    setActiveSessions((prev) => {
+      const current = prev[routineId] || {
+        routineId,
+        startTime: Date.now(),
+        completedSetIds: [],
+      };
+
+      const setExists = current.completedSetIds.includes(setId);
+      const nextCompleted = setExists
+        ? current.completedSetIds.filter((id) => id !== setId)
+        : [...current.completedSetIds, setId];
+
+      return {
+        ...prev,
+        [routineId]: {
+          ...current,
+          completedSetIds: nextCompleted,
+        },
+      };
+    });
+  };
+
+  const handleResetSession = (routineId: string) => {
+    setActiveSessions((prev) => {
+      const next = { ...prev };
+      delete next[routineId];
+      return next;
+    });
+  };
+
+  const handleFinishSession = (summary: WorkoutCompletionSummary) => {
+    // 1. Remove from active sessions
+    setActiveSessions((prev) => {
+      const next = { ...prev };
+      delete next[summary.routineId];
+      return next;
+    });
+
+    // 2. Open summary celebration modal
+    setWorkoutSummary(summary);
+
+    // 3. Show confirmation feedback toast
+    setImportFeedback(
+      `🏆 ¡Entrenamiento "${summary.routineName}" finalizado! ${summary.completedSetsCount}/${summary.totalSetsCount} series en ${formatDetailedDuration(summary.durationSeconds)}`
+    );
+  };
+
   // Catalog CRUD handlers
   const handleCreateCatalogExercise = (exercise: ExerciseDefinition) => {
     setCatalog((prev) => {
-      // Avoid duplicate by id
       const exists = prev.some((e) => e.id === exercise.id);
       if (exists) {
         return prev.map((e) => (e.id === exercise.id ? exercise : e));
@@ -89,17 +219,13 @@ export default function App() {
   };
 
   const handleUpdateCatalogExercise = (exercise: ExerciseDefinition) => {
-    // 1. Get old definition to match by previous title if definitionId was not set yet
     const oldDef = catalog.find((e) => e.id === exercise.id);
     const oldNorm = oldDef ? normalizeExerciseTitle(oldDef.name) : '';
     const newNorm = normalizeExerciseTitle(exercise.name);
 
-    // 2. Update catalog
     setCatalog((prev) => prev.map((e) => (e.id === exercise.id ? exercise : e)));
 
-    // 3. Update all routines that contain this exercise
     let updatedRoutinesCount = 0;
-
     setRoutines((prevRoutines) => {
       const updated = prevRoutines.map((routine) => {
         let routineChanged = false;
@@ -213,6 +339,7 @@ export default function App() {
       if (activeRoutineId === routineId) {
         setActiveRoutineId(null);
       }
+      handleResetSession(routineId);
     }
   };
 
@@ -252,6 +379,14 @@ export default function App() {
 
   const activeRoutine = routines.find((r) => r.id === activeRoutineId);
 
+  // Check if any workout session is currently active while user is on catalog or routine list
+  const inProgressSessionEntry = Object.values(activeSessions).find(
+    (s) => s.startTime && s.routineId !== activeRoutineId
+  );
+  const inProgressRoutine = inProgressSessionEntry
+    ? routines.find((r) => r.id === inProgressSessionEntry.routineId)
+    : null;
+
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 font-sans antialiased selection:bg-emerald-500 selection:text-white overflow-x-hidden">
       {activeRoutineId && activeRoutine ? (
@@ -259,9 +394,14 @@ export default function App() {
           routine={activeRoutine}
           catalog={catalog}
           initialMode={routineSubMode}
+          session={activeSessions[activeRoutine.id]}
           onSaveRoutine={handleSaveRoutine}
           onSaveToCatalog={handleCreateCatalogExercise}
           onBack={() => setActiveRoutineId(null)}
+          onStartSession={handleStartSession}
+          onToggleSetComplete={handleToggleSetComplete}
+          onResetSession={handleResetSession}
+          onFinishSession={handleFinishSession}
         />
       ) : (
         <div className="overflow-x-hidden flex flex-col min-h-screen">
@@ -284,7 +424,7 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Right controls: Main Views Navigation + Subtle Backup Icon + PWA Install */}
+                {/* Right controls: Main Views Navigation + Backup Icon + PWA Install */}
                 <div className="flex items-center gap-1.5 sm:gap-2">
                   <nav className="flex items-center p-1 bg-zinc-100 rounded-xl border border-zinc-200/80 shrink-0">
                     <button
@@ -326,7 +466,7 @@ export default function App() {
                     </button>
                   </nav>
 
-                  {/* Subtle Backup / Data Button */}
+                  {/* Backup / Data Button */}
                   <button
                     id="btn-open-backup-modal"
                     type="button"
@@ -344,6 +484,18 @@ export default function App() {
             </div>
           </header>
 
+          {/* Active Workout Banner when browsing outside the active routine */}
+          {inProgressSessionEntry && inProgressRoutine && (
+            <ActiveWorkoutTopBanner
+              routine={inProgressRoutine}
+              session={inProgressSessionEntry}
+              onOpenRoutine={() => {
+                setActiveRoutineId(inProgressRoutine.id);
+                setRoutineSubMode('execute');
+              }}
+            />
+          )}
+
           {/* Mobile PWA Install Banner */}
           <PWAInstallBanner />
 
@@ -352,6 +504,7 @@ export default function App() {
             {activeTab === AppTab.ROUTINES ? (
               <RoutineList
                 routines={routines}
+                activeSessions={activeSessions}
                 onCreateRoutine={handleCreateRoutine}
                 onSelectRoutine={handleSelectRoutine}
                 onDuplicateRoutine={handleDuplicateRoutine}
@@ -367,7 +520,7 @@ export default function App() {
             )}
           </main>
 
-          {/* Subtle footer link for non-intrusive backup access */}
+          {/* Footer link for backup access */}
           <footer className="mt-auto py-6 px-4 text-center">
             <button
               id="btn-footer-backup-link"
@@ -381,6 +534,12 @@ export default function App() {
           </footer>
         </div>
       )}
+
+      {/* Workout Completion Summary Modal */}
+      <WorkoutSummaryModal
+        summary={workoutSummary}
+        onClose={() => setWorkoutSummary(null)}
+      />
 
       {/* Import / Export Modal */}
       <DataBackupModal

@@ -71,3 +71,36 @@ export function formatStopwatch(seconds: number): string {
   const secs = seconds % 60;
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
+
+/**
+ * Formats seconds into clock style MM:SS or HH:MM:SS for workout timers.
+ */
+export function formatWorkoutDuration(seconds: number): string {
+  if (!seconds || seconds <= 0) return '00:00';
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+
+  if (hrs > 0) {
+    return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+/**
+ * Formats duration into full detailed string in Spanish: e.g. "45 min 20 s" or "1 h 12 min 05 s".
+ */
+export function formatDetailedDuration(seconds: number): string {
+  if (!seconds || seconds <= 0) return '0 s';
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+
+  const parts: string[] = [];
+  if (hrs > 0) parts.push(`${hrs} h`);
+  if (mins > 0) parts.push(`${mins} min`);
+  if (secs > 0 || parts.length === 0) parts.push(`${secs.toString().padStart(mins > 0 || hrs > 0 ? 2 : 1, '0')} s`);
+
+  return parts.join(' ');
+}
+
