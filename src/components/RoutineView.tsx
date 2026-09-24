@@ -217,44 +217,58 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
 
   return (
     <div id="routine-view-container" className="min-h-screen bg-zinc-50 pb-28">
-      {/* Top sticky bar */}
-      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-zinc-200 shadow-2xs pt-[env(safe-area-inset-top,0px)]">
-        <div className="max-w-4xl mx-auto px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-3">
-          <button
-            id="btn-back-to-routines"
-            type="button"
-            onClick={onBack}
-            className="shrink-0 inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg text-zinc-700 hover:bg-zinc-100 transition-colors active:scale-95"
-          >
-            <ArrowLeft className="w-4 h-4" /> <span>Rutinas</span>
-          </button>
+      {/* Top sticky bar - Always visible while scrolling */}
+      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-zinc-200/90 shadow-2xs pt-[env(safe-area-inset-top,0px)]">
+        <div className="max-w-4xl mx-auto px-3 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <button
+              id="btn-back-to-routines"
+              type="button"
+              onClick={onBack}
+              className="shrink-0 inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 text-xs font-semibold rounded-lg text-zinc-700 hover:bg-zinc-100 transition-colors active:scale-95"
+            >
+              <ArrowLeft className="w-4 h-4" /> <span>Rutinas</span>
+            </button>
 
-          {/* Mode Switcher Tabs */}
-          <div className="shrink-0 flex items-center p-1 bg-zinc-100 rounded-xl border border-zinc-200/80">
+            {/* In-header live workout timer indicator when scrolled down in training mode */}
+            {subMode === 'execute' && session?.startTime && (
+              <div 
+                className="hidden xs:flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-emerald-50 border border-emerald-200/80 text-emerald-800 font-mono font-bold text-xs shrink-0 shadow-2xs"
+                title="Tiempo de entrenamiento transcurrido"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <Clock className="w-3 h-3 text-emerald-600" />
+                <span>{formatWorkoutDuration(elapsedSeconds)}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Mode Switcher Tabs - Always visible at hand */}
+          <div className="shrink-0 flex items-center p-1 bg-zinc-100 rounded-xl border border-zinc-200/80 shadow-2xs">
             <button
               id="tab-mode-edit"
               type="button"
               onClick={() => setSubMode('edit')}
-              className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-bold rounded-lg transition-all shrink-0 ${
+              className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-bold rounded-lg transition-all shrink-0 active:scale-95 ${
                 subMode === 'edit'
-                  ? 'bg-white text-zinc-900 shadow-xs'
+                  ? 'bg-white text-zinc-950 shadow-xs ring-1 ring-black/5'
                   : 'text-zinc-500 hover:text-zinc-900'
               }`}
             >
-              <Edit3 className="w-3.5 h-3.5" /> Editar
+              <Edit3 className="w-3.5 h-3.5" /> <span>Editar</span>
             </button>
 
             <button
               id="tab-mode-execute"
               type="button"
               onClick={() => setSubMode('execute')}
-              className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-bold rounded-lg transition-all shrink-0 ${
+              className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-bold rounded-lg transition-all shrink-0 active:scale-95 ${
                 subMode === 'execute'
                   ? 'bg-emerald-600 text-white shadow-xs'
                   : 'text-zinc-500 hover:text-zinc-900'
               }`}
             >
-              <Play className="w-3.5 h-3.5 fill-current" /> Entrenar
+              <Play className="w-3.5 h-3.5 fill-current" /> <span>Entrenar</span>
             </button>
           </div>
         </div>

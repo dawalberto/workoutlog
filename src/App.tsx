@@ -383,7 +383,7 @@ export default function App() {
     : null;
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900 font-sans antialiased selection:bg-emerald-500 selection:text-white overflow-x-hidden">
+    <div className="min-h-screen bg-zinc-50 text-zinc-900 font-sans antialiased selection:bg-emerald-500 selection:text-white">
       {activeRoutineId && activeRoutine ? (
         <RoutineView
           routine={activeRoutine}
@@ -399,7 +399,7 @@ export default function App() {
           onFinishSession={handleFinishSession}
         />
       ) : (
-        <div className="overflow-x-hidden flex flex-col min-h-screen">
+        <div className="flex flex-col min-h-screen">
           {/* Main Top Navigation Bar */}
           <header className="bg-white border-b border-zinc-200 sticky top-0 z-20 shadow-2xs pt-[env(safe-area-inset-top,0px)]">
             <div className="max-w-4xl mx-auto px-3 sm:px-6">
