@@ -9,40 +9,6 @@ let lastNotificationTime = 0;
 
 let silentAudioSource: AudioBufferSourceNode | null = null;
 let silentGain: GainNode | null = null;
-let wakeLockSentinel: any = null;
-
-/**
- * Requests the Screen Wake Lock API to prevent the device screen from turning off
- * while a rest timer is counting down.
- */
-export async function requestScreenWakeLock(): Promise<boolean> {
-  if (typeof navigator !== 'undefined' && 'wakeLock' in navigator) {
-    try {
-      if (!wakeLockSentinel) {
-        wakeLockSentinel = await (navigator as any).wakeLock.request('screen');
-        wakeLockSentinel.addEventListener('release', () => {
-          wakeLockSentinel = null;
-        });
-      }
-      return true;
-    } catch {
-      return false;
-    }
-  }
-  return false;
-}
-
-/**
- * Releases the screen wake lock when timer finishes or closes.
- */
-export function releaseScreenWakeLock(): void {
-  if (wakeLockSentinel) {
-    try {
-      wakeLockSentinel.release();
-    } catch {}
-    wakeLockSentinel = null;
-  }
-}
 
 function stopSilentAudio(): void {
   try {
@@ -117,7 +83,6 @@ export function startRestAudioSession(_exerciseName?: string, _setNumber?: numbe
  */
 export function pauseRestAudioSession(): void {
   stopSilentAudio();
-  releaseScreenWakeLock();
 }
 
 /**
@@ -125,7 +90,6 @@ export function pauseRestAudioSession(): void {
  */
 export function stopRestAudioSession(): void {
   stopSilentAudio();
-  releaseScreenWakeLock();
 
   // Clear any MediaSession state
   if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {

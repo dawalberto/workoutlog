@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { Play, Pause, X, Plus, Bell, Sun } from 'lucide-react';
+import { Play, Pause, X, Plus, Bell } from 'lucide-react';
 import { formatStopwatch } from '../utils/timeCalculations';
 import {
   playTimerFinishBeep,
@@ -8,8 +8,6 @@ import {
   showTimerFinishNotification,
   scheduleRestTimerNotification,
   cancelScheduledNotification,
-  requestScreenWakeLock,
-  releaseScreenWakeLock,
   startRestAudioSession,
   pauseRestAudioSession,
   stopRestAudioSession,
@@ -32,7 +30,6 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
   const [totalSeconds, setTotalSeconds] = useState<number>(initialSeconds);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [hasFinished, setHasFinished] = useState<boolean>(false);
-  const [isWakeLockActive, setIsWakeLockActive] = useState<boolean>(false);
 
   // Synchronous ref to prevent double-firing when returning from background / screen lock
   const hasFinishedRef = useRef<boolean>(false);
@@ -50,10 +47,8 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
     setHasFinished(true);
     setSecondsLeft(0);
 
-    // Stop keep-alive background audio session and wake lock
+    // Stop keep-alive background audio session
     stopRestAudioSession();
-    releaseScreenWakeLock();
-    setIsWakeLockActive(false);
 
     // 1. Play finish chime
     playTimerFinishBeep();
@@ -103,9 +98,6 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
     scheduleAudio(initialSeconds);
     startRestAudioSession(exerciseName, setNumber);
 
-    // Request Screen Wake Lock so phone doesn't sleep during the rest countdown
-    requestScreenWakeLock().then((active) => setIsWakeLockActive(active));
-
     // Schedule notification in OS AlarmManager via Notification Triggers API if available
     scheduleRestTimerNotification(target, exerciseName, setNumber);
 
@@ -115,7 +107,6 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
         scheduledAudioCancelRef.current = null;
       }
       stopRestAudioSession();
-      releaseScreenWakeLock();
       cancelScheduledNotification();
     };
   }, [initialSeconds, scheduleAudio, exerciseName, setNumber]);
@@ -162,9 +153,6 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
 
     // Sync immediately when app gains focus or tab becomes visible again
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && !isPaused && !hasFinishedRef.current) {
-        requestScreenWakeLock().then((active) => setIsWakeLockActive(active));
-      }
       checkTick();
     };
     const onFocus = () => {
@@ -196,15 +184,12 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
       const remainingSec = Math.max(0, Math.ceil(remainingWhenPausedRef.current / 1000));
       scheduleAudio(remainingSec);
       startRestAudioSession(exerciseName, setNumber);
-      requestScreenWakeLock().then((active) => setIsWakeLockActive(active));
       scheduleRestTimerNotification(target, exerciseName, setNumber);
     } else {
       // Pausing
       remainingWhenPausedRef.current = Math.max(0, targetEndTimeRef.current - Date.now());
       setIsPaused(true);
       pauseRestAudioSession();
-      releaseScreenWakeLock();
-      setIsWakeLockActive(false);
       cancelScheduledNotification();
       if (scheduledAudioCancelRef.current) {
         scheduledAudioCancelRef.current();
@@ -227,7 +212,6 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
       setIsPaused(false);
       scheduleAudio(extra);
       startRestAudioSession(exerciseName, setNumber);
-      requestScreenWakeLock().then((active) => setIsWakeLockActive(active));
       scheduleRestTimerNotification(target, exerciseName, setNumber);
     } else if (isPaused) {
       remainingWhenPausedRef.current += extra * 1000;
@@ -283,15 +267,6 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5">
-            {isWakeLockActive && !hasFinished && (
-              <span
-                title="La pantalla permanecerá encendida durante el descanso"
-                className="text-[11px] font-medium text-amber-300/90 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full flex items-center gap-1"
-              >
-                <Sun className="w-3 h-3 text-amber-400" />
-                <span className="hidden sm:inline">Pantalla activa</span>
-              </span>
-            )}
             <button
               id="btn-close-rest-timer"
               type="button"
