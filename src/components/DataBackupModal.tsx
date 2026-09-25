@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   Layers,
   Dumbbell,
+  Flame,
   ArrowRight,
   RefreshCw,
   Info,
@@ -23,6 +24,7 @@ import {
   mergeWorkoutHistory,
   syncRoutinesWithCatalog,
   downloadJsonFile,
+  normalizeExerciseTitle,
   ParsedBackupData
 } from '../utils/backup';
 
@@ -77,6 +79,64 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
+
+  // Handle Export Only Routines (and their associated exercises)
+  const handleExportRoutines = () => {
+    const filename = `workoutlog-rutinas-${new Date().toISOString().split('T')[0]}.json`;
+
+    // Extract all exercises associated with these routines from catalog
+    const routineExerciseNames = new Set<string>();
+    routines.forEach((r) => {
+      r.exercises.forEach((ex) => {
+        if (ex.name) {
+          routineExerciseNames.add(normalizeExerciseTitle(ex.name));
+        }
+      });
+    });
+
+    const associatedCatalog = catalog.filter((c) =>
+      routineExerciseNames.has(normalizeExerciseTitle(c.name))
+    );
+
+    // If any routine exercise isn't in catalog, create a default definition so the export is fully self-contained
+    const existingNames = new Set(associatedCatalog.map((c) => normalizeExerciseTitle(c.name)));
+    routines.forEach((r) => {
+      r.exercises.forEach((ex) => {
+        const norm = normalizeExerciseTitle(ex.name);
+        if (norm && !existingNames.has(norm)) {
+          existingNames.add(norm);
+          associatedCatalog.push({
+            id: 'def-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+            name: ex.name.trim(),
+            category: ex.category || 'Otros',
+            imageUrl: ex.imageUrl || '',
+            videoUrl: ex.videoUrl || '',
+            notes: ex.notes || '',
+            defaultSetsCount: ex.sets?.length || 3,
+            defaultReps: Number(ex.sets?.[0]?.reps) || 10,
+            defaultWeight: Number(ex.sets?.[0]?.weight) || 0,
+            defaultRestSeconds: Number(ex.sets?.[0]?.restSeconds) || 60,
+            createdAt: new Date().toISOString(),
+          });
+        }
+      });
+    });
+
+    const exportPayload = {
+      app: 'WorkoutLog',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      type: 'routines',
+      routines,
+      catalog: associatedCatalog,
+    };
+
+    downloadJsonFile(filename, exportPayload);
+    setExportSuccessMessage(
+      `Se han exportado ${routines.length} rutinas y ${associatedCatalog.length} ejercicios asociados.`
+    );
+    setTimeout(() => setExportSuccessMessage(null), 4000);
+  };
 
   // Handle Export Only Exercises
   const handleExportExercises = () => {
@@ -330,8 +390,38 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
                 Descarga un archivo JSON con tus datos para guardarlo como copia de seguridad en tu dispositivo o transferirlo a otro navegador o móvil.
               </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
-                {/* Option A: Only Exercises */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-1">
+                {/* Option 1: Only Routines & their associated exercises */}
+                <div className="flex flex-col justify-between p-4 rounded-2xl border border-zinc-200 bg-white hover:border-zinc-300 shadow-2xs transition-all">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                        <Flame className="w-4 h-4 text-emerald-600 fill-current" />
+                      </span>
+                      <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
+                        {routines.length} rutinas
+                      </span>
+                    </div>
+                    <h3 className="text-sm font-bold text-zinc-900 mt-2.5">
+                      Solo Rutinas
+                    </h3>
+                    <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
+                      Todas tus rutinas con sus series, descansos y ejercicios asociados.
+                    </p>
+                  </div>
+
+                  <button
+                    id="btn-export-routines"
+                    type="button"
+                    onClick={handleExportRoutines}
+                    className="mt-4 w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-zinc-300 bg-white hover:bg-zinc-50 text-zinc-800 transition active:scale-98"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Descargar Rutinas</span>
+                  </button>
+                </div>
+
+                {/* Option 2: Only Exercises */}
                 <div className="flex flex-col justify-between p-4 rounded-2xl border border-zinc-200 bg-white hover:border-zinc-300 shadow-2xs transition-all">
                   <div>
                     <div className="flex items-center justify-between">
@@ -361,7 +451,7 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
                   </button>
                 </div>
 
-                {/* Option B: Only RM Logs */}
+                {/* Option 3: Only RM Logs */}
                 <div className="flex flex-col justify-between p-4 rounded-2xl border border-zinc-200 bg-white hover:border-zinc-300 shadow-2xs transition-all">
                   <div>
                     <div className="flex items-center justify-between">
@@ -391,7 +481,7 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
                   </button>
                 </div>
 
-                {/* Option C: Only Workout History */}
+                {/* Option 4: Only Workout History */}
                 <div className="flex flex-col justify-between p-4 rounded-2xl border border-zinc-200 bg-white hover:border-zinc-300 shadow-2xs transition-all">
                   <div>
                     <div className="flex items-center justify-between">
@@ -421,8 +511,8 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
                   </button>
                 </div>
 
-                {/* Option D: All (Exercises + Routines & Sets + RMs + History) */}
-                <div className="flex flex-col justify-between p-4 rounded-2xl border-2 border-emerald-500/40 bg-emerald-50/20 hover:border-emerald-500/60 shadow-xs transition-all">
+                {/* Option 5: All (Exercises + Routines & Sets + RMs + History) */}
+                <div className="flex flex-col justify-between p-4 rounded-2xl border-2 border-emerald-500/40 bg-emerald-50/20 hover:border-emerald-500/60 shadow-xs transition-all sm:col-span-2 lg:col-span-2">
                   <div>
                     <div className="flex items-center justify-between">
                       <span className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center">

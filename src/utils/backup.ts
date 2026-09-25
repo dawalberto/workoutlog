@@ -92,6 +92,32 @@ export function parseImportedData(rawJson: string): ParsedBackupData {
     }
   }
 
+  // If routines are present, ensure catalog includes definitions for all exercises associated with them
+  if (routines.length > 0) {
+    const existingCatalogNames = new Set(catalog.map((c) => normalizeExerciseTitle(c.name)));
+    routines.forEach((r) => {
+      r.exercises.forEach((ex) => {
+        const norm = normalizeExerciseTitle(ex.name);
+        if (norm && !existingCatalogNames.has(norm)) {
+          existingCatalogNames.add(norm);
+          catalog.push({
+            id: 'def-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+            name: ex.name.trim(),
+            category: ex.category || 'Otros',
+            imageUrl: ex.imageUrl || '',
+            videoUrl: ex.videoUrl || '',
+            notes: ex.notes || '',
+            defaultSetsCount: ex.sets?.length || 3,
+            defaultReps: Number(ex.sets?.[0]?.reps) || 10,
+            defaultWeight: Number(ex.sets?.[0]?.weight) || 0,
+            defaultRestSeconds: Number(ex.sets?.[0]?.restSeconds) || 60,
+            createdAt: new Date().toISOString(),
+          });
+        }
+      });
+    });
+  }
+
   return {
     catalog,
     routines,
