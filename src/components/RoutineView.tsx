@@ -45,7 +45,7 @@ interface RoutineViewProps {
   onToggleSetComplete: (routineId: string, setId: string) => void;
   onResetSession: (routineId: string) => void;
   onFinishSession: (summary: WorkoutCompletionSummary) => void;
-  onCheckRmWeight?: (exerciseName: string, newWeight: number) => void;
+  onCheckRmWeight?: (exerciseName: string, newWeight: number, exerciseId?: string) => void;
 }
 
 export const RoutineView: React.FC<RoutineViewProps> = ({

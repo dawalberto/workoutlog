@@ -7,11 +7,11 @@ import { normalizeExerciseTitle } from './backup';
 export function getLatestRmRecord(rmLog: ExerciseRmLog | undefined | null): RmRecord | null {
   if (!rmLog || !rmLog.records || rmLog.records.length === 0) return null;
   
-  // Sort by date descending; if same date, by order of addition
+  // Sort by date descending; if same date, compare by weight descending
   const sorted = [...rmLog.records].sort((a, b) => {
     const timeDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
     if (!isNaN(timeDiff) && timeDiff !== 0) return timeDiff;
-    return 0;
+    return b.weight - a.weight;
   });
 
   return sorted[0] || null;
@@ -44,11 +44,22 @@ export function findRmLogForExercise(
     if (matchById) return matchById;
   }
 
-  // 2. Try matching by normalized name
+  // 2. Try matching by normalized name (exact)
   const targetNorm = normalizeExerciseTitle(exerciseName);
   if (!targetNorm) return undefined;
 
-  return rmLogs.find((log) => normalizeExerciseTitle(log.exerciseName) === targetNorm);
+  const matchByName = rmLogs.find((log) => normalizeExerciseTitle(log.exerciseName) === targetNorm);
+  if (matchByName) return matchByName;
+
+  // 3. Fallback: match by stripped whitespace or contains (e.g., "press banca" and "press de banca")
+  const strippedTarget = targetNorm.replace(/\s+/g, '');
+  const fallbackMatch = rmLogs.find((log) => {
+    const norm = normalizeExerciseTitle(log.exerciseName);
+    const stripped = norm.replace(/\s+/g, '');
+    return stripped === strippedTarget || norm.includes(targetNorm) || targetNorm.includes(norm);
+  });
+
+  return fallbackMatch;
 }
 
 /**

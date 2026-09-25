@@ -131,8 +131,16 @@ export const RmRecordAlertModal: React.FC<RmRecordAlertModalProps> = ({
           </label>
         </div>
 
-        {/* Action button */}
-        <div className="flex items-center justify-end">
+        {/* Action buttons */}
+        <div className="flex items-center justify-end gap-2.5">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2.5 text-xs sm:text-sm font-semibold text-zinc-600 hover:text-zinc-900 rounded-xl hover:bg-zinc-100 transition-colors"
+          >
+            Cancelar
+          </button>
+
           <button
             id="btn-confirm-rm-alert"
             type="button"
@@ -140,7 +148,7 @@ export const RmRecordAlertModal: React.FC<RmRecordAlertModalProps> = ({
             className="w-full sm:w-auto px-6 py-2.5 text-xs sm:text-sm font-bold text-white bg-zinc-900 hover:bg-zinc-800 rounded-xl transition-all shadow-sm active:scale-95 flex items-center justify-center gap-1.5"
           >
             <Check className="w-4 h-4 text-emerald-400" />
-            <span>Entendido</span>
+            <span>Aceptar</span>
           </button>
         </div>
       </div>

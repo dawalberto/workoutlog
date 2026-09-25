@@ -172,13 +172,12 @@ export default function App() {
 
   // RM New Record Alert Modal state
   const [pendingRmAlert, setPendingRmAlert] = useState<{
+    logId: string;
     exerciseName: string;
     newWeight: number;
     previousRmWeight: number;
     previousRmDate?: string;
   } | null>(null);
-
-  const alertedWeightsRef = useRef<Set<string>>(new Set());
 
   // Save routines to localStorage whenever they change
   useEffect(() => {
@@ -226,20 +225,19 @@ export default function App() {
   }, [workoutHistory]);
 
   // Check if a newly entered weight exceeds the last logged RM for that exercise
-  const handleCheckRmWeight = (exerciseName: string, newWeight: number) => {
+  const handleCheckRmWeight = (exerciseName: string, newWeight: number, exerciseId?: string) => {
     if (!exerciseName || !newWeight || newWeight <= 0) return;
-    const matchingLog = findRmLogForExercise(rmLogs, exerciseName);
-    if (!matchingLog || matchingLog.records.length === 0) return;
+    if (pendingRmAlert) return; // Prevent duplicate popup if already open
+
+    const matchingLog = findRmLogForExercise(rmLogs, exerciseName, exerciseId);
+    if (!matchingLog || !matchingLog.records || matchingLog.records.length === 0) return;
 
     const latestRecord = getLatestRmRecord(matchingLog);
     if (!latestRecord) return;
 
     if (newWeight > latestRecord.weight) {
-      const alertKey = `${normalizeExerciseTitle(exerciseName)}_${newWeight}`;
-      if (alertedWeightsRef.current.has(alertKey)) return;
-      alertedWeightsRef.current.add(alertKey);
-
       setPendingRmAlert({
+        logId: matchingLog.id,
         exerciseName: matchingLog.exerciseName,
         newWeight,
         previousRmWeight: latestRecord.weight,
@@ -251,7 +249,6 @@ export default function App() {
   const handleConfirmRmAlert = (shouldUpdateRm: boolean) => {
     if (!pendingRmAlert) return;
     if (shouldUpdateRm) {
-      const matchingLog = findRmLogForExercise(rmLogs, pendingRmAlert.exerciseName);
       const newRecord: RmRecord = {
         id: `rm-rec-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         weight: pendingRmAlert.newWeight,
@@ -259,23 +256,24 @@ export default function App() {
         notes: 'Superado en rutina / ejercicio',
       };
 
-      if (matchingLog) {
-        setRmLogs((prev) =>
-          prev.map((log) => {
-            if (log.id === matchingLog.id) {
-              const newRecords = [newRecord, ...log.records].sort(
-                (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-              );
-              return {
-                ...log,
-                records: newRecords,
-                updatedAt: new Date().toISOString(),
-              };
-            }
-            return log;
-          })
-        );
-      }
+      setRmLogs((prev) =>
+        prev.map((log) => {
+          if (
+            log.id === pendingRmAlert.logId ||
+            normalizeExerciseTitle(log.exerciseName) === normalizeExerciseTitle(pendingRmAlert.exerciseName)
+          ) {
+            const newRecords = [newRecord, ...log.records].sort(
+              (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+            );
+            return {
+              ...log,
+              records: newRecords,
+              updatedAt: new Date().toISOString(),
+            };
+          }
+          return log;
+        })
+      );
       setImportFeedback(`🏆 ¡Nuevo RM de ${pendingRmAlert.newWeight} kg registrado en ${pendingRmAlert.exerciseName}!`);
       setTimeout(() => setImportFeedback(null), 4000);
     }

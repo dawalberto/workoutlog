@@ -29,7 +29,7 @@ interface ExerciseCardProps {
   onUpdateExercise: (updated: Exercise) => void;
   onDeleteExercise: () => void;
   onMoveToPosition?: (targetIndex: number) => void;
-  onCheckRmWeight?: (exerciseName: string, newWeight: number) => void;
+  onCheckRmWeight?: (exerciseName: string, newWeight: number, exerciseId?: string) => void;
 }
 
 function formatExerciseSummary(sets: WorkoutSet[]): string {
@@ -490,12 +490,16 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                               value={set.weight}
                               onFocus={(e) => e.target.select()}
                               onChange={(e) => handleUpdateSet(set.id, 'weight', e.target.value)}
-                              onBlur={() => {
-                                const val = Number(set.weight);
-                                if (set.weight === '' || isNaN(val) || val < 0) {
+                              onBlur={(e) => {
+                                const inputVal = e.target.value;
+                                const val = Number(inputVal);
+                                if (inputVal === '' || isNaN(val) || val < 0) {
                                   handleUpdateSet(set.id, 'weight', 0);
-                                } else if (val > 0 && onCheckRmWeight) {
-                                  onCheckRmWeight(exercise.name, val);
+                                } else {
+                                  handleUpdateSet(set.id, 'weight', val);
+                                  if (val > 0 && onCheckRmWeight) {
+                                    onCheckRmWeight(exercise.name, val, exercise.definitionId);
+                                  }
                                 }
                               }}
                               className="w-14 sm:w-16 text-center text-xs sm:text-sm font-semibold py-1 px-1 rounded-lg border border-zinc-200 bg-zinc-50 focus:bg-white focus:ring-1 focus:ring-emerald-500 focus:outline-none"
