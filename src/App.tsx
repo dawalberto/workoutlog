@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Flame, Dumbbell, ArrowDownUp, CheckCircle2, X, Trophy, Menu } from 'lucide-react';
+import { Flame, Dumbbell, ArrowDownUp, CheckCircle2, X, Trophy, Menu, ArrowRight } from 'lucide-react';
 import { 
   Routine, 
   RoutineSubMode, 
@@ -68,11 +68,14 @@ const ActiveWorkoutTopBanner: React.FC<{
         </span>
       </div>
       <button
+        id="btn-return-to-active-routine"
         type="button"
         onClick={onOpenRoutine}
-        className="shrink-0 px-3 py-1 bg-white text-emerald-900 font-bold rounded-lg hover:bg-emerald-50 active:scale-95 transition-all shadow-xs text-xs"
+        title="Volver a la rutina"
+        aria-label="Volver a la rutina"
+        className="shrink-0 p-1.5 sm:p-2 bg-white text-emerald-950 rounded-xl hover:bg-emerald-50 active:scale-95 transition-all shadow-xs flex items-center justify-center"
       >
-        Volver a la rutina
+        <ArrowRight className="w-4 h-4" />
       </button>
     </div>
   );

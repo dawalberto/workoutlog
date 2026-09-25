@@ -23,11 +23,49 @@ interface ExerciseCardProps {
   totalExercises?: number;
   isExecutionMode: boolean;
   completedSetIds: Set<string>;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
   onToggleSetComplete: (setId: string, restSeconds: number, exerciseName: string, setNumber: number) => void;
   onUpdateExercise: (updated: Exercise) => void;
   onDeleteExercise: () => void;
   onMoveToPosition?: (targetIndex: number) => void;
   onCheckRmWeight?: (exerciseName: string, newWeight: number) => void;
+}
+
+function formatExerciseSummary(sets: WorkoutSet[]): string {
+  if (!sets || sets.length === 0) return '';
+
+  const setsCount = `${sets.length}s`;
+
+  // Reps
+  const repsArr = sets.map((s) => Number(s.reps) || 0);
+  const minReps = Math.min(...repsArr);
+  const maxReps = Math.max(...repsArr);
+  const repsStr = minReps === maxReps ? `${minReps}r` : `${minReps}-${maxReps}r`;
+
+  // Weight
+  const weightArr = sets.map((s) => Number(s.weight) || 0);
+  const minWeight = Math.min(...weightArr);
+  const maxWeight = Math.max(...weightArr);
+  const weightStr = minWeight === maxWeight ? `${minWeight}kg` : `${minWeight}-${maxWeight}kg`;
+
+  // Rest (e.g. 90s -> 1:30⏱️)
+  const restArr = sets.map((s) => Number(s.restSeconds) || 0);
+  const minRest = Math.min(...restArr);
+  const maxRest = Math.max(...restArr);
+
+  const formatRestTime = (sec: number) => {
+    if (sec <= 0) return '0:00';
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
+  const restStr = minRest === maxRest
+    ? `${formatRestTime(minRest)}⏱️`
+    : `${formatRestTime(minRest)}-${formatRestTime(maxRest)}⏱️`;
+
+  return `${setsCount} x ${repsStr} · ${weightStr} - ${restStr}`;
 }
 
 export const ExerciseCard: React.FC<ExerciseCardProps> = ({
@@ -36,6 +74,8 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
   totalExercises = 1,
   isExecutionMode,
   completedSetIds,
+  isCollapsed: propIsCollapsed,
+  onToggleCollapse,
   onToggleSetComplete,
   onUpdateExercise,
   onDeleteExercise,
@@ -50,24 +90,13 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
   const completedSetsCount = exercise.sets.filter((s) => completedSetIds.has(s.id)).length;
   const isAllCompleted = totalSetsCount > 0 && completedSetsCount === totalSetsCount;
 
-  // Auto-collapse when all sets are completed in execution mode
-  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => isExecutionMode && isAllCompleted);
-  const prevAllCompletedRef = useRef<boolean>(isAllCompleted);
-  const prevExecutionModeRef = useRef<boolean>(isExecutionMode);
-
-  useEffect(() => {
-    if (isExecutionMode) {
-      if (isAllCompleted && (!prevAllCompletedRef.current || !prevExecutionModeRef.current)) {
-        setIsCollapsed(true);
-      } else if (!isAllCompleted && prevAllCompletedRef.current) {
-        setIsCollapsed(false);
-      }
-    }
-    prevAllCompletedRef.current = isAllCompleted;
-    prevExecutionModeRef.current = isExecutionMode;
-  }, [isExecutionMode, isAllCompleted]);
+  // Collapse state (controlled from RoutineView or local fallback)
+  const [localCollapsed, setLocalCollapsed] = useState<boolean>(() => isExecutionMode && isAllCompleted);
+  const isCollapsed = propIsCollapsed !== undefined ? propIsCollapsed : localCollapsed;
+  const handleToggleCollapse = onToggleCollapse || (() => setLocalCollapsed(!localCollapsed));
 
   const totalExerciseSeconds = getExerciseTotalSeconds(exercise);
+  const summaryText = formatExerciseSummary(exercise.sets);
 
   // Handlers for Sets CRUD
   const handleUpdateSet = (setId: string, field: keyof WorkoutSet, value: number | string) => {
@@ -238,9 +267,19 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
 
           {/* Action Toolbar - Separate row on mobile, right-aligned on desktop */}
           <div className="flex items-center justify-between sm:justify-end gap-1.5 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-200/60 shrink-0">
+            {/* When collapsed, show small summary beside the time */}
+            {isCollapsed && summaryText && (
+              <span
+                className="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-semibold bg-zinc-100 text-zinc-700 border border-zinc-200/80 shadow-2xs whitespace-nowrap"
+                title="Resumen: series x repeticiones · peso - descanso"
+              >
+                {summaryText}
+              </span>
+            )}
+
             {/* Estimated Exercise Duration Badge */}
             <div
-              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold ${
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold shrink-0 ${
                 isAllCompleted
                   ? 'bg-emerald-200/70 text-emerald-900'
                   : 'bg-zinc-200/60 text-zinc-700'
@@ -251,7 +290,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
               <span>~{formatSecondsToTime(totalExerciseSeconds)}</span>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0">
               {!isExecutionMode && (
                 <>
                   <button
@@ -291,16 +330,15 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                 </>
               )}
 
-              {isExecutionMode && (
-                <button
-                  type="button"
-                  onClick={() => setIsCollapsed(!isCollapsed)}
-                  className="p-1.5 rounded-lg text-zinc-500 hover:bg-zinc-200/60 transition-colors"
-                  title={isCollapsed ? 'Desplegar ejercicio' : 'Plegar ejercicio'}
-                >
-                  {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={handleToggleCollapse}
+                className="p-1.5 rounded-lg text-zinc-500 hover:bg-zinc-200/60 transition-colors"
+                title={isCollapsed ? 'Desplegar ejercicio' : 'Plegar ejercicio'}
+                aria-label={isCollapsed ? 'Desplegar ejercicio' : 'Plegar ejercicio'}
+              >
+                {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+              </button>
             </div>
           </div>
         </div>
@@ -436,35 +474,35 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
 
                       {/* Weight */}
                       <td className="py-2.5 px-1 sm:px-2 text-center">
-                        <div className="flex items-center justify-center">
-                          <input
-                            type="number"
-                            inputMode="decimal"
-                            pattern="[0-9]*[.,]?[0-9]*"
-                            step="0.5"
-                            min="0"
-                            max="999"
-                            value={set.weight}
-                            onFocus={(e) => e.target.select()}
-                            onChange={(e) => handleUpdateSet(set.id, 'weight', e.target.value)}
-                            onBlur={() => {
-                              const val = Number(set.weight);
-                              if (set.weight === '' || isNaN(val) || val < 0) {
-                                handleUpdateSet(set.id, 'weight', 0);
-                              } else if (val > 0 && onCheckRmWeight) {
-                                onCheckRmWeight(exercise.name, val);
-                              }
-                            }}
-                            className={`w-14 sm:w-16 text-center text-xs sm:text-sm font-semibold py-1 px-1 rounded-lg border focus:bg-white focus:ring-1 focus:ring-emerald-500 focus:outline-none transition-colors ${
-                              isExecutionMode
-                                ? isCompleted
-                                  ? 'bg-emerald-100/50 border-emerald-300 text-zinc-600'
-                                  : 'bg-white border-zinc-300 text-zinc-900 font-bold'
-                                : 'bg-zinc-50 border-zinc-200 focus:bg-white'
-                            }`}
-                          />
-                          <span className="text-[10px] sm:text-xs text-zinc-400 ml-0.5">kg</span>
-                        </div>
+                        {isExecutionMode ? (
+                          <span className={`text-xs sm:text-sm font-semibold ${isCompleted ? 'text-zinc-500' : 'text-zinc-900'}`}>
+                            {set.weight} <span className="text-[10px] sm:text-xs font-normal text-zinc-500">kg</span>
+                          </span>
+                        ) : (
+                          <div className="flex items-center justify-center">
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              pattern="[0-9]*[.,]?[0-9]*"
+                              step="0.5"
+                              min="0"
+                              max="999"
+                              value={set.weight}
+                              onFocus={(e) => e.target.select()}
+                              onChange={(e) => handleUpdateSet(set.id, 'weight', e.target.value)}
+                              onBlur={() => {
+                                const val = Number(set.weight);
+                                if (set.weight === '' || isNaN(val) || val < 0) {
+                                  handleUpdateSet(set.id, 'weight', 0);
+                                } else if (val > 0 && onCheckRmWeight) {
+                                  onCheckRmWeight(exercise.name, val);
+                                }
+                              }}
+                              className="w-14 sm:w-16 text-center text-xs sm:text-sm font-semibold py-1 px-1 rounded-lg border border-zinc-200 bg-zinc-50 focus:bg-white focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                            />
+                            <span className="text-[10px] sm:text-xs text-zinc-400 ml-0.5">kg</span>
+                          </div>
+                        )}
                       </td>
 
                       {/* Rest */}

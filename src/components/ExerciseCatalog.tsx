@@ -150,14 +150,16 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
               </p>
             </div>
 
-            <button
-              id="btn-new-catalog-exercise"
-              type="button"
-              onClick={handleOpenCreate}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-colors active:scale-95"
-            >
-              <Plus className="w-4 h-4" /> Nuevo Ejercicio
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                id="btn-new-catalog-exercise"
+                type="button"
+                onClick={handleOpenCreate}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-colors active:scale-95"
+              >
+                <Plus className="w-4 h-4" /> Nuevo Ejercicio
+              </button>
+            </div>
           </div>
 
           {/* Search & Category Filter */}

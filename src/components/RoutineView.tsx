@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   ArrowLeft, 
   Play, 
@@ -74,6 +74,43 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
   const [showAddModal, setShowAddModal] = useState(false);
   const [showReorderModal, setShowReorderModal] = useState(false);
 
+  // Collapse state: By default, all exercises collapsed except the first one (index > 0)
+  const [collapsedExerciseIds, setCollapsedExerciseIds] = useState<Set<string>>(() => {
+    const set = new Set<string>();
+    routine.exercises.forEach((ex, idx) => {
+      if (idx > 0) {
+        set.add(ex.id);
+      }
+    });
+    return set;
+  });
+
+  const prevRoutineIdRef = useRef(routine.id);
+  useEffect(() => {
+    if (prevRoutineIdRef.current !== routine.id) {
+      prevRoutineIdRef.current = routine.id;
+      const initialSet = new Set<string>();
+      routine.exercises.forEach((ex, idx) => {
+        if (idx > 0) {
+          initialSet.add(ex.id);
+        }
+      });
+      setCollapsedExerciseIds(initialSet);
+    }
+  }, [routine.id, routine.exercises]);
+
+  const handleToggleCollapseExercise = (exerciseId: string) => {
+    setCollapsedExerciseIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(exerciseId)) {
+        next.delete(exerciseId);
+      } else {
+        next.add(exerciseId);
+      }
+      return next;
+    });
+  };
+
   // Infallible absolute live elapsed time (based on epoch ms Date.now() - session.startTime)
   const elapsedSeconds = useWorkoutTimer(session?.startTime);
 
@@ -110,6 +147,25 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
           setNumber,
           key: Date.now(),
         });
+      }
+
+      // Check if this completion finishes all sets of the exercise:
+      const exIndex = routine.exercises.findIndex((ex) => ex.sets.some((s) => s.id === setId));
+      if (exIndex !== -1) {
+        const targetEx = routine.exercises[exIndex];
+        const willBeAllCompleted = targetEx.sets.every((s) => s.id === setId || completedSetIds.has(s.id));
+        if (willBeAllCompleted) {
+          // Collapse current exercise and uncollapse the next exercise
+          setCollapsedExerciseIds((prev) => {
+            const next = new Set(prev);
+            next.add(targetEx.id);
+            if (exIndex + 1 < routine.exercises.length) {
+              const nextEx = routine.exercises[exIndex + 1];
+              next.delete(nextEx.id);
+            }
+            return next;
+          });
+        }
       }
     }
   };
@@ -503,6 +559,8 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
                 totalExercises={routine.exercises.length}
                 isExecutionMode={subMode === 'execute'}
                 completedSetIds={completedSetIds}
+                isCollapsed={collapsedExerciseIds.has(exercise.id)}
+                onToggleCollapse={() => handleToggleCollapseExercise(exercise.id)}
                 onToggleSetComplete={handleToggleSetComplete}
                 onUpdateExercise={(updated) => handleUpdateExercise(index, updated)}
                 onDeleteExercise={() => handleDeleteExercise(index)}
