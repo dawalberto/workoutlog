@@ -11,14 +11,16 @@ import {
   ArrowRight,
   RefreshCw,
   Info,
-  Trophy
+  Trophy,
+  Calendar
 } from 'lucide-react';
-import { ExerciseDefinition, Routine, ExerciseRmLog } from '../types';
+import { ExerciseDefinition, Routine, ExerciseRmLog, WorkoutHistoryLog } from '../types';
 import {
   parseImportedData,
   mergeCatalogs,
   mergeRoutines,
   mergeRmLogs,
+  mergeWorkoutHistory,
   syncRoutinesWithCatalog,
   downloadJsonFile,
   ParsedBackupData
@@ -30,10 +32,12 @@ interface DataBackupModalProps {
   catalog: ExerciseDefinition[];
   routines: Routine[];
   rmLogs: ExerciseRmLog[];
+  workoutHistory: WorkoutHistoryLog[];
   onImportComplete: (
     newCatalog: ExerciseDefinition[],
     newRoutines: Routine[],
     newRmLogs: ExerciseRmLog[],
+    newWorkoutHistory: WorkoutHistoryLog[],
     summary: {
       exercisesAdded: number;
       exercisesReplaced: number;
@@ -41,6 +45,7 @@ interface DataBackupModalProps {
       exercisesInRoutinesUpdated?: number;
       rmLogsAdded?: number;
       rmLogsUpdated?: number;
+      historyAdded?: number;
       mode: 'merge' | 'overwrite';
     }
   ) => void;
@@ -55,6 +60,7 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
   catalog,
   routines,
   rmLogs,
+  workoutHistory,
   onImportComplete,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('export');
@@ -102,7 +108,22 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
     setTimeout(() => setExportSuccessMessage(null), 4000);
   };
 
-  // Handle Export All (Exercises + Routines & Sets + RM Logs)
+  // Handle Export Only Workout History
+  const handleExportHistory = () => {
+    const filename = `workoutlog-historial-${new Date().toISOString().split('T')[0]}.json`;
+    const exportPayload = {
+      app: 'WorkoutLog',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      type: 'history',
+      workoutHistory,
+    };
+    downloadJsonFile(filename, exportPayload);
+    setExportSuccessMessage(`Se han exportado ${workoutHistory.length} sesiones del historial.`);
+    setTimeout(() => setExportSuccessMessage(null), 4000);
+  };
+
+  // Handle Export All (Exercises + Routines & Sets + RM Logs + Workout History)
   const handleExportAll = () => {
     const filename = `workoutlog-backup-completo-${new Date().toISOString().split('T')[0]}.json`;
     const exportPayload = {
@@ -113,10 +134,11 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
       catalog,
       routines,
       rmLogs,
+      workoutHistory,
     };
     downloadJsonFile(filename, exportPayload);
     setExportSuccessMessage(
-      `Se han exportado ${catalog.length} ejercicios, ${routines.length} rutinas y ${rmLogs.length} RMs.`
+      `Se han exportado ${catalog.length} ejercicios, ${routines.length} rutinas, ${rmLogs.length} RMs y ${workoutHistory.length} sesiones.`
     );
     setTimeout(() => setExportSuccessMessage(null), 4000);
   };
@@ -152,8 +174,8 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
         const text = event.target?.result as string;
         const result = parseImportedData(text);
 
-        if (!result.hasExercises && !result.hasRoutines && !result.hasRmLogs) {
-          setParseError('No se encontraron ejercicios, rutinas ni registros de RM válidos en el archivo.');
+        if (!result.hasExercises && !result.hasRoutines && !result.hasRmLogs && !result.hasHistory) {
+          setParseError('No se encontraron ejercicios, rutinas, registros de RM ni historial válidos en el archivo.');
           return;
         }
 
@@ -179,14 +201,16 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
         const newCatalog = parsedData.catalog;
         const newRoutines = syncRoutinesWithCatalog(parsedData.routines, newCatalog);
         const newRmLogs = parsedData.rmLogs;
+        const newWorkoutHistory = parsedData.workoutHistory;
 
-        onImportComplete(newCatalog, newRoutines, newRmLogs, {
+        onImportComplete(newCatalog, newRoutines, newRmLogs, newWorkoutHistory, {
           exercisesAdded: newCatalog.length,
           exercisesReplaced: 0,
           routinesAdded: newRoutines.length,
           exercisesInRoutinesUpdated: 0,
           rmLogsAdded: newRmLogs.length,
           rmLogsUpdated: 0,
+          historyAdded: newWorkoutHistory.length,
           mode: 'overwrite',
         });
         onClose();
@@ -199,14 +223,16 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
           replaceDuplicates: replaceDuplicateExercises,
         });
         const rmMerge = mergeRmLogs(rmLogs, parsedData.rmLogs, replaceDuplicateExercises);
+        const historyMerge = mergeWorkoutHistory(workoutHistory, parsedData.workoutHistory);
 
-        onImportComplete(catalogMerge.merged, routinesMerge.merged, rmMerge.merged, {
+        onImportComplete(catalogMerge.merged, routinesMerge.merged, rmMerge.merged, historyMerge.merged, {
           exercisesAdded: catalogMerge.addedCount,
           exercisesReplaced: catalogMerge.replacedCount,
           routinesAdded: routinesMerge.addedCount,
           exercisesInRoutinesUpdated: routinesMerge.updatedExercisesCount,
           rmLogsAdded: rmMerge.addedCount,
           rmLogsUpdated: rmMerge.updatedCount,
+          historyAdded: historyMerge.addedCount,
           mode: 'merge',
         });
         onClose();
@@ -304,7 +330,7 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
                 Descarga un archivo JSON con tus datos para guardarlo como copia de seguridad en tu dispositivo o transferirlo a otro navegador o móvil.
               </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
                 {/* Option A: Only Exercises */}
                 <div className="flex flex-col justify-between p-4 rounded-2xl border border-zinc-200 bg-white hover:border-zinc-300 shadow-2xs transition-all">
                   <div>
@@ -361,11 +387,41 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
                     className="mt-4 w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-zinc-300 bg-white hover:bg-zinc-50 text-zinc-800 transition active:scale-98"
                   >
                     <Download className="w-3.5 h-3.5" />
-                    <span>Descargar RMs (.json)</span>
+                    <span>Descargar RMs</span>
                   </button>
                 </div>
 
-                {/* Option C: All (Exercises + Routines & Sets + RMs) */}
+                {/* Option C: Only Workout History */}
+                <div className="flex flex-col justify-between p-4 rounded-2xl border border-zinc-200 bg-white hover:border-zinc-300 shadow-2xs transition-all">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="w-8 h-8 rounded-xl bg-blue-50 text-blue-800 flex items-center justify-center">
+                        <Calendar className="w-4 h-4 text-blue-600" />
+                      </span>
+                      <span className="text-[11px] font-bold text-blue-800 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200/60">
+                        {workoutHistory.length} sesiones
+                      </span>
+                    </div>
+                    <h3 className="text-sm font-bold text-zinc-900 mt-2.5">
+                      Solo Historial
+                    </h3>
+                    <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
+                      Registro de todas las sesiones de rutinas completadas.
+                    </p>
+                  </div>
+
+                  <button
+                    id="btn-export-history"
+                    type="button"
+                    onClick={handleExportHistory}
+                    className="mt-4 w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-zinc-300 bg-white hover:bg-zinc-50 text-zinc-800 transition active:scale-98"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Descargar Historial</span>
+                  </button>
+                </div>
+
+                {/* Option D: All (Exercises + Routines & Sets + RMs + History) */}
                 <div className="flex flex-col justify-between p-4 rounded-2xl border-2 border-emerald-500/40 bg-emerald-50/20 hover:border-emerald-500/60 shadow-xs transition-all">
                   <div>
                     <div className="flex items-center justify-between">
@@ -380,7 +436,7 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
                       Todo el contenido
                     </h3>
                     <p className="text-xs text-zinc-600 mt-1 leading-relaxed">
-                      {catalog.length} ejercicios, {routines.length} rutinas y {rmLogs.length} registros de RM.
+                      {catalog.length} ejercicios, {routines.length} rutinas, {rmLogs.length} RMs y {workoutHistory.length} sesiones.
                     </p>
                   </div>
 
@@ -425,7 +481,7 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
                     Selecciona o arrastra tu archivo JSON
                   </h4>
                   <p className="text-xs text-zinc-500 mt-1 max-w-xs mx-auto">
-                    Acepta copias de WorkoutLog con ejercicios, rutinas y/o registros de RMs.
+                    Acepta copias de WorkoutLog con ejercicios, rutinas, RMs y/o historial de sesiones.
                   </p>
                   <button
                     type="button"
@@ -453,16 +509,22 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
                               {parsedData.catalog.length} ejercicios
                             </span>
                           )}
-                          {parsedData.hasExercises && (parsedData.hasRoutines || parsedData.hasRmLogs) && <span>•</span>}
+                          {parsedData.hasExercises && (parsedData.hasRoutines || parsedData.hasRmLogs || parsedData.hasHistory) && <span>•</span>}
                           {parsedData.hasRoutines && (
                             <span className="text-blue-700 font-semibold">
                               {parsedData.routines.length} rutinas
                             </span>
                           )}
-                          {parsedData.hasRoutines && parsedData.hasRmLogs && <span>•</span>}
+                          {parsedData.hasRoutines && (parsedData.hasRmLogs || parsedData.hasHistory) && <span>•</span>}
                           {parsedData.hasRmLogs && (
                             <span className="text-amber-700 font-semibold">
                               {parsedData.rmLogs.length} RMs
+                            </span>
+                          )}
+                          {parsedData.hasRmLogs && parsedData.hasHistory && <span>•</span>}
+                          {parsedData.hasHistory && (
+                            <span className="text-purple-700 font-semibold">
+                              {parsedData.workoutHistory.length} sesiones
                             </span>
                           )}
                         </div>

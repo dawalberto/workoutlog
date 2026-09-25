@@ -1,5 +1,5 @@
 import React from 'react';
-import { Flame, Dumbbell, Trophy, ArrowDownUp, X, ChevronRight } from 'lucide-react';
+import { Flame, Dumbbell, Trophy, Calendar, ArrowDownUp, X, ChevronRight } from 'lucide-react';
 import { AppTab } from '../types';
 import { PWAInstallButton } from './PWAInstallButton';
 
@@ -11,6 +11,7 @@ interface SidebarMenuProps {
   routinesCount: number;
   catalogCount: number;
   rmCount: number;
+  historyCount: number;
   onOpenBackup: () => void;
 }
 
@@ -22,6 +23,7 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
   routinesCount,
   catalogCount,
   rmCount,
+  historyCount,
   onOpenBackup,
 }) => {
   if (!isOpen) return null;
@@ -195,6 +197,45 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
                 }`}
               >
                 {rmCount}
+              </span>
+            </button>
+
+            {/* Historial de Entrenamientos */}
+            <button
+              id="sidebar-link-history"
+              type="button"
+              onClick={() => handleNav(AppTab.HISTORY)}
+              className={`w-full flex items-center justify-between p-3 rounded-2xl text-left transition-all ${
+                activeTab === AppTab.HISTORY
+                  ? 'bg-emerald-50 text-emerald-950 font-bold border border-emerald-200/80 shadow-2xs'
+                  : 'text-zinc-700 hover:bg-zinc-100 font-semibold'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                    activeTab === AppTab.HISTORY
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-zinc-100 text-zinc-600'
+                  }`}
+                >
+                  <Calendar className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-sm">Historial</div>
+                  <div className="text-[11px] text-zinc-600 font-normal">
+                    Calendario de sesiones finalizadas
+                  </div>
+                </div>
+              </div>
+              <span
+                className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                  activeTab === AppTab.HISTORY
+                    ? 'bg-emerald-200/70 text-emerald-900'
+                    : 'bg-zinc-100 text-zinc-600'
+                }`}
+              >
+                {historyCount}
               </span>
             </button>
 

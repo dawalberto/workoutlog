@@ -13,12 +13,14 @@ import {
   ActiveWorkoutSession, 
   WorkoutCompletionSummary,
   ExerciseRmLog,
-  RmRecord
+  RmRecord,
+  WorkoutHistoryLog
 } from './types';
 import { RoutineList } from './components/RoutineList';
 import { RoutineView } from './components/RoutineView';
 import { ExerciseCatalog } from './components/ExerciseCatalog';
 import { RmLogsView } from './components/RmLogsView';
+import { WorkoutHistoryView } from './components/WorkoutHistoryView';
 import { SidebarMenu } from './components/SidebarMenu';
 import { RmRecordAlertModal } from './components/RmRecordAlertModal';
 import { PWAInstallButton } from './components/PWAInstallButton';
@@ -38,6 +40,7 @@ const ROUTINES_STORAGE_KEY = 'workout_planner_routines_v2';
 const CATALOG_STORAGE_KEY = 'workout_planner_catalog_v2';
 const ACTIVE_SESSIONS_STORAGE_KEY = 'workout_active_sessions_v1';
 const RM_LOGS_STORAGE_KEY = 'workout_planner_rm_logs_v1';
+const WORKOUT_HISTORY_STORAGE_KEY = 'workout_planner_history_v1';
 
 // Top banner shown when an active routine is in progress and the user is browsing elsewhere
 const ActiveWorkoutTopBanner: React.FC<{
@@ -148,6 +151,22 @@ export default function App() {
     return [];
   });
 
+  // Persistent Workout History logs
+  const [workoutHistory, setWorkoutHistory] = useState<WorkoutHistoryLog[]>(() => {
+    try {
+      const saved = localStorage.getItem(WORKOUT_HISTORY_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+      }
+    } catch {
+      // Fallback
+    }
+    return [];
+  });
+
   // RM New Record Alert Modal state
   const [pendingRmAlert, setPendingRmAlert] = useState<{
     exerciseName: string;
@@ -193,6 +212,15 @@ export default function App() {
       console.error('Error saving rmLogs to localStorage', e);
     }
   }, [rmLogs]);
+
+  // Save workout history to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(WORKOUT_HISTORY_STORAGE_KEY, JSON.stringify(workoutHistory));
+    } catch (e) {
+      console.error('Error saving workout history to localStorage', e);
+    }
+  }, [workoutHistory]);
 
   // Check if a newly entered weight exceeds the last logged RM for that exercise
   const handleCheckRmWeight = (exerciseName: string, newWeight: number) => {
@@ -304,6 +332,18 @@ export default function App() {
 
     // 2. Open summary celebration modal
     setWorkoutSummary(summary);
+
+    // 3. Save automatically to workout history
+    const newLog: WorkoutHistoryLog = {
+      ...summary,
+      id: 'workout-log-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+      completedAt: new Date(summary.endTime || Date.now()).toISOString(),
+    };
+    setWorkoutHistory((prev) => [newLog, ...prev]);
+  };
+
+  const handleDeleteHistoryLog = (logId: string) => {
+    setWorkoutHistory((prev) => prev.filter((l) => l.id !== logId));
   };
 
   // Catalog CRUD handlers
@@ -447,6 +487,7 @@ export default function App() {
     newCatalog: ExerciseDefinition[],
     newRoutines: Routine[],
     newRmLogs: ExerciseRmLog[],
+    newWorkoutHistory: WorkoutHistoryLog[],
     summary: {
       exercisesAdded: number;
       exercisesReplaced: number;
@@ -454,16 +495,18 @@ export default function App() {
       exercisesInRoutinesUpdated?: number;
       rmLogsAdded?: number;
       rmLogsUpdated?: number;
+      historyAdded?: number;
       mode: 'merge' | 'overwrite';
     }
   ) => {
     setCatalog(newCatalog);
     setRoutines(newRoutines);
     setRmLogs(newRmLogs);
+    setWorkoutHistory(newWorkoutHistory);
 
     let msg = '';
     if (summary.mode === 'overwrite') {
-      msg = `Copia restaurada: ${newCatalog.length} ejercicios, ${newRoutines.length} rutinas y ${newRmLogs.length} RMs guardados.`;
+      msg = `Copia restaurada: ${newCatalog.length} ejercicios, ${newRoutines.length} rutinas, ${newRmLogs.length} RMs y ${newWorkoutHistory.length} sesiones.`;
     } else {
       const parts: string[] = [];
       if (summary.exercisesAdded > 0) parts.push(`${summary.exercisesAdded} ejerc. añadidos`);
@@ -474,6 +517,7 @@ export default function App() {
       if (summary.routinesAdded > 0) parts.push(`${summary.routinesAdded} rutinas añadidas`);
       if (summary.rmLogsAdded && summary.rmLogsAdded > 0) parts.push(`${summary.rmLogsAdded} RMs añadidos`);
       if (summary.rmLogsUpdated && summary.rmLogsUpdated > 0) parts.push(`${summary.rmLogsUpdated} RMs actualizados`);
+      if (summary.historyAdded && summary.historyAdded > 0) parts.push(`${summary.historyAdded} sesiones añadidas`);
       msg = parts.length > 0
         ? `Importación completada: ${parts.join(', ')}.`
         : 'Datos combinados con éxito.';
@@ -617,12 +661,18 @@ export default function App() {
                 onDeleteExercise={handleDeleteCatalogExercise}
                 onCheckRmWeight={handleCheckRmWeight}
               />
-            ) : (
+            ) : activeTab === AppTab.RMS ? (
               <RmLogsView
                 catalog={catalog}
                 rmLogs={rmLogs}
                 onSaveRmLogs={setRmLogs}
                 onGoToCatalog={() => setActiveTab(AppTab.EXERCISES)}
+              />
+            ) : (
+              <WorkoutHistoryView
+                historyLogs={workoutHistory}
+                onDeleteLog={handleDeleteHistoryLog}
+                onGoToRoutines={() => setActiveTab(AppTab.ROUTINES)}
               />
             )}
           </main>
@@ -651,6 +701,7 @@ export default function App() {
         routinesCount={routines.length}
         catalogCount={catalog.length}
         rmCount={rmLogs.length}
+        historyCount={workoutHistory.length}
         onOpenBackup={() => setIsBackupModalOpen(true)}
       />
 
@@ -678,6 +729,7 @@ export default function App() {
         catalog={catalog}
         routines={routines}
         rmLogs={rmLogs}
+        workoutHistory={workoutHistory}
         onImportComplete={handleImportComplete}
       />
 

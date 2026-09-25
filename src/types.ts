@@ -44,6 +44,7 @@ export enum AppTab {
   ROUTINES = 'routines',
   EXERCISES = 'exercises',
   RMS = 'rms',
+  HISTORY = 'history',
 }
 
 export interface RmRecord {
@@ -87,4 +88,10 @@ export interface WorkoutCompletionSummary {
     totalSets: number;
   }[];
 }
+
+export interface WorkoutHistoryLog extends WorkoutCompletionSummary {
+  id: string; // unique ID of this completed workout log
+  completedAt: string; // ISO date-time string (e.g. "2026-09-24T12:00:00.000Z")
+}
+
 

@@ -1,22 +1,25 @@
-import { ExerciseDefinition, Routine, ExerciseRmLog, RmRecord } from '../types';
+import { ExerciseDefinition, Routine, ExerciseRmLog, RmRecord, WorkoutHistoryLog } from '../types';
 
 export interface WorkoutLogBackupFile {
   app: 'WorkoutLog';
   version: number;
   exportedAt: string;
-  type: 'all' | 'exercises' | 'routines' | 'rms';
+  type: 'all' | 'exercises' | 'routines' | 'rms' | 'history';
   catalog: ExerciseDefinition[];
   routines?: Routine[];
   rmLogs?: ExerciseRmLog[];
+  workoutHistory?: WorkoutHistoryLog[];
 }
 
 export interface ParsedBackupData {
   catalog: ExerciseDefinition[];
   routines: Routine[];
   rmLogs: ExerciseRmLog[];
+  workoutHistory: WorkoutHistoryLog[];
   hasExercises: boolean;
   hasRoutines: boolean;
   hasRmLogs: boolean;
+  hasHistory: boolean;
 }
 
 /**
@@ -41,6 +44,7 @@ export function parseImportedData(rawJson: string): ParsedBackupData {
   let catalog: ExerciseDefinition[] = [];
   let routines: Routine[] = [];
   let rmLogs: ExerciseRmLog[] = [];
+  let workoutHistory: WorkoutHistoryLog[] = [];
 
   // Case 1: Standard WorkoutLog backup object
   if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
@@ -60,9 +64,15 @@ export function parseImportedData(rawJson: string): ParsedBackupData {
     } else if (Array.isArray(parsed.rms)) {
       rmLogs = sanitizeRmLogs(parsed.rms);
     }
+
+    if (Array.isArray(parsed.workoutHistory)) {
+      workoutHistory = sanitizeWorkoutHistory(parsed.workoutHistory);
+    } else if (Array.isArray(parsed.history)) {
+      workoutHistory = sanitizeWorkoutHistory(parsed.history);
+    }
   }
 
-  // Case 2: User uploaded raw array of exercises, routines, or RM logs
+  // Case 2: User uploaded raw array of exercises, routines, RM logs, or workout history
   if (Array.isArray(parsed)) {
     if (parsed.length > 0) {
       const first = parsed[0] as Record<string, unknown>;
@@ -72,6 +82,9 @@ export function parseImportedData(rawJson: string): ParsedBackupData {
       } else if (first && Array.isArray(first.records) && typeof first.exerciseName === 'string') {
         // It's an array of RM logs
         rmLogs = sanitizeRmLogs(parsed);
+      } else if (first && (typeof first.durationSeconds === 'number' || Array.isArray(first.exercisesSummary))) {
+        // It's an array of workout history logs
+        workoutHistory = sanitizeWorkoutHistory(parsed);
       } else {
         // It's an array of exercise definitions
         catalog = sanitizeCatalog(parsed);
@@ -83,9 +96,11 @@ export function parseImportedData(rawJson: string): ParsedBackupData {
     catalog,
     routines,
     rmLogs,
+    workoutHistory,
     hasExercises: catalog.length > 0,
     hasRoutines: routines.length > 0,
     hasRmLogs: rmLogs.length > 0,
+    hasHistory: workoutHistory.length > 0,
   };
 }
 
@@ -111,6 +126,39 @@ export function sanitizeRmLogs(items: unknown[]): ExerciseRmLog[] {
         records,
         createdAt: typeof item.createdAt === 'string' ? item.createdAt : new Date().toISOString(),
         updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : new Date().toISOString(),
+      };
+    });
+}
+
+export function sanitizeWorkoutHistory(items: unknown[]): WorkoutHistoryLog[] {
+  return items
+    .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object' && typeof (item as { routineName?: unknown }).routineName === 'string')
+    .map((item) => {
+      const exercisesSummaryRaw = Array.isArray(item.exercisesSummary) ? item.exercisesSummary : [];
+      const exercisesSummary = exercisesSummaryRaw
+        .filter((ex): ex is Record<string, unknown> => !!ex && typeof ex === 'object' && typeof ex.name === 'string')
+        .map((ex) => ({
+          name: String(ex.name || 'Ejercicio'),
+          completedSets: typeof ex.completedSets === 'number' ? ex.completedSets : 0,
+          totalSets: typeof ex.totalSets === 'number' ? ex.totalSets : 0,
+        }));
+
+      const startTime = typeof item.startTime === 'number' ? item.startTime : Date.now();
+      const endTime = typeof item.endTime === 'number' ? item.endTime : Date.now();
+      const completedAt = typeof item.completedAt === 'string' ? item.completedAt : new Date(endTime).toISOString();
+
+      return {
+        id: typeof item.id === 'string' && item.id.trim() ? item.id : 'workout-log-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+        routineId: typeof item.routineId === 'string' ? item.routineId : 'routine-imported',
+        routineName: String(item.routineName || 'Entrenamiento').trim(),
+        startTime,
+        endTime,
+        completedAt,
+        durationSeconds: typeof item.durationSeconds === 'number' ? item.durationSeconds : Math.max(0, Math.floor((endTime - startTime) / 1000)),
+        completedSetsCount: typeof item.completedSetsCount === 'number' ? item.completedSetsCount : 0,
+        totalSetsCount: typeof item.totalSetsCount === 'number' ? item.totalSetsCount : 0,
+        completionPercentage: typeof item.completionPercentage === 'number' ? item.completionPercentage : 100,
+        exercisesSummary,
       };
     });
 }
@@ -517,6 +565,43 @@ export function mergeRmLogs(
     merged: result,
     addedCount,
     updatedCount,
+  };
+}
+
+/**
+ * Merges imported workout history with existing workout history.
+ * Avoids duplicate logs using ID or matching timestamp + routine name.
+ */
+export function mergeWorkoutHistory(
+  existing: WorkoutHistoryLog[],
+  imported: WorkoutHistoryLog[]
+): { merged: WorkoutHistoryLog[]; addedCount: number } {
+  const result: WorkoutHistoryLog[] = [...existing];
+  const signatures = new Set<string>();
+
+  existing.forEach((item) => {
+    signatures.add(item.id);
+    signatures.add(`${item.routineName}_${item.startTime}_${item.durationSeconds}`);
+  });
+
+  let addedCount = 0;
+
+  imported.forEach((item) => {
+    const sig = `${item.routineName}_${item.startTime}_${item.durationSeconds}`;
+    if (!signatures.has(item.id) && !signatures.has(sig)) {
+      result.push(item);
+      signatures.add(item.id);
+      signatures.add(sig);
+      addedCount++;
+    }
+  });
+
+  // Sort descending by completion time
+  result.sort((a, b) => new Date(b.completedAt || b.endTime).getTime() - new Date(a.completedAt || a.endTime).getTime());
+
+  return {
+    merged: result,
+    addedCount,
   };
 }
 
