@@ -1,16 +1,19 @@
 import React from 'react';
 import { Trophy, Clock, CheckCircle2, Dumbbell, X, Trash2, Calendar } from 'lucide-react';
-import { WorkoutHistoryLog } from '../types';
+import { WorkoutHistoryLog, ExerciseRmLog } from '../types';
 import { formatDetailedDuration } from '../utils/timeCalculations';
+import { RmBadge } from './RmBadge';
 
 interface WorkoutDetailModalProps {
   log: WorkoutHistoryLog | null;
+  rmLogs?: ExerciseRmLog[];
   onClose: () => void;
   onDelete: (logId: string) => void;
 }
 
 export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
   log,
+  rmLogs = [],
   onClose,
   onDelete,
 }) => {
@@ -110,11 +113,14 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
               return (
                 <div
                   key={idx}
-                  className="flex items-center justify-between p-2.5 rounded-xl bg-zinc-50 border border-zinc-100 text-xs"
+                  className="flex items-center justify-between p-2.5 rounded-xl bg-zinc-50 border border-zinc-100 text-xs gap-2"
                 >
-                  <span className="font-semibold text-zinc-800 truncate max-w-[200px] sm:max-w-xs">
-                    {ex.name}
-                  </span>
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                    <span className="font-semibold text-zinc-800 truncate">
+                      {ex.name}
+                    </span>
+                    <RmBadge rmLogs={rmLogs} exerciseName={ex.name} size="xs" />
+                  </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <span
                       className={`font-bold px-2 py-0.5 rounded-md ${

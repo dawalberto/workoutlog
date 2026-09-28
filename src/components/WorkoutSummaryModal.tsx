@@ -1,14 +1,16 @@
 import React from 'react';
 import { Trophy, Clock, CheckCircle2, Dumbbell, X, Sparkles } from 'lucide-react';
-import { WorkoutCompletionSummary } from '../types';
+import { WorkoutCompletionSummary, ExerciseRmLog } from '../types';
 import { formatDetailedDuration } from '../utils/timeCalculations';
+import { RmBadge } from './RmBadge';
 
 interface WorkoutSummaryModalProps {
   summary: WorkoutCompletionSummary | null;
+  rmLogs?: ExerciseRmLog[];
   onClose: () => void;
 }
 
-export const WorkoutSummaryModal: React.FC<WorkoutSummaryModalProps> = ({ summary, onClose }) => {
+export const WorkoutSummaryModal: React.FC<WorkoutSummaryModalProps> = ({ summary, rmLogs = [], onClose }) => {
   if (!summary) return null;
 
   return (
@@ -84,11 +86,14 @@ export const WorkoutSummaryModal: React.FC<WorkoutSummaryModalProps> = ({ summar
               return (
                 <div
                   key={idx}
-                  className="flex items-center justify-between p-2.5 rounded-xl bg-zinc-50 border border-zinc-100 text-xs"
+                  className="flex items-center justify-between p-2.5 rounded-xl bg-zinc-50 border border-zinc-100 text-xs gap-2"
                 >
-                  <span className="font-semibold text-zinc-800 truncate max-w-[200px] sm:max-w-xs">
-                    {ex.name}
-                  </span>
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                    <span className="font-semibold text-zinc-800 truncate">
+                      {ex.name}
+                    </span>
+                    <RmBadge rmLogs={rmLogs} exerciseName={ex.name} size="xs" />
+                  </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <span
                       className={`font-bold px-2 py-0.5 rounded-md ${

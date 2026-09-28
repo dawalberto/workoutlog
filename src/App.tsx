@@ -543,6 +543,7 @@ export default function App() {
         <RoutineView
           routine={activeRoutine}
           catalog={catalog}
+          rmLogs={rmLogs}
           initialMode={routineSubMode}
           session={activeSessions[activeRoutine.id]}
           onSaveRoutine={handleSaveRoutine}
@@ -657,6 +658,7 @@ export default function App() {
             ) : activeTab === AppTab.EXERCISES ? (
               <ExerciseCatalog
                 exercises={catalog}
+                rmLogs={rmLogs}
                 onCreateExercise={handleCreateCatalogExercise}
                 onUpdateExercise={handleUpdateCatalogExercise}
                 onDeleteExercise={handleDeleteCatalogExercise}
@@ -672,6 +674,7 @@ export default function App() {
             ) : (
               <WorkoutHistoryView
                 historyLogs={workoutHistory}
+                rmLogs={rmLogs}
                 onDeleteLog={handleDeleteHistoryLog}
                 onGoToRoutines={() => setActiveTab(AppTab.ROUTINES)}
               />
@@ -720,6 +723,7 @@ export default function App() {
       {/* Workout Completion Summary Modal */}
       <WorkoutSummaryModal
         summary={workoutSummary}
+        rmLogs={rmLogs}
         onClose={() => setWorkoutSummary(null)}
       />
 

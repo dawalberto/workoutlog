@@ -18,7 +18,8 @@ import {
   Routine, 
   RoutineSubMode, 
   ActiveWorkoutSession,
-  WorkoutCompletionSummary 
+  WorkoutCompletionSummary,
+  ExerciseRmLog 
 } from '../types';
 import { 
   getRoutineTotalSeconds, 
@@ -36,6 +37,7 @@ import { initRestAudioContext } from '../utils/audioBeep';
 interface RoutineViewProps {
   routine: Routine;
   catalog: ExerciseDefinition[];
+  rmLogs?: ExerciseRmLog[];
   initialMode: RoutineSubMode;
   session?: ActiveWorkoutSession | null;
   onSaveRoutine: (updatedRoutine: Routine) => void;
@@ -51,6 +53,7 @@ interface RoutineViewProps {
 export const RoutineView: React.FC<RoutineViewProps> = ({
   routine,
   catalog,
+  rmLogs = [],
   initialMode,
   session,
   onSaveRoutine,
@@ -560,6 +563,7 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
                 isExecutionMode={subMode === 'execute'}
                 completedSetIds={completedSetIds}
                 isCollapsed={collapsedExerciseIds.has(exercise.id)}
+                rmLogs={rmLogs}
                 onToggleCollapse={() => handleToggleCollapseExercise(exercise.id)}
                 onToggleSetComplete={handleToggleSetComplete}
                 onUpdateExercise={(updated) => handleUpdateExercise(index, updated)}
@@ -577,6 +581,7 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         catalog={catalog}
+        rmLogs={rmLogs}
         onAddExercise={handleAddExerciseFromModal}
       />
 

@@ -10,12 +10,14 @@ import {
   Image as ImageIcon,
   Check
 } from 'lucide-react';
-import { Exercise, ExerciseDefinition, WorkoutSet } from '../types';
+import { Exercise, ExerciseDefinition, WorkoutSet, ExerciseRmLog } from '../types';
+import { RmBadge } from './RmBadge';
 
 interface AddExerciseModalProps {
   isOpen: boolean;
   onClose: () => void;
   catalog: ExerciseDefinition[];
+  rmLogs?: ExerciseRmLog[];
   onAddExercise: (exercise: Exercise, saveToCatalog?: ExerciseDefinition) => void;
 }
 
@@ -23,6 +25,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
   isOpen,
   onClose,
   catalog,
+  rmLogs = [],
   onAddExercise,
 }) => {
   const [activeTab, setActiveTab] = useState<'catalog' | 'custom'>(() => 
@@ -353,7 +356,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                           </div>
 
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               <span
                                 className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md uppercase ${
                                   isJustAdded ? 'bg-emerald-200/80 text-emerald-900' : 'bg-zinc-100 text-zinc-600'
@@ -361,6 +364,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                               >
                                 {item.category || 'General'}
                               </span>
+                              <RmBadge rmLogs={rmLogs} exerciseName={item.name} exerciseId={item.id} size="xs" />
                               {isJustAdded && (
                                 <span className="text-[10px] font-bold text-emerald-700 animate-in fade-in">
                                   ✓ Añadido

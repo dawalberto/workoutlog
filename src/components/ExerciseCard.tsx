@@ -13,9 +13,10 @@ import {
   FileText,
   Image as ImageIcon
 } from 'lucide-react';
-import { Exercise, WorkoutSet } from '../types';
+import { Exercise, WorkoutSet, ExerciseRmLog } from '../types';
 import { getExerciseTotalSeconds, getSetTotalSeconds, formatSecondsToTime } from '../utils/timeCalculations';
 import { VideoPreview } from './VideoPreview';
+import { RmBadge } from './RmBadge';
 
 interface ExerciseCardProps {
   exercise: Exercise;
@@ -24,6 +25,7 @@ interface ExerciseCardProps {
   isExecutionMode: boolean;
   completedSetIds: Set<string>;
   isCollapsed?: boolean;
+  rmLogs?: ExerciseRmLog[];
   onToggleCollapse?: () => void;
   onToggleSetComplete: (setId: string, restSeconds: number, exerciseName: string, setNumber: number) => void;
   onUpdateExercise: (updated: Exercise) => void;
@@ -75,6 +77,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
   isExecutionMode,
   completedSetIds,
   isCollapsed: propIsCollapsed,
+  rmLogs = [],
   onToggleCollapse,
   onToggleSetComplete,
   onUpdateExercise,
@@ -231,6 +234,8 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                       {exercise.name || 'Ejercicio sin nombre'}
                     </h3>
 
+                    <RmBadge rmLogs={rmLogs} exerciseName={exercise.name} exerciseId={exercise.definitionId} />
+
                     {isAllCompleted && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-600 text-white shadow-xs">
                         <CheckCircle2 className="w-3.5 h-3.5" /> Completado ({completedSetsCount}/{totalSetsCount})
@@ -246,13 +251,16 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                 </div>
               ) : (
                 <div className="space-y-1">
-                  <input
-                    type="text"
-                    value={exercise.name}
-                    onChange={(e) => onUpdateExercise({ ...exercise, name: e.target.value })}
-                    placeholder="Nombre del ejercicio (ej. Press banca, Sentadilla...)"
-                    className="w-full text-base sm:text-lg font-bold text-zinc-900 bg-transparent border-b border-zinc-200/80 hover:border-zinc-300 focus:border-emerald-600 focus:bg-white/60 focus:outline-none px-1 py-0.5 rounded transition-colors"
-                  />
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={exercise.name}
+                      onChange={(e) => onUpdateExercise({ ...exercise, name: e.target.value })}
+                      placeholder="Nombre del ejercicio (ej. Press banca, Sentadilla...)"
+                      className="flex-1 text-base sm:text-lg font-bold text-zinc-900 bg-transparent border-b border-zinc-200/80 hover:border-zinc-300 focus:border-emerald-600 focus:bg-white/60 focus:outline-none px-1 py-0.5 rounded transition-colors min-w-0"
+                    />
+                    <RmBadge rmLogs={rmLogs} exerciseName={exercise.name} exerciseId={exercise.definitionId} />
+                  </div>
                   <input
                     type="text"
                     value={exercise.notes || ''}

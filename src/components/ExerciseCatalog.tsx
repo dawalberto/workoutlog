@@ -11,12 +11,18 @@ import {
   Sparkles, 
   Check, 
   X,
-  Layers
+  Layers,
+  Eye,
+  FileText
 } from 'lucide-react';
-import { ExerciseDefinition } from '../types';
+import { ExerciseDefinition, ExerciseRmLog } from '../types';
+import { VideoPreview } from './VideoPreview';
+import { formatSecondsToTime } from '../utils/timeCalculations';
+import { RmBadge } from './RmBadge';
 
 interface ExerciseCatalogProps {
   exercises: ExerciseDefinition[];
+  rmLogs?: ExerciseRmLog[];
   onCreateExercise: (exercise: ExerciseDefinition) => void;
   onUpdateExercise: (exercise: ExerciseDefinition) => void;
   onDeleteExercise: (id: string) => void;
@@ -27,6 +33,7 @@ const CATEGORIES = ['Todos', 'Pecho', 'Espalda', 'Pierna', 'Hombro', 'Brazos', '
 
 export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
   exercises,
+  rmLogs = [],
   onCreateExercise,
   onUpdateExercise,
   onDeleteExercise,
@@ -36,6 +43,7 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editingExercise, setEditingExercise] = useState<ExerciseDefinition | null>(null);
+  const [previewExercise, setPreviewExercise] = useState<ExerciseDefinition | null>(null);
 
   // Form states
   const [formName, setFormName] = useState('');
@@ -57,6 +65,7 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
   });
 
   const handleOpenCreate = () => {
+    setPreviewExercise(null);
     setEditingExercise(null);
     setFormName('');
     setFormCategory('Pecho');
@@ -72,6 +81,7 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
   };
 
   const handleOpenEdit = (ex: ExerciseDefinition) => {
+    setPreviewExercise(null);
     setEditingExercise(ex);
     setFormName(ex.name);
     setFormCategory(ex.category || 'Pecho');
@@ -131,6 +141,9 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
 
   const handleDelete = (id: string, name: string) => {
     if (window.confirm(`¿Seguro que deseas eliminar "${name}" de la biblioteca?`)) {
+      if (previewExercise?.id === id) {
+        setPreviewExercise(null);
+      }
       onDeleteExercise(id);
     }
   };
@@ -234,7 +247,8 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
               <div
                 key={ex.id}
                 id={`catalog-card-${ex.id}`}
-                className="bg-white rounded-2xl border border-zinc-200 hover:border-zinc-300 p-4 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+                onClick={() => setPreviewExercise(ex)}
+                className="bg-white rounded-2xl border border-zinc-200 hover:border-emerald-500/70 p-4 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group select-none"
               >
                 <div>
                   <div className="flex items-start gap-3">
@@ -266,8 +280,9 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
                         <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-zinc-100 text-zinc-700 uppercase tracking-wide">
                           {ex.category || 'General'}
                         </span>
+                        <RmBadge rmLogs={rmLogs} exerciseName={ex.name} exerciseId={ex.id} />
                       </div>
-                      <h3 className="text-sm sm:text-base font-bold text-zinc-900 tracking-tight mt-1 truncate">
+                      <h3 className="text-sm sm:text-base font-bold text-zinc-900 tracking-tight mt-1 truncate group-hover:text-emerald-700 transition-colors">
                         {ex.name}
                       </h3>
                       {ex.notes && (
@@ -295,29 +310,247 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
                 </div>
 
                 {/* Actions */}
-                <div className="mt-3 pt-2.5 border-t border-zinc-100 flex items-center justify-end gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => handleOpenEdit(ex)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg text-zinc-700 bg-zinc-100 hover:bg-zinc-200 transition-colors"
-                  >
-                    <Edit3 className="w-3 h-3" /> Editar
-                  </button>
+                <div className="mt-3 pt-2.5 border-t border-zinc-100 flex items-center justify-between gap-1.5">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 group-hover:text-emerald-700 transition-colors">
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Ver detalle</span>
+                  </span>
 
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(ex.id, ex.name)}
-                    className="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Eliminar de la biblioteca"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      id={`btn-edit-exercise-${ex.id}`}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenEdit(ex);
+                      }}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg text-zinc-700 bg-zinc-100 hover:bg-zinc-200 transition-colors"
+                      title="Editar ejercicio"
+                    >
+                      <Edit3 className="w-3 h-3" /> Editar
+                    </button>
+
+                    <button
+                      id={`btn-delete-exercise-${ex.id}`}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(ex.id, ex.name);
+                      }}
+                      className="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Eliminar de la biblioteca"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         )}
       </main>
+
+      {/* Exercise Preview Modal */}
+      {previewExercise && (
+        <div
+          id="modal-exercise-preview"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-hidden animate-in fade-in duration-150"
+          onClick={() => setPreviewExercise(null)}
+        >
+          <div
+            className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 shadow-2xl max-w-lg w-full max-h-[92vh] sm:max-h-[88vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-zinc-100 shrink-0 bg-white flex items-center justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-zinc-100 text-zinc-700 uppercase tracking-wide">
+                    {previewExercise.category || 'General'}
+                  </span>
+                  <RmBadge rmLogs={rmLogs} exerciseName={previewExercise.name} exerciseId={previewExercise.id} size="sm" />
+                  <span className="text-[11px] text-zinc-400 font-medium">
+                    Vista previa
+                  </span>
+                </div>
+                <h2 className="text-base sm:text-lg font-black text-zinc-900 truncate">
+                  {previewExercise.name}
+                </h2>
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  id="btn-preview-header-edit"
+                  type="button"
+                  onClick={() => {
+                    const ex = previewExercise;
+                    setPreviewExercise(null);
+                    handleOpenEdit(ex);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white shadow-xs transition-colors active:scale-95"
+                  title="Editar ejercicio"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Editar</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPreviewExercise(null)}
+                  className="p-1.5 text-zinc-400 hover:text-zinc-600 rounded-xl hover:bg-zinc-100 transition-colors"
+                  aria-label="Cerrar vista previa"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Scrollable Content */}
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-4">
+              {/* Media Preview: Image */}
+              {previewExercise.imageUrl && (
+                <div className="rounded-2xl overflow-hidden border border-zinc-200 bg-zinc-100 max-h-60 flex items-center justify-center shadow-xs">
+                  <img
+                    src={previewExercise.imageUrl}
+                    alt={previewExercise.name}
+                    className="w-full h-full object-cover max-h-60"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Notes */}
+              {previewExercise.notes && (
+                <div className="p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200/80 flex items-start gap-2.5">
+                  <FileText className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <div className="min-w-0 flex-1">
+                    <span className="block text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-0.5">
+                      Notas y Técnica
+                    </span>
+                    <p className="text-xs sm:text-sm text-zinc-700 leading-relaxed whitespace-pre-line">
+                      {previewExercise.notes}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Video Preview if present */}
+              {previewExercise.videoUrl && (
+                <div className="p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200/80">
+                  <span className="block text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-1.5">
+                    Técnica en video
+                  </span>
+                  <VideoPreview
+                    url={previewExercise.videoUrl}
+                    exerciseName={previewExercise.name}
+                  />
+                </div>
+              )}
+
+              {/* Preconfigured Sets Table */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-600 flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-emerald-600" />
+                    Series preconfiguradas
+                  </span>
+
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-zinc-100 text-zinc-700 border border-zinc-200">
+                    <Clock className="w-3 h-3 text-zinc-500" />
+                    ~{formatSecondsToTime(
+                      (previewExercise.defaultSetsCount || 3) *
+                        ((previewExercise.defaultReps || 10) * 3 +
+                          (previewExercise.defaultRestSeconds || 60))
+                    )}
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto rounded-2xl border border-zinc-200 bg-white">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-zinc-200 bg-zinc-50 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-zinc-500">
+                        <th className="py-2.5 px-3 text-center w-14">Serie</th>
+                        <th className="py-2.5 px-3 text-center">Reps</th>
+                        <th className="py-2.5 px-3 text-center">Peso</th>
+                        <th className="py-2.5 px-3 text-center">Descanso</th>
+                        <th className="py-2.5 px-3 text-center">Tiempo est.</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-100">
+                      {Array.from(
+                        { length: previewExercise.defaultSetsCount || 3 },
+                        (_, idx) => {
+                          const reps = previewExercise.defaultReps || 10;
+                          const weight = previewExercise.defaultWeight || 0;
+                          const rest = previewExercise.defaultRestSeconds || 60;
+                          const setSeconds = reps * 3 + rest;
+
+                          return (
+                            <tr key={idx} className="hover:bg-zinc-50/50">
+                              <td className="py-2.5 px-3 text-center">
+                                <span className="inline-block w-6 h-6 leading-6 text-xs font-bold rounded-full bg-zinc-100 text-zinc-700">
+                                  {idx + 1}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-center font-semibold text-zinc-900">
+                                {reps} <span className="text-[10px] text-zinc-500 font-normal">reps</span>
+                              </td>
+                              <td className="py-2.5 px-3 text-center font-semibold text-zinc-900">
+                                {weight} <span className="text-[10px] text-zinc-500 font-normal">kg</span>
+                              </td>
+                              <td className="py-2.5 px-3 text-center">
+                                <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-700">
+                                  {rest}s
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-center text-zinc-500 font-mono text-[11px]">
+                                ~{formatSecondsToTime(setSeconds)}
+                              </td>
+                            </tr>
+                          );
+                        }
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-4 sm:px-6 py-3.5 border-t border-zinc-200/80 bg-zinc-50/70 flex items-center justify-between gap-3 shrink-0">
+              <span className="text-xs text-zinc-500 hidden sm:inline">
+                {previewExercise.defaultSetsCount || 3} series x {previewExercise.defaultReps || 10} reps · {previewExercise.defaultWeight || 0} kg
+              </span>
+
+              <div className="flex items-center gap-2 ml-auto">
+                <button
+                  type="button"
+                  onClick={() => setPreviewExercise(null)}
+                  className="px-4 py-2 text-xs font-semibold rounded-xl text-zinc-700 hover:bg-zinc-200/60 transition-colors"
+                >
+                  Cerrar
+                </button>
+
+                <button
+                  id="btn-preview-footer-edit"
+                  type="button"
+                  onClick={() => {
+                    const ex = previewExercise;
+                    setPreviewExercise(null);
+                    handleOpenEdit(ex);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-colors active:scale-95"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Editar Ejercicio</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create / Edit Exercise Modal */}
       {isEditing && (
