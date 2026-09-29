@@ -1,16 +1,25 @@
 import React from 'react';
 import { Trophy, Clock, CheckCircle2, Dumbbell, X, Sparkles } from 'lucide-react';
-import { WorkoutCompletionSummary, ExerciseRmLog } from '../types';
+import { WorkoutCompletionSummary, ExerciseRmLog, ExerciseDiary } from '../types';
 import { formatDetailedDuration } from '../utils/timeCalculations';
 import { RmBadge } from './RmBadge';
+import { DiaryButton } from './DiaryButton';
 
 interface WorkoutSummaryModalProps {
   summary: WorkoutCompletionSummary | null;
   rmLogs?: ExerciseRmLog[];
+  exerciseDiary?: ExerciseDiary[];
+  onOpenDiary?: (exerciseName: string, exerciseId?: string) => void;
   onClose: () => void;
 }
 
-export const WorkoutSummaryModal: React.FC<WorkoutSummaryModalProps> = ({ summary, rmLogs = [], onClose }) => {
+export const WorkoutSummaryModal: React.FC<WorkoutSummaryModalProps> = ({
+  summary,
+  rmLogs = [],
+  exerciseDiary = [],
+  onOpenDiary,
+  onClose,
+}) => {
   if (!summary) return null;
 
   return (
@@ -93,6 +102,17 @@ export const WorkoutSummaryModal: React.FC<WorkoutSummaryModalProps> = ({ summar
                       {ex.name}
                     </span>
                     <RmBadge rmLogs={rmLogs} exerciseName={ex.name} size="xs" />
+                    {onOpenDiary && (
+                      <DiaryButton
+                        exerciseName={ex.name}
+                        diaries={exerciseDiary}
+                        onOpenDiary={(name) => {
+                          onClose();
+                          onOpenDiary(name);
+                        }}
+                        variant="compact"
+                      />
+                    )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <span

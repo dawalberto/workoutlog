@@ -45,6 +45,28 @@ export enum AppTab {
   EXERCISES = 'exercises',
   RMS = 'rms',
   HISTORY = 'history',
+  DIARY = 'diary',
+}
+
+export type DiaryFeeling = 'good' | 'neutral' | 'bad';
+
+export interface ExerciseDiaryEntry {
+  id: string;
+  date: string; // YYYY-MM-DD
+  note: string; // The rich note text
+  feeling?: DiaryFeeling; // 🟢 'good' | 🟠 'neutral' | 🔴 'bad'
+  createdAt?: string; // ISO
+  updatedAt?: string; // ISO
+}
+
+export interface ExerciseDiary {
+  id: string;
+  exerciseId?: string; // ExerciseDefinition ID from catalog
+  exerciseName: string; // Name in catalog
+  category?: string;
+  entries: ExerciseDiaryEntry[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface RmRecord {

@@ -19,7 +19,8 @@ import {
   RoutineSubMode, 
   ActiveWorkoutSession,
   WorkoutCompletionSummary,
-  ExerciseRmLog 
+  ExerciseRmLog,
+  ExerciseDiary 
 } from '../types';
 import { 
   getRoutineTotalSeconds, 
@@ -38,6 +39,7 @@ interface RoutineViewProps {
   routine: Routine;
   catalog: ExerciseDefinition[];
   rmLogs?: ExerciseRmLog[];
+  exerciseDiary?: ExerciseDiary[];
   initialMode: RoutineSubMode;
   session?: ActiveWorkoutSession | null;
   onSaveRoutine: (updatedRoutine: Routine) => void;
@@ -48,12 +50,14 @@ interface RoutineViewProps {
   onResetSession: (routineId: string) => void;
   onFinishSession: (summary: WorkoutCompletionSummary) => void;
   onCheckRmWeight?: (exerciseName: string, newWeight: number, exerciseId?: string) => void;
+  onOpenDiary?: (exerciseName: string, exerciseId?: string) => void;
 }
 
 export const RoutineView: React.FC<RoutineViewProps> = ({
   routine,
   catalog,
   rmLogs = [],
+  exerciseDiary = [],
   initialMode,
   session,
   onSaveRoutine,
@@ -64,6 +68,7 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
   onResetSession,
   onFinishSession,
   onCheckRmWeight,
+  onOpenDiary,
 }) => {
   const [subMode, setSubMode] = useState<RoutineSubMode>(initialMode);
   const [isFinishConfirmOpen, setIsFinishConfirmOpen] = useState(false);
@@ -564,6 +569,8 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
                 completedSetIds={completedSetIds}
                 isCollapsed={collapsedExerciseIds.has(exercise.id)}
                 rmLogs={rmLogs}
+                exerciseDiary={exerciseDiary}
+                onOpenDiary={onOpenDiary}
                 onToggleCollapse={() => handleToggleCollapseExercise(exercise.id)}
                 onToggleSetComplete={handleToggleSetComplete}
                 onUpdateExercise={(updated) => handleUpdateExercise(index, updated)}
@@ -582,6 +589,8 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
         onClose={() => setShowAddModal(false)}
         catalog={catalog}
         rmLogs={rmLogs}
+        exerciseDiary={exerciseDiary}
+        onOpenDiary={onOpenDiary}
         onAddExercise={handleAddExerciseFromModal}
       />
 

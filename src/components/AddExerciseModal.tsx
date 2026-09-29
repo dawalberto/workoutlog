@@ -10,14 +10,17 @@ import {
   Image as ImageIcon,
   Check
 } from 'lucide-react';
-import { Exercise, ExerciseDefinition, WorkoutSet, ExerciseRmLog } from '../types';
+import { Exercise, ExerciseDefinition, WorkoutSet, ExerciseRmLog, ExerciseDiary } from '../types';
 import { RmBadge } from './RmBadge';
+import { DiaryButton } from './DiaryButton';
 
 interface AddExerciseModalProps {
   isOpen: boolean;
   onClose: () => void;
   catalog: ExerciseDefinition[];
   rmLogs?: ExerciseRmLog[];
+  exerciseDiary?: ExerciseDiary[];
+  onOpenDiary?: (exerciseName: string, exerciseId?: string) => void;
   onAddExercise: (exercise: Exercise, saveToCatalog?: ExerciseDefinition) => void;
 }
 
@@ -26,6 +29,8 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
   onClose,
   catalog,
   rmLogs = [],
+  exerciseDiary = [],
+  onOpenDiary,
   onAddExercise,
 }) => {
   const [activeTab, setActiveTab] = useState<'catalog' | 'custom'>(() => 
@@ -365,6 +370,18 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                                 {item.category || 'General'}
                               </span>
                               <RmBadge rmLogs={rmLogs} exerciseName={item.name} exerciseId={item.id} size="xs" />
+                              {onOpenDiary && (
+                                <DiaryButton
+                                  exerciseName={item.name}
+                                  exerciseId={item.id}
+                                  diaries={exerciseDiary}
+                                  onOpenDiary={(name, id) => {
+                                    onClose();
+                                    onOpenDiary(name, id);
+                                  }}
+                                  variant="compact"
+                                />
+                              )}
                               {isJustAdded && (
                                 <span className="text-[10px] font-bold text-emerald-700 animate-in fade-in">
                                   ✓ Añadido

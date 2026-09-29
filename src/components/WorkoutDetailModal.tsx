@@ -1,12 +1,15 @@
 import React from 'react';
 import { Trophy, Clock, CheckCircle2, Dumbbell, X, Trash2, Calendar } from 'lucide-react';
-import { WorkoutHistoryLog, ExerciseRmLog } from '../types';
+import { WorkoutHistoryLog, ExerciseRmLog, ExerciseDiary } from '../types';
 import { formatDetailedDuration } from '../utils/timeCalculations';
 import { RmBadge } from './RmBadge';
+import { DiaryButton } from './DiaryButton';
 
 interface WorkoutDetailModalProps {
   log: WorkoutHistoryLog | null;
   rmLogs?: ExerciseRmLog[];
+  exerciseDiary?: ExerciseDiary[];
+  onOpenDiary?: (exerciseName: string, exerciseId?: string) => void;
   onClose: () => void;
   onDelete: (logId: string) => void;
 }
@@ -14,6 +17,8 @@ interface WorkoutDetailModalProps {
 export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
   log,
   rmLogs = [],
+  exerciseDiary = [],
+  onOpenDiary,
   onClose,
   onDelete,
 }) => {
@@ -120,6 +125,17 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
                       {ex.name}
                     </span>
                     <RmBadge rmLogs={rmLogs} exerciseName={ex.name} size="xs" />
+                    {onOpenDiary && (
+                      <DiaryButton
+                        exerciseName={ex.name}
+                        diaries={exerciseDiary}
+                        onOpenDiary={(name) => {
+                          onClose();
+                          onOpenDiary(name);
+                        }}
+                        variant="compact"
+                      />
+                    )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <span

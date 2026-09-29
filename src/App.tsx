@@ -14,13 +14,15 @@ import {
   WorkoutCompletionSummary,
   ExerciseRmLog,
   RmRecord,
-  WorkoutHistoryLog
+  WorkoutHistoryLog,
+  ExerciseDiary
 } from './types';
 import { RoutineList } from './components/RoutineList';
 import { RoutineView } from './components/RoutineView';
 import { ExerciseCatalog } from './components/ExerciseCatalog';
 import { RmLogsView } from './components/RmLogsView';
 import { WorkoutHistoryView } from './components/WorkoutHistoryView';
+import { ExerciseDiaryView } from './components/ExerciseDiaryView';
 import { SidebarMenu } from './components/SidebarMenu';
 import { RmRecordAlertModal } from './components/RmRecordAlertModal';
 import { PWAInstallButton } from './components/PWAInstallButton';
@@ -35,12 +37,17 @@ import {
   getLatestRmRecord, 
   getTodayDateString 
 } from './utils/rmCalculations';
+import { 
+  getDiaryEntriesCount, 
+  getTotalDiaryEntriesCount 
+} from './utils/diaryCalculations';
 
 const ROUTINES_STORAGE_KEY = 'workout_planner_routines_v2';
 const CATALOG_STORAGE_KEY = 'workout_planner_catalog_v2';
 const ACTIVE_SESSIONS_STORAGE_KEY = 'workout_active_sessions_v1';
 const RM_LOGS_STORAGE_KEY = 'workout_planner_rm_logs_v1';
 const WORKOUT_HISTORY_STORAGE_KEY = 'workout_planner_history_v1';
+const EXERCISE_DIARY_STORAGE_KEY = 'workout_planner_diary_v1';
 
 // Top banner shown when an active routine is in progress and the user is browsing elsewhere
 const ActiveWorkoutTopBanner: React.FC<{
@@ -170,6 +177,25 @@ export default function App() {
     return [];
   });
 
+  // Persistent Exercise Diary
+  const [exerciseDiary, setExerciseDiary] = useState<ExerciseDiary[]>(() => {
+    try {
+      const saved = localStorage.getItem(EXERCISE_DIARY_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+      }
+    } catch {
+      // Fallback
+    }
+    return [];
+  });
+
+  const [diaryTargetExerciseName, setDiaryTargetExerciseName] = useState<string | undefined>(undefined);
+  const [diaryAutoOpenCreate, setDiaryAutoOpenCreate] = useState<boolean>(false);
+
   // RM New Record Alert Modal state
   const [pendingRmAlert, setPendingRmAlert] = useState<{
     logId: string;
@@ -223,6 +249,30 @@ export default function App() {
       console.error('Error saving workout history to localStorage', e);
     }
   }, [workoutHistory]);
+
+  // Save exercise diary to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(EXERCISE_DIARY_STORAGE_KEY, JSON.stringify(exerciseDiary));
+    } catch (e) {
+      console.error('Error saving exerciseDiary to localStorage', e);
+    }
+  }, [exerciseDiary]);
+
+  // Open exercise diary from anywhere in the app
+  const handleOpenExerciseDiary = (exerciseName: string, exerciseId?: string) => {
+    if (!exerciseName) return;
+
+    const count = getDiaryEntriesCount(exerciseDiary, exerciseName, exerciseId);
+    const hasEntries = count > 0;
+
+    setDiaryTargetExerciseName(exerciseName);
+    setDiaryAutoOpenCreate(!hasEntries);
+
+    setActiveTab(AppTab.DIARY);
+    setActiveRoutineId(null);
+    setWorkoutSummary(null);
+  };
 
   // Check if a newly entered weight exceeds the last logged RM for that exercise
   const handleCheckRmWeight = (exerciseName: string, newWeight: number, exerciseId?: string) => {
@@ -489,6 +539,7 @@ export default function App() {
     newRoutines: Routine[],
     newRmLogs: ExerciseRmLog[],
     newWorkoutHistory: WorkoutHistoryLog[],
+    newExerciseDiary: ExerciseDiary[],
     summary: {
       exercisesAdded: number;
       exercisesReplaced: number;
@@ -497,6 +548,8 @@ export default function App() {
       rmLogsAdded?: number;
       rmLogsUpdated?: number;
       historyAdded?: number;
+      diaryAdded?: number;
+      diaryUpdated?: number;
       mode: 'merge' | 'overwrite';
     }
   ) => {
@@ -504,10 +557,12 @@ export default function App() {
     setRoutines(newRoutines);
     setRmLogs(newRmLogs);
     setWorkoutHistory(newWorkoutHistory);
+    setExerciseDiary(newExerciseDiary);
 
     let msg = '';
     if (summary.mode === 'overwrite') {
-      msg = `Copia restaurada: ${newCatalog.length} ejercicios, ${newRoutines.length} rutinas, ${newRmLogs.length} RMs y ${newWorkoutHistory.length} sesiones.`;
+      const totalNotes = newExerciseDiary.reduce((sum, d) => sum + (d.entries?.length || 0), 0);
+      msg = `Copia restaurada: ${newCatalog.length} ejercicios, ${newRoutines.length} rutinas, ${newRmLogs.length} RMs, ${newWorkoutHistory.length} sesiones y ${totalNotes} notas de diario.`;
     } else {
       const parts: string[] = [];
       if (summary.exercisesAdded > 0) parts.push(`${summary.exercisesAdded} ejerc. añadidos`);
@@ -519,6 +574,8 @@ export default function App() {
       if (summary.rmLogsAdded && summary.rmLogsAdded > 0) parts.push(`${summary.rmLogsAdded} RMs añadidos`);
       if (summary.rmLogsUpdated && summary.rmLogsUpdated > 0) parts.push(`${summary.rmLogsUpdated} RMs actualizados`);
       if (summary.historyAdded && summary.historyAdded > 0) parts.push(`${summary.historyAdded} sesiones añadidas`);
+      if (summary.diaryAdded && summary.diaryAdded > 0) parts.push(`${summary.diaryAdded} entradas diario añadidas`);
+      if (summary.diaryUpdated && summary.diaryUpdated > 0) parts.push(`${summary.diaryUpdated} entradas diario actualizadas`);
       msg = parts.length > 0
         ? `Importación completada: ${parts.join(', ')}.`
         : 'Datos combinados con éxito.';
@@ -544,6 +601,7 @@ export default function App() {
           routine={activeRoutine}
           catalog={catalog}
           rmLogs={rmLogs}
+          exerciseDiary={exerciseDiary}
           initialMode={routineSubMode}
           session={activeSessions[activeRoutine.id]}
           onSaveRoutine={handleSaveRoutine}
@@ -554,6 +612,7 @@ export default function App() {
           onResetSession={handleResetSession}
           onFinishSession={handleFinishSession}
           onCheckRmWeight={handleCheckRmWeight}
+          onOpenDiary={handleOpenExerciseDiary}
         />
       ) : (
         <div className="flex flex-col min-h-screen">
@@ -659,10 +718,12 @@ export default function App() {
               <ExerciseCatalog
                 exercises={catalog}
                 rmLogs={rmLogs}
+                exerciseDiary={exerciseDiary}
                 onCreateExercise={handleCreateCatalogExercise}
                 onUpdateExercise={handleUpdateCatalogExercise}
                 onDeleteExercise={handleDeleteCatalogExercise}
                 onCheckRmWeight={handleCheckRmWeight}
+                onOpenDiary={handleOpenExerciseDiary}
               />
             ) : activeTab === AppTab.RMS ? (
               <RmLogsView
@@ -671,12 +732,25 @@ export default function App() {
                 onSaveRmLogs={setRmLogs}
                 onGoToCatalog={() => setActiveTab(AppTab.EXERCISES)}
               />
-            ) : (
+            ) : activeTab === AppTab.HISTORY ? (
               <WorkoutHistoryView
                 historyLogs={workoutHistory}
                 rmLogs={rmLogs}
                 onDeleteLog={handleDeleteHistoryLog}
                 onGoToRoutines={() => setActiveTab(AppTab.ROUTINES)}
+              />
+            ) : (
+              <ExerciseDiaryView
+                catalog={catalog}
+                diaries={exerciseDiary}
+                onSaveDiaries={setExerciseDiary}
+                onGoToCatalog={() => setActiveTab(AppTab.EXERCISES)}
+                initialExerciseName={diaryTargetExerciseName}
+                autoOpenCreate={diaryAutoOpenCreate}
+                onClearInitialState={() => {
+                  setDiaryTargetExerciseName(undefined);
+                  setDiaryAutoOpenCreate(false);
+                }}
               />
             )}
           </main>
@@ -706,6 +780,7 @@ export default function App() {
         catalogCount={catalog.length}
         rmCount={rmLogs.length}
         historyCount={workoutHistory.length}
+        diaryCount={getTotalDiaryEntriesCount(exerciseDiary)}
         onOpenBackup={() => setIsBackupModalOpen(true)}
       />
 
@@ -735,6 +810,7 @@ export default function App() {
         routines={routines}
         rmLogs={rmLogs}
         workoutHistory={workoutHistory}
+        exerciseDiary={exerciseDiary}
         onImportComplete={handleImportComplete}
       />
 

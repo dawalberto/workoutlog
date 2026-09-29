@@ -13,10 +13,11 @@ import {
   FileText,
   Image as ImageIcon
 } from 'lucide-react';
-import { Exercise, WorkoutSet, ExerciseRmLog } from '../types';
+import { Exercise, WorkoutSet, ExerciseRmLog, ExerciseDiary } from '../types';
 import { getExerciseTotalSeconds, getSetTotalSeconds, formatSecondsToTime } from '../utils/timeCalculations';
 import { VideoPreview } from './VideoPreview';
 import { RmBadge } from './RmBadge';
+import { DiaryButton } from './DiaryButton';
 
 interface ExerciseCardProps {
   exercise: Exercise;
@@ -26,12 +27,14 @@ interface ExerciseCardProps {
   completedSetIds: Set<string>;
   isCollapsed?: boolean;
   rmLogs?: ExerciseRmLog[];
+  exerciseDiary?: ExerciseDiary[];
   onToggleCollapse?: () => void;
   onToggleSetComplete: (setId: string, restSeconds: number, exerciseName: string, setNumber: number) => void;
   onUpdateExercise: (updated: Exercise) => void;
   onDeleteExercise: () => void;
   onMoveToPosition?: (targetIndex: number) => void;
   onCheckRmWeight?: (exerciseName: string, newWeight: number, exerciseId?: string) => void;
+  onOpenDiary?: (exerciseName: string, exerciseId?: string) => void;
 }
 
 function formatExerciseSummary(sets: WorkoutSet[]): string {
@@ -78,12 +81,14 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
   completedSetIds,
   isCollapsed: propIsCollapsed,
   rmLogs = [],
+  exerciseDiary = [],
   onToggleCollapse,
   onToggleSetComplete,
   onUpdateExercise,
   onDeleteExercise,
   onMoveToPosition,
   onCheckRmWeight,
+  onOpenDiary,
 }) => {
   const [showVideoInput, setShowVideoInput] = useState(false);
   const [showImageInput, setShowImageInput] = useState(false);
@@ -236,6 +241,16 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
 
                     <RmBadge rmLogs={rmLogs} exerciseName={exercise.name} exerciseId={exercise.definitionId} />
 
+                    {onOpenDiary && (
+                      <DiaryButton
+                        exerciseName={exercise.name}
+                        exerciseId={exercise.definitionId}
+                        diaries={exerciseDiary}
+                        onOpenDiary={onOpenDiary}
+                        variant="compact"
+                      />
+                    )}
+
                     {isAllCompleted && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-600 text-white shadow-xs">
                         <CheckCircle2 className="w-3.5 h-3.5" /> Completado ({completedSetsCount}/{totalSetsCount})
@@ -260,6 +275,15 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                       className="flex-1 text-base sm:text-lg font-bold text-zinc-900 bg-transparent border-b border-zinc-200/80 hover:border-zinc-300 focus:border-emerald-600 focus:bg-white/60 focus:outline-none px-1 py-0.5 rounded transition-colors min-w-0"
                     />
                     <RmBadge rmLogs={rmLogs} exerciseName={exercise.name} exerciseId={exercise.definitionId} />
+                    {onOpenDiary && (
+                      <DiaryButton
+                        exerciseName={exercise.name}
+                        exerciseId={exercise.definitionId}
+                        diaries={exerciseDiary}
+                        onOpenDiary={onOpenDiary}
+                        variant="compact"
+                      />
+                    )}
                   </div>
                   <input
                     type="text"

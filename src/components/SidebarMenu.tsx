@@ -1,5 +1,5 @@
 import React from 'react';
-import { Flame, Dumbbell, Trophy, Calendar, ArrowDownUp, X, ChevronRight } from 'lucide-react';
+import { Flame, Dumbbell, Trophy, Calendar, BookOpen, ArrowDownUp, X, ChevronRight } from 'lucide-react';
 import { AppTab } from '../types';
 import { PWAInstallButton } from './PWAInstallButton';
 
@@ -12,6 +12,7 @@ interface SidebarMenuProps {
   catalogCount: number;
   rmCount: number;
   historyCount: number;
+  diaryCount?: number;
   onOpenBackup: () => void;
 }
 
@@ -24,6 +25,7 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
   catalogCount,
   rmCount,
   historyCount,
+  diaryCount = 0,
   onOpenBackup,
 }) => {
   if (!isOpen) return null;
@@ -236,6 +238,45 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
                 }`}
               >
                 {historyCount}
+              </span>
+            </button>
+
+            {/* Diario de Ejercicios */}
+            <button
+              id="sidebar-link-diary"
+              type="button"
+              onClick={() => handleNav(AppTab.DIARY)}
+              className={`w-full flex items-center justify-between p-3 rounded-2xl text-left transition-all ${
+                activeTab === AppTab.DIARY
+                  ? 'bg-emerald-50 text-emerald-950 font-bold border border-emerald-200/80 shadow-2xs'
+                  : 'text-zinc-700 hover:bg-zinc-100 font-semibold'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                    activeTab === AppTab.DIARY
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-zinc-100 text-zinc-600'
+                  }`}
+                >
+                  <BookOpen className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-sm">Diario de Ejercicios</div>
+                  <div className="text-[11px] text-zinc-600 font-normal">
+                    Notas, sensaciones y observaciones
+                  </div>
+                </div>
+              </div>
+              <span
+                className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                  activeTab === AppTab.DIARY
+                    ? 'bg-emerald-200/70 text-emerald-900'
+                    : 'bg-zinc-100 text-zinc-600'
+                }`}
+              >
+                {diaryCount}
               </span>
             </button>
 

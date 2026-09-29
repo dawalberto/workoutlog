@@ -1,14 +1,15 @@
-import { ExerciseDefinition, Routine, ExerciseRmLog, RmRecord, WorkoutHistoryLog } from '../types';
+import { ExerciseDefinition, Routine, ExerciseRmLog, RmRecord, WorkoutHistoryLog, ExerciseDiary, ExerciseDiaryEntry, DiaryFeeling } from '../types';
 
 export interface WorkoutLogBackupFile {
   app: 'WorkoutLog';
   version: number;
   exportedAt: string;
-  type: 'all' | 'exercises' | 'routines' | 'rms' | 'history';
+  type: 'all' | 'exercises' | 'routines' | 'rms' | 'history' | 'diary';
   catalog: ExerciseDefinition[];
   routines?: Routine[];
   rmLogs?: ExerciseRmLog[];
   workoutHistory?: WorkoutHistoryLog[];
+  exerciseDiary?: ExerciseDiary[];
 }
 
 export interface ParsedBackupData {
@@ -16,10 +17,12 @@ export interface ParsedBackupData {
   routines: Routine[];
   rmLogs: ExerciseRmLog[];
   workoutHistory: WorkoutHistoryLog[];
+  exerciseDiary: ExerciseDiary[];
   hasExercises: boolean;
   hasRoutines: boolean;
   hasRmLogs: boolean;
   hasHistory: boolean;
+  hasDiary: boolean;
 }
 
 /**
@@ -45,6 +48,7 @@ export function parseImportedData(rawJson: string): ParsedBackupData {
   let routines: Routine[] = [];
   let rmLogs: ExerciseRmLog[] = [];
   let workoutHistory: WorkoutHistoryLog[] = [];
+  let exerciseDiary: ExerciseDiary[] = [];
 
   // Case 1: Standard WorkoutLog backup object
   if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
@@ -70,9 +74,17 @@ export function parseImportedData(rawJson: string): ParsedBackupData {
     } else if (Array.isArray(parsed.history)) {
       workoutHistory = sanitizeWorkoutHistory(parsed.history);
     }
+
+    if (Array.isArray(parsed.exerciseDiary)) {
+      exerciseDiary = sanitizeExerciseDiary(parsed.exerciseDiary);
+    } else if (Array.isArray(parsed.diario)) {
+      exerciseDiary = sanitizeExerciseDiary(parsed.diario);
+    } else if (Array.isArray(parsed.diary)) {
+      exerciseDiary = sanitizeExerciseDiary(parsed.diary);
+    }
   }
 
-  // Case 2: User uploaded raw array of exercises, routines, RM logs, or workout history
+  // Case 2: User uploaded raw array of exercises, routines, RM logs, workout history or exercise diary
   if (Array.isArray(parsed)) {
     if (parsed.length > 0) {
       const first = parsed[0] as Record<string, unknown>;
@@ -82,6 +94,9 @@ export function parseImportedData(rawJson: string): ParsedBackupData {
       } else if (first && Array.isArray(first.records) && typeof first.exerciseName === 'string') {
         // It's an array of RM logs
         rmLogs = sanitizeRmLogs(parsed);
+      } else if (first && Array.isArray(first.entries) && typeof first.exerciseName === 'string') {
+        // It's an array of ExerciseDiary
+        exerciseDiary = sanitizeExerciseDiary(parsed);
       } else if (first && (typeof first.durationSeconds === 'number' || Array.isArray(first.exercisesSummary))) {
         // It's an array of workout history logs
         workoutHistory = sanitizeWorkoutHistory(parsed);
@@ -123,10 +138,116 @@ export function parseImportedData(rawJson: string): ParsedBackupData {
     routines,
     rmLogs,
     workoutHistory,
+    exerciseDiary,
     hasExercises: catalog.length > 0,
     hasRoutines: routines.length > 0,
     hasRmLogs: rmLogs.length > 0,
     hasHistory: workoutHistory.length > 0,
+    hasDiary: exerciseDiary.length > 0,
+  };
+}
+
+export function sanitizeExerciseDiary(items: unknown[]): ExerciseDiary[] {
+  return items
+    .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object' && typeof (item as { exerciseName?: unknown }).exerciseName === 'string')
+    .map((item) => {
+      const entriesRaw = Array.isArray(item.entries) ? item.entries : [];
+      const entries: ExerciseDiaryEntry[] = entriesRaw
+        .filter((e): e is Record<string, unknown> => !!e && typeof e === 'object' && (typeof e.note === 'string' || typeof e.notes === 'string'))
+        .map((e, eIdx) => {
+          let feeling: DiaryFeeling | undefined = undefined;
+          if (e.feeling === 'good' || e.feeling === 'neutral' || e.feeling === 'bad') {
+            feeling = e.feeling as DiaryFeeling;
+          }
+          return {
+            id: typeof e.id === 'string' && e.id.trim() ? e.id : `diary-rec-${Date.now()}-${eIdx}-${Math.random().toString(36).substring(2, 6)}`,
+            date: typeof e.date === 'string' && e.date.trim() ? e.date.trim() : new Date().toISOString().split('T')[0],
+            note: String(e.note || e.notes || '').trim(),
+            feeling,
+            createdAt: typeof e.createdAt === 'string' ? e.createdAt : undefined,
+            updatedAt: typeof e.updatedAt === 'string' ? e.updatedAt : undefined,
+          };
+        });
+
+      return {
+        id: typeof item.id === 'string' && item.id.trim() ? item.id : 'diary-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+        exerciseId: typeof item.exerciseId === 'string' ? item.exerciseId : undefined,
+        exerciseName: String(item.exerciseName || '').trim(),
+        category: typeof item.category === 'string' ? item.category : undefined,
+        entries,
+        createdAt: typeof item.createdAt === 'string' ? item.createdAt : new Date().toISOString(),
+        updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : new Date().toISOString(),
+      };
+    });
+}
+
+/**
+ * Merges imported Exercise Diary with existing diary logs.
+ * Matches exercises by normalized title or ID.
+ */
+export function mergeExerciseDiary(
+  existing: ExerciseDiary[],
+  imported: ExerciseDiary[],
+  replaceDuplicates: boolean
+): { merged: ExerciseDiary[]; addedCount: number; updatedCount: number } {
+  const result: ExerciseDiary[] = [...existing];
+  const nameToIndex = new Map<string, number>();
+
+  result.forEach((item, index) => {
+    nameToIndex.set(normalizeExerciseTitle(item.exerciseName), index);
+  });
+
+  let addedCount = 0;
+  let updatedCount = 0;
+
+  imported.forEach((importedDiary) => {
+    const norm = normalizeExerciseTitle(importedDiary.exerciseName);
+    if (!norm) return;
+
+    if (nameToIndex.has(norm)) {
+      const targetIndex = nameToIndex.get(norm)!;
+      const target = result[targetIndex];
+
+      if (replaceDuplicates) {
+        // Merge entries, avoiding duplicate signatures of date + note
+        const existingSignatures = new Set(target.entries.map((e) => `${e.date}_${normalizeExerciseTitle(e.note)}`));
+        const newEntries = [...target.entries];
+
+        importedDiary.entries.forEach((entry) => {
+          const sig = `${entry.date}_${normalizeExerciseTitle(entry.note)}`;
+          if (!existingSignatures.has(sig)) {
+            newEntries.push(entry);
+            existingSignatures.add(sig);
+          }
+        });
+
+        // Sort descending by date
+        newEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        result[targetIndex] = {
+          ...target,
+          category: importedDiary.category || target.category,
+          exerciseId: importedDiary.exerciseId || target.exerciseId,
+          entries: newEntries,
+          updatedAt: new Date().toISOString(),
+        };
+        updatedCount++;
+      }
+    } else {
+      // New exercise diary container
+      result.push({
+        ...importedDiary,
+        id: 'diary-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+      });
+      nameToIndex.set(norm, result.length - 1);
+      addedCount++;
+    }
+  });
+
+  return {
+    merged: result,
+    addedCount,
+    updatedCount,
   };
 }
 

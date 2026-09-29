@@ -15,18 +15,21 @@ import {
   Eye,
   FileText
 } from 'lucide-react';
-import { ExerciseDefinition, ExerciseRmLog } from '../types';
+import { ExerciseDefinition, ExerciseRmLog, ExerciseDiary } from '../types';
 import { VideoPreview } from './VideoPreview';
 import { formatSecondsToTime } from '../utils/timeCalculations';
 import { RmBadge } from './RmBadge';
+import { DiaryButton } from './DiaryButton';
 
 interface ExerciseCatalogProps {
   exercises: ExerciseDefinition[];
   rmLogs?: ExerciseRmLog[];
+  exerciseDiary?: ExerciseDiary[];
   onCreateExercise: (exercise: ExerciseDefinition) => void;
   onUpdateExercise: (exercise: ExerciseDefinition) => void;
   onDeleteExercise: (id: string) => void;
   onCheckRmWeight?: (exerciseName: string, newWeight: number, exerciseId?: string) => void;
+  onOpenDiary?: (exerciseName: string, exerciseId?: string) => void;
 }
 
 const CATEGORIES = ['Todos', 'Pecho', 'Espalda', 'Pierna', 'Hombro', 'Brazos', 'Core'];
@@ -34,10 +37,12 @@ const CATEGORIES = ['Todos', 'Pecho', 'Espalda', 'Pierna', 'Hombro', 'Brazos', '
 export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
   exercises,
   rmLogs = [],
+  exerciseDiary = [],
   onCreateExercise,
   onUpdateExercise,
   onDeleteExercise,
   onCheckRmWeight,
+  onOpenDiary,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
@@ -317,6 +322,16 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
                   </span>
 
                   <div className="flex items-center gap-1.5">
+                    {onOpenDiary && (
+                      <DiaryButton
+                        exerciseName={ex.name}
+                        exerciseId={ex.id}
+                        diaries={exerciseDiary}
+                        onOpenDiary={onOpenDiary}
+                        variant="compact"
+                      />
+                    )}
+
                     <button
                       id={`btn-edit-exercise-${ex.id}`}
                       type="button"
@@ -379,6 +394,19 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
               </div>
 
               <div className="flex items-center gap-1.5 shrink-0">
+                {onOpenDiary && (
+                  <DiaryButton
+                    exerciseName={previewExercise.name}
+                    exerciseId={previewExercise.id}
+                    diaries={exerciseDiary}
+                    onOpenDiary={(name, id) => {
+                      setPreviewExercise(null);
+                      onOpenDiary(name, id);
+                    }}
+                    variant="compact"
+                  />
+                )}
+
                 <button
                   id="btn-preview-header-edit"
                   type="button"
