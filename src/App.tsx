@@ -41,13 +41,11 @@ import {
   getDiaryEntriesCount, 
   getTotalDiaryEntriesCount 
 } from './utils/diaryCalculations';
-
-const ROUTINES_STORAGE_KEY = 'workout_planner_routines_v2';
-const CATALOG_STORAGE_KEY = 'workout_planner_catalog_v2';
-const ACTIVE_SESSIONS_STORAGE_KEY = 'workout_active_sessions_v1';
-const RM_LOGS_STORAGE_KEY = 'workout_planner_rm_logs_v1';
-const WORKOUT_HISTORY_STORAGE_KEY = 'workout_planner_history_v1';
-const EXERCISE_DIARY_STORAGE_KEY = 'workout_planner_diary_v1';
+import { 
+  initAndMigrateStorage, 
+  setStoredItem, 
+  DB_KEYS 
+} from './services/db';
 
 // Top banner shown when an active routine is in progress and the user is browsing elsewhere
 const ActiveWorkoutTopBanner: React.FC<{
@@ -89,54 +87,9 @@ const ActiveWorkoutTopBanner: React.FC<{
 };
 
 export default function App() {
-  const [routines, setRoutines] = useState<Routine[]>(() => {
-    try {
-      localStorage.removeItem('workout_planner_routines_v1');
-      const saved = localStorage.getItem(ROUTINES_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          return parsed;
-        }
-      }
-    } catch {
-      // Fallback on storage errors
-    }
-    return [];
-  });
-
-  const [catalog, setCatalog] = useState<ExerciseDefinition[]>(() => {
-    try {
-      localStorage.removeItem('workout_planner_catalog_v1');
-      const saved = localStorage.getItem(CATALOG_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          return parsed;
-        }
-      }
-    } catch {
-      // Fallback on storage errors
-    }
-    return [];
-  });
-
-  // Persistent active workout sessions: Record<routineId, ActiveWorkoutSession>
-  const [activeSessions, setActiveSessions] = useState<Record<string, ActiveWorkoutSession>>(() => {
-    try {
-      const saved = localStorage.getItem(ACTIVE_SESSIONS_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === 'object') {
-          return parsed;
-        }
-      }
-    } catch {
-      // Fallback
-    }
-    return {};
-  });
-
+  const [routines, setRoutines] = useState<Routine[]>([]);
+  const [catalog, setCatalog] = useState<ExerciseDefinition[]>([]);
+  const [activeSessions, setActiveSessions] = useState<Record<string, ActiveWorkoutSession>>({});
   const [activeTab, setActiveTab] = useState<AppTab>(AppTab.ROUTINES);
   const [activeRoutineId, setActiveRoutineId] = useState<string | null>(null);
   const [routineSubMode, setRoutineSubMode] = useState<RoutineSubMode>('edit');
@@ -146,52 +99,16 @@ export default function App() {
   const [workoutSummary, setWorkoutSummary] = useState<WorkoutCompletionSummary | null>(null);
 
   // Persistent RM logs
-  const [rmLogs, setRmLogs] = useState<ExerciseRmLog[]>(() => {
-    try {
-      const saved = localStorage.getItem(RM_LOGS_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          return parsed;
-        }
-      }
-    } catch {
-      // Fallback
-    }
-    return [];
-  });
+  const [rmLogs, setRmLogs] = useState<ExerciseRmLog[]>([]);
 
   // Persistent Workout History logs
-  const [workoutHistory, setWorkoutHistory] = useState<WorkoutHistoryLog[]>(() => {
-    try {
-      const saved = localStorage.getItem(WORKOUT_HISTORY_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          return parsed;
-        }
-      }
-    } catch {
-      // Fallback
-    }
-    return [];
-  });
+  const [workoutHistory, setWorkoutHistory] = useState<WorkoutHistoryLog[]>([]);
 
   // Persistent Exercise Diary
-  const [exerciseDiary, setExerciseDiary] = useState<ExerciseDiary[]>(() => {
-    try {
-      const saved = localStorage.getItem(EXERCISE_DIARY_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          return parsed;
-        }
-      }
-    } catch {
-      // Fallback
-    }
-    return [];
-  });
+  const [exerciseDiary, setExerciseDiary] = useState<ExerciseDiary[]>([]);
+
+  // Storage hydration state
+  const [isStorageLoaded, setIsStorageLoaded] = useState<boolean>(false);
 
   const [diaryTargetExerciseName, setDiaryTargetExerciseName] = useState<string | undefined>(undefined);
   const [diaryAutoOpenCreate, setDiaryAutoOpenCreate] = useState<boolean>(false);
@@ -205,59 +122,65 @@ export default function App() {
     previousRmDate?: string;
   } | null>(null);
 
-  // Save routines to localStorage whenever they change
+  // Load and migrate all data from IndexedDB (with automatic localStorage migration fallback)
   useEffect(() => {
-    try {
-      localStorage.setItem(ROUTINES_STORAGE_KEY, JSON.stringify(routines));
-    } catch (e) {
-      console.error('Error saving routines to localStorage', e);
-    }
-  }, [routines]);
+    let isMounted = true;
+    initAndMigrateStorage()
+      .then((data) => {
+        if (!isMounted) return;
+        setRoutines(data.routines);
+        setCatalog(data.catalog);
+        setActiveSessions(data.activeSessions);
+        setRmLogs(data.rmLogs);
+        setWorkoutHistory(data.workoutHistory);
+        setExerciseDiary(data.exerciseDiary);
+        setIsStorageLoaded(true);
+      })
+      .catch((err) => {
+        console.error('[WorkoutLogDB] Error initializing storage:', err);
+        if (isMounted) setIsStorageLoaded(true);
+      });
 
-  // Save catalog to localStorage whenever it changes
-  useEffect(() => {
-    try {
-      localStorage.setItem(CATALOG_STORAGE_KEY, JSON.stringify(catalog));
-    } catch (e) {
-      console.error('Error saving catalog to localStorage', e);
-    }
-  }, [catalog]);
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
-  // Save active workout sessions to localStorage whenever they change
+  // Save routines to IndexedDB whenever they change (only after initial load)
   useEffect(() => {
-    try {
-      localStorage.setItem(ACTIVE_SESSIONS_STORAGE_KEY, JSON.stringify(activeSessions));
-    } catch (e) {
-      console.error('Error saving active sessions to localStorage', e);
-    }
-  }, [activeSessions]);
+    if (!isStorageLoaded) return;
+    setStoredItem(DB_KEYS.ROUTINES, routines);
+  }, [routines, isStorageLoaded]);
 
-  // Save RM logs to localStorage whenever they change
+  // Save catalog to IndexedDB whenever it changes
   useEffect(() => {
-    try {
-      localStorage.setItem(RM_LOGS_STORAGE_KEY, JSON.stringify(rmLogs));
-    } catch (e) {
-      console.error('Error saving rmLogs to localStorage', e);
-    }
-  }, [rmLogs]);
+    if (!isStorageLoaded) return;
+    setStoredItem(DB_KEYS.CATALOG, catalog);
+  }, [catalog, isStorageLoaded]);
 
-  // Save workout history to localStorage whenever it changes
+  // Save active workout sessions to IndexedDB whenever they change
   useEffect(() => {
-    try {
-      localStorage.setItem(WORKOUT_HISTORY_STORAGE_KEY, JSON.stringify(workoutHistory));
-    } catch (e) {
-      console.error('Error saving workout history to localStorage', e);
-    }
-  }, [workoutHistory]);
+    if (!isStorageLoaded) return;
+    setStoredItem(DB_KEYS.ACTIVE_SESSIONS, activeSessions);
+  }, [activeSessions, isStorageLoaded]);
 
-  // Save exercise diary to localStorage whenever it changes
+  // Save RM logs to IndexedDB whenever they change
   useEffect(() => {
-    try {
-      localStorage.setItem(EXERCISE_DIARY_STORAGE_KEY, JSON.stringify(exerciseDiary));
-    } catch (e) {
-      console.error('Error saving exerciseDiary to localStorage', e);
-    }
-  }, [exerciseDiary]);
+    if (!isStorageLoaded) return;
+    setStoredItem(DB_KEYS.RM_LOGS, rmLogs);
+  }, [rmLogs, isStorageLoaded]);
+
+  // Save workout history to IndexedDB whenever it changes
+  useEffect(() => {
+    if (!isStorageLoaded) return;
+    setStoredItem(DB_KEYS.WORKOUT_HISTORY, workoutHistory);
+  }, [workoutHistory, isStorageLoaded]);
+
+  // Save exercise diary to IndexedDB whenever it changes
+  useEffect(() => {
+    if (!isStorageLoaded) return;
+    setStoredItem(DB_KEYS.EXERCISE_DIARY, exerciseDiary);
+  }, [exerciseDiary, isStorageLoaded]);
 
   // Open exercise diary from anywhere in the app
   const handleOpenExerciseDiary = (exerciseName: string, exerciseId?: string) => {
@@ -583,6 +506,22 @@ export default function App() {
     setImportFeedback(msg);
     setTimeout(() => setImportFeedback(null), 5000);
   };
+
+  if (!isStorageLoaded) {
+    return (
+      <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-zinc-950 text-white flex items-center justify-center shadow-lg animate-pulse">
+            <Flame className="w-6 h-6 text-emerald-400 fill-current" />
+          </div>
+          <div className="flex items-center gap-2 text-zinc-500 text-xs font-semibold">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+            <span>Cargando WorkoutLog...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const activeRoutine = routines.find((r) => r.id === activeRoutineId);
 
