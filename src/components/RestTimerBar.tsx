@@ -182,28 +182,28 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
   return (
     <div
       id="floating-rest-timer"
-      className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-lg z-50 transition-all duration-300"
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-lg z-50 transition-all duration-300 animate-slide-up"
     >
       <div
-        className={`rounded-2xl border shadow-xl p-4 backdrop-blur-md transition-colors ${
+        className={`rounded-2xl border shadow-2xl p-4 sm:p-5 backdrop-blur-2xl transition-all duration-300 ${
           hasFinished
-            ? 'bg-emerald-600 text-white border-emerald-500 shadow-emerald-500/20'
-            : 'bg-zinc-900/95 text-zinc-100 border-zinc-700/80 shadow-black/40'
+            ? 'bg-[#00FF87] text-black border-[#00FF87] shadow-[0_10px_40px_rgba(0,255,135,0.4)]'
+            : 'bg-[#18181A]/95 text-white border-[#00FF87]/30 shadow-[0_12px_45px_rgba(0,0,0,0.9),0_0_25px_rgba(0,255,135,0.15)]'
         }`}
       >
         <div className="flex items-center justify-between gap-3 mb-2">
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-2.5 min-w-0">
             <span
               className={`w-2.5 h-2.5 rounded-full ${
-                hasFinished ? 'bg-white animate-ping' : 'bg-emerald-400 animate-pulse'
+                hasFinished ? 'bg-black animate-ping' : 'bg-[#00FF87] animate-pulse shadow-[0_0_8px_#00FF87]'
               }`}
             />
             <div className="truncate flex items-center gap-2">
-              <span className="text-xs font-semibold tracking-wide uppercase opacity-80 block truncate">
+              <span className={`text-[11px] font-black tracking-wider uppercase block truncate ${hasFinished ? 'text-black' : 'text-[#00FF87]'}`}>
                 {hasFinished ? '¡Tiempo terminado!' : 'Descanso en curso'}
               </span>
               {exerciseName && (
-                <span className="text-xs opacity-90 truncate block text-zinc-300">
+                <span className={`text-xs truncate block font-semibold ${hasFinished ? 'text-black/80' : 'text-[#A1A1AA]'}`}>
                   {exerciseName} {setNumber ? `• Serie ${setNumber}` : ''}
                 </span>
               )}
@@ -216,7 +216,9 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
               type="button"
               onClick={onClose}
               aria-label="Cerrar temporizador"
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
+              className={`p-1.5 rounded-xl transition-colors ${
+                hasFinished ? 'text-black/60 hover:text-black hover:bg-black/10' : 'text-zinc-400 hover:text-white hover:bg-white/10'
+              }`}
             >
               <X className="w-5 h-5" />
             </button>
@@ -225,12 +227,12 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
 
         <div className="flex items-center justify-between gap-4 py-1">
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold font-mono tracking-tight">
+            <span className={`text-3xl sm:text-4xl font-black font-mono tracking-tight ${hasFinished ? 'text-black' : 'text-white'}`}>
               {formatStopwatch(secondsLeft)}
             </span>
             {hasFinished && (
-              <span className="text-xs font-semibold flex items-center gap-1 text-white bg-white/20 px-2 py-0.5 rounded-full">
-                <Bell className="w-3 h-3" /> ¡A por la siguiente!
+              <span className="text-xs font-black flex items-center gap-1 text-black bg-black/15 px-2.5 py-0.5 rounded-full">
+                <Bell className="w-3.5 h-3.5" /> ¡A por la siguiente!
               </span>
             )}
           </div>
@@ -240,7 +242,11 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
               id="btn-add-30s-rest"
               type="button"
               onClick={() => addExtraTime(30)}
-              className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-white/10 hover:bg-white/20 transition-colors flex items-center gap-1 active:scale-95"
+              className={`min-h-[44px] px-3 text-xs font-bold rounded-xl transition-all flex items-center gap-1 active:scale-95 ${
+                hasFinished
+                  ? 'bg-black/15 hover:bg-black/25 text-black'
+                  : 'bg-zinc-800 hover:bg-zinc-700 text-white border border-white/10'
+              }`}
             >
               <Plus className="w-3.5 h-3.5" /> 30s
             </button>
@@ -250,11 +256,11 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
                 id="btn-pause-rest-timer"
                 type="button"
                 onClick={togglePause}
-                className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors active:scale-95"
+                className="min-h-[44px] min-w-[44px] p-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white border border-white/10 transition-all active:scale-95 flex items-center justify-center"
                 title={isPaused ? 'Continuar' : 'Pausar'}
               >
                 {isPaused ? (
-                  <Play className="w-4 h-4 fill-current" />
+                  <Play className="w-4 h-4 fill-current text-[#00FF87]" />
                 ) : (
                   <Pause className="w-4 h-4 fill-current" />
                 )}
@@ -265,10 +271,10 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
               id="btn-skip-rest-timer"
               type="button"
               onClick={onClose}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors active:scale-95 ${
+              className={`min-h-[44px] px-4 text-xs font-black rounded-xl transition-all active:scale-95 ${
                 hasFinished
-                  ? 'bg-white text-emerald-800 hover:bg-zinc-100 font-bold'
-                  : 'bg-emerald-500 hover:bg-emerald-400 text-zinc-950'
+                  ? 'bg-black text-white hover:bg-zinc-900 shadow-md'
+                  : 'bg-[#00FF87] hover:bg-[#00e57a] text-black shadow-[0_0_15px_rgba(0,255,135,0.4)]'
               }`}
             >
               {hasFinished ? 'Listo' : 'Saltar'}
@@ -277,10 +283,10 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
         </div>
 
         {/* Progress indicator */}
-        <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden mt-2">
+        <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden mt-3">
           <div
             className={`h-full transition-all duration-300 ${
-              hasFinished ? 'bg-white' : 'bg-emerald-400'
+              hasFinished ? 'bg-black' : 'bg-[#00FF87] shadow-[0_0_10px_#00FF87]'
             }`}
             style={{ width: `${progressPercent}%` }}
           />

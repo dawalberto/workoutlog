@@ -1,3 +1,8 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React, { useState } from 'react';
 import { 
   Plus, 
@@ -8,12 +13,11 @@ import {
   Video, 
   Image as ImageIcon, 
   Clock, 
-  Sparkles, 
-  Check, 
   X,
   Layers,
   Eye,
-  FileText
+  FileText,
+  Sparkles
 } from 'lucide-react';
 import { ExerciseDefinition, ExerciseRmLog, ExerciseDiary } from '../types';
 import { VideoPreview } from './VideoPreview';
@@ -154,169 +158,171 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
   };
 
   return (
-    <div id="exercise-catalog-page" className="min-h-screen bg-zinc-50 pb-20">
-      {/* Sub-header */}
-      <div className="bg-white border-b border-zinc-200/80">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-5 sm:py-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-black text-zinc-900 tracking-tight">
-                Biblioteca de Ejercicios
-              </h1>
-              <p className="text-xs sm:text-sm text-zinc-600 mt-0.5">
-                Crea y preconfigura tus movimientos con imagen de preview, video y series para usarlos rápidamente.
-              </p>
+    <div id="exercise-catalog-page" className="min-h-screen bg-[#0D0D0D] text-white pb-28 pt-4 sm:pt-6">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/[0.08]">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-widest text-[#00FF87]">
+                <Dumbbell className="w-3.5 h-3.5" /> Catálogo Maestro
+              </span>
             </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                id="btn-new-catalog-exercise"
-                type="button"
-                onClick={handleOpenCreate}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-colors active:scale-95"
-              >
-                <Plus className="w-4 h-4" /> Nuevo Ejercicio
-              </button>
-            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              Biblioteca de Ejercicios
+            </h1>
+            <p className="text-xs sm:text-sm text-[#A1A1AA] mt-0.5">
+              Crea tus movimientos con imagen, video de técnica y series preconfiguradas.
+            </p>
           </div>
 
-          {/* Search & Category Filter */}
-          <div className="mt-6 flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Buscar ejercicio o grupo muscular..."
-                className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm rounded-xl border border-zinc-200 bg-zinc-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
-              />
-              {searchTerm && (
-                <button
-                  type="button"
-                  onClick={() => setSearchTerm('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-
-            {/* Category tabs */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg shrink-0 transition-colors ${
-                    selectedCategory === cat
-                      ? 'bg-zinc-900 text-white'
-                      : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 hover:text-zinc-900'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
+          <div className="flex items-center gap-2">
+            <button
+              id="btn-new-catalog-exercise"
+              type="button"
+              onClick={handleOpenCreate}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 min-h-[48px] rounded-2xl text-sm font-extrabold bg-[#00FF87] hover:bg-[#00e57a] text-black shadow-[0_0_20px_rgba(0,255,135,0.35)] transition-all active:scale-[0.97]"
+            >
+              <Plus className="w-5 h-5 stroke-[2.5]" />
+              <span>Nuevo Ejercicio</span>
+            </button>
           </div>
         </div>
-      </div>
 
-      {/* Main List */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-6">
-        <div className="flex items-center justify-between text-xs text-zinc-600 px-1 mb-4">
+        {/* Search & Category Filter */}
+        <div className="my-6 flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-zinc-500 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Buscar ejercicio o grupo muscular..."
+              className="w-full min-h-[48px] pl-11 pr-10 py-2.5 text-sm rounded-2xl border border-white/10 bg-[#1C1C1E] text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/20 transition-all shadow-inner"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Category Tabs */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setSelectedCategory(cat)}
+                className={`min-h-[44px] px-3.5 py-2 text-xs font-bold rounded-xl shrink-0 transition-all active:scale-95 ${
+                  selectedCategory === cat
+                    ? 'bg-[#00FF87] text-black shadow-[0_0_12px_rgba(0,255,135,0.35)] font-black'
+                    : 'bg-[#1C1C1E] text-zinc-400 hover:text-white border border-white/5'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Main List Info */}
+        <div className="flex items-center justify-between text-xs font-semibold text-[#A1A1AA] px-1 mb-4">
           <span>{filteredExercises.length} {filteredExercises.length === 1 ? 'ejercicio registrado' : 'ejercicios registrados'}</span>
         </div>
 
+        {/* Cards Grid */}
         {filteredExercises.length === 0 ? (
-          <div className="text-center py-16 px-6 bg-white rounded-2xl border border-zinc-200 shadow-sm max-w-md mx-auto">
-            <div className="w-12 h-12 bg-zinc-100 rounded-2xl flex items-center justify-center mx-auto mb-3 text-zinc-400">
-              <Dumbbell className="w-6 h-6" />
+          <div className="text-center py-20 px-6 bg-[#1C1C1E] rounded-2xl border border-white/[0.08] max-w-md mx-auto my-6 shadow-xl">
+            <div className="w-14 h-14 bg-zinc-900 border border-white/10 rounded-2xl flex items-center justify-center mx-auto mb-3 text-zinc-500">
+              <Dumbbell className="w-7 h-7" />
             </div>
-            <h3 className="text-base font-bold text-zinc-900">No se encontraron ejercicios</h3>
-            <p className="text-xs text-zinc-600 mt-1 mb-4">
-              Prueba con otro término de búsqueda o crea un nuevo ejercicio para tu catálogo.
+            <h3 className="text-lg font-bold text-white">No se encontraron ejercicios</h3>
+            <p className="text-xs text-[#A1A1AA] mt-1 mb-5">
+              Prueba con otro término de búsqueda o añade un nuevo ejercicio a tu biblioteca.
             </p>
             <button
               type="button"
               onClick={handleOpenCreate}
-              className="px-4 py-2 text-xs font-bold rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+              className="min-h-[48px] px-5 text-xs font-extrabold rounded-2xl bg-[#00FF87] text-black hover:bg-[#00e57a] transition-all shadow-[0_0_15px_rgba(0,255,135,0.3)] active:scale-[0.97]"
             >
               + Crear Ejercicio
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {filteredExercises.map((ex) => (
               <div
                 key={ex.id}
                 id={`catalog-card-${ex.id}`}
                 onClick={() => setPreviewExercise(ex)}
-                className="bg-white rounded-2xl border border-zinc-200 hover:border-emerald-500/70 p-4 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group select-none"
+                className="bg-[#1C1C1E] rounded-2xl border border-white/[0.08] hover:border-[#00FF87]/40 p-4 sm:p-5 shadow-lg hover:shadow-[0_0_25px_rgba(0,255,135,0.08)] transition-all flex flex-col justify-between cursor-pointer group select-none relative overflow-hidden"
               >
                 <div>
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-3.5">
                     {/* Cover Preview Image */}
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-zinc-100 shrink-0 border border-zinc-200 flex items-center justify-center relative">
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden bg-zinc-900 shrink-0 border border-white/10 flex items-center justify-center relative shadow-sm">
                       {ex.imageUrl ? (
                         <img
                           src={ex.imageUrl}
                           alt={ex.name}
                           loading="lazy"
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           onError={(e) => {
-                            // Fallback if image fails to load
                             (e.target as HTMLElement).style.display = 'none';
                           }}
                         />
                       ) : (
-                        <Dumbbell className="w-6 h-6 text-zinc-400" />
+                        <Dumbbell className="w-6 h-6 text-zinc-600" />
                       )}
                       {ex.videoUrl && (
-                        <span className="absolute bottom-1 right-1 p-0.5 rounded-md bg-black/70 text-white">
+                        <span className="absolute bottom-1 right-1 p-1 rounded-lg bg-black/80 text-[#00E5FF] shadow-sm">
                           <Video className="w-3 h-3" />
                         </span>
                       )}
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-zinc-100 text-zinc-700 uppercase tracking-wide">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="px-2 py-0.5 rounded-lg text-[10px] font-black bg-zinc-800 text-zinc-300 border border-white/5 uppercase tracking-wider">
                           {ex.category || 'General'}
                         </span>
                         <RmBadge rmLogs={rmLogs} exerciseName={ex.name} exerciseId={ex.id} />
                       </div>
-                      <h3 className="text-sm sm:text-base font-bold text-zinc-900 tracking-tight mt-1 truncate group-hover:text-emerald-700 transition-colors">
+                      <h3 className="text-base font-bold text-white tracking-tight mt-1 truncate group-hover:text-[#00FF87] transition-colors">
                         {ex.name}
                       </h3>
                       {ex.notes && (
-                        <p className="text-xs text-zinc-600 line-clamp-1 mt-0.5">
+                        <p className="text-xs text-[#A1A1AA] line-clamp-1 mt-0.5 leading-relaxed">
                           {ex.notes}
                         </p>
                       )}
                     </div>
                   </div>
 
-                  {/* Pre-configured defaults badge */}
-                  <div className="mt-3 pt-2.5 border-t border-zinc-100 flex items-center gap-3 text-[11px] text-zinc-600 font-medium">
-                    <span className="inline-flex items-center gap-1">
-                      <Layers className="w-3 h-3 text-zinc-600" /> {ex.defaultSetsCount || 3} series
+                  {/* Preconfigured defaults */}
+                  <div className="mt-4 pt-3 border-t border-white/[0.06] flex items-center gap-3 text-xs text-[#A1A1AA] font-semibold">
+                    <span className="inline-flex items-center gap-1 text-white">
+                      <Layers className="w-3.5 h-3.5 text-[#00E5FF]" /> {ex.defaultSetsCount || 3}s
                     </span>
-                    <span>•</span>
+                    <span>·</span>
                     <span>{ex.defaultReps || 10} reps</span>
-                    <span>•</span>
+                    <span>·</span>
                     <span>{ex.defaultWeight || 0} kg</span>
-                    <span>•</span>
-                    <span className="inline-flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-zinc-600" /> {ex.defaultRestSeconds || 60}s
+                    <span>·</span>
+                    <span className="inline-flex items-center gap-1 font-mono">
+                      <Clock className="w-3.5 h-3.5 text-[#00FF87]" /> {ex.defaultRestSeconds || 60}s
                     </span>
                   </div>
                 </div>
 
-                {/* Actions */}
-                <div className="mt-3 pt-2.5 border-t border-zinc-100 flex items-center justify-between gap-1.5">
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 group-hover:text-emerald-700 transition-colors">
+                {/* Card Actions */}
+                <div className="mt-4 pt-3 border-t border-white/[0.06] flex items-center justify-between gap-2">
+                  <span className="inline-flex items-center gap-1 text-xs font-bold text-[#00FF87] group-hover:underline">
                     <Eye className="w-3.5 h-3.5" />
                     <span>Ver detalle</span>
                   </span>
@@ -339,10 +345,11 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
                         e.stopPropagation();
                         handleOpenEdit(ex);
                       }}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg text-zinc-700 bg-zinc-100 hover:bg-zinc-200 transition-colors"
+                      className="min-h-[40px] px-3 inline-flex items-center gap-1 text-xs font-bold rounded-xl text-zinc-300 bg-zinc-800 hover:bg-zinc-700 hover:text-white transition-colors active:scale-95"
                       title="Editar ejercicio"
                     >
-                      <Edit3 className="w-3 h-3" /> Editar
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>Editar</span>
                     </button>
 
                     <button
@@ -352,10 +359,10 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
                         e.stopPropagation();
                         handleDelete(ex.id, ex.name);
                       }}
-                      className="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="min-h-[40px] min-w-[40px] p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors active:scale-95 flex items-center justify-center"
                       title="Eliminar de la biblioteca"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -363,37 +370,34 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
             ))}
           </div>
         )}
-      </main>
+      </div>
 
       {/* Exercise Preview Modal */}
       {previewExercise && (
         <div
           id="modal-exercise-preview"
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-hidden animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-hidden animate-in fade-in duration-150"
           onClick={() => setPreviewExercise(null)}
         >
           <div
-            className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 shadow-2xl max-w-lg w-full max-h-[92vh] sm:max-h-[88vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150"
+            className="bg-[#18181A] text-white rounded-3xl border border-white/10 shadow-2xl max-w-lg w-full max-h-[92vh] flex flex-col overflow-hidden animate-slide-up"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-zinc-100 shrink-0 bg-white flex items-center justify-between gap-3">
+            <div className="px-5 sm:px-6 py-4 border-b border-white/[0.08] shrink-0 bg-[#18181A] flex items-center justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-zinc-100 text-zinc-700 uppercase tracking-wide">
+                  <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black bg-zinc-800 text-zinc-300 uppercase tracking-wider">
                     {previewExercise.category || 'General'}
                   </span>
                   <RmBadge rmLogs={rmLogs} exerciseName={previewExercise.name} exerciseId={previewExercise.id} size="sm" />
-                  <span className="text-[11px] text-zinc-400 font-medium">
-                    Vista previa
-                  </span>
                 </div>
-                <h2 className="text-base sm:text-lg font-black text-zinc-900 truncate">
+                <h2 className="text-lg sm:text-xl font-black text-white truncate">
                   {previewExercise.name}
                 </h2>
               </div>
 
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div className="flex items-center gap-2 shrink-0">
                 {onOpenDiary && (
                   <DiaryButton
                     exerciseName={previewExercise.name}
@@ -415,8 +419,7 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
                     setPreviewExercise(null);
                     handleOpenEdit(ex);
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white shadow-xs transition-colors active:scale-95"
-                  title="Editar ejercicio"
+                  className="min-h-[40px] inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white transition-colors active:scale-95"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                   <span>Editar</span>
@@ -425,7 +428,7 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
                 <button
                   type="button"
                   onClick={() => setPreviewExercise(null)}
-                  className="p-1.5 text-zinc-400 hover:text-zinc-600 rounded-xl hover:bg-zinc-100 transition-colors"
+                  className="p-2 text-zinc-400 hover:text-white rounded-xl hover:bg-zinc-800 transition-colors"
                   aria-label="Cerrar vista previa"
                 >
                   <X className="w-5 h-5" />
@@ -433,11 +436,11 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
               </div>
             </div>
 
-            {/* Modal Scrollable Content */}
-            <div className="p-4 sm:p-6 overflow-y-auto space-y-4">
-              {/* Media Preview: Image */}
+            {/* Modal Content */}
+            <div className="p-5 sm:p-6 overflow-y-auto space-y-4">
+              {/* Media Image */}
               {previewExercise.imageUrl && (
-                <div className="rounded-2xl overflow-hidden border border-zinc-200 bg-zinc-100 max-h-60 flex items-center justify-center shadow-xs">
+                <div className="rounded-2xl overflow-hidden border border-white/10 bg-zinc-900 max-h-60 flex items-center justify-center shadow-md">
                   <img
                     src={previewExercise.imageUrl}
                     alt={previewExercise.name}
@@ -451,24 +454,24 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
 
               {/* Notes */}
               {previewExercise.notes && (
-                <div className="p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200/80 flex items-start gap-2.5">
-                  <FileText className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <div className="p-4 rounded-2xl bg-zinc-900/80 border border-white/5 flex items-start gap-3">
+                  <FileText className="w-4 h-4 text-[#00FF87] shrink-0 mt-0.5" />
                   <div className="min-w-0 flex-1">
-                    <span className="block text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-0.5">
+                    <span className="block text-[10px] font-extrabold uppercase tracking-wider text-zinc-400 mb-1">
                       Notas y Técnica
                     </span>
-                    <p className="text-xs sm:text-sm text-zinc-700 leading-relaxed whitespace-pre-line">
+                    <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed whitespace-pre-line">
                       {previewExercise.notes}
                     </p>
                   </div>
                 </div>
               )}
 
-              {/* Video Preview if present */}
+              {/* Video Preview */}
               {previewExercise.videoUrl && (
-                <div className="p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200/80">
-                  <span className="block text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-1.5">
-                    Técnica en video
+                <div className="p-4 rounded-2xl bg-zinc-900/80 border border-white/5">
+                  <span className="block text-[10px] font-extrabold uppercase tracking-wider text-zinc-400 mb-2">
+                    Técnica en Video
                   </span>
                   <VideoPreview
                     url={previewExercise.videoUrl}
@@ -477,16 +480,16 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
                 </div>
               )}
 
-              {/* Preconfigured Sets Table */}
+              {/* Preconfigured Sets */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-600 flex items-center gap-1.5">
-                    <Layers className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#A1A1AA] flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-[#00E5FF]" />
                     Series preconfiguradas
                   </span>
 
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-zinc-100 text-zinc-700 border border-zinc-200">
-                    <Clock className="w-3 h-3 text-zinc-500" />
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-mono font-bold bg-zinc-900 text-zinc-300 border border-white/10">
+                    <Clock className="w-3.5 h-3.5 text-[#00FF87]" />
                     ~{formatSecondsToTime(
                       (previewExercise.defaultSetsCount || 3) *
                         ((previewExercise.defaultReps || 10) * 3 +
@@ -495,18 +498,18 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
                   </span>
                 </div>
 
-                <div className="overflow-x-auto rounded-2xl border border-zinc-200 bg-white">
+                <div className="overflow-x-auto rounded-2xl border border-white/[0.08] bg-zinc-900/60">
                   <table className="w-full text-left border-collapse text-xs">
                     <thead>
-                      <tr className="border-b border-zinc-200 bg-zinc-50 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-zinc-500">
-                        <th className="py-2.5 px-3 text-center w-14">Serie</th>
-                        <th className="py-2.5 px-3 text-center">Reps</th>
-                        <th className="py-2.5 px-3 text-center">Peso</th>
-                        <th className="py-2.5 px-3 text-center">Descanso</th>
-                        <th className="py-2.5 px-3 text-center">Tiempo est.</th>
+                      <tr className="border-b border-white/[0.08] bg-zinc-900 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                        <th className="py-3 px-3 text-center w-14">Serie</th>
+                        <th className="py-3 px-3 text-center">Reps</th>
+                        <th className="py-3 px-3 text-center">Peso</th>
+                        <th className="py-3 px-3 text-center">Descanso</th>
+                        <th className="py-3 px-3 text-center">Tiempo est.</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-zinc-100">
+                    <tbody className="divide-y divide-white/[0.04]">
                       {Array.from(
                         { length: previewExercise.defaultSetsCount || 3 },
                         (_, idx) => {
@@ -516,24 +519,24 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
                           const setSeconds = reps * 3 + rest;
 
                           return (
-                            <tr key={idx} className="hover:bg-zinc-50/50">
-                              <td className="py-2.5 px-3 text-center">
-                                <span className="inline-block w-6 h-6 leading-6 text-xs font-bold rounded-full bg-zinc-100 text-zinc-700">
+                            <tr key={idx} className="hover:bg-white/[0.02]">
+                              <td className="py-3 px-3 text-center">
+                                <span className="inline-block w-6 h-6 leading-6 text-xs font-bold rounded-lg bg-zinc-800 text-zinc-200">
                                   {idx + 1}
                                 </span>
                               </td>
-                              <td className="py-2.5 px-3 text-center font-semibold text-zinc-900">
-                                {reps} <span className="text-[10px] text-zinc-500 font-normal">reps</span>
+                              <td className="py-3 px-3 text-center font-bold text-white">
+                                {reps} <span className="text-[10px] text-zinc-500">reps</span>
                               </td>
-                              <td className="py-2.5 px-3 text-center font-semibold text-zinc-900">
-                                {weight} <span className="text-[10px] text-zinc-500 font-normal">kg</span>
+                              <td className="py-3 px-3 text-center font-bold text-white">
+                                {weight} <span className="text-[10px] text-zinc-500">kg</span>
                               </td>
-                              <td className="py-2.5 px-3 text-center">
-                                <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-700">
+                              <td className="py-3 px-3 text-center">
+                                <span className="font-mono text-xs px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-300">
                                   {rest}s
                                 </span>
                               </td>
-                              <td className="py-2.5 px-3 text-center text-zinc-500 font-mono text-[11px]">
+                              <td className="py-3 px-3 text-center text-zinc-400 font-mono text-xs">
                                 ~{formatSecondsToTime(setSeconds)}
                               </td>
                             </tr>
@@ -547,16 +550,16 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
             </div>
 
             {/* Modal Footer */}
-            <div className="px-4 sm:px-6 py-3.5 border-t border-zinc-200/80 bg-zinc-50/70 flex items-center justify-between gap-3 shrink-0">
-              <span className="text-xs text-zinc-500 hidden sm:inline">
-                {previewExercise.defaultSetsCount || 3} series x {previewExercise.defaultReps || 10} reps · {previewExercise.defaultWeight || 0} kg
+            <div className="px-5 sm:px-6 py-4 border-t border-white/[0.08] bg-[#141416] flex items-center justify-between gap-3 shrink-0">
+              <span className="text-xs text-zinc-400 hidden sm:inline font-mono">
+                {previewExercise.defaultSetsCount || 3}s x {previewExercise.defaultReps || 10}r · {previewExercise.defaultWeight || 0}kg
               </span>
 
               <div className="flex items-center gap-2 ml-auto">
                 <button
                   type="button"
                   onClick={() => setPreviewExercise(null)}
-                  className="px-4 py-2 text-xs font-semibold rounded-xl text-zinc-700 hover:bg-zinc-200/60 transition-colors"
+                  className="min-h-[44px] px-4 text-xs font-bold rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
                 >
                   Cerrar
                 </button>
@@ -569,7 +572,7 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
                     setPreviewExercise(null);
                     handleOpenEdit(ex);
                   }}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-colors active:scale-95"
+                  className="min-h-[44px] inline-flex items-center gap-2 px-5 text-xs font-extrabold rounded-xl bg-[#00FF87] hover:bg-[#00e57a] text-black shadow-[0_0_15px_rgba(0,255,135,0.3)] transition-all active:scale-[0.97]"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                   <span>Editar Ejercicio</span>
@@ -582,31 +585,31 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
 
       {/* Create / Edit Exercise Modal */}
       {isEditing && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-hidden">
-          <div className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 shadow-2xl max-w-lg w-full max-h-[92vh] sm:max-h-[88vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-hidden animate-in fade-in duration-150">
+          <div className="bg-[#18181A] text-white rounded-3xl border border-white/10 shadow-2xl max-w-lg w-full max-h-[92vh] flex flex-col overflow-hidden animate-slide-up">
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-zinc-100 shrink-0 bg-white">
-              <div className="flex items-center gap-2.5">
-                <span className="p-1.5 rounded-xl bg-emerald-100 text-emerald-800 shrink-0">
-                  <Dumbbell className="w-4 h-4" />
+            <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-white/[0.08] shrink-0 bg-[#18181A]">
+              <div className="flex items-center gap-3">
+                <span className="p-2 rounded-xl bg-[#00FF87]/20 text-[#00FF87] shrink-0 border border-[#00FF87]/30">
+                  <Dumbbell className="w-5 h-5" />
                 </span>
-                <h2 className="text-base sm:text-lg font-bold text-zinc-900 truncate">
-                  {editingExercise ? 'Editar Ejercicio del Catálogo' : 'Nuevo Ejercicio en la Biblioteca'}
+                <h2 className="text-base sm:text-lg font-black text-white truncate">
+                  {editingExercise ? 'Editar Ejercicio' : 'Nuevo Ejercicio'}
                 </h2>
               </div>
               <button
                 type="button"
                 onClick={() => setIsEditing(false)}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors shrink-0"
+                className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveForm} className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4 overscroll-contain">
+            <form onSubmit={handleSaveForm} className="flex-1 overflow-y-auto px-5 sm:px-6 py-5 space-y-4 overscroll-contain">
               {/* Exercise Name */}
               <div>
-                <label className="block text-xs font-bold text-zinc-700 uppercase tracking-wide mb-1">
+                <label className="block text-xs font-extrabold text-zinc-300 uppercase tracking-wider mb-1.5">
                   Nombre del Ejercicio *
                 </label>
                 <input
@@ -615,25 +618,25 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   placeholder="ej. Press de Banca Plano, Sentadilla..."
-                  className="w-full px-3.5 py-2 text-sm rounded-xl border border-zinc-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full min-h-[48px] px-4 text-sm font-bold rounded-2xl border border-white/10 bg-zinc-900 text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/20 shadow-inner"
                 />
               </div>
 
               {/* Category */}
               <div>
-                <label className="block text-xs font-bold text-zinc-700 uppercase tracking-wide mb-1">
-                  Grupo Muscular / Categoría
+                <label className="block text-xs font-extrabold text-zinc-300 uppercase tracking-wider mb-1.5">
+                  Grupo Muscular
                 </label>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-2">
                   {['Pecho', 'Espalda', 'Pierna', 'Hombro', 'Brazos', 'Core', 'Otro'].map((cat) => (
                     <button
                       key={cat}
                       type="button"
                       onClick={() => setFormCategory(cat)}
-                      className={`px-3 py-1 text-xs font-semibold rounded-lg transition-colors ${
+                      className={`min-h-[40px] px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all ${
                         formCategory === cat
-                          ? 'bg-emerald-600 text-white'
-                          : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
+                          ? 'bg-[#00FF87] text-black shadow-sm font-black'
+                          : 'bg-zinc-900 text-zinc-400 hover:text-white border border-white/5'
                       }`}
                     >
                       {cat}
@@ -644,13 +647,12 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
 
               {/* Image URL & Live Preview */}
               <div>
-                <label className="block text-xs font-bold text-zinc-700 uppercase tracking-wide mb-1 flex items-center justify-between">
-                  <span>URL de Imagen (Preview / Cover)</span>
-                  <span className="text-[10px] font-normal text-zinc-600">Miniatura visual rápida</span>
+                <label className="block text-xs font-extrabold text-zinc-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                  <span>URL de Imagen (Preview)</span>
+                  <span className="text-[10px] font-normal text-zinc-500">Miniatura visual</span>
                 </label>
                 <div className="flex items-center gap-3">
-                  {/* Thumbnail preview */}
-                  <div className="w-14 h-14 rounded-xl border border-zinc-200 bg-zinc-100 shrink-0 overflow-hidden flex items-center justify-center relative">
+                  <div className="w-14 h-14 rounded-2xl border border-white/10 bg-zinc-900 shrink-0 overflow-hidden flex items-center justify-center relative shadow-inner">
                     {formImageUrl && !imageError ? (
                       <img
                         src={formImageUrl}
@@ -660,7 +662,7 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
                         onLoad={() => setImageError(false)}
                       />
                     ) : (
-                      <ImageIcon className="w-5 h-5 text-zinc-400" />
+                      <ImageIcon className="w-5 h-5 text-zinc-600" />
                     )}
                   </div>
                   <div className="flex-1">
@@ -672,11 +674,11 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
                         setImageError(false);
                       }}
                       placeholder="https://ejemplo.com/imagen.jpg..."
-                      className="w-full px-3 py-2 text-xs rounded-xl border border-zinc-300 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      className="w-full min-h-[48px] px-4 text-xs rounded-2xl border border-white/10 bg-zinc-900 text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#00FF87]"
                     />
                     {imageError && (
-                      <p className="text-[11px] text-amber-600 mt-1">
-                        No se pudo cargar la imagen desde este enlace (revisa la URL).
+                      <p className="text-[11px] text-amber-400 mt-1">
+                        No se pudo cargar la imagen desde este enlace.
                       </p>
                     )}
                   </div>
@@ -685,40 +687,40 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
 
               {/* Video URL */}
               <div>
-                <label className="block text-xs font-bold text-zinc-700 uppercase tracking-wide mb-1">
-                  URL de Video (Técnica / Demostración)
+                <label className="block text-xs font-extrabold text-zinc-300 uppercase tracking-wider mb-1.5">
+                  URL de Video
                 </label>
                 <input
                   type="url"
                   value={formVideoUrl}
                   onChange={(e) => setFormVideoUrl(e.target.value)}
-                  placeholder="https://www.youtube.com/watch?v=... o enlace de video"
-                  className="w-full px-3.5 py-2 text-xs rounded-xl border border-zinc-300 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  className="w-full min-h-[48px] px-4 text-xs rounded-2xl border border-white/10 bg-zinc-900 text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#00FF87]"
                 />
               </div>
 
               {/* Notes */}
               <div>
-                <label className="block text-xs font-bold text-zinc-700 uppercase tracking-wide mb-1">
-                  Notas de Técnica o Consejos (opcional)
+                <label className="block text-xs font-extrabold text-zinc-300 uppercase tracking-wider mb-1.5">
+                  Notas de Técnica (opcional)
                 </label>
                 <textarea
                   rows={2}
                   value={formNotes}
                   onChange={(e) => setFormNotes(e.target.value)}
-                  placeholder="Instrucciones sobre agarre, colocación o tempo..."
-                  className="w-full px-3.5 py-2 text-xs rounded-xl border border-zinc-300 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  placeholder="Instrucciones sobre postura, agarre o tempo..."
+                  className="w-full p-3 text-xs rounded-2xl border border-white/10 bg-zinc-900 text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#00FF87]"
                 />
               </div>
 
-              {/* Pre-configured Defaults */}
-              <div className="p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200">
-                <span className="block text-xs font-bold text-zinc-800 uppercase tracking-wider mb-2.5">
-                  Valores Preconfigurados al añadir a una rutina
+              {/* Preconfigured Defaults */}
+              <div className="p-4 rounded-2xl bg-zinc-900 border border-white/[0.08]">
+                <span className="block text-xs font-extrabold text-white uppercase tracking-wider mb-3">
+                  Valores Por Defecto
                 </span>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
-                    <label className="block text-[10px] font-bold text-zinc-600 mb-1">Nº Series</label>
+                    <label className="block text-[10px] font-bold text-zinc-400 mb-1">Nº Series</label>
                     <input
                       type="number"
                       inputMode="numeric"
@@ -728,16 +730,11 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
                       value={formDefaultSets}
                       onFocus={(e) => e.target.select()}
                       onChange={(e) => setFormDefaultSets(e.target.value)}
-                      onBlur={() => {
-                        if (!formDefaultSets || Number(formDefaultSets) < 1) {
-                          setFormDefaultSets(1);
-                        }
-                      }}
-                      className="w-full text-center text-xs font-bold py-1.5 rounded-lg border border-zinc-300 bg-white"
+                      className="w-full min-h-[44px] text-center text-xs font-black rounded-xl border border-white/10 bg-zinc-800 text-white focus:border-[#00FF87] focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-zinc-600 mb-1">Reps / Serie</label>
+                    <label className="block text-[10px] font-bold text-zinc-400 mb-1">Reps / Serie</label>
                     <input
                       type="number"
                       inputMode="numeric"
@@ -747,16 +744,11 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
                       value={formDefaultReps}
                       onFocus={(e) => e.target.select()}
                       onChange={(e) => setFormDefaultReps(e.target.value)}
-                      onBlur={() => {
-                        if (!formDefaultReps || Number(formDefaultReps) < 1) {
-                          setFormDefaultReps(1);
-                        }
-                      }}
-                      className="w-full text-center text-xs font-bold py-1.5 rounded-lg border border-zinc-300 bg-white"
+                      className="w-full min-h-[44px] text-center text-xs font-black rounded-xl border border-white/10 bg-zinc-800 text-white focus:border-[#00FF87] focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-zinc-600 mb-1">Peso (kg)</label>
+                    <label className="block text-[10px] font-bold text-zinc-400 mb-1">Peso (kg)</label>
                     <input
                       type="number"
                       inputMode="decimal"
@@ -767,16 +759,11 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
                       value={formDefaultWeight}
                       onFocus={(e) => e.target.select()}
                       onChange={(e) => setFormDefaultWeight(e.target.value)}
-                      onBlur={() => {
-                        if (formDefaultWeight === '' || isNaN(Number(formDefaultWeight)) || Number(formDefaultWeight) < 0) {
-                          setFormDefaultWeight(0);
-                        }
-                      }}
-                      className="w-full text-center text-xs font-bold py-1.5 rounded-lg border border-zinc-300 bg-white"
+                      className="w-full min-h-[44px] text-center text-xs font-black rounded-xl border border-white/10 bg-zinc-800 text-white focus:border-[#00FF87] focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-zinc-600 mb-1">Descanso (s)</label>
+                    <label className="block text-[10px] font-bold text-zinc-400 mb-1">Descanso (s)</label>
                     <input
                       type="number"
                       inputMode="numeric"
@@ -787,29 +774,24 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
                       value={formDefaultRest}
                       onFocus={(e) => e.target.select()}
                       onChange={(e) => setFormDefaultRest(e.target.value)}
-                      onBlur={() => {
-                        if (formDefaultRest === '' || isNaN(Number(formDefaultRest)) || Number(formDefaultRest) < 0) {
-                          setFormDefaultRest(0);
-                        }
-                      }}
-                      className="w-full text-center text-xs font-bold py-1.5 rounded-lg border border-zinc-300 bg-white"
+                      className="w-full min-h-[44px] text-center text-xs font-black rounded-xl border border-white/10 bg-zinc-800 text-white focus:border-[#00FF87] focus:outline-none"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Submit Buttons */}
-              <div className="sticky bottom-0 bg-white/95 backdrop-blur-xs pt-3 pb-1 flex items-center justify-end gap-2 border-t border-zinc-100 -mx-1 px-1 mt-2">
+              <div className="sticky bottom-0 bg-[#18181A]/95 backdrop-blur-md pt-3 pb-1 flex items-center justify-end gap-2 border-t border-white/[0.08] -mx-1 px-1 mt-2">
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)}
-                  className="px-4 py-2 text-xs font-bold text-zinc-600 hover:bg-zinc-100 rounded-xl transition-colors"
+                  className="min-h-[44px] px-4 text-xs font-bold text-zinc-400 hover:text-white rounded-xl transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs transition-colors"
+                  className="min-h-[48px] px-6 text-xs font-extrabold bg-[#00FF87] hover:bg-[#00e57a] text-black rounded-2xl shadow-[0_0_15px_rgba(0,255,135,0.35)] transition-all active:scale-[0.97]"
                 >
                   {editingExercise ? 'Guardar Cambios' : 'Crear en Biblioteca'}
                 </button>

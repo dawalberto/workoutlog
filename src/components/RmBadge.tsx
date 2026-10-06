@@ -39,10 +39,10 @@ export const RmBadge: React.FC<RmBadgeProps> = ({
 
   return (
     <span
-      className={`inline-flex items-center gap-1 font-bold rounded-md bg-amber-50 text-amber-900 border border-amber-200/90 shadow-2xs shrink-0 select-none ${sizeClasses} ${className}`}
+      className={`inline-flex items-center gap-1 font-bold rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.2)] shrink-0 select-none ${sizeClasses} ${className}`}
       title={`Mayor RM registrado: ${highestRecord.weight} kg (${highestRecord.date || 'Récord personal'})`}
     >
-      <Trophy className={`${iconClasses} text-amber-500 fill-amber-400/40 shrink-0`} />
+      <Trophy className={`${iconClasses} text-amber-400 fill-amber-400/40 shrink-0`} />
       <span>RM: {highestRecord.weight} kg</span>
     </span>
   );

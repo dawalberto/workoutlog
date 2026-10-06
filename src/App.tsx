@@ -28,6 +28,7 @@ import { AppFooter } from './components/AppFooter';
 import { AppLoadingScreen } from './components/AppLoadingScreen';
 import { ActiveWorkoutTopBanner } from './components/ActiveWorkoutTopBanner';
 import { ToastNotification } from './components/ToastNotification';
+import { BottomTabBar } from './components/BottomTabBar';
 import { getTotalDiaryEntriesCount } from './utils/diaryCalculations';
 import { useAppStorage } from './hooks/useAppStorage';
 import { useRoutines } from './hooks/useRoutines';
@@ -178,7 +179,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900 font-sans antialiased selection:bg-emerald-500 selection:text-white">
+    <div className="min-h-screen bg-[#0D0D0D] text-white font-sans antialiased selection:bg-[#00FF87] selection:text-black">
       {activeRoutineId && activeRoutine ? (
         <RoutineView
           routine={activeRoutine}
@@ -198,7 +199,7 @@ export default function App() {
           onOpenDiary={openExerciseDiary}
         />
       ) : (
-        <div className="flex flex-col min-h-screen">
+        <div className="flex flex-col min-h-screen pb-16">
           <AppHeader
             activeTab={activeTab}
             onSelectTab={setActiveTab}
@@ -217,7 +218,7 @@ export default function App() {
 
           <PWAInstallBanner />
 
-          <main className="flex-1">
+          <main className="flex-1 pb-6">
             {activeTab === AppTab.ROUTINES ? (
               <RoutineList
                 routines={routines}
@@ -266,6 +267,17 @@ export default function App() {
           </main>
 
           <AppFooter onOpenBackup={() => setIsBackupModalOpen(true)} />
+
+          {/* Bottom Tab Bar */}
+          <BottomTabBar
+            activeTab={activeTab}
+            onSelectTab={setActiveTab}
+            routinesCount={routines.length}
+            catalogCount={catalog.length}
+            rmCount={rmLogs.length}
+            historyCount={workoutHistory.length}
+            diaryCount={getTotalDiaryEntriesCount(exerciseDiary)}
+          />
         </div>
       )}
 

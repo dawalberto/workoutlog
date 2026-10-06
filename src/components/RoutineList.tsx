@@ -1,3 +1,8 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React from 'react';
 import { 
   Play, 
@@ -8,7 +13,9 @@ import {
   Clock, 
   Dumbbell, 
   Layers, 
-  Flame
+  Flame,
+  Activity,
+  Zap
 } from 'lucide-react';
 import { Routine, ActiveWorkoutSession } from '../types';
 import { getRoutineTotalSeconds, formatSecondsToTime } from '../utils/timeCalculations';
@@ -30,64 +37,142 @@ export const RoutineList: React.FC<RoutineListProps> = ({
   onDuplicateRoutine,
   onDeleteRoutine,
 }) => {
-  return (
-    <div id="routine-list-page" className="min-h-screen bg-zinc-50 pb-20">
-      {/* Sub-header */}
-      <div className="bg-white border-b border-zinc-200/80">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-5 sm:py-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-black text-zinc-900 tracking-tight">
-                Mis Rutinas
-              </h1>
-              <p className="text-xs sm:text-sm text-zinc-600 mt-0.5">
-                Planifica tus series, descansos y registra cada repetición en directo.
-              </p>
-            </div>
+  // Aggregate stats for the Bento Grid Dashboard
+  const totalRoutines = routines.length;
+  const totalSetsOverall = routines.reduce(
+    (acc, r) => acc + r.exercises.reduce((sAcc, ex) => sAcc + ex.sets.length, 0),
+    0
+  );
+  const activeSessionsCount = Object.values(activeSessions).filter((s) => s.startTime).length;
+  const totalEstSecondsOverall = routines.reduce((acc, r) => acc + getRoutineTotalSeconds(r), 0);
 
-            <div className="flex items-center gap-2">
-              <button
-                id="btn-new-routine"
-                type="button"
-                onClick={onCreateRoutine}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-zinc-900 hover:bg-zinc-800 text-white shadow-sm transition-colors active:scale-95"
-              >
-                <Plus className="w-4 h-4" /> Nueva Rutina
-              </button>
+  return (
+    <div id="routine-list-page" className="min-h-screen bg-[#0D0D0D] text-white pb-28 pt-4 sm:pt-6">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6">
+        {/* Page Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/[0.08]">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-widest text-[#00FF87]">
+                <Zap className="w-3.5 h-3.5" /> Performance Hub
+              </span>
             </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              Mis Rutinas
+            </h1>
+            <p className="text-xs sm:text-sm text-[#A1A1AA] mt-0.5">
+              Planifica tus series, controla descansos y supera tus récords en tiempo real.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              id="btn-new-routine"
+              type="button"
+              onClick={onCreateRoutine}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 min-h-[48px] rounded-2xl text-sm font-extrabold bg-[#00FF87] hover:bg-[#00e57a] text-black shadow-[0_0_20px_rgba(0,255,135,0.35)] transition-all active:scale-[0.97]"
+            >
+              <Plus className="w-5 h-5 stroke-[2.5]" />
+              <span>Nueva Rutina</span>
+            </button>
           </div>
         </div>
-      </div>
 
-      {/* Routine Cards Grid */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8">
-        {routines.length === 0 ? (
-          <div className="text-center py-16 px-6 bg-white rounded-2xl border border-zinc-200 shadow-sm max-w-md mx-auto">
-            <div className="w-14 h-14 bg-zinc-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-zinc-400">
-              <Dumbbell className="w-7 h-7" />
+        {/* Bento Grid Summary Cards (only if routines exist) */}
+        {routines.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 my-6">
+            {/* Bento Card 1: Total Rutinas */}
+            <div className="bg-[#1C1C1E] border border-white/[0.08] rounded-2xl p-4 sm:p-5 flex flex-col justify-between hover:border-white/20 transition-colors shadow-lg">
+              <div className="flex items-center justify-between text-zinc-400 mb-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#A1A1AA]">
+                  Rutinas Activas
+                </span>
+                <Flame className="w-4 h-4 text-[#00FF87]" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl sm:text-3xl font-black text-white">
+                  {totalRoutines}
+                </span>
+                <span className="text-xs text-[#A1A1AA]">creadas</span>
+              </div>
             </div>
-            <h2 className="text-lg font-bold text-zinc-900">No hay rutinas guardadas</h2>
-            <p className="text-xs sm:text-sm text-zinc-600 mt-1.5 mb-6">
-              Empieza creando tu primera rutina de entrenamiento personalizada.
+
+            {/* Bento Card 2: Total Series */}
+            <div className="bg-[#1C1C1E] border border-white/[0.08] rounded-2xl p-4 sm:p-5 flex flex-col justify-between hover:border-white/20 transition-colors shadow-lg">
+              <div className="flex items-center justify-between text-zinc-400 mb-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#A1A1AA]">
+                  Volumen Total
+                </span>
+                <Layers className="w-4 h-4 text-[#00E5FF]" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl sm:text-3xl font-black text-white">
+                  {totalSetsOverall}
+                </span>
+                <span className="text-xs text-[#A1A1AA]">series listas</span>
+              </div>
+            </div>
+
+            {/* Bento Card 3: Sesiones en vivo / Tiempo */}
+            <div className="col-span-2 sm:col-span-1 bg-[#1C1C1E] border border-white/[0.08] rounded-2xl p-4 sm:p-5 flex flex-col justify-between hover:border-white/20 transition-colors shadow-lg">
+              <div className="flex items-center justify-between text-zinc-400 mb-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#A1A1AA]">
+                  Estado Gym
+                </span>
+                <Activity className="w-4 h-4 text-[#00FF87]" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                {activeSessionsCount > 0 ? (
+                  <>
+                    <span className="text-xl sm:text-2xl font-black text-[#00FF87] flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-[#00FF87] animate-ping" />
+                      {activeSessionsCount}
+                    </span>
+                    <span className="text-xs text-[#00FF87] font-semibold">en directo</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-xl sm:text-2xl font-black text-white">
+                      ~{formatSecondsToTime(totalEstSecondsOverall)}
+                    </span>
+                    <span className="text-xs text-[#A1A1AA]">total est.</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {routines.length === 0 ? (
+          <div className="text-center py-20 px-6 bg-[#1C1C1E] rounded-2xl border border-white/[0.08] max-w-md mx-auto my-8 shadow-xl">
+            <div className="w-16 h-16 bg-zinc-900 border border-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-[#00FF87] shadow-[0_0_20px_rgba(0,255,135,0.2)]">
+              <Dumbbell className="w-8 h-8" />
+            </div>
+            <h2 className="text-xl font-bold text-white">No tienes rutinas todavía</h2>
+            <p className="text-xs sm:text-sm text-[#A1A1AA] mt-1.5 mb-6">
+              Comienza creando tu primera rutina de entrenamiento para empezar a registrar series, pesos y descansos.
             </p>
             <div className="flex items-center justify-center">
               <button
                 id="btn-create-first-routine"
                 type="button"
                 onClick={onCreateRoutine}
-                className="px-5 py-2.5 text-xs font-bold rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-xs active:scale-95"
+                className="min-h-[48px] px-6 text-sm font-extrabold rounded-2xl bg-[#00FF87] text-black hover:bg-[#00e57a] transition-all shadow-[0_0_20px_rgba(0,255,135,0.35)] active:scale-[0.97]"
               >
-                + Crear Rutina
+                + Crear Mi Primera Rutina
               </button>
             </div>
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="flex items-center justify-between text-xs text-zinc-600 px-1">
-              <span>{routines.length} {routines.length === 1 ? 'rutina disponible' : 'rutinas disponibles'}</span>
+            <div className="flex items-center justify-between text-xs text-[#A1A1AA] px-1 font-semibold">
+              <span>{routines.length} {routines.length === 1 ? 'rutina configurada' : 'rutinas configuradas'}</span>
+              <span>Disposición Bento</span>
             </div>
 
-            <div className="grid grid-cols-1 gap-4">
+            {/* Bento Grid Routine Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
               {routines.map((routine) => {
                 const totalSeconds = getRoutineTotalSeconds(routine);
                 const exerciseCount = routine.exercises.length;
@@ -100,71 +185,71 @@ export const RoutineList: React.FC<RoutineListProps> = ({
                   <div
                     key={routine.id}
                     id={`routine-card-${routine.id}`}
-                    className={`bg-white rounded-2xl border p-5 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between ${
+                    className={`bg-[#1C1C1E] rounded-2xl border p-5 sm:p-6 transition-all duration-200 flex flex-col justify-between shadow-lg relative overflow-hidden group hover:border-[#00FF87]/40 hover:shadow-[0_0_30px_rgba(0,255,135,0.08)] ${
                       isSessionActive
-                        ? 'border-emerald-500/80 ring-2 ring-emerald-500/20 bg-emerald-50/10'
-                        : 'border-zinc-200 hover:border-zinc-300'
+                        ? 'border-[#00FF87] ring-1 ring-[#00FF87]/40 bg-[#1C1C1E]/95 shadow-[0_0_30px_rgba(0,255,135,0.15)]'
+                        : 'border-white/[0.08]'
                     }`}
                   >
+                    {/* Top Active Workout Glow Stripe */}
+                    {isSessionActive && (
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#00FF87] to-[#00E5FF]" />
+                    )}
+
                     <div>
-                      {/* Card Top */}
+                      {/* Card Top: Title, Time & Active indicator */}
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap mb-1">
-                            {isSessionActive && (
-                              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wide bg-emerald-100 text-emerald-800 border border-emerald-300/50">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                                En curso ({completedSessionSets}/{totalSets} series)
+                          {isSessionActive && (
+                            <div className="mb-2">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider bg-[#00FF87]/15 text-[#00FF87] border border-[#00FF87]/30 shadow-[0_0_10px_rgba(0,255,135,0.2)]">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#00FF87] animate-ping" />
+                                En Curso ({completedSessionSets}/{totalSets} series)
                               </span>
-                            )}
-                          </div>
-                          <h2 className="text-lg sm:text-xl font-bold text-zinc-900 tracking-tight truncate">
+                            </div>
+                          )}
+
+                          <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight truncate group-hover:text-[#00FF87] transition-colors">
                             {routine.name || 'Rutina sin título'}
                           </h2>
                           {routine.notes && (
-                            <p className="text-xs sm:text-sm text-zinc-600 mt-1 line-clamp-2">
+                            <p className="text-xs sm:text-sm text-[#A1A1AA] mt-1 line-clamp-2 leading-relaxed">
                               {routine.notes}
                             </p>
                           )}
                         </div>
 
-                        {/* Total Estimated Time Pill */}
+                        {/* Estimated Time Badge */}
                         <div
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-100 text-zinc-800 text-xs font-bold shrink-0"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 border border-white/10 text-white text-xs font-mono font-bold shrink-0 shadow-inner"
                           title="Tiempo estimado total"
                         >
-                          <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                          <Clock className="w-3.5 h-3.5 text-[#00FF87]" />
                           <span>~{formatSecondsToTime(totalSeconds)}</span>
                         </div>
                       </div>
 
-                      {/* Exercises summary chips & cover previews */}
-                      <div className="mt-4 flex flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-zinc-100 text-zinc-700">
-                          <Dumbbell className="w-3 h-3 text-zinc-600" />
+                      {/* Exercises & Sets Metadata (Zero-Pill clean typography) */}
+                      <div className="mt-4 flex items-center gap-3 text-xs text-[#A1A1AA] font-semibold">
+                        <span className="flex items-center gap-1 text-white">
+                          <Dumbbell className="w-3.5 h-3.5 text-[#00FF87]" />
                           {exerciseCount} {exerciseCount === 1 ? 'ejercicio' : 'ejercicios'}
                         </span>
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-zinc-100 text-zinc-700">
-                          <Layers className="w-3 h-3 text-zinc-600" />
+                        <span>·</span>
+                        <span className="flex items-center gap-1 text-white">
+                          <Layers className="w-3.5 h-3.5 text-[#00E5FF]" />
                           {totalSets} {totalSets === 1 ? 'serie' : 'series'}
                         </span>
-
-                        {/* Exercise names preview */}
-                        {exerciseCount > 0 && (
-                          <span className="text-xs text-zinc-600 truncate max-w-xs">
-                            ({routine.exercises.map((e) => e.name).filter(Boolean).join(', ')})
-                          </span>
-                        )}
                       </div>
 
-                      {/* Visual covers row */}
+                      {/* Cover Thumbnails */}
                       {exerciseCount > 0 && (
-                        <div className="flex items-center gap-1.5 mt-3 pt-2">
-                          {routine.exercises.slice(0, 6).map((ex, idx) => (
+                        <div className="flex items-center gap-2 mt-4 pt-3 border-t border-white/[0.06]">
+                          {routine.exercises.slice(0, 5).map((ex, idx) => (
                             <div
                               key={ex.id || idx}
                               title={ex.name}
-                              className="w-8 h-8 rounded-lg border border-zinc-200 bg-zinc-100 overflow-hidden shrink-0 flex items-center justify-center relative shadow-2xs"
+                              className="w-9 h-9 rounded-xl border border-white/10 bg-zinc-900 overflow-hidden shrink-0 flex items-center justify-center relative shadow-sm"
                             >
                               {ex.imageUrl ? (
                                 <img
@@ -176,37 +261,39 @@ export const RoutineList: React.FC<RoutineListProps> = ({
                                   }}
                                 />
                               ) : (
-                                <Dumbbell className="w-3.5 h-3.5 text-zinc-400" />
+                                <Dumbbell className="w-4 h-4 text-zinc-500" />
                               )}
                             </div>
                           ))}
-                          {routine.exercises.length > 6 && (
-                            <span className="text-[11px] font-semibold text-zinc-500 pl-1">
-                              +{routine.exercises.length - 6} más
+                          {routine.exercises.length > 5 && (
+                            <span className="text-xs font-bold text-zinc-400 pl-1">
+                              +{routine.exercises.length - 5}
                             </span>
                           )}
                         </div>
                       )}
                     </div>
 
-                    {/* Card Actions */}
-                    <div className="mt-5 pt-4 border-t border-zinc-100 flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5">
+                    {/* Card Actions (Ergonomic Touch Targets >= 48px) */}
+                    <div className="mt-6 pt-4 border-t border-white/[0.08] flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
                         <button
                           id={`btn-edit-routine-${routine.id}`}
                           type="button"
                           onClick={() => onSelectRoutine(routine.id, 'edit')}
-                          className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl text-zinc-700 bg-zinc-100 hover:bg-zinc-200 transition-colors active:scale-95"
+                          className="min-h-[44px] px-3.5 inline-flex items-center gap-1.5 text-xs font-bold rounded-xl text-zinc-200 bg-zinc-800/80 hover:bg-zinc-700/80 hover:text-white border border-white/5 transition-all active:scale-[0.97]"
                         >
-                          <Edit3 className="w-3.5 h-3.5" /> Editar
+                          <Edit3 className="w-3.5 h-3.5" />
+                          <span>Editar</span>
                         </button>
 
                         <button
                           id={`btn-duplicate-routine-${routine.id}`}
                           type="button"
                           onClick={() => onDuplicateRoutine(routine.id)}
-                          className="p-2 text-zinc-600 hover:text-zinc-800 hover:bg-zinc-100 rounded-xl transition-colors"
+                          className="min-h-[44px] min-w-[44px] p-2.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-xl transition-all active:scale-[0.97] flex items-center justify-center"
                           title="Duplicar rutina"
+                          aria-label="Duplicar rutina"
                         >
                           <Copy className="w-4 h-4" />
                         </button>
@@ -215,26 +302,27 @@ export const RoutineList: React.FC<RoutineListProps> = ({
                           id={`btn-delete-routine-${routine.id}`}
                           type="button"
                           onClick={() => onDeleteRoutine(routine.id)}
-                          className="p-2 text-zinc-600 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                          className="min-h-[44px] min-w-[44px] p-2.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all active:scale-[0.97] flex items-center justify-center"
                           title="Eliminar rutina"
+                          aria-label="Eliminar rutina"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
 
-                      {/* Primary Workout Play Button */}
+                      {/* Primary Workout Action Button */}
                       <button
                         id={`btn-start-workout-${routine.id}`}
                         type="button"
                         onClick={() => onSelectRoutine(routine.id, 'execute')}
-                        className={`inline-flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all active:scale-95 shadow-xs ${
+                        className={`min-h-[48px] px-5 inline-flex items-center gap-2 text-sm font-black rounded-2xl transition-all active:scale-[0.97] ${
                           isSessionActive
-                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white ring-2 ring-emerald-500/40'
-                            : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                            ? 'bg-[#00FF87] hover:bg-[#00e57a] text-black shadow-[0_0_20px_rgba(0,255,135,0.4)]'
+                            : 'bg-[#00FF87] hover:bg-[#00e57a] text-black shadow-[0_0_15px_rgba(0,255,135,0.3)]'
                         }`}
                       >
                         <Play className="w-4 h-4 fill-current" />
-                        <span>{isSessionActive ? 'Continuar entrenamiento' : 'Entrenar'}</span>
+                        <span>{isSessionActive ? 'Continuar' : 'Entrenar'}</span>
                       </button>
                     </div>
                   </div>
@@ -243,7 +331,7 @@ export const RoutineList: React.FC<RoutineListProps> = ({
             </div>
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 };

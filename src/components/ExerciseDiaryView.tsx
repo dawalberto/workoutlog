@@ -329,200 +329,203 @@ export const ExerciseDiaryView: React.FC<ExerciseDiaryViewProps> = ({
   const totalEntriesCount = getTotalDiaryEntriesCount(diaries);
 
   return (
-    <div className="max-w-4xl mx-auto px-3 sm:px-6 py-6 pb-24">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="p-1.5 rounded-xl bg-emerald-100 text-emerald-800">
-              <BookOpen className="w-5 h-5" />
-            </span>
-            <h1 className="text-xl sm:text-2xl font-black text-zinc-900 tracking-tight">
-              Diario de Ejercicios
-            </h1>
-            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-zinc-100 text-zinc-700 border border-zinc-200">
-              {totalEntriesCount} {totalEntriesCount === 1 ? 'registro' : 'registros'}
-            </span>
+    <div id="exercise-diary-container" className="min-h-screen bg-[#0D0D0D] text-white pb-28 pt-4 sm:pt-6">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6">
+        {/* Top Header Card */}
+        <div className="bg-[#1C1C1E] rounded-2xl border border-white/[0.08] p-5 sm:p-6 shadow-xl mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="p-1.5 rounded-xl bg-zinc-900 border border-white/10 text-[#00FF87]">
+                  <BookOpen className="w-5 h-5" />
+                </span>
+                <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                  Diario de Ejercicios
+                </h1>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-[#00FF87]/15 text-[#00FF87] border border-[#00FF87]/30">
+                  {totalEntriesCount} {totalEntriesCount === 1 ? 'registro' : 'registros'}
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-[#A1A1AA]">
+                Anota sensaciones, progresiones técnicas y detalles de tus levantamientos.
+              </p>
+            </div>
+
+            <button
+              id="btn-new-diary-entry"
+              type="button"
+              onClick={() => openCreateModal()}
+              disabled={catalog.length === 0}
+              className="inline-flex items-center justify-center gap-2 px-5 min-h-[48px] rounded-2xl bg-[#00FF87] hover:bg-[#00e57a] disabled:bg-zinc-800 disabled:text-zinc-600 text-black font-extrabold text-sm shadow-[0_0_20px_rgba(0,255,135,0.35)] active:scale-[0.97] transition-all shrink-0"
+            >
+              <Plus className="w-4 h-4 stroke-[3]" />
+              <span>Nuevo Registro</span>
+            </button>
           </div>
-          <p className="text-xs sm:text-sm text-zinc-500">
-            Anota sensaciones, progresiones técnicas y detalles de tus levantamientos.
-          </p>
-        </div>
 
-        <button
-          id="btn-new-diary-entry"
-          type="button"
-          onClick={() => openCreateModal()}
-          disabled={catalog.length === 0}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 disabled:bg-zinc-300 text-white font-bold text-xs sm:text-sm shadow-xs active:scale-95 transition-all shrink-0"
-        >
-          <Plus className="w-4 h-4 text-emerald-400" />
-          <span>Nuevo Registro</span>
-        </button>
-      </div>
-
-      {/* Catalog Empty Warning */}
-      {catalog.length === 0 && (
-        <div className="p-6 rounded-2xl bg-amber-50 border border-amber-200 text-center mb-6">
-          <Dumbbell className="w-8 h-8 text-amber-600 mx-auto mb-2" />
-          <h3 className="text-sm font-bold text-amber-900 mb-1">
-            Tu biblioteca de ejercicios está vacía
-          </h3>
-          <p className="text-xs text-amber-700 max-w-md mx-auto mb-3">
-            Para registrar notas en el diario, primero debes añadir ejercicios a tu biblioteca.
-          </p>
-          <button
-            type="button"
-            onClick={onGoToCatalog}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition-colors"
-          >
-            Ir a la Biblioteca de Ejercicios <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
-
-      {/* Search & Filter Bar */}
-      <div className="space-y-3 mb-6">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-          {/* Search Input */}
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar en las notas, ejercicios o fechas..."
-              className="w-full pl-9 pr-8 py-2 text-xs sm:text-sm rounded-xl border border-zinc-200 bg-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all shadow-2xs"
-            />
-            {searchQuery && (
+          {/* Catalog Empty Warning */}
+          {catalog.length === 0 && (
+            <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-center mt-4">
+              <Dumbbell className="w-6 h-6 text-amber-400 mx-auto mb-1.5" />
+              <h3 className="text-sm font-bold text-amber-300 mb-0.5">
+                Tu biblioteca de ejercicios está vacía
+              </h3>
+              <p className="text-xs text-amber-200/80 max-w-md mx-auto mb-3">
+                Para registrar notas en el diario, primero debes añadir ejercicios a tu biblioteca.
+              </p>
               <button
                 type="button"
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-zinc-400 hover:text-zinc-600 rounded-md"
+                onClick={onGoToCatalog}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white border border-white/10 transition-colors"
               >
-                <X className="w-3.5 h-3.5" />
+                Ir a la Biblioteca de Ejercicios <ArrowRight className="w-3.5 h-3.5" />
               </button>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* Feeling Filter Pills */}
-          <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-xl border border-zinc-200/80 shrink-0 overflow-x-auto">
-            <button
-              type="button"
-              onClick={() => setSelectedFeelingFilter('ALL')}
-              className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
-                selectedFeelingFilter === 'ALL'
-                  ? 'bg-white text-zinc-900 shadow-2xs'
-                  : 'text-zinc-600 hover:text-zinc-900'
-              }`}
-            >
-              Todos
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedFeelingFilter('good')}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
-                selectedFeelingFilter === 'good'
-                  ? 'bg-emerald-600 text-white shadow-2xs'
-                  : 'text-zinc-600 hover:text-zinc-900'
-              }`}
-              title="Filtrar por sensación: Bien"
-            >
-              <span>🟢</span>
-              <span className="hidden sm:inline">Bien</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedFeelingFilter('neutral')}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
-                selectedFeelingFilter === 'neutral'
-                  ? 'bg-amber-500 text-white shadow-2xs'
-                  : 'text-zinc-600 hover:text-zinc-900'
-              }`}
-              title="Filtrar por sensación: Regular"
-            >
-              <span>🟠</span>
-              <span className="hidden sm:inline">Regular</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedFeelingFilter('bad')}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
-                selectedFeelingFilter === 'bad'
-                  ? 'bg-rose-600 text-white shadow-2xs'
-                  : 'text-zinc-600 hover:text-zinc-900'
-              }`}
-              title="Filtrar por sensación: Mal"
-            >
-              <span>🔴</span>
-              <span className="hidden sm:inline">Mal</span>
-            </button>
-          </div>
-        </div>
+          {/* Search & Filter Bar */}
+          <div className="mt-5 pt-4 border-t border-white/[0.08] space-y-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+              {/* Search Input */}
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-zinc-500 absolute left-4 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Buscar en las notas, ejercicios o fechas..."
+                  className="w-full min-h-[48px] pl-11 pr-10 py-2.5 text-sm rounded-2xl border border-white/10 bg-zinc-900/90 text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/20 transition-all shadow-inner"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-zinc-400 hover:text-white rounded-md"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
 
-        {/* Exercise Quick-Filter Chips */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
-          <button
-            type="button"
-            onClick={() => setSelectedExerciseName('ALL')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all shrink-0 ${
-              selectedExerciseName === 'ALL'
-                ? 'bg-zinc-900 text-white shadow-xs'
-                : 'bg-white text-zinc-600 hover:bg-zinc-100 border border-zinc-200'
-            }`}
-          >
-            <span>Todos los ejercicios</span>
-            <span
-              className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                selectedExerciseName === 'ALL'
-                  ? 'bg-zinc-800 text-zinc-200'
-                  : 'bg-zinc-100 text-zinc-600'
-              }`}
-            >
-              {allEntries.length}
-            </span>
-          </button>
-
-          {exercisesWithDiary.map(({ def, count }) => {
-            const isSelected =
-              normalizeExerciseTitle(selectedExerciseName) === normalizeExerciseTitle(def.name);
-            return (
-              <button
-                key={def.id}
-                type="button"
-                onClick={() => setSelectedExerciseName(def.name)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all shrink-0 ${
-                  isSelected
-                    ? 'bg-emerald-600 text-white shadow-xs'
-                    : 'bg-white text-zinc-700 hover:bg-zinc-100 border border-zinc-200'
-                }`}
-              >
-                <span>{def.name}</span>
-                <span
-                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                    isSelected
-                      ? 'bg-emerald-700 text-emerald-100'
-                      : 'bg-zinc-100 text-zinc-600'
+              {/* Feeling Filter Pills */}
+              <div className="flex items-center gap-1 p-1 bg-zinc-900/80 rounded-2xl border border-white/10 shrink-0 overflow-x-auto min-h-[48px]">
+                <button
+                  type="button"
+                  onClick={() => setSelectedFeelingFilter('ALL')}
+                  className={`px-3 py-1.5 text-xs font-extrabold rounded-xl transition-all ${
+                    selectedFeelingFilter === 'ALL'
+                      ? 'bg-[#00FF87] text-black shadow-[0_0_10px_rgba(0,255,135,0.4)]'
+                      : 'text-zinc-400 hover:text-white'
                   }`}
                 >
-                  {count}
+                  Todos
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedFeelingFilter('good')}
+                  className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs font-extrabold rounded-xl transition-all ${
+                    selectedFeelingFilter === 'good'
+                      ? 'bg-emerald-500 text-black shadow-[0_0_10px_rgba(16,185,129,0.4)]'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                  title="Filtrar por sensación: Bien"
+                >
+                  <span>🟢</span>
+                  <span className="hidden sm:inline">Bien</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedFeelingFilter('neutral')}
+                  className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs font-extrabold rounded-xl transition-all ${
+                    selectedFeelingFilter === 'neutral'
+                      ? 'bg-amber-400 text-black shadow-[0_0_10px_rgba(251,191,36,0.4)]'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                  title="Filtrar por sensación: Regular"
+                >
+                  <span>🟠</span>
+                  <span className="hidden sm:inline">Regular</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedFeelingFilter('bad')}
+                  className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs font-extrabold rounded-xl transition-all ${
+                    selectedFeelingFilter === 'bad'
+                      ? 'bg-rose-500 text-white shadow-[0_0_10px_rgba(244,63,94,0.4)]'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                  title="Filtrar por sensación: Mal"
+                >
+                  <span>🔴</span>
+                  <span className="hidden sm:inline">Mal</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Exercise Quick-Filter Chips */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs pt-1">
+              <button
+                type="button"
+                onClick={() => setSelectedExerciseName('ALL')}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all shrink-0 ${
+                  selectedExerciseName === 'ALL'
+                    ? 'bg-[#00FF87] text-black shadow-[0_0_10px_rgba(0,255,135,0.4)]'
+                    : 'bg-zinc-900 text-zinc-400 hover:text-white border border-white/10'
+                }`}
+              >
+                <span>Todos los ejercicios</span>
+                <span
+                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                    selectedExerciseName === 'ALL'
+                      ? 'bg-black/20 text-black'
+                      : 'bg-zinc-800 text-zinc-400'
+                  }`}
+                >
+                  {allEntries.length}
                 </span>
               </button>
-            );
-          })}
+
+              {exercisesWithDiary.map(({ def, count }) => {
+                const isSelected =
+                  normalizeExerciseTitle(selectedExerciseName) === normalizeExerciseTitle(def.name);
+                return (
+                  <button
+                    key={def.id}
+                    type="button"
+                    onClick={() => setSelectedExerciseName(def.name)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all shrink-0 ${
+                      isSelected
+                        ? 'bg-[#00FF87] text-black shadow-[0_0_10px_rgba(0,255,135,0.4)]'
+                        : 'bg-zinc-900 text-zinc-400 hover:text-white border border-white/10'
+                    }`}
+                  >
+                    <span>{def.name}</span>
+                    <span
+                      className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                        isSelected
+                          ? 'bg-black/20 text-black'
+                          : 'bg-zinc-800 text-zinc-400'
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
-      </div>
 
       {/* Entries List or Empty State */}
       {filteredEntries.length === 0 ? (
-        <div className="bg-white rounded-3xl border border-zinc-200/80 p-8 sm:p-12 text-center shadow-xs">
-          <div className="w-14 h-14 rounded-2xl bg-zinc-100 text-zinc-400 mx-auto flex items-center justify-center mb-3">
-            <BookOpen className="w-7 h-7" />
+        <div className="bg-[#1C1C1E] rounded-2xl border border-white/[0.08] p-8 sm:p-12 text-center shadow-xl">
+          <div className="w-14 h-14 rounded-2xl bg-white/[0.05] border border-white/10 text-zinc-400 mx-auto flex items-center justify-center mb-3">
+            <BookOpen className="w-7 h-7 text-[#00FF87]" />
           </div>
-          <h3 className="text-base font-bold text-zinc-900 mb-1">
+          <h3 className="text-base font-bold text-white mb-1">
             No hay registros en el diario
           </h3>
-          <p className="text-xs sm:text-sm text-zinc-500 max-w-md mx-auto mb-4">
+          <p className="text-xs sm:text-sm text-zinc-400 max-w-md mx-auto mb-4">
             {searchQuery || selectedFeelingFilter !== 'ALL' || selectedExerciseName !== 'ALL'
               ? 'No se encontraron notas que coincidan con los filtros seleccionados.'
               : 'Empieza a registrar tus entrenamientos, sensaciones y notas técnicas para cada ejercicio.'}
@@ -531,9 +534,9 @@ export const ExerciseDiaryView: React.FC<ExerciseDiaryViewProps> = ({
             <button
               type="button"
               onClick={() => openCreateModal()}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white text-xs sm:text-sm font-bold shadow-xs transition-all active:scale-95"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#00FF87] hover:bg-[#00e57a] text-black text-xs sm:text-sm font-extrabold shadow-[0_0_15px_rgba(0,255,135,0.3)] transition-all active:scale-[0.97]"
             >
-              <Plus className="w-4 h-4 text-emerald-400" />
+              <Plus className="w-4 h-4 text-black stroke-[2.5]" />
               <span>Añadir primer registro</span>
             </button>
           )}
@@ -548,25 +551,25 @@ export const ExerciseDiaryView: React.FC<ExerciseDiaryViewProps> = ({
               <article
                 key={item.id}
                 id={`diary-entry-card-${item.id}`}
-                className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200/90 hover:border-zinc-300 p-4 sm:p-6 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between group"
+                className="bg-[#1C1C1E] rounded-2xl border border-white/[0.08] hover:border-white/20 p-4 sm:p-6 shadow-lg transition-all flex flex-col justify-between group"
               >
                 {/* Entry Top Header */}
-                <div className="flex flex-wrap items-center justify-between gap-2.5 pb-3 border-b border-zinc-100">
+                <div className="flex flex-wrap items-center justify-between gap-2.5 pb-3 border-b border-white/[0.06]">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-extrabold text-xs sm:text-sm text-zinc-900 flex items-center gap-1.5">
-                      <Dumbbell className="w-4 h-4 text-emerald-600" />
+                    <span className="font-extrabold text-xs sm:text-sm text-white flex items-center gap-1.5">
+                      <Dumbbell className="w-4 h-4 text-[#00FF87]" />
                       {item.exerciseName}
                     </span>
 
                     {item.category && (
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-zinc-100 text-zinc-600 uppercase">
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-white/[0.06] text-zinc-400 uppercase tracking-wider border border-white/5">
                         {item.category}
                       </span>
                     )}
 
                     {item.feeling && (
                       <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold border ${feelingCfg.badgeClass}`}
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-bold border ${feelingCfg.badgeClass}`}
                       >
                         <span>{feelingCfg.emoji}</span>
                         <span>{feelingCfg.label}</span>
@@ -575,11 +578,11 @@ export const ExerciseDiaryView: React.FC<ExerciseDiaryViewProps> = ({
                   </div>
 
                   {/* Date badge */}
-                  <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-medium">
-                    <Calendar className="w-3.5 h-3.5 text-zinc-400" />
+                  <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-medium">
+                    <Calendar className="w-3.5 h-3.5 text-zinc-500" />
                     <span>{dateInfo.formatted}</span>
                     {dateInfo.tag && (
-                      <span className="px-1.5 py-0.2 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-[#00FF87]/15 text-[#00FF87] border border-[#00FF87]/30">
                         {dateInfo.tag}
                       </span>
                     )}
@@ -587,28 +590,28 @@ export const ExerciseDiaryView: React.FC<ExerciseDiaryViewProps> = ({
                 </div>
 
                 {/* Entry Note Body (Spacious & Comfortable) */}
-                <div className="py-4 text-sm sm:text-base text-zinc-800 leading-relaxed sm:leading-loose whitespace-pre-wrap font-normal selection:bg-emerald-100">
+                <div className="py-4 text-sm sm:text-base text-zinc-200 leading-relaxed sm:leading-loose whitespace-pre-wrap font-normal selection:bg-[#00FF87]/20">
                   {item.note}
                 </div>
 
                 {/* Entry Footer / Actions */}
-                <div className="pt-3 border-t border-zinc-100 flex items-center justify-between gap-2">
+                <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => setSelectedExerciseName(item.exerciseName)}
-                      className="text-[11px] font-semibold text-zinc-400 hover:text-emerald-700 transition-colors"
+                      className="text-[11px] font-semibold text-zinc-400 hover:text-[#00FF87] transition-colors"
                       title={`Ver todos los registros de ${item.exerciseName}`}
                     >
                       Filtrar solo este ejercicio
                     </button>
                   </div>
 
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1.5">
                     <button
                       type="button"
                       onClick={() => openEditModal(item)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg text-zinc-300 hover:text-white hover:bg-white/[0.08] transition-colors active:scale-95"
                       title="Editar registro"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
@@ -620,7 +623,7 @@ export const ExerciseDiaryView: React.FC<ExerciseDiaryViewProps> = ({
                       onClick={() =>
                         handleDeleteEntry(item.diaryId, item.id, item.exerciseName)
                       }
-                      className="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-1.5 text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors active:scale-95"
                       title="Eliminar registro"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -637,24 +640,24 @@ export const ExerciseDiaryView: React.FC<ExerciseDiaryViewProps> = ({
       {isModalOpen && (
         <div
           id="modal-diary-form"
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-hidden animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-hidden animate-in fade-in duration-150"
           onClick={closeModal}
         >
           <div
-            className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 shadow-2xl max-w-xl w-full max-h-[92vh] sm:max-h-[88vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150"
+            className="bg-[#1C1C1E] rounded-2xl border border-white/[0.1] shadow-2xl max-w-xl w-full max-h-[92vh] sm:max-h-[88vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="px-4 sm:px-6 py-4 border-b border-zinc-100 shrink-0 bg-white flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <span className="p-2 rounded-xl bg-emerald-100 text-emerald-800">
+            <div className="px-5 sm:px-6 py-4 border-b border-white/[0.08] shrink-0 bg-[#1C1C1E] flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="p-2 rounded-xl bg-[#00FF87]/15 text-[#00FF87] border border-[#00FF87]/30">
                   <BookOpen className="w-5 h-5" />
                 </span>
                 <div>
-                  <h2 className="text-base sm:text-lg font-black text-zinc-900">
+                  <h2 className="text-base sm:text-lg font-black text-white">
                     {editingEntry ? 'Editar Registro del Diario' : 'Nuevo Registro en el Diario'}
                   </h2>
-                  <span className="text-[11px] text-zinc-500 font-medium">
+                  <span className="text-[11px] text-zinc-400 font-medium">
                     Añade tus observaciones y sensaciones
                   </span>
                 </div>
@@ -663,7 +666,7 @@ export const ExerciseDiaryView: React.FC<ExerciseDiaryViewProps> = ({
               <button
                 type="button"
                 onClick={closeModal}
-                className="p-1.5 text-zinc-400 hover:text-zinc-600 rounded-xl hover:bg-zinc-100 transition-colors"
+                className="p-2 text-zinc-400 hover:text-white rounded-xl hover:bg-white/[0.08] transition-colors"
                 aria-label="Cerrar modal"
               >
                 <X className="w-5 h-5" />
@@ -672,26 +675,26 @@ export const ExerciseDiaryView: React.FC<ExerciseDiaryViewProps> = ({
 
             {/* Modal Form */}
             <form onSubmit={handleSaveEntry} className="flex-1 flex flex-col overflow-hidden">
-              <div className="p-4 sm:p-6 overflow-y-auto space-y-4">
+              <div className="p-5 sm:p-6 overflow-y-auto space-y-4">
                 {formError && (
-                  <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 font-semibold animate-in fade-in">
+                  <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-300 font-semibold animate-in fade-in">
                     {formError}
                   </div>
                 )}
 
                 {/* Exercise Selector */}
                 <div>
-                  <label className="block text-xs font-bold text-zinc-700 uppercase tracking-wider mb-1.5">
-                    Ejercicio de la Biblioteca <span className="text-red-500">*</span>
+                  <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider mb-1.5">
+                    Ejercicio de la Biblioteca <span className="text-rose-500">*</span>
                   </label>
                   <select
                     value={formExerciseName}
                     disabled={Boolean(editingEntry)}
                     onChange={(e) => setFormExerciseName(e.target.value)}
-                    className="w-full px-3 py-2.5 text-xs sm:text-sm rounded-xl border border-zinc-300 bg-white text-zinc-900 font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 disabled:bg-zinc-100 disabled:text-zinc-600 shadow-2xs"
+                    className="w-full min-h-[48px] px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-white/10 bg-black/40 text-white font-semibold focus:outline-none focus:border-[#00FF87] focus:ring-1 focus:ring-[#00FF87] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                   >
                     {catalog.map((c) => (
-                      <option key={c.id} value={c.name}>
+                      <option key={c.id} value={c.name} className="bg-[#1C1C1E] text-white">
                         {c.name} {c.category ? `(${c.category})` : ''}
                       </option>
                     ))}
@@ -700,28 +703,28 @@ export const ExerciseDiaryView: React.FC<ExerciseDiaryViewProps> = ({
 
                 {/* Date Picker */}
                 <div>
-                  <label className="block text-xs font-bold text-zinc-700 uppercase tracking-wider mb-1.5">
-                    Fecha del Registro <span className="text-red-500">*</span>
+                  <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider mb-1.5">
+                    Fecha del Registro <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="date"
                     value={formDate}
                     onChange={(e) => setFormDate(e.target.value)}
-                    className="w-full px-3 py-2.5 text-xs sm:text-sm rounded-xl border border-zinc-300 bg-white text-zinc-900 font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 shadow-2xs"
+                    className="w-full min-h-[48px] px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-white/10 bg-black/40 text-white font-semibold focus:outline-none focus:border-[#00FF87] focus:ring-1 focus:ring-[#00FF87] transition-all"
                   />
                 </div>
 
                 {/* Sensation / Feeling Selector */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider">
+                    <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
                       Sensación en la sesión
                     </label>
                     {formFeeling && (
                       <button
                         type="button"
                         onClick={() => setFormFeeling(undefined)}
-                        className="text-[11px] text-zinc-400 hover:text-zinc-700"
+                        className="text-[11px] text-zinc-400 hover:text-white"
                       >
                         Quitar sensación
                       </button>
@@ -732,10 +735,10 @@ export const ExerciseDiaryView: React.FC<ExerciseDiaryViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setFormFeeling('good')}
-                      className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                      className={`min-h-[48px] p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-[0.97] ${
                         formFeeling === 'good'
-                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                          : 'bg-emerald-50/60 text-emerald-900 border-emerald-200 hover:bg-emerald-100'
+                          ? 'bg-emerald-500 text-black border-emerald-400 font-black shadow-[0_0_12px_rgba(16,185,129,0.4)]'
+                          : 'bg-emerald-950/20 text-emerald-300 border-emerald-500/20 hover:border-emerald-500/40 hover:bg-emerald-950/40'
                       }`}
                     >
                       <span className="text-base">🟢</span>
@@ -745,10 +748,10 @@ export const ExerciseDiaryView: React.FC<ExerciseDiaryViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setFormFeeling('neutral')}
-                      className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                      className={`min-h-[48px] p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-[0.97] ${
                         formFeeling === 'neutral'
-                          ? 'bg-amber-500 text-white border-amber-500 shadow-xs'
-                          : 'bg-amber-50/60 text-amber-900 border-amber-200 hover:bg-amber-100'
+                          ? 'bg-amber-500 text-black border-amber-400 font-black shadow-[0_0_12px_rgba(245,158,11,0.4)]'
+                          : 'bg-amber-950/20 text-amber-300 border-amber-500/20 hover:border-amber-500/40 hover:bg-amber-950/40'
                       }`}
                     >
                       <span className="text-base">🟠</span>
@@ -758,10 +761,10 @@ export const ExerciseDiaryView: React.FC<ExerciseDiaryViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setFormFeeling('bad')}
-                      className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                      className={`min-h-[48px] p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-[0.97] ${
                         formFeeling === 'bad'
-                          ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
-                          : 'bg-rose-50/60 text-rose-900 border-rose-200 hover:bg-rose-100'
+                          ? 'bg-rose-500 text-white border-rose-400 font-black shadow-[0_0_12px_rgba(244,63,94,0.4)]'
+                          : 'bg-rose-950/20 text-rose-300 border-rose-500/20 hover:border-rose-500/40 hover:bg-rose-950/40'
                       }`}
                     >
                       <span className="text-base">🔴</span>
@@ -772,8 +775,8 @@ export const ExerciseDiaryView: React.FC<ExerciseDiaryViewProps> = ({
 
                 {/* Note / Journal Entry Textarea (Spacious & Comfortable) */}
                 <div>
-                  <label className="block text-xs font-bold text-zinc-700 uppercase tracking-wider mb-1.5">
-                    Nota y Observaciones <span className="text-red-500">*</span>
+                  <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider mb-1.5">
+                    Nota y Observaciones <span className="text-rose-500">*</span>
                   </label>
                   <textarea
                     rows={6}
@@ -786,9 +789,9 @@ export const ExerciseDiaryView: React.FC<ExerciseDiaryViewProps> = ({
                       }
                     }}
                     placeholder="Ej: Hoy ha tocado en la parte de fuera 6s x 4r al 80% del RM y me he puesto 55kg y casi peto. Muy buena congestión pero vigilar el agarre..."
-                    className="w-full p-3.5 text-xs sm:text-sm rounded-xl border border-zinc-300 bg-white text-zinc-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 shadow-2xs resize-y min-h-[140px] leading-relaxed placeholder-zinc-400"
+                    className="w-full p-3.5 text-xs sm:text-sm rounded-xl border border-white/10 bg-black/40 text-white focus:outline-none focus:border-[#00FF87] focus:ring-1 focus:ring-[#00FF87] resize-y min-h-[140px] leading-relaxed placeholder-zinc-500 transition-all selection:bg-[#00FF87]/20"
                   />
-                  <div className="flex items-center justify-between text-[11px] text-zinc-400 mt-1">
+                  <div className="flex items-center justify-between text-[11px] text-zinc-500 mt-1">
                     <span>Espacio amplio para notas largas y técnicas</span>
                     <span>Ctrl + Enter para guardar</span>
                   </div>
@@ -796,20 +799,20 @@ export const ExerciseDiaryView: React.FC<ExerciseDiaryViewProps> = ({
               </div>
 
               {/* Modal Footer */}
-              <div className="px-4 sm:px-6 py-3.5 border-t border-zinc-100 bg-zinc-50 flex items-center justify-end gap-2.5 shrink-0">
+              <div className="px-5 sm:px-6 py-4 border-t border-white/[0.08] bg-black/30 flex items-center justify-end gap-3 shrink-0">
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="px-4 py-2 text-xs sm:text-sm font-semibold text-zinc-600 hover:text-zinc-900 rounded-xl hover:bg-zinc-200/60 transition-colors"
+                  className="px-4 py-2.5 min-h-[44px] text-xs sm:text-sm font-semibold text-zinc-400 hover:text-white rounded-xl hover:bg-white/[0.06] transition-colors"
                 >
                   Cancelar
                 </button>
 
                 <button
                   type="submit"
-                  className="px-5 py-2 text-xs sm:text-sm font-bold text-white bg-zinc-900 hover:bg-zinc-800 rounded-xl shadow-xs transition-all active:scale-95 flex items-center gap-1.5"
+                  className="px-5 py-2.5 min-h-[48px] text-xs sm:text-sm font-extrabold text-black bg-[#00FF87] hover:bg-[#00e57a] rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.3)] transition-all active:scale-[0.97] flex items-center gap-2"
                 >
-                  <Check className="w-4 h-4 text-emerald-400" />
+                  <Check className="w-4 h-4 text-black stroke-[3]" />
                   <span>{editingEntry ? 'Actualizar Registro' : 'Guardar en el Diario'}</span>
                 </button>
               </div>
@@ -817,6 +820,7 @@ export const ExerciseDiaryView: React.FC<ExerciseDiaryViewProps> = ({
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };
