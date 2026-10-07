@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Routine,
   ExerciseDefinition,
@@ -14,9 +14,10 @@ import {
 } from '../types';
 import {
   initAndMigrateStorage,
-  setStoredItem,
+  setScopedStoredItem,
   DB_KEYS,
   AppStorageData,
+  GUEST_STORAGE_SCOPE,
 } from '../services/db';
 
 export interface UseAppStorageReturn {
@@ -46,20 +47,27 @@ export interface UseAppStorageReturn {
  * Custom hook that manages the IndexedDB storage lifecycle, automatic
  * migration from legacy localStorage, and reactive persistence.
  */
-export function useAppStorage(): UseAppStorageReturn {
+export function useAppStorage(ownerId?: string): UseAppStorageReturn {
+  const storageScope = useMemo(
+    () => (ownerId ? { ownerId } : GUEST_STORAGE_SCOPE),
+    [ownerId],
+  );
+  const scopeIdentity = ownerId ? `owner:${ownerId}` : GUEST_STORAGE_SCOPE;
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [catalog, setCatalog] = useState<ExerciseDefinition[]>([]);
   const [activeSessions, setActiveSessions] = useState<Record<string, ActiveWorkoutSession>>({});
   const [rmLogs, setRmLogs] = useState<ExerciseRmLog[]>([]);
   const [workoutHistory, setWorkoutHistory] = useState<WorkoutHistoryLog[]>([]);
   const [exerciseDiary, setExerciseDiary] = useState<ExerciseDiary[]>([]);
-  const [isStorageLoaded, setIsStorageLoaded] = useState<boolean>(false);
+  const [loadedScope, setLoadedScope] = useState<string | null>(null);
+  const isStorageLoaded = loadedScope === scopeIdentity;
 
   // 1. Initial hydration from IndexedDB (with transparent localStorage migration)
   useEffect(() => {
     let isMounted = true;
 
-    initAndMigrateStorage()
+    setLoadedScope(null);
+    initAndMigrateStorage(storageScope)
       .then((data: AppStorageData) => {
         if (!isMounted) return;
         setRoutines(data.routines);
@@ -68,48 +76,47 @@ export function useAppStorage(): UseAppStorageReturn {
         setRmLogs(data.rmLogs);
         setWorkoutHistory(data.workoutHistory);
         setExerciseDiary(data.exerciseDiary);
-        setIsStorageLoaded(true);
+        setLoadedScope(scopeIdentity);
       })
       .catch((err) => {
         console.error('[useAppStorage] Error initializing storage:', err);
-        if (isMounted) setIsStorageLoaded(true);
       });
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [scopeIdentity, storageScope]);
 
   // 2. Reactive persistence effects to IndexedDB (only after initial hydration completes)
   useEffect(() => {
     if (!isStorageLoaded) return;
-    setStoredItem(DB_KEYS.ROUTINES, routines);
-  }, [routines, isStorageLoaded]);
+    setScopedStoredItem(DB_KEYS.ROUTINES, routines, storageScope);
+  }, [routines, isStorageLoaded, storageScope]);
 
   useEffect(() => {
     if (!isStorageLoaded) return;
-    setStoredItem(DB_KEYS.CATALOG, catalog);
-  }, [catalog, isStorageLoaded]);
+    setScopedStoredItem(DB_KEYS.CATALOG, catalog, storageScope);
+  }, [catalog, isStorageLoaded, storageScope]);
 
   useEffect(() => {
     if (!isStorageLoaded) return;
-    setStoredItem(DB_KEYS.ACTIVE_SESSIONS, activeSessions);
-  }, [activeSessions, isStorageLoaded]);
+    setScopedStoredItem(DB_KEYS.ACTIVE_SESSIONS, activeSessions, storageScope);
+  }, [activeSessions, isStorageLoaded, storageScope]);
 
   useEffect(() => {
     if (!isStorageLoaded) return;
-    setStoredItem(DB_KEYS.RM_LOGS, rmLogs);
-  }, [rmLogs, isStorageLoaded]);
+    setScopedStoredItem(DB_KEYS.RM_LOGS, rmLogs, storageScope);
+  }, [rmLogs, isStorageLoaded, storageScope]);
 
   useEffect(() => {
     if (!isStorageLoaded) return;
-    setStoredItem(DB_KEYS.WORKOUT_HISTORY, workoutHistory);
-  }, [workoutHistory, isStorageLoaded]);
+    setScopedStoredItem(DB_KEYS.WORKOUT_HISTORY, workoutHistory, storageScope);
+  }, [workoutHistory, isStorageLoaded, storageScope]);
 
   useEffect(() => {
     if (!isStorageLoaded) return;
-    setStoredItem(DB_KEYS.EXERCISE_DIARY, exerciseDiary);
-  }, [exerciseDiary, isStorageLoaded]);
+    setScopedStoredItem(DB_KEYS.EXERCISE_DIARY, exerciseDiary, storageScope);
+  }, [exerciseDiary, isStorageLoaded, storageScope]);
 
   const applyImportData = (
     newCatalog: ExerciseDefinition[],
@@ -127,17 +134,17 @@ export function useAppStorage(): UseAppStorageReturn {
 
   return {
     isStorageLoaded,
-    routines,
+    routines: isStorageLoaded ? routines : [],
     setRoutines,
-    catalog,
+    catalog: isStorageLoaded ? catalog : [],
     setCatalog,
-    activeSessions,
+    activeSessions: isStorageLoaded ? activeSessions : {},
     setActiveSessions,
-    rmLogs,
+    rmLogs: isStorageLoaded ? rmLogs : [],
     setRmLogs,
-    workoutHistory,
+    workoutHistory: isStorageLoaded ? workoutHistory : [],
     setWorkoutHistory,
-    exerciseDiary,
+    exerciseDiary: isStorageLoaded ? exerciseDiary : [],
     setExerciseDiary,
     applyImportData,
   };
