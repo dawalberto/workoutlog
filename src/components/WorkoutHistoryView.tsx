@@ -513,7 +513,7 @@ export const WorkoutHistoryView: React.FC<WorkoutHistoryViewProps> = ({
                           {formatDetailedDuration(w.durationSeconds)}
                         </span>
                         <span>•</span>
-                        <span>{w.completedSetsCount}/{w.totalSetsCount} series</span>
+                        <span>{w.completedSetsCount}/{w.totalSetsCount ?? '—'} series</span>
                       </div>
                     </div>
                   </div>

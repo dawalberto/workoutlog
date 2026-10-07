@@ -9,6 +9,7 @@ import {
 } from './db';
 import {
   syncRecordId,
+  validateWorkoutHistoryRecord,
   type SyncQueueEntry,
   type SyncRemoteChange,
   type SyncTable,
@@ -335,6 +336,7 @@ function parsePullResponse(value: unknown): SyncPullResponse {
 
 function parseRemoteChange(value: unknown): SyncRemoteChange {
   const change = objectValue(value);
+  const record = objectValue(change?.record);
   if (
     !change ||
     typeof change.table !== 'string' ||
@@ -344,16 +346,34 @@ function parseRemoteChange(value: unknown): SyncRemoteChange {
     typeof change.revision !== 'string' ||
     !isDecimalRevision(change.revision) ||
     !(change.deletedAt === null || typeof change.deletedAt === 'string') ||
-    !objectValue(change.record)
+    !record
   ) {
     throw new CloudSyncError('Sync pull returned an invalid change.');
   }
+  const table = change.table as SyncTable;
+  if (
+    table === 'workout_history' ||
+    table === 'workout_history_exercises'
+  ) {
+    try {
+      validateWorkoutHistoryRecord(
+        table,
+        change.id,
+        record,
+        change.deletedAt === null,
+      );
+    } catch {
+      throw new CloudSyncError(
+        'Sync pull returned an invalid workout history record.',
+      );
+    }
+  }
   return {
-    table: change.table as SyncTable,
+    table,
     id: change.id,
     revision: change.revision,
     deletedAt: change.deletedAt as string | null,
-    record: change.record as Record<string, unknown>,
+    record,
   };
 }
 

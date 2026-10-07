@@ -366,6 +366,8 @@ describe('cloud sync', () => {
           duration_seconds: 600,
           exercises_completed: 1,
           sets_completed: 2,
+          total_sets_count: 3,
+          completion_percentage: 66.67,
           created_at: '2026-10-07T10:10:00.000Z',
           updated_at: '2026-10-07T10:10:00.000Z',
         },
@@ -379,6 +381,7 @@ describe('cloud sync', () => {
           exercise_name: 'Press',
           exercises_completed: 1,
           sets_completed: 2,
+          sets_total: 4,
         },
       },
       {
@@ -462,7 +465,10 @@ describe('cloud sync', () => {
     ).toMatchObject([
       {
         id: 'history-1',
-        exercisesSummary: [{ name: 'Press', completedSets: 2, totalSets: 0 }],
+        completedSetsCount: 2,
+        totalSetsCount: 3,
+        completionPercentage: 66.67,
+        exercisesSummary: [{ name: 'Press', completedSets: 2, totalSets: 4 }],
       },
     ]);
     expect(
@@ -482,6 +488,382 @@ describe('cloud sync', () => {
     ]);
     expect(await storage.getServerCursor(scope)).toBe('12');
     expect(await storage.getPendingSyncOperations(scope)).toHaveLength(0);
+  });
+
+  it('preserves unknown nullable metrics from legacy workout history as unknown', async () => {
+    const records = [
+      {
+        table: 'workout_history',
+        id: 'legacy-history',
+        record: {
+          id: 'legacy-history',
+          routine_id: 'routine-legacy',
+          routine_name: 'Legacy strength',
+          started_at: '2026-10-06T10:00:00.000Z',
+          completed_at: '2026-10-06T10:10:00.000Z',
+          duration_seconds: 600,
+          exercises_completed: 1,
+          sets_completed: 2,
+          total_sets_count: null,
+          completion_percentage: null,
+        },
+      },
+      {
+        table: 'workout_history_exercises',
+        id: JSON.stringify(['legacy-history', 0]),
+        record: {
+          history_id: 'legacy-history',
+          position: 0,
+          exercise_name: 'Legacy press',
+          exercises_completed: 1,
+          sets_completed: 2,
+          sets_total: null,
+        },
+      },
+    ].map((change, index) => ({
+      ...change,
+      revision: String(index + 1),
+      deletedAt: null,
+    }));
+    const fetcher = makeFetch(async () =>
+      jsonResponse(pullResponse(records, '2')),
+    );
+
+    await cloudSync.syncCloudData({ ...account, fetcher });
+
+    const scope = { ownerId: account.ownerId };
+    expect(
+      await storage.getScopedStoredItem(
+        storage.DB_KEYS.WORKOUT_HISTORY,
+        [],
+        scope,
+      ),
+    ).toMatchObject([
+      {
+        id: 'legacy-history',
+        completedSetsCount: 2,
+        totalSetsCount: null,
+        completionPercentage: null,
+        exercisesSummary: [
+          { name: 'Legacy press', completedSets: 2, totalSets: null },
+        ],
+      },
+    ]);
+    expect(await storage.getPendingSyncOperations(scope)).toHaveLength(0);
+  });
+
+  it('serializes nullable, zero, and nonzero workout history metrics without reindexing exercises', async () => {
+    const scope = { ownerId: account.ownerId };
+    await storage.setScopedStoredItem(
+      storage.DB_KEYS.WORKOUT_HISTORY,
+      [
+        {
+          id: 'zero-history',
+          routineId: 'routine-zero',
+          routineName: 'Empty session',
+          startTime: 1_791_360_000_000,
+          endTime: 1_791_360_600_000,
+          durationSeconds: 600,
+          completedSetsCount: 0,
+          totalSetsCount: 0,
+          completionPercentage: 0,
+          exercisesSummary: [
+            { name: 'Empty exercise', completedSets: 0, totalSets: 0 },
+          ],
+          completedAt: '2026-10-07T10:10:00.000Z',
+        },
+        {
+          id: 'nonzero-history',
+          routineId: 'routine-nonzero',
+          routineName: 'Strength session',
+          startTime: 1_791_360_000_000,
+          endTime: 1_791_360_600_000,
+          durationSeconds: 600,
+          completedSetsCount: 2,
+          totalSetsCount: 5,
+          completionPercentage: 40,
+          exercisesSummary: [
+            { name: 'Press', completedSets: 2, totalSets: 3 },
+            { name: 'Row', completedSets: 0, totalSets: 2 },
+          ],
+          completedAt: '2026-10-07T10:10:00.000Z',
+        },
+        {
+          id: 'legacy-local-history',
+          routineId: 'routine-legacy',
+          routineName: 'Legacy session',
+          startTime: 1_791_273_600_000,
+          endTime: 1_791_274_200_000,
+          durationSeconds: 600,
+          completedSetsCount: 1,
+          totalSetsCount: null,
+          completionPercentage: null,
+          exercisesSummary: [
+            { name: 'Legacy exercise', completedSets: 1, totalSets: null },
+          ],
+          completedAt: '2026-10-06T10:10:00.000Z',
+        },
+        {
+          id: 'missing-local-history-metrics',
+          routineId: 'routine-missing',
+          routineName: 'Older local session',
+          startTime: 1_791_187_200_000,
+          endTime: 1_791_187_800_000,
+          durationSeconds: 600,
+          completedSetsCount: 0,
+          exercisesSummary: [
+            { name: 'Older exercise', completedSets: 0 },
+          ],
+          completedAt: '2026-10-05T10:10:00.000Z',
+        },
+      ],
+      scope,
+    );
+
+    const changes = (await storage.getPendingSyncOperations(scope)).flatMap(
+      (operation) => operation.request.changes,
+    );
+    const historyRecords = changes.filter(
+      (change) => change.table === 'workout_history',
+    );
+    const exerciseRecords = changes.filter(
+      (change) => change.table === 'workout_history_exercises',
+    );
+
+    expect(historyRecords.map(({ record }) => record)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'zero-history',
+          sets_completed: 0,
+          total_sets_count: 0,
+          completion_percentage: 0,
+        }),
+        expect.objectContaining({
+          id: 'nonzero-history',
+          sets_completed: 2,
+          total_sets_count: 5,
+          completion_percentage: 40,
+        }),
+        expect.objectContaining({
+          id: 'legacy-local-history',
+          total_sets_count: null,
+          completion_percentage: null,
+        }),
+        expect.objectContaining({
+          id: 'missing-local-history-metrics',
+          total_sets_count: null,
+          completion_percentage: null,
+        }),
+      ]),
+    );
+    expect(
+      exerciseRecords
+        .filter(({ record }) => record.history_id === 'nonzero-history')
+        .map(({ record }) => ({
+          id: JSON.stringify([record.history_id, record.position]),
+          record,
+        })),
+    ).toEqual([
+      {
+        id: JSON.stringify(['nonzero-history', 0]),
+        record: expect.objectContaining({
+          history_id: 'nonzero-history',
+          position: 0,
+          exercise_name: 'Press',
+          sets_completed: 2,
+          sets_total: 3,
+        }),
+      },
+      {
+        id: JSON.stringify(['nonzero-history', 1]),
+        record: expect.objectContaining({
+          history_id: 'nonzero-history',
+          position: 1,
+          exercise_name: 'Row',
+          sets_completed: 0,
+          sets_total: 2,
+        }),
+      },
+    ]);
+    expect(
+      exerciseRecords.find(({ record }) => record.history_id === 'zero-history')
+        ?.record,
+    ).toMatchObject({ sets_completed: 0, sets_total: 0 });
+    expect(
+      exerciseRecords.find(
+        ({ record }) => record.history_id === 'legacy-local-history',
+      )?.record,
+    ).toMatchObject({ sets_completed: 1, sets_total: null });
+    expect(
+      exerciseRecords.find(
+        ({ record }) => record.history_id === 'missing-local-history-metrics',
+      )?.record,
+    ).toMatchObject({ sets_completed: 0, sets_total: null });
+  });
+
+  it.each([
+    { table: 'workout_history', field: 'sets_completed', malformed: false },
+    { table: 'workout_history', field: 'sets_completed', malformed: true },
+    { table: 'workout_history', field: 'total_sets_count', malformed: false },
+    { table: 'workout_history', field: 'total_sets_count', malformed: true },
+    { table: 'workout_history', field: 'completion_percentage', malformed: false },
+    { table: 'workout_history', field: 'completion_percentage', malformed: true },
+    {
+      table: 'workout_history_exercises',
+      field: 'sets_completed',
+      malformed: false,
+    },
+    {
+      table: 'workout_history_exercises',
+      field: 'sets_completed',
+      malformed: true,
+    },
+    { table: 'workout_history_exercises', field: 'sets_total', malformed: false },
+    { table: 'workout_history_exercises', field: 'sets_total', malformed: true },
+  ])(
+    'rejects missing or malformed $table.$field payload metrics',
+    async ({ table, field, malformed }) => {
+      const isHistory = table === 'workout_history';
+      const record: Record<string, unknown> = isHistory
+        ? {
+            id: 'invalid-history',
+            routine_id: 'routine-invalid',
+            routine_name: 'Invalid session',
+            started_at: '2026-10-07T10:00:00.000Z',
+            completed_at: '2026-10-07T10:10:00.000Z',
+            duration_seconds: 600,
+            sets_completed: 1,
+            total_sets_count: 1,
+            completion_percentage: 100,
+          }
+        : {
+            history_id: 'invalid-history',
+            position: 0,
+            exercise_name: 'Invalid exercise',
+            sets_completed: 1,
+            sets_total: 1,
+          };
+      if (malformed) {
+        record[field] = 'not-a-number';
+      } else {
+        delete record[field];
+      }
+      const fetcher = makeFetch(async () =>
+        jsonResponse(
+          pullResponse(
+            [
+              {
+                table,
+                id: isHistory
+                  ? 'invalid-history'
+                  : JSON.stringify(['invalid-history', 0]),
+                revision: '1',
+                deletedAt: null,
+                record,
+              },
+            ],
+            '1',
+          ),
+        ),
+      );
+
+      await expect(
+        cloudSync.syncCloudData({ ...account, fetcher }),
+      ).rejects.toThrow(cloudSync.CloudSyncError);
+      expect(
+        await storage.getScopedStoredItem(
+          storage.DB_KEYS.WORKOUT_HISTORY,
+          [],
+          { ownerId: account.ownerId },
+        ),
+      ).toEqual([]);
+      expect(await storage.getServerCursor({ ownerId: account.ownerId })).toBe(
+        '0',
+      );
+    },
+  );
+
+  it('preserves aggregate metrics and exercise ordering when rows arrive out of order', async () => {
+    const records = [
+      {
+        table: 'workout_history',
+        id: 'ordered-history',
+        record: {
+          id: 'ordered-history',
+          routine_id: 'routine-ordered',
+          routine_name: 'Ordered session',
+          started_at: '2026-10-05T10:00:00.000Z',
+          completed_at: '2026-10-05T10:10:00.000Z',
+          duration_seconds: 600,
+          exercises_completed: 1,
+          sets_completed: 3,
+          total_sets_count: 4,
+          completion_percentage: 75,
+        },
+      },
+      {
+        table: 'workout_history_exercises',
+        id: JSON.stringify(['ordered-history', 1]),
+        record: {
+          history_id: 'ordered-history',
+          position: 1,
+          exercise_name: 'Second exercise',
+          exercises_completed: 0,
+          sets_completed: 0,
+          sets_total: 2,
+        },
+      },
+      {
+        table: 'workout_history_exercises',
+        id: JSON.stringify(['ordered-history', 0]),
+        record: {
+          history_id: 'ordered-history',
+          position: 0,
+          exercise_name: 'First exercise',
+          exercises_completed: 1,
+          sets_completed: 3,
+          sets_total: 2,
+        },
+      },
+    ].map((change, index) => ({
+      ...change,
+      revision: String(index + 1),
+      deletedAt: null,
+    }));
+    const fetcher = makeFetch(async () =>
+      jsonResponse(pullResponse(records, '3')),
+    );
+
+    await cloudSync.syncCloudData({ ...account, fetcher });
+
+    expect(
+      await storage.getScopedStoredItem(
+        storage.DB_KEYS.WORKOUT_HISTORY,
+        [],
+        { ownerId: account.ownerId },
+      ),
+    ).toMatchObject([
+      {
+        id: 'ordered-history',
+        completedSetsCount: 3,
+        totalSetsCount: 4,
+        completionPercentage: 75,
+        exercisesSummary: [
+          {
+            name: 'First exercise',
+            completedSets: 3,
+            totalSets: 2,
+            position: 0,
+          },
+          {
+            name: 'Second exercise',
+            completedSets: 0,
+            totalSets: 2,
+            position: 1,
+          },
+        ],
+      },
+    ]);
   });
 
   it('lets the server win stale conflicts and retains unrelated pending edits', async () => {

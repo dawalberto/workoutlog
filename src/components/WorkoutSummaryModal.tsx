@@ -75,10 +75,12 @@ export const WorkoutSummaryModal: React.FC<WorkoutSummaryModalProps> = ({
               <span>Progreso</span>
             </div>
             <span className="text-xl sm:text-2xl font-black text-zinc-900 block">
-              {summary.completedSetsCount}/{summary.totalSetsCount}
+              {summary.completedSetsCount}/{summary.totalSetsCount ?? '—'}
             </span>
             <span className="text-[11px] text-zinc-500 font-semibold">
-              {summary.completionPercentage}% series hechas
+              {summary.completionPercentage === null
+                ? 'Progreso desconocido'
+                : `${summary.completionPercentage}% series hechas`}
             </span>
           </div>
         </div>
@@ -91,7 +93,10 @@ export const WorkoutSummaryModal: React.FC<WorkoutSummaryModalProps> = ({
 
           <div className="space-y-2">
             {summary.exercisesSummary.map((ex, idx) => {
-              const isExComplete = ex.completedSets === ex.totalSets && ex.totalSets > 0;
+              const isExComplete =
+                ex.totalSets !== null &&
+                ex.completedSets === ex.totalSets &&
+                ex.totalSets > 0;
               return (
                 <div
                   key={idx}
@@ -124,7 +129,9 @@ export const WorkoutSummaryModal: React.FC<WorkoutSummaryModalProps> = ({
                           : 'bg-zinc-200 text-zinc-600'
                       }`}
                     >
-                      {ex.completedSets} / {ex.totalSets} series
+                      {ex.totalSets === null
+                        ? `${ex.completedSets} / — series (total desconocido)`
+                        : `${ex.completedSets} / ${ex.totalSets} series`}
                     </span>
                     {isExComplete && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
                   </div>

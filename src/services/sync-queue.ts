@@ -336,40 +336,52 @@ function flattenRmLogs(value: unknown): SyncRecord[] {
 function flattenWorkoutHistory(value: unknown): SyncRecord[] {
   const records: SyncRecord[] = [];
   for (const history of arrayOf<WorkoutHistoryLog>(value)) {
+    const historyRecord = compactRecord({
+      id: history.id,
+      routine_id: history.routineId,
+      routine_name: history.routineName,
+      started_at: toIsoString(history.startTime),
+      completed_at: history.completedAt || toIsoString(history.endTime),
+      duration_seconds: history.durationSeconds,
+      exercises_completed: history.exercisesSummary.filter(
+        (exercise) => exercise.completedSets > 0,
+      ).length,
+      sets_completed: history.completedSetsCount,
+      total_sets_count: history.totalSetsCount ?? null,
+      completion_percentage: history.completionPercentage ?? null,
+      created_at: history.completedAt,
+      updated_at: history.completedAt,
+    });
+    validateWorkoutHistoryRecord('workout_history', history.id, historyRecord);
     records.push(
       ...asSyncRecord(
         'workout_history',
         history.id,
-        compactRecord({
-          id: history.id,
-          routine_id: history.routineId,
-          routine_name: history.routineName,
-          started_at: toIsoString(history.startTime),
-          completed_at: history.completedAt || toIsoString(history.endTime),
-          duration_seconds: history.durationSeconds,
-          exercises_completed: history.exercisesSummary.filter(
-            (exercise) => exercise.completedSets > 0,
-          ).length,
-          sets_completed: history.completedSetsCount,
-          created_at: history.completedAt,
-          updated_at: history.completedAt,
-        }),
+        historyRecord,
       ),
     );
 
-    history.exercisesSummary.forEach((exercise, position) => {
+    history.exercisesSummary.forEach((exercise, index) => {
+      const position = exercise.position ?? index;
       const id = JSON.stringify([history.id, position]);
+      const record = compactRecord({
+        history_id: history.id,
+        position,
+        exercise_name: exercise.name,
+        exercises_completed: exercise.completedSets > 0 ? 1 : 0,
+        sets_completed: exercise.completedSets,
+        sets_total: exercise.totalSets ?? null,
+      });
+      validateWorkoutHistoryRecord(
+        'workout_history_exercises',
+        id,
+        record,
+      );
       records.push(
         ...asSyncRecord(
           'workout_history_exercises',
           id,
-          compactRecord({
-            history_id: history.id,
-            position,
-            exercise_name: exercise.name,
-            exercises_completed: exercise.completedSets > 0 ? 1 : 0,
-            sets_completed: exercise.completedSets,
-          }),
+          record,
         ),
       );
     });
@@ -473,12 +485,50 @@ export function syncRecordId(
   return identity.length === 1 ? String(identity[0]) : JSON.stringify(identity);
 }
 
+export function validateWorkoutHistoryRecord(
+  table: SyncTable,
+  id: string,
+  record: Record<string, unknown>,
+  validateMetrics = true,
+): void {
+  if (table === 'workout_history') {
+    if (requiredStringValue(record, 'id') !== id) {
+      throw new TypeError('Workout history record ID does not match its sync ID.');
+    }
+    if (!validateMetrics) return;
+    requiredNonNegativeIntegerValue(record, 'sets_completed');
+    requiredNullableNonNegativeIntegerValue(record, 'total_sets_count');
+    requiredNullablePercentageValue(record, 'completion_percentage');
+  } else if (table === 'workout_history_exercises') {
+    requiredStringValue(record, 'history_id');
+    requiredNonNegativeIntegerValue(record, 'position');
+    requiredStringValue(record, 'exercise_name');
+    if (syncRecordId(table, record) !== id) {
+      throw new TypeError('Workout history exercise ID does not match its sync ID.');
+    }
+    if (!validateMetrics) return;
+    requiredNonNegativeIntegerValue(record, 'sets_completed');
+    requiredNullableNonNegativeIntegerValue(record, 'sets_total');
+  }
+}
+
 export function applyRemoteSyncChange(
   value: unknown,
   change: SyncRemoteChange,
 ): unknown {
   const record = change.record;
   const deleted = change.deletedAt !== null;
+  if (
+    change.table === 'workout_history' ||
+    change.table === 'workout_history_exercises'
+  ) {
+    validateWorkoutHistoryRecord(
+      change.table,
+      change.id,
+      record,
+      !deleted,
+    );
+  }
 
   switch (change.table) {
     case 'exercise_definitions': {
@@ -738,12 +788,14 @@ function applyWorkoutHistoryChange(
     current?.startTime ?? 0,
   );
   const endTime = timestampValue(completedAt, current?.endTime ?? startTime);
-  const completedSetsCount = integerValue(
+  const completedSetsCount = requiredNonNegativeIntegerValue(
     change.record,
     'sets_completed',
-    current?.completedSetsCount ?? 0,
   );
-  const totalSetsCount = current?.totalSetsCount ?? 0;
+  const totalSetsCount = requiredNullableNonNegativeIntegerValue(
+    change.record,
+    'total_sets_count',
+  );
   return replaceById(logs, change.id, {
     id: change.id,
     routineId: stringValue(change.record, 'routine_id', current?.routineId ?? ''),
@@ -761,8 +813,10 @@ function applyWorkoutHistoryChange(
     ),
     completedSetsCount,
     totalSetsCount,
-    completionPercentage:
-      current?.completionPercentage ?? 0,
+    completionPercentage: requiredNullablePercentageValue(
+      change.record,
+      'completion_percentage',
+    ),
     exercisesSummary: current?.exercisesSummary ?? [],
     completedAt,
   });
@@ -775,41 +829,48 @@ function applyWorkoutHistoryExerciseChange(
   const logs = arrayOf<WorkoutHistoryLog>(value);
   const historyId = stringValue(change.record, 'history_id', '');
   if (change.deletedAt !== null && !logs.some((log) => log.id === historyId)) return logs;
-  const position = integerValue(change.record, 'position', 0);
+  if (!logs.some((log) => log.id === historyId)) {
+    throw new Error('Workout history exercise has no matching history record.');
+  }
+  const position = requiredNonNegativeIntegerValue(change.record, 'position');
   return updateWorkoutHistory(logs, historyId, (history) => {
-    const exercisesSummary = [...history.exercisesSummary];
+    const positionedExercises = history.exercisesSummary.map(
+      (exercise, index) => ({
+        position: exercise.position ?? index,
+        exercise,
+      }),
+    );
+    const currentIndex = positionedExercises.findIndex(
+      (item) => item.position === position,
+    );
     if (change.deletedAt !== null) {
-      exercisesSummary.splice(position, 1);
+      if (currentIndex >= 0) positionedExercises.splice(currentIndex, 1);
     } else {
-      while (exercisesSummary.length <= position) {
-        exercisesSummary.push({ name: '', completedSets: 0, totalSets: 0 });
-      }
-      const current = exercisesSummary[position];
-      exercisesSummary[position] = {
-        name: stringValue(change.record, 'exercise_name', current?.name ?? ''),
-        completedSets: integerValue(
+      const exercise = {
+        name: requiredStringValue(change.record, 'exercise_name'),
+        completedSets: requiredNonNegativeIntegerValue(
           change.record,
           'sets_completed',
-          current?.completedSets ?? 0,
         ),
-        totalSets: current?.totalSets ?? 0,
+        totalSets: requiredNullableNonNegativeIntegerValue(
+          change.record,
+          'sets_total',
+        ),
+        position,
       };
+      if (currentIndex >= 0) {
+        positionedExercises[currentIndex] = { position, exercise };
+      } else {
+        positionedExercises.push({ position, exercise });
+      }
     }
-    const completedSetsCount = exercisesSummary.reduce(
-      (total, exercise) => total + exercise.completedSets,
-      0,
-    );
-    const totalSetsCount = Math.max(
-      history.totalSetsCount,
-      exercisesSummary.reduce((total, exercise) => total + exercise.totalSets, 0),
-    );
+    positionedExercises.sort((left, right) => left.position - right.position);
     return {
       ...history,
-      completedSetsCount,
-      totalSetsCount,
-      exercisesSummary,
-      completionPercentage:
-        totalSetsCount > 0 ? (completedSetsCount / totalSetsCount) * 100 : 0,
+      exercisesSummary: positionedExercises.map((item) => ({
+        ...item.exercise,
+        position: item.position,
+      })),
     };
   });
 }
@@ -915,8 +976,8 @@ function updateWorkoutHistory(
     endTime: 0,
     durationSeconds: 0,
     completedSetsCount: 0,
-    totalSetsCount: 0,
-    completionPercentage: 0,
+    totalSetsCount: null,
+    completionPercentage: null,
     exercisesSummary: [],
     completedAt: '',
   };
@@ -1010,6 +1071,58 @@ function integerValue(
 ): number {
   const value = record[key];
   return typeof value === 'number' && Number.isInteger(value) ? value : fallback;
+}
+
+function requiredStringValue(
+  record: Record<string, unknown>,
+  key: string,
+): string {
+  const value = record[key];
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new TypeError(`Workout history field ${key} is invalid.`);
+  }
+  return value;
+}
+
+function requiredNonNegativeIntegerValue(
+  record: Record<string, unknown>,
+  key: string,
+): number {
+  const value = record[key];
+  if (
+    typeof value !== 'number' ||
+    !Number.isSafeInteger(value) ||
+    value < 0
+  ) {
+    throw new TypeError(`Workout history field ${key} is invalid.`);
+  }
+  return value;
+}
+
+function requiredNullableNonNegativeIntegerValue(
+  record: Record<string, unknown>,
+  key: string,
+): number | null {
+  const value = record[key];
+  if (value === null) return null;
+  return requiredNonNegativeIntegerValue(record, key);
+}
+
+function requiredNullablePercentageValue(
+  record: Record<string, unknown>,
+  key: string,
+): number | null {
+  const value = record[key];
+  if (value === null) return null;
+  if (
+    typeof value !== 'number' ||
+    !Number.isFinite(value) ||
+    value < 0 ||
+    value > 100
+  ) {
+    throw new TypeError(`Workout history field ${key} is invalid.`);
+  }
+  return value;
 }
 
 function timestampValue(value: unknown, fallback: number): number {

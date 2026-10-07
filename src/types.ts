@@ -102,12 +102,13 @@ export interface WorkoutCompletionSummary {
   endTime: number;
   durationSeconds: number;
   completedSetsCount: number;
-  totalSetsCount: number;
-  completionPercentage: number;
+  totalSetsCount: number | null;
+  completionPercentage: number | null;
   exercisesSummary: {
     name: string;
     completedSets: number;
-    totalSets: number;
+    totalSets: number | null;
+    position?: number;
   }[];
 }
 
@@ -115,5 +116,4 @@ export interface WorkoutHistoryLog extends WorkoutCompletionSummary {
   id: string; // unique ID of this completed workout log
   completedAt: string; // ISO date-time string (e.g. "2026-09-24T12:00:00.000Z")
 }
-
 
