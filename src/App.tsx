@@ -29,6 +29,11 @@ import { AppLoadingScreen } from './components/AppLoadingScreen';
 import { ActiveWorkoutTopBanner } from './components/ActiveWorkoutTopBanner';
 import { ToastNotification } from './components/ToastNotification';
 import { getTotalDiaryEntriesCount } from './utils/diaryCalculations';
+import {
+  isRoutineCountAllowed,
+  ROUTINE_LIMIT_ERROR_MESSAGE,
+} from './utils/backup';
+import { useAuth } from './hooks/useAuth';
 import { useAppStorage } from './hooks/useAppStorage';
 import { useRoutines } from './hooks/useRoutines';
 import { useWorkoutSession } from './hooks/useWorkoutSession';
@@ -42,9 +47,12 @@ export default function App() {
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
 
+  const account = useAuth();
+
   // Storage Layer (IndexedDB with automatic legacy localStorage migration)
   const {
     isStorageLoaded,
+    storageError,
     routines,
     setRoutines,
     catalog,
@@ -58,7 +66,7 @@ export default function App() {
     exerciseDiary,
     setExerciseDiary,
     applyImportData,
-  } = useAppStorage();
+  } = useAppStorage(account.user?.id, account.isPremiumActive);
 
   // Routines & Catalog Domain Hook
   const {
@@ -80,6 +88,7 @@ export default function App() {
     catalog,
     setCatalog,
     onNotify: setFeedbackMessage,
+    isPremiumActive: account.isPremiumActive,
   });
 
   // Workout Session Lifecycle Hook
@@ -146,6 +155,11 @@ export default function App() {
       mode: 'merge' | 'overwrite';
     }
   ) => {
+    if (!isRoutineCountAllowed(newRoutines.length, account.isPremiumActive)) {
+      setFeedbackMessage(ROUTINE_LIMIT_ERROR_MESSAGE);
+      return;
+    }
+
     applyImportData(newCatalog, newRoutines, newRmLogs, newWorkoutHistory, newExerciseDiary);
 
     let msg = '';
@@ -173,7 +187,7 @@ export default function App() {
   };
 
   // Wait for IndexedDB hydration before rendering the view to avoid state flash
-  if (!isStorageLoaded) {
+  if (account.isLoading || !isStorageLoaded) {
     return <AppLoadingScreen />;
   }
 
@@ -204,6 +218,7 @@ export default function App() {
             onSelectTab={setActiveTab}
             routinesCount={routines.length}
             catalogCount={catalog.length}
+            isPremiumActive={account.isPremiumActive}
             onOpenMenu={() => setIsMenuOpen(true)}
           />
 
@@ -281,6 +296,15 @@ export default function App() {
         historyCount={workoutHistory.length}
         diaryCount={getTotalDiaryEntriesCount(exerciseDiary)}
         onOpenBackup={() => setIsBackupModalOpen(true)}
+        isAuthenticated={Boolean(account.user)}
+        userEmail={account.user?.email ?? null}
+        isPremiumActive={account.isPremiumActive}
+        isEntitlementLoading={account.isEntitlementLoading}
+        isSigningIn={account.isSigningIn}
+        premiumExpiry={account.entitlement?.entitlement?.validUntil ?? null}
+        error={account.error ?? storageError}
+        onSignIn={account.signInWithGoogle}
+        onSignOut={account.signOut}
       />
 
       {/* RM New Record Detection Alert Modal */}
@@ -310,6 +334,7 @@ export default function App() {
         rmLogs={rmLogs}
         workoutHistory={workoutHistory}
         exerciseDiary={exerciseDiary}
+        isPremiumActive={account.isPremiumActive}
         onImportComplete={handleImportComplete}
       />
 

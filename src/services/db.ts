@@ -37,6 +37,7 @@ export const DB_KEYS = {
   EXERCISE_DIARY: 'workout_planner_diary_v1',
   MIGRATION_FLAG: 'workout_migrated_from_localstorage_v1',
   STARTER_DATA_FLAG: 'workout_starter_data_initialized_v1',
+  GUEST_TRANSFER_FLAG: 'workout_guest_data_transferred_v1',
 } as const;
 
 export type StorageScope = typeof GUEST_STORAGE_SCOPE | { ownerId: string };
@@ -423,6 +424,181 @@ export async function clearAllStoredData(
     { key: DB_KEYS.EXERCISE_DIARY, value: [] },
   ];
   await writeCollectionBatch(emptyCollections, scope);
+}
+
+function mergeOwnerCollection(key: string, guestValue: unknown, ownerValue: unknown): unknown {
+  if (key === DB_KEYS.ACTIVE_SESSIONS) {
+    const guestSessions =
+      guestValue && typeof guestValue === 'object' && !Array.isArray(guestValue)
+        ? (guestValue as Record<string, unknown>)
+        : {};
+    const ownerSessions =
+      ownerValue && typeof ownerValue === 'object' && !Array.isArray(ownerValue)
+        ? (ownerValue as Record<string, unknown>)
+        : {};
+    return { ...guestSessions, ...ownerSessions };
+  }
+
+  const guestItems = Array.isArray(guestValue) ? guestValue : [];
+  const ownerItems = Array.isArray(ownerValue) ? ownerValue : [];
+  const itemsById = new Map<string, unknown>();
+  const itemsWithoutIds: unknown[] = [];
+
+  for (const item of [...guestItems, ...ownerItems]) {
+    if (item && typeof item === 'object' && typeof (item as { id?: unknown }).id === 'string') {
+      itemsById.set((item as { id: string }).id, item);
+    } else {
+      itemsWithoutIds.push(item);
+    }
+  }
+
+  return [...itemsById.values(), ...itemsWithoutIds];
+}
+
+/**
+ * Moves the guest cache into one account once, preserving existing owner data.
+ * The owner copy, migration marker, and guest cleanup commit together.
+ */
+export async function transferGuestDataToOwnerOnce(ownerId: string): Promise<boolean> {
+  const ownerScope: StorageScope = { ownerId };
+  const guestOwner = scopeKey(GUEST_STORAGE_SCOPE);
+  const owner = scopeKey(ownerScope);
+
+  await Promise.all(
+    legacyCollectionKeys.map(
+      (key) => writeQueues.get(`${guestOwner}:${key}`) ?? Promise.resolve(),
+    ),
+  );
+  await initAndMigrateStorage(GUEST_STORAGE_SCOPE);
+  await Promise.all(
+    legacyCollectionKeys.map(
+      (key) => writeQueues.get(`${guestOwner}:${key}`) ?? Promise.resolve(),
+    ),
+  );
+
+  const db = await getDatabase();
+  const transaction = db.transaction(
+    [STORE_NAME, RECORD_META_STORE, SYNC_OUTBOX_STORE, SYNC_CURSOR_STORE],
+    'readwrite',
+  );
+  const completed = transactionComplete(transaction);
+  const stateStore = transaction.objectStore(STORE_NAME);
+  const metadataStore = transaction.objectStore(RECORD_META_STORE);
+  const outboxStore = transaction.objectStore(SYNC_OUTBOX_STORE);
+  const cursorStore = transaction.objectStore(SYNC_CURSOR_STORE);
+  const markerKey = scopedItemKey(DB_KEYS.GUEST_TRANSFER_FLAG, ownerScope);
+  let didTransfer = false;
+
+  const markerRequest = stateStore.get(markerKey);
+  markerRequest.onsuccess = () => {
+    if (markerRequest.result === true) return;
+
+    const guestValues = new Map<string, unknown>();
+    const ownerValues = new Map<string, unknown>();
+    let pendingReads = legacyCollectionKeys.length * 2;
+
+    const finishTransfer = () => {
+      for (const key of legacyCollectionKeys) {
+        const collection = getSyncCollection(key);
+        if (!collection) continue;
+
+        const previousValue = ownerValues.get(key);
+        const nextValue = mergeOwnerCollection(
+          key,
+          guestValues.get(key),
+          previousValue,
+        );
+        stateStore.put(nextValue, scopedItemKey(key, ownerScope));
+
+        for (const change of diffSyncCollection(collection, previousValue, nextValue)) {
+          const keyForRecord = metadataKey(owner, change.table, change.id);
+          const metadataRequest = metadataStore.get(keyForRecord);
+          metadataRequest.onsuccess = () => {
+            const previousMetadata = metadataRequest.result as RecordMetadata | undefined;
+            const metadata: RecordMetadata = {
+              key: keyForRecord,
+              scope: owner,
+              table: change.table,
+              id: change.id,
+              serverRevision: previousMetadata?.serverRevision ?? '0',
+              localRevision: (previousMetadata?.localRevision ?? 0) + 1,
+              deleted: change.operation === 'delete',
+            };
+            metadataStore.put(metadata);
+            outboxStore.add({
+              operationId: createOperationId(),
+              scope: owner,
+              recordId: change.id,
+              change: {
+                table: change.table,
+                operation: change.operation,
+                baseRevision: metadata.serverRevision,
+                record: change.record,
+              },
+            } satisfies StoredSyncOperation);
+          };
+        }
+
+        stateStore.delete(scopedItemKey(key, GUEST_STORAGE_SCOPE));
+      }
+
+      stateStore.put(true, markerKey);
+      cursorStore.delete(guestOwner);
+
+      const guestOutboxRequest = outboxStore.index('scope').getAll(guestOwner);
+      guestOutboxRequest.onsuccess = () => {
+        for (const operation of guestOutboxRequest.result as StoredSyncOperation[]) {
+          if (typeof operation.sequence === 'number') {
+            outboxStore.delete(operation.sequence);
+          }
+        }
+      };
+
+      const guestMetadataRequest = metadataStore.openCursor();
+      guestMetadataRequest.onsuccess = () => {
+        const cursor = guestMetadataRequest.result;
+        if (!cursor) return;
+        if ((cursor.value as RecordMetadata).scope === guestOwner) cursor.delete();
+        cursor.continue();
+      };
+      didTransfer = true;
+    };
+
+    const recordRead = (target: Map<string, unknown>, key: string, request: IDBRequest) => {
+      request.onsuccess = () => {
+        target.set(key, request.result);
+        pendingReads -= 1;
+        if (pendingReads === 0) finishTransfer();
+      };
+    };
+
+    for (const key of legacyCollectionKeys) {
+      recordRead(
+        guestValues,
+        key,
+        stateStore.get(scopedItemKey(key, GUEST_STORAGE_SCOPE)),
+      );
+      recordRead(ownerValues, key, stateStore.get(scopedItemKey(key, ownerScope)));
+    }
+  };
+
+  await completed;
+  if (didTransfer) {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        for (const key of [
+          ...legacyCollectionKeys,
+          'workout_planner_routines_v1',
+          'workout_planner_catalog_v1',
+        ]) {
+          window.localStorage.removeItem(key);
+        }
+      }
+    } catch {
+      // The durable IndexedDB marker prevents legacy data from being imported again.
+    }
+  }
+  return didTransfer;
 }
 
 export interface ServerRevisionUpdate {

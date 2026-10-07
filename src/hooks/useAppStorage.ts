@@ -18,10 +18,13 @@ import {
   DB_KEYS,
   AppStorageData,
   GUEST_STORAGE_SCOPE,
+  transferGuestDataToOwnerOnce,
 } from '../services/db';
 
 export interface UseAppStorageReturn {
   isStorageLoaded: boolean;
+  isGuestTransferComplete: boolean;
+  storageError: string | null;
   routines: Routine[];
   setRoutines: React.Dispatch<React.SetStateAction<Routine[]>>;
   catalog: ExerciseDefinition[];
@@ -47,7 +50,10 @@ export interface UseAppStorageReturn {
  * Custom hook that manages the IndexedDB storage lifecycle, automatic
  * migration from legacy localStorage, and reactive persistence.
  */
-export function useAppStorage(ownerId?: string): UseAppStorageReturn {
+export function useAppStorage(
+  ownerId?: string,
+  transferGuestData = false,
+): UseAppStorageReturn {
   const storageScope = useMemo(
     () => (ownerId ? { ownerId } : GUEST_STORAGE_SCOPE),
     [ownerId],
@@ -60,6 +66,8 @@ export function useAppStorage(ownerId?: string): UseAppStorageReturn {
   const [workoutHistory, setWorkoutHistory] = useState<WorkoutHistoryLog[]>([]);
   const [exerciseDiary, setExerciseDiary] = useState<ExerciseDiary[]>([]);
   const [loadedScope, setLoadedScope] = useState<string | null>(null);
+  const [isGuestTransferComplete, setIsGuestTransferComplete] = useState(true);
+  const [storageError, setStorageError] = useState<string | null>(null);
   const isStorageLoaded = loadedScope === scopeIdentity;
 
   // 1. Initial hydration from IndexedDB (with transparent localStorage migration)
@@ -67,8 +75,28 @@ export function useAppStorage(ownerId?: string): UseAppStorageReturn {
     let isMounted = true;
 
     setLoadedScope(null);
-    initAndMigrateStorage(storageScope)
-      .then((data: AppStorageData) => {
+    setStorageError(null);
+    setIsGuestTransferComplete(!ownerId || !transferGuestData);
+    const loadStorage = async () => {
+      let transferError: string | null = null;
+      if (ownerId && transferGuestData) {
+        setIsGuestTransferComplete(false);
+        try {
+          await transferGuestDataToOwnerOnce(ownerId);
+          if (isMounted) setIsGuestTransferComplete(true);
+        } catch (error) {
+          transferError =
+            error instanceof Error ? error.message : 'Account data transfer failed.';
+          if (isMounted) setStorageError(transferError);
+        }
+      }
+
+      const data = await initAndMigrateStorage(storageScope);
+      return { data, transferError };
+    };
+
+    loadStorage()
+      .then(({ data, transferError }: { data: AppStorageData; transferError: string | null }) => {
         if (!isMounted) return;
         setRoutines(data.routines);
         setCatalog(data.catalog);
@@ -76,6 +104,7 @@ export function useAppStorage(ownerId?: string): UseAppStorageReturn {
         setRmLogs(data.rmLogs);
         setWorkoutHistory(data.workoutHistory);
         setExerciseDiary(data.exerciseDiary);
+        setStorageError(transferError);
         setLoadedScope(scopeIdentity);
       })
       .catch((err) => {
@@ -85,7 +114,7 @@ export function useAppStorage(ownerId?: string): UseAppStorageReturn {
     return () => {
       isMounted = false;
     };
-  }, [scopeIdentity, storageScope]);
+  }, [scopeIdentity, storageScope, ownerId, transferGuestData]);
 
   // 2. Reactive persistence effects to IndexedDB (only after initial hydration completes)
   useEffect(() => {
@@ -134,6 +163,8 @@ export function useAppStorage(ownerId?: string): UseAppStorageReturn {
 
   return {
     isStorageLoaded,
+    isGuestTransferComplete,
+    storageError,
     routines: isStorageLoaded ? routines : [],
     setRoutines,
     catalog: isStorageLoaded ? catalog : [],

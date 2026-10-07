@@ -27,6 +27,8 @@ import {
   syncRoutinesWithCatalog,
   downloadJsonFile,
   normalizeExerciseTitle,
+  isRoutineCountAllowed,
+  ROUTINE_LIMIT_ERROR_MESSAGE,
   ParsedBackupData
 } from '../utils/backup';
 
@@ -38,6 +40,7 @@ interface DataBackupModalProps {
   rmLogs: ExerciseRmLog[];
   workoutHistory: WorkoutHistoryLog[];
   exerciseDiary: ExerciseDiary[];
+  isPremiumActive: boolean;
   onImportComplete: (
     newCatalog: ExerciseDefinition[],
     newRoutines: Routine[],
@@ -70,6 +73,7 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
   rmLogs,
   workoutHistory,
   exerciseDiary,
+  isPremiumActive,
   onImportComplete,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('export');
@@ -289,6 +293,11 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
         const newWorkoutHistory = parsedData.workoutHistory;
         const newExerciseDiary = parsedData.exerciseDiary;
 
+        if (!isRoutineCountAllowed(newRoutines.length, isPremiumActive)) {
+          setParseError(ROUTINE_LIMIT_ERROR_MESSAGE);
+          return;
+        }
+
         onImportComplete(newCatalog, newRoutines, newRmLogs, newWorkoutHistory, newExerciseDiary, {
           exercisesAdded: newCatalog.length,
           exercisesReplaced: 0,
@@ -313,6 +322,11 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
         const rmMerge = mergeRmLogs(rmLogs, parsedData.rmLogs, replaceDuplicateExercises);
         const historyMerge = mergeWorkoutHistory(workoutHistory, parsedData.workoutHistory);
         const diaryMerge = mergeExerciseDiary(exerciseDiary, parsedData.exerciseDiary, replaceDuplicateExercises);
+
+        if (!isRoutineCountAllowed(routinesMerge.merged.length, isPremiumActive)) {
+          setParseError(ROUTINE_LIMIT_ERROR_MESSAGE);
+          return;
+        }
 
         onImportComplete(
           catalogMerge.merged,

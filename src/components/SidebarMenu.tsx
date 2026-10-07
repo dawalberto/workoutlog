@@ -14,6 +14,15 @@ interface SidebarMenuProps {
   historyCount: number;
   diaryCount?: number;
   onOpenBackup: () => void;
+  isAuthenticated: boolean;
+  userEmail: string | null;
+  isPremiumActive: boolean;
+  isEntitlementLoading: boolean;
+  isSigningIn: boolean;
+  premiumExpiry: string | null;
+  error: string | null;
+  onSignIn: () => Promise<void>;
+  onSignOut: () => Promise<void>;
 }
 
 export const SidebarMenu: React.FC<SidebarMenuProps> = ({
@@ -27,6 +36,15 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
   historyCount,
   diaryCount = 0,
   onOpenBackup,
+  isAuthenticated,
+  userEmail,
+  isPremiumActive,
+  isEntitlementLoading,
+  isSigningIn,
+  premiumExpiry,
+  error,
+  onSignIn,
+  onSignOut,
 }) => {
   if (!isOpen) return null;
 
@@ -51,7 +69,7 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
         className="w-80 max-w-[85vw] bg-white h-full shadow-2xl flex flex-col justify-between border-l border-zinc-200 animate-in slide-in-from-right duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        <div>
+        <div className="min-h-0 flex-1 overflow-y-auto">
           {/* Drawer Header */}
           <div className="p-4 sm:p-5 border-b border-zinc-200 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
@@ -307,6 +325,53 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
               <ChevronRight className="w-4 h-4 text-zinc-400" />
             </button>
           </div>
+
+          <section
+            aria-label="Account"
+            className="mx-3 mb-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-3"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-bold text-zinc-900">Account</h2>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                  isPremiumActive
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : 'bg-zinc-200 text-zinc-700'
+                }`}
+              >
+                {isPremiumActive ? 'Premium' : 'Free'}
+              </span>
+            </div>
+            <p className="mt-1 break-all text-[11px] text-zinc-600">
+              {userEmail ??
+                (isAuthenticated ? 'Signed in' : 'Signed out — your data stays on this device.')}
+            </p>
+            {isEntitlementLoading && isAuthenticated && (
+              <p className="mt-1 text-[11px] text-zinc-500">Checking account status…</p>
+            )}
+            {premiumExpiry && Number.isFinite(Date.parse(premiumExpiry)) && (
+              <p className="mt-1 text-[11px] text-zinc-500">
+                Premium expiry: {new Date(premiumExpiry).toLocaleDateString()}
+              </p>
+            )}
+            {error && (
+              <p role="alert" className="mt-2 text-[11px] text-red-700">
+                {error}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={() => void (isAuthenticated ? onSignOut() : onSignIn())}
+              disabled={isSigningIn}
+              className="mt-3 w-full rounded-xl bg-zinc-900 px-3 py-2 text-xs font-bold text-white transition hover:bg-zinc-700 disabled:cursor-wait disabled:opacity-60"
+            >
+              {isSigningIn
+                ? 'Signing in…'
+                : isAuthenticated
+                  ? 'Sign out'
+                  : 'Sign in with Google'}
+            </button>
+          </section>
         </div>
 
         {/* Drawer Footer */}

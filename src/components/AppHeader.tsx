@@ -12,6 +12,7 @@ export interface AppHeaderProps {
   onSelectTab: (tab: AppTab) => void;
   routinesCount: number;
   catalogCount: number;
+  isPremiumActive: boolean;
   onOpenMenu: () => void;
 }
 
@@ -23,6 +24,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onSelectTab,
   routinesCount,
   catalogCount,
+  isPremiumActive,
   onOpenMenu,
 }) => {
   return (
@@ -91,16 +93,27 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           </nav>
 
           {/* Right: Hamburger Menu Trigger */}
-          <button
-            id="btn-open-sidebar-menu"
-            type="button"
-            onClick={onOpenMenu}
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 flex items-center justify-center transition-colors active:scale-95 shadow-2xs shrink-0"
-            title="Menú principal"
-            aria-label="Menú principal"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <span
+              className={`hidden sm:inline-flex px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                isPremiumActive
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : 'bg-zinc-100 text-zinc-600'
+              }`}
+            >
+              {isPremiumActive ? 'Premium' : 'Free'}
+            </span>
+            <button
+              id="btn-open-sidebar-menu"
+              type="button"
+              onClick={onOpenMenu}
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 flex items-center justify-center transition-colors active:scale-95 shadow-2xs shrink-0"
+              title="Main menu"
+              aria-label="Main menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
     </header>
