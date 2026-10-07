@@ -305,7 +305,7 @@ export function sanitizeWorkoutHistory(items: unknown[]): WorkoutHistoryLog[] {
         .map((ex) => ({
           name: String(ex.name || 'Ejercicio'),
           completedSets: typeof ex.completedSets === 'number' ? ex.completedSets : 0,
-          totalSets: typeof ex.totalSets === 'number' ? ex.totalSets : 0,
+          totalSets: typeof ex.totalSets === 'number' ? ex.totalSets : null,
         }));
 
       const startTime = typeof item.startTime === 'number' ? item.startTime : Date.now();
@@ -321,8 +321,8 @@ export function sanitizeWorkoutHistory(items: unknown[]): WorkoutHistoryLog[] {
         completedAt,
         durationSeconds: typeof item.durationSeconds === 'number' ? item.durationSeconds : Math.max(0, Math.floor((endTime - startTime) / 1000)),
         completedSetsCount: typeof item.completedSetsCount === 'number' ? item.completedSetsCount : 0,
-        totalSetsCount: typeof item.totalSetsCount === 'number' ? item.totalSetsCount : 0,
-        completionPercentage: typeof item.completionPercentage === 'number' ? item.completionPercentage : 100,
+        totalSetsCount: typeof item.totalSetsCount === 'number' ? item.totalSetsCount : null,
+        completionPercentage: typeof item.completionPercentage === 'number' ? item.completionPercentage : null,
         exercisesSummary,
       };
     });
