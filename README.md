@@ -2,6 +2,18 @@
 
 WorkoutLog keeps routines, exercises, sessions, records, history, and diary entries in browser IndexedDB so the app remains usable offline.
 
+## Local development
+
+Use Bun 1.4.2, matching the CI toolchain:
+
+```sh
+bun install --frozen-lockfile
+bun run dev
+bun run test -- --reporter=dot
+bun run lint
+bun run build
+```
+
 ## Account configuration
 
 Copy `.env.example` to `.env.local` and configure the public Vite values:
@@ -9,6 +21,8 @@ Copy `.env.example` to `.env.local` and configure the public Vite values:
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
 - `VITE_BACKEND_API_ORIGIN`
+
+Premium cloud sync requires the configured Supabase public URL, publishable key, and backend API origin above. Free remains local-only and makes no cloud sync requests.
 
 The Supabase project must enable Google OAuth and configure its redirect URLs. Missing Supabase values, a disabled provider, or an unavailable account API leave local workflows available and show an account error instead of interrupting the app.
 
