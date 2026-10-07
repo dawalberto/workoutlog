@@ -35,6 +35,7 @@ import {
 } from './utils/backup';
 import { useAuth } from './hooks/useAuth';
 import { useAppStorage } from './hooks/useAppStorage';
+import { useSync } from './hooks/useSync';
 import { useRoutines } from './hooks/useRoutines';
 import { useWorkoutSession } from './hooks/useWorkoutSession';
 import { useRmTracker } from './hooks/useRmTracker';
@@ -52,6 +53,7 @@ export default function App() {
   // Storage Layer (IndexedDB with automatic legacy localStorage migration)
   const {
     isStorageLoaded,
+    isGuestTransferComplete,
     storageError,
     routines,
     setRoutines,
@@ -66,7 +68,22 @@ export default function App() {
     exerciseDiary,
     setExerciseDiary,
     applyImportData,
+    refreshStorage,
   } = useAppStorage(account.user?.id, account.isPremiumActive);
+
+  useSync({
+    ownerId: account.user?.id ?? null,
+    premiumActive: account.isPremiumActive,
+    isStorageLoaded,
+    isOwnerHydrationComplete: isGuestTransferComplete,
+    onSynced: refreshStorage,
+    routines,
+    catalog,
+    activeSessions,
+    rmLogs,
+    workoutHistory,
+    exerciseDiary,
+  });
 
   // Routines & Catalog Domain Hook
   const {

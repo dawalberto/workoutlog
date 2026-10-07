@@ -1,9 +1,14 @@
 import type {
   ActiveWorkoutSession,
+  DiaryFeeling,
+  Exercise,
   ExerciseDefinition,
   ExerciseDiary,
+  ExerciseDiaryEntry,
   ExerciseRmLog,
+  RmRecord,
   Routine,
+  WorkoutSet,
   WorkoutHistoryLog,
 } from '../types';
 
@@ -49,6 +54,14 @@ export interface SyncQueueEntry {
     operationId: string;
     changes: [SyncPushChange];
   };
+}
+
+export interface SyncRemoteChange {
+  table: SyncTable;
+  id: string;
+  revision: string;
+  deletedAt: string | null;
+  record: Record<string, unknown>;
 }
 
 interface SyncRecord {
@@ -447,4 +460,560 @@ function stableSerialize(value: unknown): string {
       .join(',')}}`;
   }
   return JSON.stringify(value) ?? String(value);
+}
+
+export function syncRecordId(
+  table: SyncTable,
+  record: Record<string, unknown>,
+): string {
+  const identity = identityColumns[table].map((column) => record[column]);
+  if (identity.some((value) => value === null || value === undefined)) {
+    throw new Error('Sync record identity is incomplete.');
+  }
+  return identity.length === 1 ? String(identity[0]) : JSON.stringify(identity);
+}
+
+export function applyRemoteSyncChange(
+  value: unknown,
+  change: SyncRemoteChange,
+): unknown {
+  const record = change.record;
+  const deleted = change.deletedAt !== null;
+
+  switch (change.table) {
+    case 'exercise_definitions': {
+      const items = arrayOf<ExerciseDefinition>(value);
+      if (deleted) return items.filter((item) => item.id !== change.id);
+      const current = items.find((item) => item.id === change.id);
+      const definition: ExerciseDefinition = {
+        id: change.id,
+        name: stringValue(record, 'name', current?.name ?? ''),
+        category: nullableString(record, 'category', current?.category),
+        imageUrl: nullableString(record, 'image_url', current?.imageUrl),
+        videoUrl: nullableString(record, 'video_url', current?.videoUrl),
+        notes: nullableString(record, 'notes', current?.notes),
+        defaultSetsCount: optionalNumber(record, 'default_sets', current?.defaultSetsCount),
+        defaultReps: optionalNumber(record, 'default_reps', current?.defaultReps),
+        defaultWeight: optionalNumber(record, 'default_weight', current?.defaultWeight),
+        defaultRestSeconds: optionalNumber(
+          record,
+          'default_rest_seconds',
+          current?.defaultRestSeconds,
+        ),
+        createdAt: nullableString(record, 'created_at', current?.createdAt),
+      };
+      return replaceById(items, change.id, definition);
+    }
+    case 'routines':
+      return applyRoutineChange(value, change);
+    case 'routine_exercises':
+      return applyRoutineExerciseChange(value, change);
+    case 'workout_sets':
+      return applyWorkoutSetChange(value, change);
+    case 'active_workout_sessions':
+      return applyActiveSessionChange(value, change);
+    case 'active_session_completed_sets':
+      return applyCompletedSetChange(value, change);
+    case 'rm_logs':
+      return applyRmLogChange(value, change);
+    case 'rm_records':
+      return applyRmRecordChange(value, change);
+    case 'workout_history':
+      return applyWorkoutHistoryChange(value, change);
+    case 'workout_history_exercises':
+      return applyWorkoutHistoryExerciseChange(value, change);
+    case 'exercise_diaries':
+      return applyExerciseDiaryChange(value, change);
+    case 'exercise_diary_entries':
+      return applyExerciseDiaryEntryChange(value, change);
+  }
+}
+
+function applyRoutineChange(value: unknown, change: SyncRemoteChange): Routine[] {
+  const routines = arrayOf<Routine>(value);
+  if (change.deletedAt !== null) {
+    return routines.filter((routine) => routine.id !== change.id);
+  }
+  const current = routines.find((routine) => routine.id === change.id);
+  const routine: Routine = {
+    id: change.id,
+    name: stringValue(change.record, 'name', current?.name ?? ''),
+    notes: nullableString(change.record, 'notes', current?.notes),
+    createdAt: stringValue(
+      change.record,
+      'created_at',
+      current?.createdAt ?? '1970-01-01T00:00:00.000Z',
+    ),
+    updatedAt: stringValue(
+      change.record,
+      'updated_at',
+      current?.updatedAt ?? '1970-01-01T00:00:00.000Z',
+    ),
+    exercises: current?.exercises ?? [],
+  };
+  return replaceById(routines, change.id, routine);
+}
+
+function applyRoutineExerciseChange(value: unknown, change: SyncRemoteChange): Routine[] {
+  const routines = arrayOf<Routine>(value);
+  const routineId = stringValue(change.record, 'routine_id', '');
+  if (change.deletedAt !== null && !routines.some((routine) => routine.id === routineId)) {
+    return routines;
+  }
+  const exerciseId = stringValue(change.record, 'id', change.id);
+  const position = integerValue(change.record, 'position', 0);
+  return updateRoutine(routines, routineId, (routine) => {
+    const current = routine.exercises.find((exercise) => exercise.id === exerciseId);
+    if (change.deletedAt !== null) {
+      return {
+        ...routine,
+        exercises: routine.exercises.filter((exercise) => exercise.id !== exerciseId),
+      };
+    }
+    const exercise: Exercise = {
+      id: exerciseId,
+      definitionId: nullableString(change.record, 'definition_id', current?.definitionId),
+      name: stringValue(change.record, 'name', current?.name ?? ''),
+      category: nullableString(change.record, 'category', current?.category),
+      notes: nullableString(change.record, 'notes', current?.notes),
+      imageUrl: nullableString(change.record, 'image_url', current?.imageUrl),
+      videoUrl: nullableString(change.record, 'video_url', current?.videoUrl),
+      sets: current?.sets ?? [],
+    };
+    return {
+      ...routine,
+      exercises: replaceAtPosition(routine.exercises, exerciseId, position, exercise),
+    };
+  });
+}
+
+function applyWorkoutSetChange(value: unknown, change: SyncRemoteChange): Routine[] {
+  const routines = arrayOf<Routine>(value);
+  const routineId = stringValue(change.record, 'routine_id', '');
+  const exerciseId = stringValue(change.record, 'routine_exercise_id', '');
+  if (
+    change.deletedAt !== null &&
+    !routines.some(
+      (routine) =>
+        routine.id === routineId &&
+        routine.exercises.some((exercise) => exercise.id === exerciseId),
+    )
+  ) {
+    return routines;
+  }
+  const setId = stringValue(change.record, 'id', change.id);
+  const position = integerValue(change.record, 'position', 0);
+  return updateRoutine(routines, routineId, (routine) => ({
+    ...routine,
+    exercises: routine.exercises.map((exercise) => {
+      if (exercise.id !== exerciseId) return exercise;
+      if (change.deletedAt !== null) {
+        return {
+          ...exercise,
+          sets: exercise.sets.filter((set) => set.id !== setId),
+        };
+      }
+      const current = exercise.sets.find((set) => set.id === setId);
+      const set: WorkoutSet = {
+        id: setId,
+        setNumber: position + 1,
+        reps: change.record.reps as number | string ?? current?.reps ?? 0,
+        weight: change.record.weight as number | string ?? current?.weight ?? 0,
+        restSeconds:
+          change.record.rest_seconds as number | string ?? current?.restSeconds ?? 0,
+      };
+      return {
+        ...exercise,
+        sets: replaceAtPosition(exercise.sets, setId, position, set),
+      };
+    }),
+  }));
+}
+
+function applyActiveSessionChange(
+  value: unknown,
+  change: SyncRemoteChange,
+): Record<string, ActiveWorkoutSession> {
+  const sessions = isRecord(value) ? (value as Record<string, ActiveWorkoutSession>) : {};
+  const routineId = stringValue(change.record, 'routine_id', change.id);
+  if (change.deletedAt !== null) {
+    const next = { ...sessions };
+    delete next[routineId];
+    return next;
+  }
+  const current = sessions[routineId];
+  return {
+    ...sessions,
+    [routineId]: {
+      routineId,
+      startTime: timestampValue(change.record.started_at, current?.startTime ?? 0),
+      completedSetIds: current?.completedSetIds ?? [],
+    },
+  };
+}
+
+function applyCompletedSetChange(
+  value: unknown,
+  change: SyncRemoteChange,
+): Record<string, ActiveWorkoutSession> {
+  const sessions = isRecord(value) ? (value as Record<string, ActiveWorkoutSession>) : {};
+  const routineId = stringValue(change.record, 'routine_id', '');
+  const setId = stringValue(change.record, 'set_id', '');
+  if (change.deletedAt !== null && !sessions[routineId]) return sessions;
+  const current = sessions[routineId] ?? {
+    routineId,
+    startTime: 0,
+    completedSetIds: [],
+  };
+  const completedSetIds =
+    change.deletedAt !== null
+      ? current.completedSetIds.filter((id) => id !== setId)
+      : current.completedSetIds.includes(setId)
+        ? current.completedSetIds
+        : [...current.completedSetIds, setId];
+  return { ...sessions, [routineId]: { ...current, completedSetIds } };
+}
+
+function applyRmLogChange(value: unknown, change: SyncRemoteChange): ExerciseRmLog[] {
+  const logs = arrayOf<ExerciseRmLog>(value);
+  if (change.deletedAt !== null) return logs.filter((log) => log.id !== change.id);
+  const current = logs.find((log) => log.id === change.id);
+  return replaceById(logs, change.id, {
+    id: change.id,
+    exerciseId: nullableString(change.record, 'definition_id', current?.exerciseId),
+    exerciseName: stringValue(
+      change.record,
+      'exercise_name',
+      current?.exerciseName ?? '',
+    ),
+    category: nullableString(change.record, 'category', current?.category),
+    createdAt: stringValue(
+      change.record,
+      'created_at',
+      current?.createdAt ?? '1970-01-01T00:00:00.000Z',
+    ),
+    updatedAt: stringValue(
+      change.record,
+      'updated_at',
+      current?.updatedAt ?? '1970-01-01T00:00:00.000Z',
+    ),
+    records: current?.records ?? [],
+  });
+}
+
+function applyRmRecordChange(value: unknown, change: SyncRemoteChange): ExerciseRmLog[] {
+  const logs = arrayOf<ExerciseRmLog>(value);
+  const logId = stringValue(change.record, 'log_id', '');
+  if (change.deletedAt !== null && !logs.some((log) => log.id === logId)) return logs;
+  const recordId = stringValue(change.record, 'id', change.id);
+  return updateRmLog(logs, logId, (log) => {
+    if (change.deletedAt !== null) {
+      return { ...log, records: log.records.filter((record) => record.id !== recordId) };
+    }
+    const current = log.records.find((record) => record.id === recordId);
+    const record: RmRecord = {
+      id: recordId,
+      weight: numberValue(change.record, 'weight', current?.weight ?? 0),
+      date: stringValue(change.record, 'recorded_on', current?.date ?? ''),
+      notes: nullableString(change.record, 'notes', current?.notes),
+    };
+    return { ...log, records: replaceById(log.records, recordId, record) };
+  });
+}
+
+function applyWorkoutHistoryChange(
+  value: unknown,
+  change: SyncRemoteChange,
+): WorkoutHistoryLog[] {
+  const logs = arrayOf<WorkoutHistoryLog>(value);
+  if (change.deletedAt !== null) return logs.filter((log) => log.id !== change.id);
+  const current = logs.find((log) => log.id === change.id);
+  const completedAt = stringValue(
+    change.record,
+    'completed_at',
+    current?.completedAt ?? '',
+  );
+  const startTime = timestampValue(
+    change.record.started_at,
+    current?.startTime ?? 0,
+  );
+  const endTime = timestampValue(completedAt, current?.endTime ?? startTime);
+  const completedSetsCount = integerValue(
+    change.record,
+    'sets_completed',
+    current?.completedSetsCount ?? 0,
+  );
+  const totalSetsCount = current?.totalSetsCount ?? 0;
+  return replaceById(logs, change.id, {
+    id: change.id,
+    routineId: stringValue(change.record, 'routine_id', current?.routineId ?? ''),
+    routineName: stringValue(
+      change.record,
+      'routine_name',
+      current?.routineName ?? '',
+    ),
+    startTime,
+    endTime,
+    durationSeconds: numberValue(
+      change.record,
+      'duration_seconds',
+      current?.durationSeconds ?? 0,
+    ),
+    completedSetsCount,
+    totalSetsCount,
+    completionPercentage:
+      current?.completionPercentage ?? 0,
+    exercisesSummary: current?.exercisesSummary ?? [],
+    completedAt,
+  });
+}
+
+function applyWorkoutHistoryExerciseChange(
+  value: unknown,
+  change: SyncRemoteChange,
+): WorkoutHistoryLog[] {
+  const logs = arrayOf<WorkoutHistoryLog>(value);
+  const historyId = stringValue(change.record, 'history_id', '');
+  if (change.deletedAt !== null && !logs.some((log) => log.id === historyId)) return logs;
+  const position = integerValue(change.record, 'position', 0);
+  return updateWorkoutHistory(logs, historyId, (history) => {
+    const exercisesSummary = [...history.exercisesSummary];
+    if (change.deletedAt !== null) {
+      exercisesSummary.splice(position, 1);
+    } else {
+      while (exercisesSummary.length <= position) {
+        exercisesSummary.push({ name: '', completedSets: 0, totalSets: 0 });
+      }
+      const current = exercisesSummary[position];
+      exercisesSummary[position] = {
+        name: stringValue(change.record, 'exercise_name', current?.name ?? ''),
+        completedSets: integerValue(
+          change.record,
+          'sets_completed',
+          current?.completedSets ?? 0,
+        ),
+        totalSets: current?.totalSets ?? 0,
+      };
+    }
+    const completedSetsCount = exercisesSummary.reduce(
+      (total, exercise) => total + exercise.completedSets,
+      0,
+    );
+    const totalSetsCount = Math.max(
+      history.totalSetsCount,
+      exercisesSummary.reduce((total, exercise) => total + exercise.totalSets, 0),
+    );
+    return {
+      ...history,
+      completedSetsCount,
+      totalSetsCount,
+      exercisesSummary,
+      completionPercentage:
+        totalSetsCount > 0 ? (completedSetsCount / totalSetsCount) * 100 : 0,
+    };
+  });
+}
+
+function applyExerciseDiaryChange(value: unknown, change: SyncRemoteChange): ExerciseDiary[] {
+  const diaries = arrayOf<ExerciseDiary>(value);
+  if (change.deletedAt !== null) return diaries.filter((diary) => diary.id !== change.id);
+  const current = diaries.find((diary) => diary.id === change.id);
+  return replaceById(diaries, change.id, {
+    id: change.id,
+    exerciseId: nullableString(change.record, 'definition_id', current?.exerciseId),
+    exerciseName: stringValue(
+      change.record,
+      'exercise_name',
+      current?.exerciseName ?? '',
+    ),
+    category: nullableString(change.record, 'category', current?.category),
+    createdAt: stringValue(
+      change.record,
+      'created_at',
+      current?.createdAt ?? '1970-01-01T00:00:00.000Z',
+    ),
+    updatedAt: stringValue(
+      change.record,
+      'updated_at',
+      current?.updatedAt ?? '1970-01-01T00:00:00.000Z',
+    ),
+    entries: current?.entries ?? [],
+  });
+}
+
+function applyExerciseDiaryEntryChange(
+  value: unknown,
+  change: SyncRemoteChange,
+): ExerciseDiary[] {
+  const diaries = arrayOf<ExerciseDiary>(value);
+  const diaryId = stringValue(change.record, 'diary_id', '');
+  if (change.deletedAt !== null && !diaries.some((diary) => diary.id === diaryId)) {
+    return diaries;
+  }
+  const entryId = stringValue(change.record, 'id', change.id);
+  return updateExerciseDiary(diaries, diaryId, (diary) => {
+    if (change.deletedAt !== null) {
+      return { ...diary, entries: diary.entries.filter((entry) => entry.id !== entryId) };
+    }
+    const current = diary.entries.find((entry) => entry.id === entryId);
+    const entry: ExerciseDiaryEntry = {
+      id: entryId,
+      date: stringValue(change.record, 'recorded_on', current?.date ?? ''),
+      note: stringValue(change.record, 'note', current?.note ?? ''),
+      feeling: diaryFeeling(change.record.feeling, current?.feeling),
+      createdAt: nullableString(change.record, 'created_at', current?.createdAt),
+      updatedAt: nullableString(change.record, 'updated_at', current?.updatedAt),
+    };
+    return { ...diary, entries: replaceById(diary.entries, entryId, entry) };
+  });
+}
+
+function updateRoutine(
+  value: unknown,
+  routineId: string,
+  update: (routine: Routine) => Routine,
+): Routine[] {
+  const routines = arrayOf<Routine>(value);
+  const current = routines.find((routine) => routine.id === routineId) ?? {
+    id: routineId,
+    name: '',
+    notes: '',
+    createdAt: '1970-01-01T00:00:00.000Z',
+    updatedAt: '1970-01-01T00:00:00.000Z',
+    exercises: [],
+  };
+  return replaceById(routines, routineId, update(current));
+}
+
+function updateRmLog(
+  value: unknown,
+  logId: string,
+  update: (log: ExerciseRmLog) => ExerciseRmLog,
+): ExerciseRmLog[] {
+  const logs = arrayOf<ExerciseRmLog>(value);
+  const current = logs.find((log) => log.id === logId) ?? {
+    id: logId,
+    exerciseName: '',
+    records: [],
+    createdAt: '1970-01-01T00:00:00.000Z',
+    updatedAt: '1970-01-01T00:00:00.000Z',
+  };
+  return replaceById(logs, logId, update(current));
+}
+
+function updateWorkoutHistory(
+  value: unknown,
+  historyId: string,
+  update: (history: WorkoutHistoryLog) => WorkoutHistoryLog,
+): WorkoutHistoryLog[] {
+  const logs = arrayOf<WorkoutHistoryLog>(value);
+  const current = logs.find((log) => log.id === historyId) ?? {
+    id: historyId,
+    routineId: '',
+    routineName: '',
+    startTime: 0,
+    endTime: 0,
+    durationSeconds: 0,
+    completedSetsCount: 0,
+    totalSetsCount: 0,
+    completionPercentage: 0,
+    exercisesSummary: [],
+    completedAt: '',
+  };
+  return replaceById(logs, historyId, update(current));
+}
+
+function updateExerciseDiary(
+  value: unknown,
+  diaryId: string,
+  update: (diary: ExerciseDiary) => ExerciseDiary,
+): ExerciseDiary[] {
+  const diaries = arrayOf<ExerciseDiary>(value);
+  const current = diaries.find((diary) => diary.id === diaryId) ?? {
+    id: diaryId,
+    exerciseName: '',
+    entries: [],
+    createdAt: '1970-01-01T00:00:00.000Z',
+    updatedAt: '1970-01-01T00:00:00.000Z',
+  };
+  return replaceById(diaries, diaryId, update(current));
+}
+
+function replaceById<T extends { id: string }>(items: T[], id: string, item: T): T[] {
+  const index = items.findIndex((current) => current.id === id);
+  if (index < 0) return [...items, item];
+  const next = [...items];
+  next[index] = item;
+  return next;
+}
+
+function replaceAtPosition<T extends { id: string }>(
+  items: T[],
+  id: string,
+  position: number,
+  item: T,
+): T[] {
+  const next = items.filter((current) => current.id !== id);
+  next.splice(Math.min(Math.max(position, 0), next.length), 0, item);
+  return next;
+}
+
+function stringValue(
+  record: Record<string, unknown>,
+  key: string,
+  fallback: string,
+): string {
+  return typeof record[key] === 'string' ? (record[key] as string) : fallback;
+}
+
+function nullableString(
+  record: Record<string, unknown>,
+  key: string,
+  fallback: string | undefined,
+): string | undefined {
+  const value = record[key];
+  if (typeof value === 'string') return value;
+  return value === null ? undefined : fallback;
+}
+
+function diaryFeeling(
+  value: unknown,
+  fallback: DiaryFeeling | undefined,
+): DiaryFeeling | undefined {
+  if (value === 'good' || value === 'neutral' || value === 'bad') return value;
+  return value === null ? undefined : fallback;
+}
+
+function optionalNumber(
+  record: Record<string, unknown>,
+  key: string,
+  fallback: number | undefined,
+): number | undefined {
+  return typeof record[key] === 'number' && Number.isFinite(record[key])
+    ? (record[key] as number)
+    : fallback;
+}
+
+function numberValue(
+  record: Record<string, unknown>,
+  key: string,
+  fallback: number,
+): number {
+  const value = record[key];
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function integerValue(
+  record: Record<string, unknown>,
+  key: string,
+  fallback: number,
+): number {
+  const value = record[key];
+  return typeof value === 'number' && Number.isInteger(value) ? value : fallback;
+}
+
+function timestampValue(value: unknown, fallback: number): number {
+  if (typeof value !== 'string') return fallback;
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? timestamp : fallback;
 }

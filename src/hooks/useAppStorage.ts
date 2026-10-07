@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Routine,
   ExerciseDefinition,
@@ -19,6 +19,7 @@ import {
   AppStorageData,
   GUEST_STORAGE_SCOPE,
   transferGuestDataToOwnerOnce,
+  loadScopedAppStorageData,
 } from '../services/db';
 
 export interface UseAppStorageReturn {
@@ -44,6 +45,7 @@ export interface UseAppStorageReturn {
     newHistory: WorkoutHistoryLog[],
     newDiary: ExerciseDiary[]
   ) => void;
+  refreshStorage: () => Promise<void>;
 }
 
 /**
@@ -69,6 +71,10 @@ export function useAppStorage(
   const [isGuestTransferComplete, setIsGuestTransferComplete] = useState(true);
   const [storageError, setStorageError] = useState<string | null>(null);
   const isStorageLoaded = loadedScope === scopeIdentity;
+  const scopeIdentityRef = useRef(scopeIdentity);
+  const loadedScopeRef = useRef(loadedScope);
+  scopeIdentityRef.current = scopeIdentity;
+  loadedScopeRef.current = loadedScope;
 
   // 1. Initial hydration from IndexedDB (with transparent localStorage migration)
   useEffect(() => {
@@ -161,6 +167,24 @@ export function useAppStorage(
     setExerciseDiary(newDiary);
   };
 
+  const refreshStorage = useCallback(async () => {
+    if (!isStorageLoaded) return;
+    const requestedScope = scopeIdentity;
+    const data = await loadScopedAppStorageData(storageScope);
+    if (
+      scopeIdentityRef.current !== requestedScope ||
+      loadedScopeRef.current !== requestedScope
+    ) {
+      return;
+    }
+    setRoutines(data.routines);
+    setCatalog(data.catalog);
+    setActiveSessions(data.activeSessions);
+    setRmLogs(data.rmLogs);
+    setWorkoutHistory(data.workoutHistory);
+    setExerciseDiary(data.exerciseDiary);
+  }, [isStorageLoaded, scopeIdentity, storageScope]);
+
   return {
     isStorageLoaded,
     isGuestTransferComplete,
@@ -178,5 +202,6 @@ export function useAppStorage(
     exerciseDiary: isStorageLoaded ? exerciseDiary : [],
     setExerciseDiary,
     applyImportData,
+    refreshStorage,
   };
 }

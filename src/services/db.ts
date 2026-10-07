@@ -13,8 +13,10 @@ import type {
 } from '../types';
 import { getStarterData } from '../data/initialData';
 import {
+  applyRemoteSyncChange,
   diffSyncCollection,
   getSyncCollection,
+  type SyncRemoteChange,
   type SyncQueueEntry,
   type SyncPushChange,
   type SyncTable,
@@ -375,6 +377,17 @@ export function setStoredItem<T>(
   return setScopedStoredItem(key, value, scope);
 }
 
+export async function flushScopedStorageWrites(
+  scope: StorageScope = GUEST_STORAGE_SCOPE,
+): Promise<void> {
+  const owner = scopeKey(scope);
+  await Promise.all(
+    syncCollectionKeys.map(
+      (key) => writeQueues.get(`${owner}:${key}`) ?? Promise.resolve(),
+    ),
+  );
+}
+
 async function removeUntrackedItem(key: string, scope: StorageScope): Promise<void> {
   const db = await getDatabase();
   const transaction = db.transaction(STORE_NAME, 'readwrite');
@@ -679,6 +692,224 @@ export async function getRecordMetadata(
   return metadata as RecordMetadata | undefined;
 }
 
+const syncCollectionKeys = [
+  DB_KEYS.ROUTINES,
+  DB_KEYS.CATALOG,
+  DB_KEYS.ACTIVE_SESSIONS,
+  DB_KEYS.RM_LOGS,
+  DB_KEYS.WORKOUT_HISTORY,
+  DB_KEYS.EXERCISE_DIARY,
+] as const;
+
+const syncCollectionForTable: Record<SyncTable, (typeof syncCollectionKeys)[number]> = {
+  exercise_definitions: DB_KEYS.CATALOG,
+  routines: DB_KEYS.ROUTINES,
+  routine_exercises: DB_KEYS.ROUTINES,
+  workout_sets: DB_KEYS.ROUTINES,
+  active_workout_sessions: DB_KEYS.ACTIVE_SESSIONS,
+  active_session_completed_sets: DB_KEYS.ACTIVE_SESSIONS,
+  rm_logs: DB_KEYS.RM_LOGS,
+  rm_records: DB_KEYS.RM_LOGS,
+  workout_history: DB_KEYS.WORKOUT_HISTORY,
+  workout_history_exercises: DB_KEYS.WORKOUT_HISTORY,
+  exercise_diaries: DB_KEYS.EXERCISE_DIARY,
+  exercise_diary_entries: DB_KEYS.EXERCISE_DIARY,
+};
+
+function compareServerRevisions(left: string, right: string): number {
+  const leftRevision = BigInt(left);
+  const rightRevision = BigInt(right);
+  return leftRevision === rightRevision ? 0 : leftRevision < rightRevision ? -1 : 1;
+}
+
+/**
+ * Applies one server pull page and its cursor in a single owner-scoped
+ * transaction, without writing remote changes back into the local outbox.
+ */
+export async function applyRemoteSyncChanges(
+  changes: SyncRemoteChange[],
+  cursor: string,
+  scope: StorageScope = GUEST_STORAGE_SCOPE,
+): Promise<void> {
+  assertServerRevision(cursor);
+  for (const change of changes) assertServerRevision(change.revision);
+  await flushScopedStorageWrites(scope);
+
+  const db = await getDatabase();
+  const transaction = db.transaction(
+    [STORE_NAME, RECORD_META_STORE, SYNC_OUTBOX_STORE, SYNC_CURSOR_STORE],
+    'readwrite',
+  );
+  const completed = transactionComplete(transaction);
+  const stateStore = transaction.objectStore(STORE_NAME);
+  const metadataStore = transaction.objectStore(RECORD_META_STORE);
+  const outboxStore = transaction.objectStore(SYNC_OUTBOX_STORE);
+  const cursorStore = transaction.objectStore(SYNC_CURSOR_STORE);
+  const owner = scopeKey(scope);
+  const values = new Map<string, unknown>();
+  const metadata = new Map<string, RecordMetadata | undefined>();
+  let operations: StoredSyncOperation[] = [];
+  let storedCursor: SyncCursor | undefined;
+  let pendingReads = syncCollectionKeys.length + 2 + changes.length;
+
+  const finishRead = () => {
+    pendingReads -= 1;
+    if (pendingReads !== 0) return;
+
+    const changedCollections = new Set<string>();
+    const removedOperations = new Set<number>();
+    const latestMetadata = new Map(metadata);
+
+    for (const change of changes) {
+      const keyForRecord = metadataKey(owner, change.table, change.id);
+      const previous = latestMetadata.get(keyForRecord);
+      if (
+        previous &&
+        compareServerRevisions(change.revision, previous.serverRevision) <= 0
+      ) {
+        continue;
+      }
+
+      const matchingOperations = operations.filter(
+        (operation) =>
+          operation.scope === owner &&
+          operation.recordId === change.id &&
+          operation.change.table === change.table &&
+          !removedOperations.has(operation.sequence ?? -1),
+      );
+      const serverAcceptedAfterLocalBase = matchingOperations.some(
+        (operation) =>
+          compareServerRevisions(
+            change.revision,
+            operation.change.baseRevision,
+          ) > 0,
+      );
+
+      if (serverAcceptedAfterLocalBase) {
+        for (const operation of matchingOperations) {
+          if (operation.sequence !== undefined) {
+            removedOperations.add(operation.sequence);
+          }
+        }
+      } else if (matchingOperations.length > 0) {
+        latestMetadata.set(keyForRecord, {
+          key: keyForRecord,
+          scope: owner,
+          table: change.table,
+          id: change.id,
+          serverRevision: change.revision,
+          localRevision: previous?.localRevision ?? 0,
+          deleted: change.deletedAt !== null,
+        });
+        continue;
+      }
+
+      const collectionKey = syncCollectionForTable[change.table];
+      const current = values.get(collectionKey);
+      const next = applyRemoteSyncChange(
+        current ?? defaultCollectionValue(collectionKey),
+        change,
+      );
+      values.set(collectionKey, next);
+      changedCollections.add(collectionKey);
+      latestMetadata.set(keyForRecord, {
+        key: keyForRecord,
+        scope: owner,
+        table: change.table,
+        id: change.id,
+        serverRevision: change.revision,
+        localRevision: previous?.localRevision ?? 0,
+        deleted: change.deletedAt !== null,
+      });
+    }
+
+    for (const key of changedCollections) {
+      stateStore.put(values.get(key), scopedItemKey(key, scope));
+    }
+    for (const [key, next] of latestMetadata) {
+      const previous = metadata.get(key);
+      if (next !== previous) metadataStore.put(next);
+    }
+    for (const sequence of removedOperations) outboxStore.delete(sequence);
+
+    const previousCursor = storedCursor?.cursor ?? '0';
+    const nextCursor =
+      compareServerRevisions(cursor, previousCursor) > 0 ? cursor : previousCursor;
+    cursorStore.put({ scope: owner, cursor: nextCursor } satisfies SyncCursor);
+  };
+
+  for (const key of syncCollectionKeys) {
+    const request = stateStore.get(scopedItemKey(key, scope));
+    request.onsuccess = () => {
+      values.set(key, request.result ?? defaultCollectionValue(key));
+      finishRead();
+    };
+  }
+
+  const operationsRequest = outboxStore.index('scope').getAll(owner);
+  operationsRequest.onsuccess = () => {
+    operations = operationsRequest.result as StoredSyncOperation[];
+    finishRead();
+  };
+
+  const cursorRequest = cursorStore.get(owner);
+  cursorRequest.onsuccess = () => {
+    storedCursor = cursorRequest.result as SyncCursor | undefined;
+    finishRead();
+  };
+
+  for (const change of changes) {
+    const keyForRecord = metadataKey(owner, change.table, change.id);
+    const request = metadataStore.get(keyForRecord);
+    request.onsuccess = () => {
+      metadata.set(keyForRecord, request.result as RecordMetadata | undefined);
+      finishRead();
+    };
+  }
+
+  await completed;
+}
+
+function defaultCollectionValue(key: (typeof syncCollectionKeys)[number]): unknown {
+  return key === DB_KEYS.ACTIVE_SESSIONS ? {} : [];
+}
+
+export async function loadScopedAppStorageData(
+  scope: StorageScope = GUEST_STORAGE_SCOPE,
+): Promise<AppStorageData> {
+  const values = await Promise.all(
+    syncCollectionKeys.map(async (key) => [
+      key,
+      await readScopedStoredValue(key, scope),
+    ] as const),
+  );
+  const stored = new Map(values);
+  const routines = stored.get(DB_KEYS.ROUTINES);
+  const catalog = stored.get(DB_KEYS.CATALOG);
+  const activeSessions = stored.get(DB_KEYS.ACTIVE_SESSIONS);
+  const rmLogs = stored.get(DB_KEYS.RM_LOGS);
+  const workoutHistory = stored.get(DB_KEYS.WORKOUT_HISTORY);
+  const exerciseDiary = stored.get(DB_KEYS.EXERCISE_DIARY);
+
+  return {
+    routines: Array.isArray(routines) ? (routines as Routine[]) : [],
+    catalog: Array.isArray(catalog) ? (catalog as ExerciseDefinition[]) : [],
+    activeSessions:
+      typeof activeSessions === 'object' &&
+      activeSessions !== null &&
+      !Array.isArray(activeSessions)
+        ? (activeSessions as Record<string, ActiveWorkoutSession>)
+        : {},
+    rmLogs: Array.isArray(rmLogs) ? (rmLogs as ExerciseRmLog[]) : [],
+    workoutHistory: Array.isArray(workoutHistory)
+      ? (workoutHistory as WorkoutHistoryLog[])
+      : [],
+    exerciseDiary: Array.isArray(exerciseDiary)
+      ? (exerciseDiary as ExerciseDiary[])
+      : [],
+  };
+}
+
 export async function saveServerRevision(
   table: SyncTable,
   id: string,
@@ -766,8 +997,11 @@ export async function acknowledgeSyncOperation(
           operation.recordId === result.id &&
           operation.change.table === result.table
         ) {
-          operation.change.baseRevision = result.revision;
-          outbox.put(operation);
+          if (operation.change.baseRevision !== result.revision) {
+            operation.change.baseRevision = result.revision;
+            operation.operationId = createOperationId();
+            outbox.put(operation);
+          }
         }
       }
       outbox.delete(acknowledgedSequence);
