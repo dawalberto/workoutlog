@@ -9,6 +9,26 @@ Use Bun 1.4.2, matching the CI toolchain:
 ```sh
 bun install --frozen-lockfile
 bun run dev
+```
+
+Vite's development server uses port `5173` and opens at
+`http://localhost:5173/workoutlog/`. The production base path remains `/workoutlog/`; the
+production build and GitHub Pages deployment workflow are unchanged.
+
+For browser-to-backend development, start `pnpm dev` in the `back-workoutlog` repository; the API
+stays on port `3000`. Copy this repository's `.env.example` to `.env.local`, keep
+`VITE_BACKEND_API_ORIGIN=http://127.0.0.1:3000`, and use only local Supabase URL and publishable-key
+values if account features are needed. Follow the backend
+repository's `docs/operations/development.md` for the complete two-terminal setup.
+
+The backend allows only the explicit local frontend origins `http://localhost:5173` and
+`http://127.0.0.1:5173`, with `GET`/`POST` and `Authorization`/`Content-Type` headers; credentials
+are not enabled. Production must set the backend's `CORS_ALLOWED_ORIGINS` explicitly. Its
+`BILLING_FRONTEND_ORIGIN` remains a fixed server setting, not a request-controlled redirect.
+
+Run frontend checks with:
+
+```sh
 bun run test -- --reporter=dot
 bun run lint
 bun run build
