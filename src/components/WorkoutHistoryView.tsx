@@ -10,7 +10,7 @@ import {
   Layers,
   X
 } from 'lucide-react';
-import { WorkoutHistoryLog, ExerciseRmLog, ExerciseDiary } from '../types';
+import { WorkoutHistoryLog, ExerciseRmLog, ExerciseDiary, Routine, ExerciseDefinition } from '../types';
 import { WorkoutDetailModal } from './WorkoutDetailModal';
 import { formatDetailedDuration } from '../utils/timeCalculations';
 
@@ -18,6 +18,8 @@ interface WorkoutHistoryViewProps {
   historyLogs: WorkoutHistoryLog[];
   rmLogs?: ExerciseRmLog[];
   exerciseDiary?: ExerciseDiary[];
+  routines?: Routine[];
+  catalog?: ExerciseDefinition[];
   onOpenDiary?: (exerciseName: string, exerciseId?: string) => void;
   onDeleteLog: (logId: string) => void;
   onGoToRoutines: () => void;
@@ -44,6 +46,8 @@ export const WorkoutHistoryView: React.FC<WorkoutHistoryViewProps> = ({
   historyLogs,
   rmLogs = [],
   exerciseDiary = [],
+  routines = [],
+  catalog = [],
   onOpenDiary,
   onDeleteLog,
   onGoToRoutines,
@@ -532,6 +536,8 @@ export const WorkoutHistoryView: React.FC<WorkoutHistoryViewProps> = ({
         log={selectedLog}
         rmLogs={rmLogs}
         exerciseDiary={exerciseDiary}
+        routines={routines}
+        catalog={catalog}
         onOpenDiary={onOpenDiary}
         onClose={() => setSelectedLog(null)}
         onDelete={onDeleteLog}

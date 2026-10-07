@@ -95,6 +95,15 @@ export interface ActiveWorkoutSession {
   completedSetIds: string[]; // array of set IDs marked complete
 }
 
+export interface ActiveRestTimer {
+  routineId: string;
+  initialSeconds: number;
+  targetEndTime: number; // Date.now() + initialSeconds * 1000
+  exerciseName?: string;
+  setNumber?: number;
+  key?: number;
+}
+
 export interface WorkoutCompletionSummary {
   routineId: string;
   routineName: string;
@@ -108,6 +117,8 @@ export interface WorkoutCompletionSummary {
     name: string;
     completedSets: number;
     totalSets: number;
+    summaryText?: string;
+    sets?: WorkoutSet[];
   }[];
 }
 

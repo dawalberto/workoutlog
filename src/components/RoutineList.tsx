@@ -185,7 +185,16 @@ export const RoutineList: React.FC<RoutineListProps> = ({
                   <div
                     key={routine.id}
                     id={`routine-card-${routine.id}`}
-                    className={`bg-[#1C1C1E] rounded-2xl border p-5 sm:p-6 transition-all duration-200 flex flex-col justify-between shadow-lg relative overflow-hidden group hover:border-[#00FF87]/40 hover:shadow-[0_0_30px_rgba(0,255,135,0.08)] ${
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => onSelectRoutine(routine.id, 'execute')}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onSelectRoutine(routine.id, 'execute');
+                      }
+                    }}
+                    className={`bg-[#1C1C1E] rounded-2xl border p-5 sm:p-6 transition-all duration-200 flex flex-col justify-between shadow-lg relative overflow-hidden group cursor-pointer hover:border-[#00FF87]/50 hover:shadow-[0_0_30px_rgba(0,255,135,0.12)] active:scale-[0.99] select-none ${
                       isSessionActive
                         ? 'border-[#00FF87] ring-1 ring-[#00FF87]/40 bg-[#1C1C1E]/95 shadow-[0_0_30px_rgba(0,255,135,0.15)]'
                         : 'border-white/[0.08]'
@@ -274,13 +283,19 @@ export const RoutineList: React.FC<RoutineListProps> = ({
                       )}
                     </div>
 
-                    {/* Card Actions (Ergonomic Touch Targets >= 48px) */}
-                    <div className="mt-6 pt-4 border-t border-white/[0.08] flex items-center justify-between gap-3">
+                    {/* Card Actions (Actions have stopPropagation so clicking them does not trigger execute) */}
+                    <div 
+                      className="mt-6 pt-4 border-t border-white/[0.08] flex items-center justify-between gap-3"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <div className="flex items-center gap-2">
                         <button
                           id={`btn-edit-routine-${routine.id}`}
                           type="button"
-                          onClick={() => onSelectRoutine(routine.id, 'edit')}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectRoutine(routine.id, 'edit');
+                          }}
                           className="min-h-[44px] px-3.5 inline-flex items-center gap-1.5 text-xs font-bold rounded-xl text-zinc-200 bg-zinc-800/80 hover:bg-zinc-700/80 hover:text-white border border-white/5 transition-all active:scale-[0.97]"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
@@ -290,7 +305,10 @@ export const RoutineList: React.FC<RoutineListProps> = ({
                         <button
                           id={`btn-duplicate-routine-${routine.id}`}
                           type="button"
-                          onClick={() => onDuplicateRoutine(routine.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDuplicateRoutine(routine.id);
+                          }}
                           className="min-h-[44px] min-w-[44px] p-2.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-xl transition-all active:scale-[0.97] flex items-center justify-center"
                           title="Duplicar rutina"
                           aria-label="Duplicar rutina"
@@ -301,7 +319,10 @@ export const RoutineList: React.FC<RoutineListProps> = ({
                         <button
                           id={`btn-delete-routine-${routine.id}`}
                           type="button"
-                          onClick={() => onDeleteRoutine(routine.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteRoutine(routine.id);
+                          }}
                           className="min-h-[44px] min-w-[44px] p-2.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all active:scale-[0.97] flex items-center justify-center"
                           title="Eliminar rutina"
                           aria-label="Eliminar rutina"
@@ -310,20 +331,20 @@ export const RoutineList: React.FC<RoutineListProps> = ({
                         </button>
                       </div>
 
-                      {/* Primary Workout Action Button */}
-                      <button
-                        id={`btn-start-workout-${routine.id}`}
-                        type="button"
-                        onClick={() => onSelectRoutine(routine.id, 'execute')}
-                        className={`min-h-[48px] px-5 inline-flex items-center gap-2 text-sm font-black rounded-2xl transition-all active:scale-[0.97] ${
-                          isSessionActive
-                            ? 'bg-[#00FF87] hover:bg-[#00e57a] text-black shadow-[0_0_20px_rgba(0,255,135,0.4)]'
-                            : 'bg-[#00FF87] hover:bg-[#00e57a] text-black shadow-[0_0_15px_rgba(0,255,135,0.3)]'
-                        }`}
-                      >
-                        <Play className="w-4 h-4 fill-current" />
-                        <span>{isSessionActive ? 'Continuar' : 'Entrenar'}</span>
-                      </button>
+                      {/* Right Indicator: Clean status / chevron */}
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-[#A1A1AA] group-hover:text-[#00FF87] transition-colors">
+                        {isSessionActive ? (
+                          <span className="inline-flex items-center gap-1.5 text-xs font-black text-[#00FF87]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#00FF87] animate-ping" />
+                            Continuar
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs font-bold text-zinc-400 group-hover:text-[#00FF87] transition-colors">
+                            <span>Ver rutina</span>
+                            <Play className="w-3 h-3 fill-current ml-0.5" />
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );

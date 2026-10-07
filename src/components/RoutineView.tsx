@@ -27,16 +27,17 @@ import {
   ActiveWorkoutSession, 
   WorkoutCompletionSummary, 
   ExerciseRmLog, 
-  ExerciseDiary 
+  ExerciseDiary,
+  ActiveRestTimer
 } from '../types';
 import { 
   getRoutineTotalSeconds, 
   formatSecondsToTime, 
-  formatWorkoutDuration 
+  formatWorkoutDuration,
+  formatExerciseSummary
 } from '../utils/timeCalculations';
 import { useWorkoutTimer } from '../hooks/useWorkoutTimer';
 import { ExerciseCard } from './ExerciseCard';
-import { RestTimerBar } from './RestTimerBar';
 import { AddExerciseModal } from './AddExerciseModal';
 import { ReorderExercisesModal } from './ReorderExercisesModal';
 import { WorkoutFinishConfirmModal } from './WorkoutFinishConfirmModal';
@@ -58,6 +59,8 @@ interface RoutineViewProps {
   onFinishSession: (summary: WorkoutCompletionSummary) => void;
   onCheckRmWeight?: (exerciseName: string, newWeight: number, exerciseId?: string) => void;
   onOpenDiary?: (exerciseName: string, exerciseId?: string) => void;
+  onStartRestTimer?: (timer: ActiveRestTimer) => void;
+  onCloseRestTimer?: () => void;
 }
 
 export const RoutineView: React.FC<RoutineViewProps> = ({
@@ -76,15 +79,11 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
   onFinishSession,
   onCheckRmWeight,
   onOpenDiary,
+  onStartRestTimer,
+  onCloseRestTimer,
 }) => {
   const [subMode, setSubMode] = useState<RoutineSubMode>(initialMode);
   const [isFinishConfirmOpen, setIsFinishConfirmOpen] = useState(false);
-  const [activeTimer, setActiveTimer] = useState<{
-    initialSeconds: number;
-    exerciseName?: string;
-    setNumber?: number;
-    key?: number;
-  } | null>(null);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showReorderModal, setShowReorderModal] = useState(false);
@@ -155,8 +154,10 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
 
     if (!wasCompleted) {
       if (restSeconds > 0) {
-        setActiveTimer({
+        onStartRestTimer?.({
+          routineId: routine.id,
           initialSeconds: restSeconds,
+          targetEndTime: Date.now() + restSeconds * 1000,
           exerciseName,
           setNumber,
           key: Date.now(),
@@ -184,7 +185,7 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
 
   const handleResetSession = () => {
     if (window.confirm('¿Reiniciar el progreso de la sesión actual?')) {
-      setActiveTimer(null);
+      onCloseRestTimer?.();
       onResetSession(routine.id);
     }
   };
@@ -208,10 +209,12 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
         name: ex.name,
         completedSets: ex.sets.filter((s) => completedSetIds.has(s.id)).length,
         totalSets: ex.sets.length,
+        summaryText: formatExerciseSummary(ex.sets),
+        sets: ex.sets,
       })),
     };
 
-    setActiveTimer(null);
+    onCloseRestTimer?.();
     onFinishSession(summary);
   };
 
@@ -619,17 +622,6 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
         onConfirm={handleConfirmFinish}
         onCancel={() => setIsFinishConfirmOpen(false)}
       />
-
-      {/* Floating Rest Timer Bar when active */}
-      {activeTimer && (
-        <RestTimerBar
-          key={activeTimer.key || `${activeTimer.exerciseName}-${activeTimer.setNumber}`}
-          initialSeconds={activeTimer.initialSeconds}
-          exerciseName={activeTimer.exerciseName}
-          setNumber={activeTimer.setNumber}
-          onClose={() => setActiveTimer(null)}
-        />
-      )}
     </div>
   );
 };

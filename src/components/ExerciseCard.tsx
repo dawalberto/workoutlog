@@ -19,7 +19,12 @@ import {
   Image as ImageIcon 
 } from 'lucide-react';
 import { Exercise, WorkoutSet, ExerciseRmLog, ExerciseDiary } from '../types';
-import { getExerciseTotalSeconds, getSetTotalSeconds, formatSecondsToTime } from '../utils/timeCalculations';
+import { 
+  getExerciseTotalSeconds, 
+  getSetTotalSeconds, 
+  formatSecondsToTime,
+  formatExerciseSummary 
+} from '../utils/timeCalculations';
 import { VideoPreview } from './VideoPreview';
 import { RmBadge } from './RmBadge';
 import { DiaryButton } from './DiaryButton';
@@ -40,42 +45,6 @@ interface ExerciseCardProps {
   onMoveToPosition?: (targetIndex: number) => void;
   onCheckRmWeight?: (exerciseName: string, newWeight: number, exerciseId?: string) => void;
   onOpenDiary?: (exerciseName: string, exerciseId?: string) => void;
-}
-
-function formatExerciseSummary(sets: WorkoutSet[]): string {
-  if (!sets || sets.length === 0) return '';
-
-  const setsCount = `${sets.length}s`;
-
-  // Reps
-  const repsArr = sets.map((s) => Number(s.reps) || 0);
-  const minReps = Math.min(...repsArr);
-  const maxReps = Math.max(...repsArr);
-  const repsStr = minReps === maxReps ? `${minReps}r` : `${minReps}-${maxReps}r`;
-
-  // Weight
-  const weightArr = sets.map((s) => Number(s.weight) || 0);
-  const minWeight = Math.min(...weightArr);
-  const maxWeight = Math.max(...weightArr);
-  const weightStr = minWeight === maxWeight ? `${minWeight}kg` : `${minWeight}-${maxWeight}kg`;
-
-  // Rest
-  const restArr = sets.map((s) => Number(s.restSeconds) || 0);
-  const minRest = Math.min(...restArr);
-  const maxRest = Math.max(...restArr);
-
-  const formatRestTime = (sec: number) => {
-    if (sec <= 0) return '0:00';
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${m}:${s < 10 ? '0' : ''}${s}`;
-  };
-
-  const restStr = minRest === maxRest
-    ? `${formatRestTime(minRest)}⏱️`
-    : `${formatRestTime(minRest)}-${formatRestTime(maxRest)}⏱️`;
-
-  return `${setsCount} x ${repsStr} · ${weightStr} - ${restStr}`;
 }
 
 export const ExerciseCard: React.FC<ExerciseCardProps> = ({

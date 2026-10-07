@@ -104,3 +104,42 @@ export function formatDetailedDuration(seconds: number): string {
   return parts.join(' ');
 }
 
+/**
+ * Formats sets into summary badge text: e.g. "4s x 5r · 100kg - 3:00⏱️"
+ */
+export function formatExerciseSummary(sets?: WorkoutSet[]): string {
+  if (!sets || sets.length === 0) return '';
+
+  const setsCount = `${sets.length}s`;
+
+  // Reps
+  const repsArr = sets.map((s) => Number(s.reps) || 0);
+  const minReps = Math.min(...repsArr);
+  const maxReps = Math.max(...repsArr);
+  const repsStr = minReps === maxReps ? `${minReps}r` : `${minReps}-${maxReps}r`;
+
+  // Weight
+  const weightArr = sets.map((s) => Number(s.weight) || 0);
+  const minWeight = Math.min(...weightArr);
+  const maxWeight = Math.max(...weightArr);
+  const weightStr = minWeight === maxWeight ? `${minWeight}kg` : `${minWeight}-${maxWeight}kg`;
+
+  // Rest
+  const restArr = sets.map((s) => Number(s.restSeconds) || 0);
+  const minRest = Math.min(...restArr);
+  const maxRest = Math.max(...restArr);
+
+  const formatRestTime = (sec: number) => {
+    if (sec <= 0) return '0:00';
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
+  const restStr = minRest === maxRest
+    ? `${formatRestTime(minRest)}⏱️`
+    : `${formatRestTime(minRest)}-${formatRestTime(maxRest)}⏱️`;
+
+  return `${setsCount} x ${repsStr} · ${weightStr} - ${restStr}`;
+}
+

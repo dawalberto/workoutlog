@@ -11,9 +11,11 @@ import {
   ExerciseRmLog,
   WorkoutHistoryLog,
   ExerciseDiary,
+  ActiveRestTimer,
 } from './types';
 import { RoutineList } from './components/RoutineList';
 import { RoutineView } from './components/RoutineView';
+import { RestTimerBar } from './components/RestTimerBar';
 import { ExerciseCatalog } from './components/ExerciseCatalog';
 import { RmLogsView } from './components/RmLogsView';
 import { WorkoutHistoryView } from './components/WorkoutHistoryView';
@@ -101,6 +103,44 @@ export default function App() {
     setWorkoutHistory,
     activeRoutineId,
   });
+
+  // Global Rest Timer state across routine training, diary, history & all tabs
+  const [activeRestTimer, setActiveRestTimer] = useState<ActiveRestTimer | null>(() => {
+    try {
+      const saved = sessionStorage.getItem('current_rest_timer');
+      if (saved) {
+        const parsed: ActiveRestTimer = JSON.parse(saved);
+        if (parsed.targetEndTime && parsed.targetEndTime > Date.now() - 60000) {
+          return parsed;
+        }
+      }
+    } catch {}
+    return null;
+  });
+
+  const handleStartRestTimer = (timer: ActiveRestTimer) => {
+    setActiveRestTimer(timer);
+    try {
+      sessionStorage.setItem('current_rest_timer', JSON.stringify(timer));
+    } catch {}
+  };
+
+  const handleCloseRestTimer = () => {
+    setActiveRestTimer(null);
+    try {
+      sessionStorage.removeItem('current_rest_timer');
+    } catch {}
+  };
+
+  const handleResetSession = (routineId: string) => {
+    resetSession(routineId);
+    handleCloseRestTimer();
+  };
+
+  const handleFinishSession = (summary: Parameters<typeof finishSession>[0]) => {
+    finishSession(summary);
+    handleCloseRestTimer();
+  };
 
   // RM (Repetition Maximum) Tracker Hook
   const {
@@ -193,10 +233,12 @@ export default function App() {
           onBack={closeRoutine}
           onStartSession={startSession}
           onToggleSetComplete={toggleSetComplete}
-          onResetSession={resetSession}
-          onFinishSession={finishSession}
+          onResetSession={handleResetSession}
+          onFinishSession={handleFinishSession}
           onCheckRmWeight={checkRmWeight}
           onOpenDiary={openExerciseDiary}
+          onStartRestTimer={handleStartRestTimer}
+          onCloseRestTimer={handleCloseRestTimer}
         />
       ) : (
         <div className="flex flex-col min-h-screen pb-16">
@@ -226,7 +268,7 @@ export default function App() {
                 onCreateRoutine={createRoutine}
                 onSelectRoutine={selectRoutine}
                 onDuplicateRoutine={duplicateRoutine}
-                onDeleteRoutine={(id) => deleteRoutine(id, resetSession)}
+                onDeleteRoutine={(id) => deleteRoutine(id, handleResetSession)}
               />
             ) : activeTab === AppTab.EXERCISES ? (
               <ExerciseCatalog
@@ -250,6 +292,8 @@ export default function App() {
               <WorkoutHistoryView
                 historyLogs={workoutHistory}
                 rmLogs={rmLogs}
+                routines={routines}
+                catalog={catalog}
                 onDeleteLog={deleteHistoryLog}
                 onGoToRoutines={() => setActiveTab(AppTab.ROUTINES)}
               />
@@ -310,6 +354,10 @@ export default function App() {
       <WorkoutSummaryModal
         summary={workoutSummary}
         rmLogs={rmLogs}
+        exerciseDiary={exerciseDiary}
+        routines={routines}
+        catalog={catalog}
+        onOpenDiary={openExerciseDiary}
         onClose={dismissWorkoutSummary}
       />
 
@@ -324,6 +372,24 @@ export default function App() {
         exerciseDiary={exerciseDiary}
         onImportComplete={handleImportComplete}
       />
+
+      {/* Floating Rest Timer Bar across entire app (RoutineView, Diary, History, etc.) */}
+      {activeRestTimer && (
+        <RestTimerBar
+          key={activeRestTimer.key || activeRestTimer.routineId}
+          initialSeconds={activeRestTimer.initialSeconds}
+          targetEndTime={activeRestTimer.targetEndTime}
+          exerciseName={activeRestTimer.exerciseName}
+          setNumber={activeRestTimer.setNumber}
+          isInsideActiveRoutine={Boolean(activeRoutineId)}
+          onReturnToRoutine={
+            !activeRoutineId
+              ? () => selectRoutine(activeRestTimer.routineId, 'execute')
+              : undefined
+          }
+          onClose={handleCloseRestTimer}
+        />
+      )}
 
       {/* Floating Feedback Toast Notification */}
       <ToastNotification

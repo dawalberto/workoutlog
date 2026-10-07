@@ -1,7 +1,7 @@
 import React from 'react';
 import { Trophy, Clock, CheckCircle2, Dumbbell, X, Trash2, Calendar } from 'lucide-react';
-import { WorkoutHistoryLog, ExerciseRmLog, ExerciseDiary } from '../types';
-import { formatDetailedDuration } from '../utils/timeCalculations';
+import { WorkoutHistoryLog, ExerciseRmLog, ExerciseDiary, Routine, ExerciseDefinition } from '../types';
+import { formatDetailedDuration, formatExerciseSummary } from '../utils/timeCalculations';
 import { RmBadge } from './RmBadge';
 import { DiaryButton } from './DiaryButton';
 
@@ -9,6 +9,8 @@ interface WorkoutDetailModalProps {
   log: WorkoutHistoryLog | null;
   rmLogs?: ExerciseRmLog[];
   exerciseDiary?: ExerciseDiary[];
+  routines?: Routine[];
+  catalog?: ExerciseDefinition[];
   onOpenDiary?: (exerciseName: string, exerciseId?: string) => void;
   onClose: () => void;
   onDelete: (logId: string) => void;
@@ -18,6 +20,8 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
   log,
   rmLogs = [],
   exerciseDiary = [],
+  routines = [],
+  catalog = [],
   onOpenDiary,
   onClose,
   onDelete,
@@ -39,6 +43,37 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
     hour: '2-digit',
     minute: '2-digit',
   });
+
+  const getExerciseBadge = (name: string, totalSets: number, summaryText?: string, sets?: any[]) => {
+    if (summaryText) return summaryText;
+    if (sets && sets.length > 0) return formatExerciseSummary(sets);
+
+    if (routines && routines.length > 0) {
+      const r = routines.find(
+        (item) => item.id === log.routineId || item.name.toLowerCase() === log.routineName.toLowerCase()
+      );
+      if (r) {
+        const match = r.exercises.find((e) => e.name.toLowerCase() === name.toLowerCase());
+        if (match && match.sets?.length > 0) {
+          return formatExerciseSummary(match.sets);
+        }
+      }
+    }
+
+    if (catalog && catalog.length > 0) {
+      const cat = catalog.find((c) => c.name.toLowerCase() === name.toLowerCase());
+      if (cat) {
+        const reps = cat.defaultReps || 10;
+        const weight = cat.defaultWeight || 0;
+        const restSec = cat.defaultRestSeconds || 90;
+        const m = Math.floor(restSec / 60);
+        const s = restSec % 60;
+        return `${totalSets || 3}s x ${reps}r · ${weight}kg - ${m}:${s < 10 ? '0' : ''}${s}⏱️`;
+      }
+    }
+
+    return null;
+  };
 
   return (
     <div
@@ -115,31 +150,48 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
           <div className="space-y-2">
             {log.exercisesSummary.map((ex, idx) => {
               const isExComplete = ex.completedSets === ex.totalSets && ex.totalSets > 0;
+              const badgeText = getExerciseBadge(ex.name, ex.totalSets, ex.summaryText, ex.sets);
+
               return (
                 <div
                   key={idx}
-                  className="flex items-center justify-between p-3 rounded-xl bg-black/25 border border-white/[0.06] text-xs gap-2"
+                  className="p-3 sm:p-3.5 rounded-2xl bg-black/30 border border-white/[0.08] text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 transition-colors hover:border-white/20"
                 >
-                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                    <span className="font-semibold text-zinc-200 truncate">
-                      {ex.name}
-                    </span>
-                    <RmBadge rmLogs={rmLogs} exerciseName={ex.name} size="xs" />
-                    {onOpenDiary && (
-                      <DiaryButton
-                        exerciseName={ex.name}
-                        diaries={exerciseDiary}
-                        onOpenDiary={(name) => {
-                          onClose();
-                          onOpenDiary(name);
-                        }}
-                        variant="compact"
-                      />
+                  <div className="flex flex-col gap-1 min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                      <span className="font-bold text-sm text-zinc-100 truncate">
+                        {ex.name}
+                      </span>
+                      <RmBadge rmLogs={rmLogs} exerciseName={ex.name} size="xs" />
+                      {onOpenDiary && (
+                        <DiaryButton
+                          exerciseName={ex.name}
+                          diaries={exerciseDiary}
+                          onOpenDiary={(name) => {
+                            onClose();
+                            onOpenDiary(name);
+                          }}
+                          variant="compact"
+                        />
+                      )}
+                    </div>
+
+                    {/* Exercise sets, reps, weight & rest badge (same as Routine cards) */}
+                    {badgeText && (
+                      <div className="mt-0.5">
+                        <span
+                          className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-mono font-semibold bg-zinc-900 text-zinc-300 border border-white/10 whitespace-nowrap shadow-inner"
+                          title="Resumen: series x repeticiones · peso - descanso"
+                        >
+                          {badgeText}
+                        </span>
+                      </div>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
+
+                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                     <span
-                      className={`font-bold px-2 py-0.5 rounded-md ${
+                      className={`font-bold px-2.5 py-1 rounded-xl text-xs ${
                         isExComplete
                           ? 'bg-[#00FF87]/15 text-[#00FF87] border border-[#00FF87]/30'
                           : ex.completedSets > 0
@@ -149,7 +201,7 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
                     >
                       {ex.completedSets} / {ex.totalSets} series
                     </span>
-                    {isExComplete && <CheckCircle2 className="w-3.5 h-3.5 text-[#00FF87] shrink-0" />}
+                    {isExComplete && <CheckCircle2 className="w-4 h-4 text-[#00FF87] shrink-0" />}
                   </div>
                 </div>
               );

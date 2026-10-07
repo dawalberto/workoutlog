@@ -60,7 +60,7 @@ export function initRestAudioContext(): void {
  */
 export function playTimerFinishBeep(): void {
   const now = Date.now();
-  if (now - lastBeepTime < 2000) return;
+  if (now - lastBeepTime < 1500) return;
   lastBeepTime = now;
 
   configureAmbientSession();
@@ -68,35 +68,44 @@ export function playTimerFinishBeep(): void {
   if (!ctx) return;
 
   try {
+    const playNotes = () => {
+      try {
+        const audioNow = ctx.currentTime;
+        const notes = [
+          { freq: 659.25, time: 0, dur: 0.14 },     // E5
+          { freq: 880.00, time: 0.15, dur: 0.14 },  // A5
+          { freq: 1318.51, time: 0.31, dur: 0.45 }, // E6
+        ];
+
+        notes.forEach(({ freq, time, dur }) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, audioNow + time);
+
+          gain.gain.setValueAtTime(0.01, audioNow + time);
+          gain.gain.exponentialRampToValueAtTime(0.5, audioNow + time + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioNow + time + dur);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(audioNow + time);
+          osc.stop(audioNow + time + dur);
+        });
+      } catch (innerErr) {
+        console.warn('[Audio] Error synthesizing chime:', innerErr);
+      }
+    };
+
     if (ctx.state === 'suspended') {
-      ctx.resume().catch(() => {});
+      ctx.resume().then(playNotes).catch(() => playNotes());
+    } else {
+      playNotes();
     }
-
-    const audioNow = ctx.currentTime;
-    const notes = [
-      { freq: 587.33, time: 0, dur: 0.14 },    // D5
-      { freq: 783.99, time: 0.15, dur: 0.14 },  // G5
-      { freq: 1046.5, time: 0.3, dur: 0.55 },   // C6
-    ];
-
-    notes.forEach(({ freq, time, dur }) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, audioNow + time);
-
-      gain.gain.setValueAtTime(0.4, audioNow + time);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioNow + time + dur);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc.start(audioNow + time);
-      osc.stop(audioNow + time + dur);
-    });
-  } catch {
-    // Ignore audio playback errors
+  } catch (err) {
+    console.warn('[Audio] playTimerFinishBeep error:', err);
   }
 }
 
@@ -106,10 +115,10 @@ export function playTimerFinishBeep(): void {
 export function triggerTimerVibration(): void {
   if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
     try {
-      // Short friendly buzz pattern
-      navigator.vibrate([300, 100, 300]);
+      // 3 short crisp pulses: 250ms buzz, 100ms pause, 250ms buzz, 100ms pause, 400ms buzz
+      navigator.vibrate([250, 100, 250, 100, 400]);
     } catch {
-      // Ignore
+      // Ignore unsupported or user preference
     }
   }
 }
