@@ -6,6 +6,8 @@
 import React from 'react';
 import { Flame, Dumbbell, Menu } from 'lucide-react';
 import { AppTab } from '../types';
+import type { UseSyncResult } from '../hooks/useSync';
+import { SyncStatus } from './SyncStatus';
 
 export interface AppHeaderProps {
   activeTab: AppTab;
@@ -13,6 +15,9 @@ export interface AppHeaderProps {
   routinesCount: number;
   catalogCount: number;
   isPremiumActive: boolean;
+  isAuthenticated: boolean;
+  isEntitlementLoading: boolean;
+  sync: UseSyncResult;
   onOpenMenu: () => void;
 }
 
@@ -25,6 +30,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   routinesCount,
   catalogCount,
   isPremiumActive,
+  isAuthenticated,
+  isEntitlementLoading,
+  sync,
   onOpenMenu,
 }) => {
   return (
@@ -114,6 +122,19 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               <Menu className="w-5 h-5" />
             </button>
           </div>
+        </div>
+      </div>
+      <div className="border-t border-zinc-100">
+        <div className="max-w-4xl mx-auto px-3 sm:px-6">
+          <SyncStatus
+            isAuthenticated={isAuthenticated}
+            isPremiumActive={isPremiumActive}
+            isEntitlementLoading={isEntitlementLoading}
+            isOnline={sync.isOnline}
+            pendingChanges={sync.pendingChanges}
+            status={sync.status}
+            onRetry={sync.retry}
+          />
         </div>
       </div>
     </header>

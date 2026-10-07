@@ -71,7 +71,7 @@ export default function App() {
     refreshStorage,
   } = useAppStorage(account.user?.id, account.isPremiumActive);
 
-  useSync({
+  const sync = useSync({
     ownerId: account.user?.id ?? null,
     premiumActive: account.isPremiumActive,
     isStorageLoaded,
@@ -236,6 +236,9 @@ export default function App() {
             routinesCount={routines.length}
             catalogCount={catalog.length}
             isPremiumActive={account.isPremiumActive}
+            isAuthenticated={Boolean(account.user)}
+            isEntitlementLoading={account.isEntitlementLoading}
+            sync={sync}
             onOpenMenu={() => setIsMenuOpen(true)}
           />
 

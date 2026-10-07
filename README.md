@@ -22,4 +22,6 @@ Premium sync uses the authenticated user's bearer token with `GET /api/v1/sync/p
 
 The outbox replays each queued operation with its stable operation ID and base revision; push requests stay within the API's 100-change limit and acknowledgements advance local record revisions. A stale-revision `409` triggers an authoritative pull, lets newer server-accepted rows win for the conflicting record, and keeps unrelated queued edits. Network and service retries are bounded, and failures do not clear local records or pending work. Signed-out, offline, Free, and expired-Premium states make no sync requests.
 
-The current history sync schema stores completed-set counts but not total-set counts. Existing local snapshots retain their totals; a history item first pulled from the server cannot reconstruct them and keeps the unavailable total as zero.
+The app shows local-only, pending, syncing, synced, offline-safe, and recoverable error states. A retry is available after an online sync failure; local workout editing remains available in every state.
+
+Workout history sync preserves nullable total-set and completion metrics. Legacy records whose values are unknown remain `NULL` rather than being presented as zero.

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   ActiveWorkoutSession,
   ExerciseDefinition,
@@ -12,6 +12,10 @@ import {
   syncCloudData,
   type SyncCoordinator,
 } from '../services/cloud-sync';
+import {
+  flushScopedStorageWrites,
+  getPendingSyncOperations,
+} from '../services/db';
 import { getSupabaseBrowserClient } from '../services/supabase';
 
 export interface UseSyncOptions {
@@ -34,6 +38,13 @@ export interface UseSyncStatus {
   lastSyncedAt: number | null;
 }
 
+export interface UseSyncResult {
+  status: UseSyncStatus;
+  isOnline: boolean;
+  pendingChanges: number;
+  retry: () => void;
+}
+
 const initialStatus: UseSyncStatus = {
   state: 'idle',
   error: null,
@@ -48,12 +59,38 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Cloud sync failed.';
 }
 
-export function useSync(options: UseSyncOptions): UseSyncStatus {
+export function useSync(options: UseSyncOptions): UseSyncResult {
   const optionsRef = useRef(options);
   optionsRef.current = options;
   const coordinatorRef = useRef<SyncCoordinator | null>(null);
   const mountedRef = useRef(true);
   const [status, setStatus] = useState<UseSyncStatus>(initialStatus);
+  const [isOnline, setIsOnline] = useState(isBrowserOnline);
+  const [pendingState, setPendingState] = useState<{
+    ownerId: string | null;
+    count: number;
+  }>({ ownerId: options.ownerId, count: 0 });
+  const pendingChanges =
+    pendingState.ownerId === options.ownerId ? pendingState.count : 0;
+
+  const refreshPendingChanges = useCallback(async (ownerId: string) => {
+    try {
+      const scope = { ownerId };
+      await flushScopedStorageWrites(scope);
+      const operations = await getPendingSyncOperations(scope);
+      if (mountedRef.current && optionsRef.current.ownerId === ownerId) {
+        setPendingState({
+          ownerId,
+          count: operations.reduce(
+            (total, operation) => total + operation.request.changes.length,
+            0,
+          ),
+        });
+      }
+    } catch {
+      return;
+    }
+  }, []);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -65,6 +102,44 @@ export function useSync(options: UseSyncOptions): UseSyncStatus {
   }, []);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleOnline = () => setIsOnline(isBrowserOnline());
+    const handleOffline = () => {
+      setIsOnline(false);
+      setStatus((previous) => ({
+        ...previous,
+        state: 'idle',
+        error: null,
+      }));
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!options.ownerId || !options.isStorageLoaded) {
+      setPendingState({ ownerId: options.ownerId, count: 0 });
+      return;
+    }
+    void refreshPendingChanges(options.ownerId);
+  }, [
+    options.ownerId,
+    options.isStorageLoaded,
+    options.routines,
+    options.catalog,
+    options.activeSessions,
+    options.rmLogs,
+    options.workoutHistory,
+    options.exerciseDiary,
+    refreshPendingChanges,
+  ]);
+
+  useEffect(() => {
     const current = optionsRef.current;
     if (
       !current.ownerId ||
@@ -72,6 +147,8 @@ export function useSync(options: UseSyncOptions): UseSyncStatus {
       !current.isStorageLoaded ||
       !current.isOwnerHydrationComplete
     ) {
+      coordinatorRef.current?.dispose();
+      coordinatorRef.current = null;
       setStatus((previous) => ({
         ...previous,
         state: 'idle',
@@ -144,6 +221,7 @@ export function useSync(options: UseSyncOptions): UseSyncStatus {
             return;
           }
           if (result.pulled > 0) await latest.onSynced();
+          await refreshPendingChanges(syncOwnerId);
           if (mountedRef.current) {
             setStatus({
               state: 'synced',
@@ -164,6 +242,7 @@ export function useSync(options: UseSyncOptions): UseSyncStatus {
               setStatus(initialStatus);
               return;
             }
+            await refreshPendingChanges(current.ownerId);
             setStatus((previous) => ({
               ...previous,
               state: 'error',
@@ -192,7 +271,12 @@ export function useSync(options: UseSyncOptions): UseSyncStatus {
     options.rmLogs,
     options.workoutHistory,
     options.exerciseDiary,
+    refreshPendingChanges,
   ]);
 
-  return status;
+  const retry = () => {
+    if (isOnline) void coordinatorRef.current?.run();
+  };
+
+  return { status, isOnline, pendingChanges, retry };
 }
