@@ -1,4 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState } from 'react';
 import { 
   Check, 
   Trash2, 
@@ -9,12 +14,17 @@ import {
   ChevronUp, 
   CheckCircle2, 
   Dumbbell, 
-  Video,
-  FileText,
-  Image as ImageIcon
+  Video, 
+  FileText, 
+  Image as ImageIcon 
 } from 'lucide-react';
 import { Exercise, WorkoutSet, ExerciseRmLog, ExerciseDiary } from '../types';
-import { getExerciseTotalSeconds, getSetTotalSeconds, formatSecondsToTime } from '../utils/timeCalculations';
+import { 
+  getExerciseTotalSeconds, 
+  getSetTotalSeconds, 
+  formatSecondsToTime,
+  formatExerciseSummary 
+} from '../utils/timeCalculations';
 import { VideoPreview } from './VideoPreview';
 import { RmBadge } from './RmBadge';
 import { DiaryButton } from './DiaryButton';
@@ -35,42 +45,6 @@ interface ExerciseCardProps {
   onMoveToPosition?: (targetIndex: number) => void;
   onCheckRmWeight?: (exerciseName: string, newWeight: number, exerciseId?: string) => void;
   onOpenDiary?: (exerciseName: string, exerciseId?: string) => void;
-}
-
-function formatExerciseSummary(sets: WorkoutSet[]): string {
-  if (!sets || sets.length === 0) return '';
-
-  const setsCount = `${sets.length}s`;
-
-  // Reps
-  const repsArr = sets.map((s) => Number(s.reps) || 0);
-  const minReps = Math.min(...repsArr);
-  const maxReps = Math.max(...repsArr);
-  const repsStr = minReps === maxReps ? `${minReps}r` : `${minReps}-${maxReps}r`;
-
-  // Weight
-  const weightArr = sets.map((s) => Number(s.weight) || 0);
-  const minWeight = Math.min(...weightArr);
-  const maxWeight = Math.max(...weightArr);
-  const weightStr = minWeight === maxWeight ? `${minWeight}kg` : `${minWeight}-${maxWeight}kg`;
-
-  // Rest (e.g. 90s -> 1:30⏱️)
-  const restArr = sets.map((s) => Number(s.restSeconds) || 0);
-  const minRest = Math.min(...restArr);
-  const maxRest = Math.max(...restArr);
-
-  const formatRestTime = (sec: number) => {
-    if (sec <= 0) return '0:00';
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${m}:${s < 10 ? '0' : ''}${s}`;
-  };
-
-  const restStr = minRest === maxRest
-    ? `${formatRestTime(minRest)}⏱️`
-    : `${formatRestTime(minRest)}-${formatRestTime(maxRest)}⏱️`;
-
-  return `${setsCount} x ${repsStr} · ${weightStr} - ${restStr}`;
 }
 
 export const ExerciseCard: React.FC<ExerciseCardProps> = ({
@@ -119,98 +93,59 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
 
   const handleDuplicateSet = (indexToDuplicate: number) => {
     const setToDuplicate = exercise.sets[indexToDuplicate];
+    if (!setToDuplicate) return;
+
     const newSet: WorkoutSet = {
-      id: 'set-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+      ...setToDuplicate,
+      id: 'set-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
       setNumber: exercise.sets.length + 1,
-      reps: setToDuplicate.reps,
-      weight: setToDuplicate.weight,
-      restSeconds: setToDuplicate.restSeconds,
     };
 
-    const newSets = [
+    const nextSets = [
       ...exercise.sets.slice(0, indexToDuplicate + 1),
       newSet,
       ...exercise.sets.slice(indexToDuplicate + 1),
     ].map((s, idx) => ({ ...s, setNumber: idx + 1 }));
 
-    onUpdateExercise({ ...exercise, sets: newSets });
+    onUpdateExercise({ ...exercise, sets: nextSets });
   };
 
   const handleAddSet = () => {
     const lastSet = exercise.sets[exercise.sets.length - 1];
     const newSet: WorkoutSet = {
-      id: 'set-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+      id: 'set-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
       setNumber: exercise.sets.length + 1,
       reps: lastSet ? lastSet.reps : 10,
-      weight: lastSet ? lastSet.weight : 20,
-      restSeconds: lastSet ? lastSet.restSeconds : 90,
+      weight: lastSet ? lastSet.weight : 0,
+      restSeconds: lastSet ? lastSet.restSeconds : 60,
     };
-
-    const newSets = [...exercise.sets, newSet].map((s, idx) => ({ ...s, setNumber: idx + 1 }));
-    onUpdateExercise({ ...exercise, sets: newSets });
+    onUpdateExercise({ ...exercise, sets: [...exercise.sets, newSet] });
   };
 
   const handleDeleteSet = (setId: string) => {
-    if (exercise.sets.length <= 1) {
-      // Keep at least one set
-      return;
-    }
-    const filtered = exercise.sets.filter((s) => s.id !== setId);
-    const renumbered = filtered.map((s, idx) => ({ ...s, setNumber: idx + 1 }));
-    onUpdateExercise({ ...exercise, sets: renumbered });
+    if (exercise.sets.length <= 1) return;
+    const filtered = exercise.sets
+      .filter((s) => s.id !== setId)
+      .map((s, idx) => ({ ...s, setNumber: idx + 1 }));
+    onUpdateExercise({ ...exercise, sets: filtered });
   };
 
   return (
     <div
       id={`exercise-card-${exercise.id}`}
-      className={`rounded-2xl border transition-all duration-200 shadow-sm overflow-hidden ${
+      className={`rounded-2xl border transition-all duration-200 overflow-hidden shadow-lg ${
         isAllCompleted
-          ? 'bg-emerald-50/50 border-emerald-400/80 shadow-emerald-500/10'
-          : 'bg-white border-zinc-200 hover:border-zinc-300'
+          ? 'bg-[#1C1C1E] border-[#00FF87]/40 shadow-[0_0_25px_rgba(0,255,135,0.08)]'
+          : 'bg-[#1C1C1E] border-white/[0.08] hover:border-white/20'
       }`}
     >
-      {/* Exercise Header */}
-      <div className={`p-3.5 sm:p-5 border-b transition-colors ${
-        isAllCompleted
-          ? 'bg-emerald-100/40 border-emerald-200'
-          : 'bg-zinc-50/80 border-zinc-100'
-      }`}>
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-          {/* Main Title & Notes Section */}
-          <div className="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1">
-            {/* Position Select in Edit Mode / Static Badge in Execution */}
-            {!isExecutionMode && totalExercises > 1 ? (
-              <div className="relative group shrink-0 mt-0.5">
-                <select
-                  id={`select-exercise-position-${exercise.id}`}
-                  aria-label={`Cambiar posición de ${exercise.name || 'ejercicio'}`}
-                  value={exerciseIndex}
-                  onChange={(e) => onMoveToPosition && onMoveToPosition(Number(e.target.value))}
-                  className="cursor-pointer appearance-none w-7 h-7 rounded-lg text-xs font-black flex items-center justify-center text-center bg-zinc-900 text-white hover:bg-emerald-600 border border-transparent focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-colors"
-                  title={`Posición actual: ${exerciseIndex + 1} de ${totalExercises}. Clic para cambiar de lugar rápidamente.`}
-                >
-                  {Array.from({ length: totalExercises }, (_, idx) => (
-                    <option key={idx} value={idx} className="bg-white text-zinc-900 font-semibold py-1">
-                      #{idx + 1}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : (
-              <span
-                className={`w-7 h-7 rounded-lg text-xs font-bold flex items-center justify-center shrink-0 mt-0.5 ${
-                  isAllCompleted
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-zinc-900 text-white'
-                }`}
-              >
-                {exerciseIndex + 1}
-              </span>
-            )}
-
-            {/* Visual Cover Thumbnail */}
-            <div className="w-12 h-12 rounded-xl border border-zinc-200 bg-zinc-100 overflow-hidden shrink-0 flex items-center justify-center relative shadow-xs">
-              {exercise.imageUrl ? (
+      {/* Exercise Card Header */}
+      <div className="p-4 sm:p-5 border-b border-white/[0.06] bg-[#18181A]/50">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Exercise Thumbnail or Index Badge */}
+            {exercise.imageUrl ? (
+              <div className="w-12 h-12 rounded-xl overflow-hidden border border-white/10 shrink-0 bg-zinc-900 relative shadow-sm">
                 <img
                   src={exercise.imageUrl}
                   alt={exercise.name}
@@ -219,28 +154,32 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                     (e.target as HTMLElement).style.display = 'none';
                   }}
                 />
-              ) : (
-                <Dumbbell className="w-5 h-5 text-zinc-400" />
-              )}
-              {exercise.videoUrl && (
-                <span className="absolute bottom-0.5 right-0.5 p-0.5 rounded bg-black/75 text-white">
-                  <Video className="w-2.5 h-2.5" />
-                </span>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div
+                className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shrink-0 border ${
+                  isAllCompleted
+                    ? 'bg-[#00FF87] text-black border-[#00FF87] shadow-[0_0_12px_rgba(0,255,135,0.4)]'
+                    : 'bg-zinc-900 border-white/10 text-white'
+                }`}
+              >
+                {exerciseIndex + 1}
+              </div>
+            )}
 
+            {/* Exercise Title & Badges */}
             <div className="min-w-0 flex-1">
               {isExecutionMode ? (
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className={`text-base sm:text-lg font-bold tracking-tight ${
-                      isAllCompleted ? 'text-emerald-950 line-through opacity-85' : 'text-zinc-900'
-                    }`}>
+                    <h3 className="text-base sm:text-lg font-black text-white tracking-tight truncate">
                       {exercise.name || 'Ejercicio sin nombre'}
                     </h3>
-
-                    <RmBadge rmLogs={rmLogs} exerciseName={exercise.name} exerciseId={exercise.definitionId} />
-
+                    <RmBadge
+                      rmLogs={rmLogs}
+                      exerciseName={exercise.name}
+                      exerciseId={exercise.definitionId}
+                    />
                     {onOpenDiary && (
                       <DiaryButton
                         exerciseName={exercise.name}
@@ -252,14 +191,14 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                     )}
 
                     {isAllCompleted && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-600 text-white shadow-xs">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-[#00FF87]/20 text-[#00FF87] border border-[#00FF87]/40 shadow-xs">
                         <CheckCircle2 className="w-3.5 h-3.5" /> Completado ({completedSetsCount}/{totalSetsCount})
                       </span>
                     )}
                   </div>
                   {exercise.notes && (
-                    <p className="text-xs sm:text-sm text-zinc-600 mt-1 flex items-start gap-1">
-                      <FileText className="w-3.5 h-3.5 shrink-0 mt-0.5 text-zinc-600" />
+                    <p className="text-xs sm:text-sm text-[#A1A1AA] mt-1 flex items-start gap-1">
+                      <FileText className="w-3.5 h-3.5 shrink-0 mt-0.5 text-zinc-500" />
                       <span>{exercise.notes}</span>
                     </p>
                   )}
@@ -272,7 +211,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                       value={exercise.name}
                       onChange={(e) => onUpdateExercise({ ...exercise, name: e.target.value })}
                       placeholder="Nombre del ejercicio (ej. Press banca, Sentadilla...)"
-                      className="flex-1 text-base sm:text-lg font-bold text-zinc-900 bg-transparent border-b border-zinc-200/80 hover:border-zinc-300 focus:border-emerald-600 focus:bg-white/60 focus:outline-none px-1 py-0.5 rounded transition-colors min-w-0"
+                      className="flex-1 text-base sm:text-lg font-black text-white bg-transparent border-b border-white/10 hover:border-white/30 focus:border-[#00FF87] focus:outline-none px-1 py-1 rounded transition-colors min-w-0"
                     />
                     <RmBadge rmLogs={rmLogs} exerciseName={exercise.name} exerciseId={exercise.definitionId} />
                     {onOpenDiary && (
@@ -290,35 +229,34 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                     value={exercise.notes || ''}
                     onChange={(e) => onUpdateExercise({ ...exercise, notes: e.target.value })}
                     placeholder="Notas de técnica o consejos (opcional)"
-                    className="w-full text-xs sm:text-sm text-zinc-600 placeholder:text-zinc-600 bg-transparent border-b border-zinc-200/60 hover:border-zinc-300 focus:border-zinc-400 focus:bg-white/60 focus:outline-none px-1 py-0.5 rounded transition-colors"
+                    className="w-full text-xs sm:text-sm text-[#A1A1AA] placeholder:text-zinc-600 bg-transparent border-b border-white/5 hover:border-white/20 focus:border-[#00FF87] focus:outline-none px-1 py-1 rounded transition-colors"
                   />
                 </div>
               )}
             </div>
           </div>
 
-          {/* Action Toolbar - Separate row on mobile, right-aligned on desktop */}
-          <div className="flex items-center justify-between sm:justify-end gap-1.5 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-200/60 shrink-0">
-            {/* When collapsed, show small summary beside the time */}
+          {/* Action Toolbar */}
+          <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-white/[0.06] shrink-0">
             {isCollapsed && summaryText && (
               <span
-                className="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-semibold bg-zinc-100 text-zinc-700 border border-zinc-200/80 shadow-2xs whitespace-nowrap"
+                className="inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] sm:text-[11px] font-mono font-semibold bg-zinc-900 text-zinc-300 border border-white/10 whitespace-nowrap shadow-inner"
                 title="Resumen: series x repeticiones · peso - descanso"
               >
                 {summaryText}
               </span>
             )}
 
-            {/* Estimated Exercise Duration Badge */}
+            {/* Estimated Duration Badge */}
             <div
-              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold shrink-0 ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-bold shrink-0 border ${
                 isAllCompleted
-                  ? 'bg-emerald-200/70 text-emerald-900'
-                  : 'bg-zinc-200/60 text-zinc-700'
+                  ? 'bg-[#00FF87]/15 text-[#00FF87] border-[#00FF87]/30'
+                  : 'bg-zinc-900 text-zinc-300 border-white/10'
               }`}
-              title="Tiempo aproximado calculado para este ejercicio (series activas + descansos)"
+              title="Tiempo aproximado calculado"
             >
-              <Clock className="w-3 h-3 text-zinc-600" />
+              <Clock className="w-3.5 h-3.5 text-[#00FF87]" />
               <span>~{formatSecondsToTime(totalExerciseSeconds)}</span>
             </div>
 
@@ -329,10 +267,10 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                     type="button"
                     onClick={() => setShowImageInput(!showImageInput)}
                     title="Configurar imagen miniatura / preview"
-                    className={`p-1.5 rounded-lg border text-xs transition-colors ${
+                    className={`p-2 rounded-xl border text-xs transition-colors active:scale-95 ${
                       exercise.imageUrl
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                        : 'bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-100'
+                        ? 'bg-[#00FF87]/20 text-[#00FF87] border-[#00FF87]/40'
+                        : 'bg-zinc-900 text-zinc-400 border-white/10 hover:text-white hover:border-white/20'
                     }`}
                   >
                     <ImageIcon className="w-4 h-4" />
@@ -342,10 +280,10 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                     type="button"
                     onClick={() => setShowVideoInput(!showVideoInput)}
                     title="Configurar enlace de video"
-                    className={`p-1.5 rounded-lg border text-xs transition-colors ${
+                    className={`p-2 rounded-xl border text-xs transition-colors active:scale-95 ${
                       exercise.videoUrl
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                        : 'bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-100'
+                        ? 'bg-[#00FF87]/20 text-[#00FF87] border-[#00FF87]/40'
+                        : 'bg-zinc-900 text-zinc-400 border-white/10 hover:text-white hover:border-white/20'
                     }`}
                   >
                     <Video className="w-4 h-4" />
@@ -355,7 +293,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                     type="button"
                     onClick={onDeleteExercise}
                     title="Eliminar ejercicio"
-                    className="p-1.5 rounded-lg border border-red-200 bg-white text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                    className="p-2 rounded-xl border border-red-500/20 bg-zinc-900 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors active:scale-95"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -365,7 +303,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
               <button
                 type="button"
                 onClick={handleToggleCollapse}
-                className="p-1.5 rounded-lg text-zinc-500 hover:bg-zinc-200/60 transition-colors"
+                className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors active:scale-95"
                 title={isCollapsed ? 'Desplegar ejercicio' : 'Plegar ejercicio'}
                 aria-label={isCollapsed ? 'Desplegar ejercicio' : 'Plegar ejercicio'}
               >
@@ -375,36 +313,21 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
           </div>
         </div>
 
-        {/* Image input field in Edit mode */}
+        {/* Media Inputs in Edit Mode */}
         {!isExecutionMode && showImageInput && (
-          <div className="mt-3 pt-3 border-t border-zinc-200 flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg border border-zinc-200 bg-zinc-100 shrink-0 overflow-hidden flex items-center justify-center">
-              {exercise.imageUrl ? (
-                <img
-                  src={exercise.imageUrl}
-                  alt="Preview"
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = 'none';
-                  }}
-                />
-              ) : (
-                <ImageIcon className="w-4 h-4 text-zinc-400" />
-              )}
-            </div>
+          <div className="mt-3 pt-3 border-t border-white/[0.06] flex items-center gap-2.5">
             <input
               type="url"
               value={exercise.imageUrl || ''}
               onChange={(e) => onUpdateExercise({ ...exercise, imageUrl: e.target.value })}
-              placeholder="URL de imagen preview / cover (ej: https://...)..."
-              className="flex-1 text-xs px-3 py-1.5 rounded-lg border border-zinc-300 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              placeholder="URL de imagen preview (https://...)"
+              className="flex-1 text-xs px-3 py-2 rounded-xl border border-white/10 bg-zinc-900 text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#00FF87]"
             />
             {exercise.imageUrl && (
               <button
                 type="button"
                 onClick={() => onUpdateExercise({ ...exercise, imageUrl: '' })}
-                className="text-xs text-zinc-400 hover:text-red-500 px-1"
-                title="Quitar imagen"
+                className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded-lg bg-zinc-900 border border-red-500/20"
               >
                 Quitar
               </button>
@@ -412,21 +335,19 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
           </div>
         )}
 
-        {/* Video input field in Edit mode */}
         {!isExecutionMode && showVideoInput && (
-          <div className="mt-3 pt-3 border-t border-zinc-200 flex items-center gap-2">
-            <Video className="w-4 h-4 text-zinc-500 shrink-0" />
+          <div className="mt-3 pt-3 border-t border-white/[0.06] flex items-center gap-2">
+            <Video className="w-4 h-4 text-zinc-400 shrink-0" />
             <input
               type="url"
               value={exercise.videoUrl || ''}
               onChange={(e) => onUpdateExercise({ ...exercise, videoUrl: e.target.value })}
-              placeholder="Enlace de video (YouTube, Vimeo o enlace directo mp4)..."
-              className="w-full text-xs px-3 py-1.5 rounded-lg border border-zinc-300 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              placeholder="Enlace de video (YouTube, Vimeo, mp4)..."
+              className="w-full text-xs px-3 py-2 rounded-xl border border-white/10 bg-zinc-900 text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#00FF87]"
             />
           </div>
         )}
 
-        {/* Video Player / Toggle */}
         <VideoPreview url={exercise.videoUrl} exerciseName={exercise.name || 'ejercicio'} />
       </div>
 
@@ -436,20 +357,20 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
           <div className="overflow-x-auto -mx-1 px-1 scrollbar-none">
             <table className="w-full text-left border-collapse min-w-[310px] sm:min-w-full">
               <thead>
-                <tr className="border-b border-zinc-200 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-zinc-500">
-                  <th className="py-2.5 px-1 sm:px-2 text-center w-10 sm:w-12">Serie</th>
-                  <th className="py-2.5 px-1 sm:px-2 text-center min-w-[65px] sm:min-w-[80px]">Reps</th>
-                  <th className="py-2.5 px-1 sm:px-2 text-center min-w-[65px] sm:min-w-[80px]">Peso</th>
-                  <th className="py-2.5 px-1 sm:px-2 text-center min-w-[75px] sm:min-w-[90px]">Descanso</th>
-                  <th className="py-2.5 px-1 sm:px-2 text-center hidden md:table-cell">Tiempo</th>
+                <tr className="border-b border-white/[0.08] text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[#A1A1AA]">
+                  <th className="py-3 px-2 text-center w-12">Serie</th>
+                  <th className="py-3 px-2 text-center min-w-[70px] sm:min-w-[85px]">Reps</th>
+                  <th className="py-3 px-2 text-center min-w-[70px] sm:min-w-[85px]">Peso</th>
+                  <th className="py-3 px-2 text-center min-w-[80px] sm:min-w-[95px]">Descanso</th>
+                  <th className="py-3 px-2 text-center hidden md:table-cell text-zinc-500">Tiempo</th>
                   {isExecutionMode ? (
-                    <th className="py-2.5 px-1 sm:px-2 text-center w-14 sm:w-16">Estado</th>
+                    <th className="py-3 px-2 text-center w-16">Estado</th>
                   ) : (
-                    <th className="py-2.5 px-1 sm:px-2 text-right w-18 sm:w-24">Acciones</th>
+                    <th className="py-3 px-2 text-right w-20 sm:w-24">Acciones</th>
                   )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-100">
+              <tbody className="divide-y divide-white/[0.04]">
                 {exercise.sets.map((set, setIndex) => {
                   const isCompleted = completedSetIds.has(set.id);
                   const setSeconds = getSetTotalSeconds(set);
@@ -457,19 +378,19 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                   return (
                     <tr
                       key={set.id}
-                      className={`transition-colors ${
+                      className={`transition-all duration-200 ${
                         isCompleted
-                          ? 'bg-emerald-100/30 font-medium'
-                          : 'hover:bg-zinc-50/70'
+                          ? 'bg-[#00FF87]/[0.08] border-l-4 border-l-[#00FF87]'
+                          : 'hover:bg-white/[0.03]'
                       }`}
                     >
                       {/* Set Index */}
-                      <td className="py-2.5 px-1 sm:px-2 text-center">
+                      <td className="py-3 px-2 text-center">
                         <span
-                          className={`inline-block w-6 h-6 leading-6 text-xs font-bold rounded-full ${
+                          className={`inline-block w-7 h-7 leading-7 text-xs font-black rounded-xl transition-all ${
                             isCompleted
-                              ? 'bg-emerald-600 text-white'
-                              : 'bg-zinc-100 text-zinc-700'
+                              ? 'bg-[#00FF87] text-black shadow-[0_0_10px_rgba(0,255,135,0.4)]'
+                              : 'bg-zinc-800 text-zinc-300 border border-white/10'
                           }`}
                         >
                           {set.setNumber}
@@ -477,10 +398,17 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                       </td>
 
                       {/* Reps */}
-                      <td className="py-2.5 px-1 sm:px-2 text-center">
+                      <td className="py-3 px-2 text-center">
                         {isExecutionMode ? (
-                          <span className={`text-xs sm:text-sm font-semibold ${isCompleted ? 'text-zinc-500' : 'text-zinc-900'}`}>
-                            {set.reps} <span className="text-[10px] sm:text-xs font-normal text-zinc-500">reps</span>
+                          <span
+                            className={`text-sm sm:text-base font-black transition-colors ${
+                              isCompleted ? 'text-[#00FF87]' : 'text-white'
+                            }`}
+                          >
+                            {set.reps}{' '}
+                            <span className="text-[10px] sm:text-xs font-semibold text-[#A1A1AA]">
+                              reps
+                            </span>
                           </span>
                         ) : (
                           <div className="flex items-center justify-center">
@@ -498,17 +426,24 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                                   handleUpdateSet(set.id, 'reps', 1);
                                 }
                               }}
-                              className="w-14 sm:w-16 text-center text-xs sm:text-sm font-semibold py-1 px-1 rounded-lg border border-zinc-200 bg-zinc-50 focus:bg-white focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                              className="w-16 sm:w-20 min-h-[48px] text-center text-sm font-extrabold py-2 px-1 rounded-xl border border-white/10 bg-zinc-900 text-white focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/30 focus:outline-none transition-all shadow-inner"
                             />
                           </div>
                         )}
                       </td>
 
                       {/* Weight */}
-                      <td className="py-2.5 px-1 sm:px-2 text-center">
+                      <td className="py-3 px-2 text-center">
                         {isExecutionMode ? (
-                          <span className={`text-xs sm:text-sm font-semibold ${isCompleted ? 'text-zinc-500' : 'text-zinc-900'}`}>
-                            {set.weight} <span className="text-[10px] sm:text-xs font-normal text-zinc-500">kg</span>
+                          <span
+                            className={`text-sm sm:text-base font-black transition-colors ${
+                              isCompleted ? 'text-[#00FF87]' : 'text-white'
+                            }`}
+                          >
+                            {set.weight}{' '}
+                            <span className="text-[10px] sm:text-xs font-semibold text-[#A1A1AA]">
+                              kg
+                            </span>
                           </span>
                         ) : (
                           <div className="flex items-center justify-center">
@@ -534,19 +469,20 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                                   }
                                 }
                               }}
-                              className="w-14 sm:w-16 text-center text-xs sm:text-sm font-semibold py-1 px-1 rounded-lg border border-zinc-200 bg-zinc-50 focus:bg-white focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                              className="w-16 sm:w-20 min-h-[48px] text-center text-sm font-extrabold py-2 px-1 rounded-xl border border-white/10 bg-zinc-900 text-white focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/30 focus:outline-none transition-all shadow-inner"
                             />
-                            <span className="text-[10px] sm:text-xs text-zinc-400 ml-0.5">kg</span>
                           </div>
                         )}
                       </td>
 
                       {/* Rest */}
-                      <td className="py-2.5 px-1 sm:px-2 text-center">
+                      <td className="py-3 px-2 text-center">
                         {isExecutionMode ? (
-                          <span className={`text-[11px] sm:text-xs font-medium px-2 py-0.5 rounded-md ${
-                            isCompleted ? 'text-zinc-400 bg-zinc-100' : 'text-zinc-700 bg-zinc-100'
-                          }`}>
+                          <span
+                            className={`text-xs font-mono font-bold px-2 py-1 rounded-lg ${
+                              isCompleted ? 'text-zinc-400 bg-zinc-900/60' : 'text-zinc-200 bg-zinc-800'
+                            }`}
+                          >
                             {set.restSeconds}s
                           </span>
                         ) : (
@@ -566,20 +502,19 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                                   handleUpdateSet(set.id, 'restSeconds', 0);
                                 }
                               }}
-                              className="w-13 sm:w-16 text-center text-xs sm:text-sm font-semibold py-1 px-1 rounded-lg border border-zinc-200 bg-zinc-50 focus:bg-white focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                              className="w-16 sm:w-20 min-h-[48px] text-center text-xs font-mono font-bold py-2 px-1 rounded-xl border border-white/10 bg-zinc-900 text-white focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/30 focus:outline-none transition-all shadow-inner"
                             />
-                            <span className="text-[11px] text-zinc-400 ml-0.5">s</span>
                           </div>
                         )}
                       </td>
 
                       {/* Estimated Set Time */}
-                      <td className="py-2.5 px-1 sm:px-2 text-center hidden md:table-cell text-xs text-zinc-600">
+                      <td className="py-3 px-2 text-center hidden md:table-cell text-xs font-mono text-zinc-500">
                         ~{formatSecondsToTime(setSeconds)}
                       </td>
 
                       {/* Actions or Checkbox */}
-                      <td className="py-2.5 px-1 sm:px-2 text-right">
+                      <td className="py-3 px-2 text-center">
                         {isExecutionMode ? (
                           <div className="flex justify-center">
                             <button
@@ -595,43 +530,43 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                                 }
                                 onToggleSetComplete(set.id, Number(set.restSeconds) || 0, exercise.name, set.setNumber);
                               }}
-                              className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 active:scale-90 ${
+                              className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-200 active:scale-90 ${
                                 isCompleted
-                                  ? 'bg-emerald-500 text-white shadow-xs'
-                                  : 'bg-zinc-100 border-2 border-zinc-300 text-transparent hover:border-emerald-500 hover:text-emerald-500/40'
+                                  ? 'bg-[#00FF87] text-black shadow-[0_0_18px_rgba(0,255,135,0.5)] border-0 scale-105'
+                                  : 'bg-zinc-900 border-2 border-white/20 text-transparent hover:border-[#00FF87] hover:text-[#00FF87]/40'
                               }`}
                               title={isCompleted ? 'Desmarcar serie' : 'Marcar completada e iniciar descanso'}
                             >
-                              <Check className={`w-4 h-4 stroke-[3] ${isCompleted ? 'text-white' : 'currentColor'}`} />
+                              <Check className={`w-5 h-5 stroke-[3] ${isCompleted ? 'text-black' : 'currentColor'}`} />
                             </button>
                           </div>
                         ) : (
-                          <div className="flex items-center justify-end gap-1">
-                            {/* Duplicate set row button */}
+                          <div className="flex items-center justify-end gap-1.5">
                             <button
                               id={`btn-duplicate-set-${set.id}`}
                               type="button"
                               onClick={() => handleDuplicateSet(setIndex)}
-                              className="p-1.5 rounded-lg text-zinc-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
-                              title="Duplicar serie (mismos valores)"
+                              className="min-h-[40px] min-w-[40px] p-2 rounded-xl text-zinc-400 hover:text-[#00FF87] hover:bg-zinc-800 transition-colors flex items-center justify-center active:scale-95"
+                              title="Duplicar serie"
+                              aria-label="Duplicar serie"
                             >
-                              <Copy className="w-3.5 h-3.5" />
+                              <Copy className="w-4 h-4" />
                             </button>
 
-                            {/* Delete set row button */}
                             <button
                               id={`btn-delete-set-${set.id}`}
                               type="button"
                               onClick={() => handleDeleteSet(set.id)}
                               disabled={exercise.sets.length <= 1}
-                              className={`p-1.5 rounded-lg transition-colors ${
+                              className={`min-h-[40px] min-w-[40px] p-2 rounded-xl transition-colors flex items-center justify-center active:scale-95 ${
                                 exercise.sets.length <= 1
-                                  ? 'text-zinc-300 cursor-not-allowed'
-                                  : 'text-zinc-400 hover:text-red-600 hover:bg-red-50'
+                                  ? 'text-zinc-600 cursor-not-allowed opacity-50'
+                                  : 'text-zinc-400 hover:text-red-400 hover:bg-red-500/10'
                               }`}
                               title={exercise.sets.length <= 1 ? 'Mínimo 1 serie' : 'Eliminar serie'}
+                              aria-label="Eliminar serie"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                         )}
@@ -645,17 +580,18 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
 
           {/* Bottom Set Controls in Edit Mode */}
           {!isExecutionMode && (
-            <div className="mt-3.5 pt-3 border-t border-zinc-100 flex items-center justify-between gap-3">
+            <div className="mt-4 pt-3.5 border-t border-white/[0.08] flex items-center justify-between gap-3">
               <button
                 id={`btn-add-set-${exercise.id}`}
                 type="button"
                 onClick={handleAddSet}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-800 transition-colors active:scale-95"
+                className="min-h-[44px] inline-flex items-center gap-2 px-4 text-xs font-bold rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white transition-all active:scale-[0.97] border border-white/10"
               >
-                <Plus className="w-3.5 h-3.5" /> Añadir serie
+                <Plus className="w-4 h-4 stroke-[2.5]" />
+                <span>Añadir Serie</span>
               </button>
 
-              <span className="text-[11px] text-zinc-600">
+              <span className="text-xs font-semibold text-[#A1A1AA]">
                 {exercise.sets.length} {exercise.sets.length === 1 ? 'serie' : 'series'} en total
               </span>
             </div>

@@ -10,7 +10,7 @@ import {
   Layers,
   X
 } from 'lucide-react';
-import { WorkoutHistoryLog, ExerciseRmLog, ExerciseDiary } from '../types';
+import { WorkoutHistoryLog, ExerciseRmLog, ExerciseDiary, Routine, ExerciseDefinition } from '../types';
 import { WorkoutDetailModal } from './WorkoutDetailModal';
 import { formatDetailedDuration } from '../utils/timeCalculations';
 
@@ -18,6 +18,8 @@ interface WorkoutHistoryViewProps {
   historyLogs: WorkoutHistoryLog[];
   rmLogs?: ExerciseRmLog[];
   exerciseDiary?: ExerciseDiary[];
+  routines?: Routine[];
+  catalog?: ExerciseDefinition[];
   onOpenDiary?: (exerciseName: string, exerciseId?: string) => void;
   onDeleteLog: (logId: string) => void;
   onGoToRoutines: () => void;
@@ -44,6 +46,8 @@ export const WorkoutHistoryView: React.FC<WorkoutHistoryViewProps> = ({
   historyLogs,
   rmLogs = [],
   exerciseDiary = [],
+  routines = [],
+  catalog = [],
   onOpenDiary,
   onDeleteLog,
   onGoToRoutines,
@@ -227,232 +231,232 @@ export const WorkoutHistoryView: React.FC<WorkoutHistoryViewProps> = ({
   const isViewingCurrentMonth = currentYear === today.getFullYear() && currentMonth === today.getMonth();
 
   return (
-    <div id="workout-history-container" className="max-w-4xl mx-auto px-3 sm:px-6 py-6 pb-24">
-      {/* Top Header Card with Summary Metrics */}
-      <div className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 p-4 sm:p-6 shadow-xs mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 shadow-xs">
-              <CalendarIcon className="w-6 h-6 text-emerald-600" />
+    <div id="workout-history-container" className="min-h-screen bg-[#0D0D0D] text-white pb-28 pt-4 sm:pt-6">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6">
+        {/* Top Header Card with Bento Summary Metrics */}
+        <div className="bg-[#1C1C1E] rounded-2xl border border-white/[0.08] p-5 sm:p-6 shadow-xl mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-white/10 text-[#00FF87] flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(0,255,135,0.2)]">
+                <CalendarIcon className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                    Historial de Entrenamientos
+                  </h1>
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-[#00FF87]/15 text-[#00FF87] border border-[#00FF87]/30">
+                    {totalCount} {totalCount === 1 ? 'sesión' : 'sesiones'}
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-[#A1A1AA] mt-0.5">
+                  Calendario de rutinas completadas y desglose de cada sesión.
+                </p>
+              </div>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-black text-zinc-900 tracking-tight">
-                  Historial de Entrenamientos
-                </h1>
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-900 border border-emerald-200">
-                  {totalCount} {totalCount === 1 ? 'sesión' : 'sesiones'}
+
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              {!isViewingCurrentMonth && (
+                <button
+                  type="button"
+                  onClick={handleGoToday}
+                  className="px-4 min-h-[44px] rounded-xl border border-white/10 bg-zinc-900 hover:bg-zinc-800 text-xs font-bold text-white transition active:scale-95 shadow-inner"
+                >
+                  Volver a Hoy
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Bento stats: Semana actual & Mes actual */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {/* Stat 1: Semana Actual */}
+            <div className="p-4 rounded-2xl bg-zinc-900/90 border border-[#00FF87]/30 flex items-center gap-3 shadow-inner">
+              <div className="w-10 h-10 rounded-xl bg-[#00FF87]/15 text-[#00FF87] flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(0,255,135,0.2)]">
+                <Flame className="w-5 h-5 fill-current" />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#00FF87] block truncate">
+                  Esta semana
+                </span>
+                <span className="text-xl sm:text-2xl font-black text-white font-mono leading-none block">
+                  {currentWeekCount}
+                </span>
+                <span className="text-[10px] text-zinc-400 font-semibold truncate block mt-0.5">
+                  {currentWeekCount === 1 ? 'rutina completada' : 'rutinas completadas'}
                 </span>
               </div>
-              <p className="text-xs sm:text-sm text-zinc-600 mt-0.5">
-                Calendario de rutinas completadas y desglose de cada sesión.
-              </p>
             </div>
-          </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-auto">
-            {!isViewingCurrentMonth && (
-              <button
-                type="button"
-                onClick={handleGoToday}
-                className="px-3 py-1.5 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 text-xs font-bold text-zinc-700 transition shadow-2xs active:scale-95"
-              >
-                Volver a Hoy
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Compact stats: Semana actual & Mes actual */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3">
-          {/* Stat 1: Semana Actual */}
-          <div className="p-3 sm:p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
-              <Flame className="w-5 h-5 fill-current" />
-            </div>
-            <div className="min-w-0">
-              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-emerald-800 block truncate">
-                Esta semana
-              </span>
-              <span className="text-xl sm:text-2xl font-black text-zinc-900 font-mono leading-none block">
-                {currentWeekCount}
-              </span>
-              <span className="text-[10px] text-emerald-700 font-semibold truncate block mt-0.5">
-                {currentWeekCount === 1 ? 'rutina completada' : 'rutinas completadas'}
-              </span>
-            </div>
-          </div>
-
-          {/* Stat 2: Mes Actual */}
-          <div className="p-3 sm:p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-zinc-900 text-amber-400 flex items-center justify-center shrink-0 shadow-2xs">
-              <Trophy className="w-5 h-5" />
-            </div>
-            <div className="min-w-0">
-              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-zinc-500 block truncate">
-                Este mes ({MONTH_NAMES[today.getMonth()]})
-              </span>
-              <span className="text-xl sm:text-2xl font-black text-zinc-900 font-mono leading-none block">
-                {currentMonthCount}
-              </span>
-              <span className="text-[10px] text-zinc-500 font-semibold truncate block mt-0.5">
-                {currentMonthCount === 1 ? 'rutina completada' : 'rutinas completadas'}
-              </span>
-            </div>
-          </div>
-
-          {/* Stat 3: Total Histórico */}
-          <div className="p-3 sm:p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 hidden sm:flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-zinc-100 text-zinc-600 flex items-center justify-center shrink-0">
-              <Sparkles className="w-5 h-5 text-emerald-600" />
-            </div>
-            <div className="min-w-0">
-              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-zinc-500 block truncate">
-                Total registrado
-              </span>
-              <span className="text-xl sm:text-2xl font-black text-zinc-900 font-mono leading-none block">
-                {totalCount}
-              </span>
-              <span className="text-[10px] text-zinc-500 font-semibold truncate block mt-0.5">
-                sesiones en histórico
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Calendar Card */}
-      <div className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 shadow-xs overflow-hidden">
-        {/* Month Navigation Bar */}
-        <div className="p-4 sm:p-5 border-b border-zinc-200/80 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg sm:text-xl font-black text-zinc-900 tracking-tight">
-              {MONTH_NAMES[currentMonth]} {currentYear}
-            </h2>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <button
-              id="btn-prev-month"
-              type="button"
-              onClick={handlePrevMonth}
-              className="p-2 rounded-xl text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 transition-colors active:scale-95 border border-zinc-200"
-              title="Mes anterior"
-              aria-label="Mes anterior"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              id="btn-next-month"
-              type="button"
-              onClick={handleNextMonth}
-              className="p-2 rounded-xl text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 transition-colors active:scale-95 border border-zinc-200"
-              title="Mes siguiente"
-              aria-label="Mes siguiente"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Days of Week Header */}
-        <div className="grid grid-cols-7 border-b border-zinc-100 bg-zinc-50/70 text-center py-2 text-[11px] sm:text-xs font-bold text-zinc-500 uppercase tracking-wider">
-          {WEEKDAY_NAMES.map((wName, idx) => (
-            <div key={idx} className={idx >= 5 ? 'text-zinc-400' : ''}>
-              {wName}
-            </div>
-          ))}
-        </div>
-
-        {/* Calendar Grid */}
-        <div className="grid grid-cols-7 divide-x divide-y divide-zinc-100 bg-zinc-100/40">
-          {calendarCells.map((cell, idx) => {
-            const hasWorkouts = cell.workouts.length > 0;
-
-            return (
-              <div
-                key={idx}
-                onClick={() => handleCellClick(cell.dateKey, cell.workouts)}
-                className={`min-h-[78px] sm:min-h-[105px] p-1.5 sm:p-2.5 flex flex-col justify-between transition-all ${
-                  cell.isCurrentMonth ? 'bg-white' : 'bg-zinc-50/50 text-zinc-300'
-                } ${cell.isToday ? 'ring-2 ring-inset ring-emerald-500/80' : ''} ${
-                  hasWorkouts
-                    ? 'cursor-pointer hover:bg-emerald-50/40'
-                    : 'cursor-default'
-                }`}
-              >
-                {/* Day number & indicators */}
-                <div className="flex items-center justify-between">
-                  <span
-                    className={`text-xs sm:text-sm font-bold inline-flex items-center justify-center w-6 h-6 rounded-full ${
-                      cell.isToday
-                        ? 'bg-emerald-600 text-white shadow-2xs'
-                        : cell.isCurrentMonth
-                        ? 'text-zinc-800'
-                        : 'text-zinc-400'
-                    }`}
-                  >
-                    {cell.day}
-                  </span>
-
-                  {/* Badge with count if > 1 workout on this day */}
-                  {cell.workouts.length > 1 && (
-                    <span
-                      className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-emerald-600 text-white shadow-2xs"
-                      title={`${cell.workouts.length} entrenamientos`}
-                    >
-                      {cell.workouts.length}
-                    </span>
-                  )}
-                </div>
-
-                {/* Workout tags/chips */}
-                <div className="space-y-1 mt-1">
-                  {cell.workouts.map((w, wIdx) => {
-                    // On mobile, show max 1 or dots; on tablet/desktop, show compact pill
-                    if (wIdx > 1) return null;
-
-                    return (
-                      <div
-                        key={w.id}
-                        className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/90 rounded-lg px-1.5 py-0.5 text-[10px] font-bold text-emerald-900 truncate flex items-center gap-1 shadow-2xs transition-colors"
-                        title={`${w.routineName} (${formatDetailedDuration(w.durationSeconds)})`}
-                      >
-                        <Flame className="w-2.5 h-2.5 text-emerald-600 shrink-0 fill-current" />
-                        <span className="truncate hidden sm:inline">{w.routineName}</span>
-                        <span className="sm:hidden font-mono text-[9px]">{w.completedSetsCount}s</span>
-                      </div>
-                    );
-                  })}
-
-                  {cell.workouts.length > 2 && (
-                    <span className="text-[9px] font-bold text-emerald-700 block text-right">
-                      +{cell.workouts.length - 2} más
-                    </span>
-                  )}
-                </div>
+            {/* Stat 2: Mes Actual */}
+            <div className="p-4 rounded-2xl bg-zinc-900/90 border border-[#00E5FF]/30 flex items-center gap-3 shadow-inner">
+              <div className="w-10 h-10 rounded-xl bg-[#00E5FF]/15 text-[#00E5FF] flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(0,229,255,0.2)]">
+                <Trophy className="w-5 h-5" />
               </div>
-            );
-          })}
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#00E5FF] block truncate">
+                  Este mes ({MONTH_NAMES[today.getMonth()]})
+                </span>
+                <span className="text-xl sm:text-2xl font-black text-white font-mono leading-none block">
+                  {currentMonthCount}
+                </span>
+                <span className="text-[10px] text-zinc-400 font-semibold truncate block mt-0.5">
+                  {currentMonthCount === 1 ? 'rutina completada' : 'rutinas completadas'}
+                </span>
+              </div>
+            </div>
+
+            {/* Stat 3: Total Histórico */}
+            <div className="p-4 rounded-2xl bg-zinc-900/90 border border-white/10 hidden sm:flex items-center gap-3 shadow-inner">
+              <div className="w-10 h-10 rounded-xl bg-zinc-800 text-zinc-400 flex items-center justify-center shrink-0">
+                <Sparkles className="w-5 h-5 text-[#00FF87]" />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-zinc-400 block truncate">
+                  Total registrado
+                </span>
+                <span className="text-xl sm:text-2xl font-black text-white font-mono leading-none block">
+                  {totalCount}
+                </span>
+                <span className="text-[10px] text-zinc-400 font-semibold truncate block mt-0.5">
+                  sesiones en histórico
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+
+        {/* Calendar Card */}
+        <div className="bg-[#1C1C1E] rounded-2xl border border-white/[0.08] shadow-xl overflow-hidden mb-6">
+          {/* Month Navigation Bar */}
+          <div className="p-4 sm:p-5 border-b border-white/[0.08] flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">
+                {MONTH_NAMES[currentMonth]} {currentYear}
+              </h2>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                id="btn-prev-month"
+                type="button"
+                onClick={handlePrevMonth}
+                className="min-h-[44px] min-w-[44px] p-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors active:scale-95 border border-white/10 flex items-center justify-center"
+                title="Mes anterior"
+                aria-label="Mes anterior"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                id="btn-next-month"
+                type="button"
+                onClick={handleNextMonth}
+                className="min-h-[44px] min-w-[44px] p-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors active:scale-95 border border-white/10 flex items-center justify-center"
+                title="Mes siguiente"
+                aria-label="Mes siguiente"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Days of Week Header */}
+          <div className="grid grid-cols-7 border-b border-white/[0.06] bg-zinc-900/60 text-center py-2.5 text-[11px] sm:text-xs font-extrabold text-[#A1A1AA] uppercase tracking-wider">
+            {WEEKDAY_NAMES.map((wName, idx) => (
+              <div key={idx} className={idx >= 5 ? 'text-zinc-500' : ''}>
+                {wName}
+              </div>
+            ))}
+          </div>
+
+          {/* Calendar Grid */}
+          <div className="grid grid-cols-7 divide-x divide-y divide-white/[0.06] bg-black/40">
+            {calendarCells.map((cell, idx) => {
+              const hasWorkouts = cell.workouts.length > 0;
+
+              return (
+                <div
+                  key={idx}
+                  onClick={() => handleCellClick(cell.dateKey, cell.workouts)}
+                  className={`min-h-[78px] sm:min-h-[105px] p-1.5 sm:p-2.5 flex flex-col justify-between transition-all ${
+                    cell.isCurrentMonth ? 'bg-[#1C1C1E]' : 'bg-[#121214]/60 text-zinc-600'
+                  } ${cell.isToday ? 'ring-2 ring-inset ring-[#00FF87]' : ''} ${
+                    hasWorkouts
+                      ? 'cursor-pointer hover:bg-[#00FF87]/[0.06]'
+                      : 'cursor-default'
+                  }`}
+                >
+                  {/* Day number & indicators */}
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={`text-xs sm:text-sm font-bold inline-flex items-center justify-center w-6 h-6 rounded-full ${
+                        cell.isToday
+                          ? 'bg-[#00FF87] text-black font-black shadow-[0_0_10px_rgba(0,255,135,0.6)]'
+                          : cell.isCurrentMonth
+                          ? 'text-white'
+                          : 'text-zinc-600'
+                      }`}
+                    >
+                      {cell.day}
+                    </span>
+
+                    {/* Badge with count if > 1 workout on this day */}
+                    {cell.workouts.length > 1 && (
+                      <span
+                        className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-[#00FF87] text-black shadow-[0_0_8px_rgba(0,255,135,0.4)]"
+                        title={`${cell.workouts.length} entrenamientos`}
+                      >
+                        {cell.workouts.length}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Workout tags/chips */}
+                  <div className="space-y-1 mt-1">
+                    {cell.workouts.map((w, wIdx) => {
+                      if (wIdx > 1) return null;
+
+                      return (
+                        <div
+                          key={w.id}
+                          className="bg-[#00FF87]/15 hover:bg-[#00FF87]/25 border border-[#00FF87]/30 rounded-lg px-1.5 py-0.5 text-[10px] font-bold text-[#00FF87] truncate flex items-center gap-1 shadow-inner transition-colors"
+                          title={`${w.routineName} (${formatDetailedDuration(w.durationSeconds)})`}
+                        >
+                          <Flame className="w-2.5 h-2.5 text-[#00FF87] shrink-0 fill-current" />
+                          <span className="truncate hidden sm:inline">{w.routineName}</span>
+                          <span className="sm:hidden font-mono text-[9px]">{w.completedSetsCount}s</span>
+                        </div>
+                      );
+                    })}
+
+                    {cell.workouts.length > 2 && (
+                      <span className="text-[9px] font-bold text-[#00FF87] block text-right">
+                        +{cell.workouts.length - 2} más
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
       {/* Empty State Help Card if no logs exist yet */}
       {totalCount === 0 && (
-        <div className="mt-6 p-6 rounded-3xl border-2 border-dashed border-zinc-200 bg-white text-center">
-          <div className="w-12 h-12 rounded-2xl bg-zinc-100 text-zinc-400 flex items-center justify-center mx-auto mb-3">
-            <Trophy className="w-6 h-6" />
+        <div className="mt-6 p-6 rounded-2xl border border-white/[0.08] bg-[#1C1C1E] text-center max-w-md mx-auto shadow-xl">
+          <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-white/10 text-[#00FF87] flex items-center justify-center mx-auto mb-3 shadow-[0_0_20px_rgba(0,255,135,0.2)]">
+            <Trophy className="w-7 h-7" />
           </div>
-          <h3 className="text-sm font-bold text-zinc-900 mb-1">
+          <h3 className="text-base font-bold text-white mb-1">
             Tu calendario se llenará automáticamente
           </h3>
-          <p className="text-xs text-zinc-500 max-w-sm mx-auto mb-4">
+          <p className="text-xs text-[#A1A1AA] max-w-sm mx-auto mb-5 leading-relaxed">
             Cada vez que pulses «Finalizar entrenamiento» al terminar una sesión de rutina, se guardará aquí su resumen con el tiempo y series realizadas.
           </p>
           <button
             type="button"
             onClick={onGoToRoutines}
-            className="px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs shadow-2xs transition-all active:scale-95"
+            className="px-6 min-h-[48px] rounded-2xl bg-[#00FF87] hover:bg-[#00e57a] text-black font-extrabold text-sm shadow-[0_0_20px_rgba(0,255,135,0.35)] transition-all active:scale-[0.97]"
           >
             Ir a mis Rutinas
           </button>
@@ -463,26 +467,26 @@ export const WorkoutHistoryView: React.FC<WorkoutHistoryViewProps> = ({
       {selectedDayWorkouts && (
         <div
           id="modal-day-workouts-selector"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
           onClick={() => setSelectedDayWorkouts(null)}
         >
           <div
-            className="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-zinc-200 animate-in zoom-in-95 duration-200"
+            className="bg-[#1C1C1E] rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-white/[0.08] animate-in zoom-in-95 duration-200 text-white"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-100 mb-3">
+            <div className="flex items-center justify-between pb-3 border-b border-white/[0.08] mb-3">
               <div>
-                <h3 className="text-sm sm:text-base font-black text-zinc-900 capitalize">
+                <h3 className="text-sm sm:text-base font-black text-white capitalize">
                   {selectedDayWorkouts.dateLabel}
                 </h3>
-                <span className="text-xs text-zinc-500 font-medium">
+                <span className="text-xs text-[#A1A1AA] font-medium">
                   {selectedDayWorkouts.workouts.length} entrenamientos completados
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedDayWorkouts(null)}
-                className="p-1.5 text-zinc-400 hover:text-zinc-600 rounded-xl hover:bg-zinc-100"
+                className="p-1.5 text-zinc-400 hover:text-white rounded-xl hover:bg-zinc-800"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -497,19 +501,19 @@ export const WorkoutHistoryView: React.FC<WorkoutHistoryViewProps> = ({
                     setSelectedLog(w);
                     setSelectedDayWorkouts(null);
                   }}
-                  className="w-full p-3 rounded-2xl border border-zinc-200 hover:border-emerald-500 hover:bg-emerald-50/40 text-left transition-all flex items-center justify-between group shadow-2xs"
+                  className="w-full p-3.5 rounded-2xl border border-white/10 hover:border-[#00FF87] bg-zinc-900 hover:bg-[#00FF87]/10 text-left transition-all flex items-center justify-between group shadow-inner active:scale-[0.98]"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                    <div className="w-9 h-9 rounded-xl bg-black border border-white/10 text-[#00FF87] flex items-center justify-center shrink-0">
                       <Flame className="w-4 h-4 fill-current" />
                     </div>
                     <div className="min-w-0">
-                      <span className="block font-bold text-xs sm:text-sm text-zinc-900 group-hover:text-emerald-950 truncate">
+                      <span className="block font-bold text-xs sm:text-sm text-white group-hover:text-[#00FF87] truncate">
                         {w.routineName}
                       </span>
-                      <div className="flex items-center gap-2 text-[11px] text-zinc-500 mt-0.5">
+                      <div className="flex items-center gap-2 text-[11px] text-[#A1A1AA] mt-0.5">
                         <span className="flex items-center gap-1 font-mono">
-                          <Clock className="w-3 h-3 text-zinc-400" />
+                          <Clock className="w-3 h-3 text-zinc-500" />
                           {formatDetailedDuration(w.durationSeconds)}
                         </span>
                         <span>•</span>
@@ -517,7 +521,7 @@ export const WorkoutHistoryView: React.FC<WorkoutHistoryViewProps> = ({
                       </div>
                     </div>
                   </div>
-                  <span className="text-xs font-bold text-emerald-600 shrink-0 ml-2">
+                  <span className="text-xs font-bold text-[#00FF87] shrink-0 ml-2">
                     Ver desglose &rarr;
                   </span>
                 </button>
@@ -532,10 +536,13 @@ export const WorkoutHistoryView: React.FC<WorkoutHistoryViewProps> = ({
         log={selectedLog}
         rmLogs={rmLogs}
         exerciseDiary={exerciseDiary}
+        routines={routines}
+        catalog={catalog}
         onOpenDiary={onOpenDiary}
         onClose={() => setSelectedLog(null)}
         onDelete={onDeleteLog}
       />
+      </div>
     </div>
   );
 };

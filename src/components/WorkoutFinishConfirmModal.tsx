@@ -31,53 +31,53 @@ export const WorkoutFinishConfirmModal: React.FC<WorkoutFinishConfirmModalProps>
   return (
     <div
       id="modal-finish-workout-confirm"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
       onClick={onCancel}
     >
       <div
-        className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-zinc-200 animate-in zoom-in-95 duration-200"
+        className="bg-[#1C1C1E] rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-white/[0.1] animate-in zoom-in-95 duration-200 text-white"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-start justify-between gap-3 mb-4">
+        <div className="flex items-start justify-between gap-3 mb-5">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+            <div className="w-11 h-11 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0">
               <Flag className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-black text-zinc-900 tracking-tight">
+              <h3 className="text-lg font-black text-white tracking-tight">
                 ¿Finalizar entrenamiento?
               </h3>
-              <p className="text-xs text-zinc-500 truncate max-w-xs">{routineName}</p>
+              <p className="text-xs text-zinc-400 truncate max-w-xs">{routineName}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onCancel}
-            className="p-1 text-zinc-400 hover:text-zinc-600 rounded-lg hover:bg-zinc-100 transition-colors"
+            className="p-2 text-zinc-400 hover:text-white rounded-xl hover:bg-white/[0.08] transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Workout metrics preview */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="bg-zinc-50 border border-zinc-200/80 rounded-2xl p-3 text-center">
-            <div className="flex items-center justify-center gap-1 text-[11px] font-semibold text-zinc-500 uppercase tracking-wide mb-1">
-              <Clock className="w-3.5 h-3.5 text-emerald-600" />
+        <div className="grid grid-cols-2 gap-3 mb-5">
+          <div className="bg-black/30 border border-white/[0.08] rounded-2xl p-3.5 text-center">
+            <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-1">
+              <Clock className="w-3.5 h-3.5 text-[#00FF87]" />
               <span>Tiempo</span>
             </div>
-            <span className="text-base sm:text-lg font-black text-zinc-900 font-mono">
+            <span className="text-base sm:text-lg font-black text-white font-mono">
               {formatDetailedDuration(elapsedSeconds)}
             </span>
           </div>
 
-          <div className="bg-zinc-50 border border-zinc-200/80 rounded-2xl p-3 text-center">
-            <div className="flex items-center justify-center gap-1 text-[11px] font-semibold text-zinc-500 uppercase tracking-wide mb-1">
-              <Layers className="w-3.5 h-3.5 text-emerald-600" />
+          <div className="bg-black/30 border border-white/[0.08] rounded-2xl p-3.5 text-center">
+            <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-1">
+              <Layers className="w-3.5 h-3.5 text-[#00FF87]" />
               <span>Progreso</span>
             </div>
-            <span className="text-base sm:text-lg font-black text-zinc-900">
+            <span className="text-base sm:text-lg font-black text-[#00FF87]">
               {completedSetsCount}/{totalSetsCount} ({completionPercentage}%)
             </span>
           </div>
@@ -85,26 +85,26 @@ export const WorkoutFinishConfirmModal: React.FC<WorkoutFinishConfirmModalProps>
 
         {/* Informative notice */}
         {isAllCompleted ? (
-          <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-emerald-50 border border-emerald-200/60 text-emerald-900 text-xs mb-6">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-            <span>¡Excelente trabajo! Has completado el 100% de las series de esta rutina.</span>
+          <div className="flex items-start gap-2.5 p-3.5 rounded-2xl bg-[#00FF87]/15 border border-[#00FF87]/30 text-[#00FF87] text-xs mb-6">
+            <CheckCircle2 className="w-4 h-4 text-[#00FF87] shrink-0 mt-0.5" />
+            <span className="font-semibold">¡Excelente trabajo! Has completado el 100% de las series de esta rutina.</span>
           </div>
         ) : (
-          <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-amber-50 border border-amber-200/60 text-amber-900 text-xs mb-6">
-            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-            <span>
+          <div className="flex items-start gap-2.5 p-3.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs mb-6">
+            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <span className="leading-relaxed">
               Aún te quedan {remainingSets} serie{remainingSets > 1 ? 's' : ''} por completar. Al finalizar se registrará el tiempo y progreso alcanzado hasta ahora.
             </span>
           </div>
         )}
 
         {/* Buttons */}
-        <div className="flex items-center justify-end gap-2.5">
+        <div className="flex items-center justify-end gap-3 pt-2">
           <button
             id="btn-cancel-finish-workout"
             type="button"
             onClick={onCancel}
-            className="px-4 py-2.5 text-xs sm:text-sm font-semibold text-zinc-700 bg-zinc-100 hover:bg-zinc-200 rounded-xl transition-colors active:scale-95"
+            className="px-4 py-2.5 min-h-[48px] text-xs sm:text-sm font-semibold text-zinc-400 hover:text-white rounded-xl hover:bg-white/[0.06] transition-colors active:scale-[0.97]"
           >
             Continuar entrenando
           </button>
@@ -113,9 +113,9 @@ export const WorkoutFinishConfirmModal: React.FC<WorkoutFinishConfirmModalProps>
             id="btn-confirm-finish-workout"
             type="button"
             onClick={onConfirm}
-            className="px-4 py-2.5 text-xs sm:text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-sm active:scale-95 flex items-center gap-1.5"
+            className="px-5 py-2.5 min-h-[48px] text-xs sm:text-sm font-extrabold text-black bg-[#00FF87] hover:bg-[#00e57a] rounded-xl transition-all shadow-[0_0_15px_rgba(0,255,135,0.3)] active:scale-[0.97] flex items-center gap-2"
           >
-            <Flag className="w-4 h-4" /> Sí, finalizar rutina
+            <Flag className="w-4 h-4 text-black stroke-[2.5]" /> Sí, finalizar rutina
           </button>
         </div>
       </div>

@@ -1,8 +1,33 @@
 @import "tailwindcss";
 
+@layer base {
+  :root {
+    --bg-base: #0D0D0D;
+    --bg-surface: #18181B;
+    --bg-card: #1C1C1E;
+    --bg-card-elevated: #242428;
+    --accent-neon: #00FF87;
+    --accent-cyan: #00E5FF;
+    --text-primary: #FFFFFF;
+    --text-secondary: #A1A1AA;
+    --text-muted: #71717A;
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-glow: rgba(0, 255, 135, 0.35);
+  }
+
+  body {
+    background-color: #0D0D0D;
+    color: #FFFFFF;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
 html, body {
   overflow-x: clip;
   max-width: 100vw;
+  background-color: #0D0D0D;
 }
 
 /* Prevent mobile browser auto-zoom when focusing inputs (<16px triggers iOS zoom) */
@@ -14,4 +39,74 @@ html, body {
 
 * {
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Custom Scrollbar for Dark Gym Aesthetic */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0D0D0D;
+}
+::-webkit-scrollbar-thumb {
+  background: #27272A;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3F3F46;
+}
+
+/* Gym Tactile Feedback & Active Micro-animations */
+.btn-tactile, button:not(:disabled) {
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-tactile:active, button:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+/* Glow & Neon Accents */
+.neon-glow {
+  box-shadow: 0 0 20px rgba(0, 255, 135, 0.25);
+}
+
+.neon-glow-lg {
+  box-shadow: 0 0 35px rgba(0, 255, 135, 0.35);
+}
+
+.cyan-glow {
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.25);
+}
+
+/* Slide Up and Fade In Animations */
+@keyframes slide-up-sheet {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up-sheet 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Glassmorphism Classes */
+.glass-panel {
+  background: rgba(28, 28, 30, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-nav {
+  background: rgba(18, 18, 20, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }

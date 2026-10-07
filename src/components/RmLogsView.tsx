@@ -256,127 +256,128 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
   }, [catalog]);
 
   return (
-    <div id="rm-logs-container" className="max-w-4xl mx-auto px-3 sm:px-6 py-6 pb-24">
-      {/* Top Header Card */}
-      <div className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 p-4 sm:p-6 shadow-xs mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 shadow-xs">
-              <Trophy className="w-6 h-6 text-amber-600 fill-amber-600/20" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-black text-zinc-900 tracking-tight">
-                  Registro de RMs
-                </h1>
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-200">
-                  {rmLogs.length} ejercicios
-                </span>
+    <div id="rm-logs-container" className="min-h-screen bg-[#0D0D0D] text-white pb-28 pt-4 sm:pt-6">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6">
+        {/* Top Header Card */}
+        <div className="bg-[#1C1C1E] rounded-2xl border border-white/[0.08] p-5 sm:p-6 shadow-xl mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-white/10 text-[#00FF87] flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(0,255,135,0.2)]">
+                <Trophy className="w-6 h-6" />
               </div>
-              <p className="text-xs sm:text-sm text-zinc-600 mt-0.5">
-                Historial de pesos máximos (1RM) en ejercicios de tu biblioteca.
-              </p>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                    Registro de RMs
+                  </h1>
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-[#00FF87]/15 text-[#00FF87] border border-[#00FF87]/30">
+                    {rmLogs.length} ejercicios
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-[#A1A1AA] mt-0.5">
+                  Historial de pesos máximos (1RM) y récords en ejercicios de tu biblioteca.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <button
-            id="btn-open-add-rm-exercise"
-            type="button"
-            onClick={() => {
-              setSelectedCatalogExercise(null);
-              setInitialWeight('');
-              setInitialNotes('');
-              setIsAddModalOpen(true);
-            }}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs sm:text-sm shadow-xs transition-all active:scale-95 shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Añadir Ejercicio</span>
-          </button>
-        </div>
-
-        {/* Search filter */}
-        {rmLogs.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-zinc-100">
-            <div className="relative">
-              <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                id="search-rm-exercises"
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Buscar por ejercicio o grupo muscular..."
-                className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm rounded-xl border border-zinc-200 bg-zinc-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-colors"
-              />
-              {searchTerm && (
-                <button
-                  type="button"
-                  onClick={() => setSearchTerm('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 text-xs p-1"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Main List */}
-      {rmLogs.length === 0 ? (
-        <div className="text-center py-16 px-4 rounded-3xl border-2 border-dashed border-zinc-200 bg-white shadow-2xs">
-          <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-500 mx-auto flex items-center justify-center mb-4">
-            <Trophy className="w-8 h-8 text-amber-500/80" />
-          </div>
-          <h2 className="text-lg font-bold text-zinc-900 mb-1">
-            Aún no tienes ejercicios con RM registrado
-          </h2>
-          <p className="text-xs sm:text-sm text-zinc-600 max-w-md mx-auto mb-6 leading-relaxed">
-            Lleva el control de tus marcas personales (1RM). Selecciona cualquier ejercicio de tu
-            biblioteca y anota tus progresos a lo largo del tiempo.
-          </p>
-
-          {catalog.length > 0 ? (
             <button
-              id="btn-empty-add-rm"
+              id="btn-open-add-rm-exercise"
               type="button"
-              onClick={() => setIsAddModalOpen(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-sm transition-all active:scale-95"
+              onClick={() => {
+                setSelectedCatalogExercise(null);
+                setInitialWeight('');
+                setInitialNotes('');
+                setIsAddModalOpen(true);
+              }}
+              className="inline-flex items-center justify-center gap-2 px-5 min-h-[48px] rounded-2xl bg-[#00FF87] hover:bg-[#00e57a] text-black font-extrabold text-sm shadow-[0_0_20px_rgba(0,255,135,0.35)] transition-all active:scale-[0.97] shrink-0"
             >
-              <Plus className="w-4 h-4" />
-              <span>Añadir primer ejercicio</span>
+              <Plus className="w-4 h-4 stroke-[3]" />
+              <span>Añadir Ejercicio</span>
             </button>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-xs text-amber-800 font-semibold bg-amber-50 p-3 rounded-xl max-w-sm mx-auto border border-amber-200">
-                Tu biblioteca de ejercicios está vacía. Añade ejercicios primero en la Biblioteca para poder registrar su RM.
-              </p>
-              <button
-                type="button"
-                onClick={onGoToCatalog}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs shadow-xs transition-all"
-              >
-                <span>Ir a la Biblioteca</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+          </div>
+
+          {/* Search filter */}
+          {rmLogs.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-white/[0.08]">
+              <div className="relative">
+                <Search className="w-4 h-4 text-zinc-500 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  id="search-rm-exercises"
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Buscar por ejercicio o grupo muscular..."
+                  className="w-full min-h-[48px] pl-11 pr-10 py-2.5 text-sm rounded-2xl border border-white/10 bg-zinc-900/90 text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/20 transition-all shadow-inner"
+                />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white p-1"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>
-      ) : filteredRmLogs.length === 0 ? (
-        <div className="text-center py-12 px-4 rounded-2xl bg-white border border-zinc-200">
-          <Search className="w-8 h-8 text-zinc-400 mx-auto mb-2" />
-          <p className="text-sm font-semibold text-zinc-800">
-            No se encontraron ejercicios que coincidan con &quot;{searchTerm}&quot;
-          </p>
-          <button
-            type="button"
-            onClick={() => setSearchTerm('')}
-            className="mt-3 text-xs text-emerald-600 font-bold hover:underline"
-          >
-            Limpiar búsqueda
-          </button>
-        </div>
-      ) : (
+
+        {/* Main List */}
+        {rmLogs.length === 0 ? (
+          <div className="text-center py-16 px-6 rounded-2xl border border-white/[0.08] bg-[#1C1C1E] shadow-xl max-w-md mx-auto my-6">
+            <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-white/10 text-[#00FF87] mx-auto flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(0,255,135,0.2)]">
+              <Trophy className="w-8 h-8" />
+            </div>
+            <h2 className="text-lg font-bold text-white mb-1">
+              Aún no tienes ejercicios con RM registrado
+            </h2>
+            <p className="text-xs sm:text-sm text-[#A1A1AA] max-w-md mx-auto mb-6 leading-relaxed">
+              Lleva el control de tus marcas personales (1RM). Selecciona cualquier ejercicio de tu
+              biblioteca y anota tus progresos a lo largo del tiempo.
+            </p>
+
+            {catalog.length > 0 ? (
+              <button
+                id="btn-empty-add-rm"
+                type="button"
+                onClick={() => setIsAddModalOpen(true)}
+                className="inline-flex items-center gap-2 px-6 min-h-[48px] rounded-2xl bg-[#00FF87] hover:bg-[#00e57a] text-black font-extrabold text-sm shadow-[0_0_20px_rgba(0,255,135,0.35)] transition-all active:scale-[0.97]"
+              >
+                <Plus className="w-4 h-4 stroke-[3]" />
+                <span>Añadir primer ejercicio</span>
+              </button>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-xs text-amber-300 font-semibold bg-amber-500/10 p-3 rounded-xl max-w-sm mx-auto border border-amber-500/30">
+                  Tu biblioteca de ejercicios está vacía. Añade ejercicios primero en la Biblioteca para poder registrar su RM.
+                </p>
+                <button
+                  type="button"
+                  onClick={onGoToCatalog}
+                  className="inline-flex items-center gap-2 px-5 min-h-[44px] rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs border border-white/10 transition-all active:scale-95"
+                >
+                  <span>Ir a la Biblioteca</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+        ) : filteredRmLogs.length === 0 ? (
+          <div className="text-center py-12 px-4 rounded-2xl bg-[#1C1C1E] border border-white/[0.08]">
+            <Search className="w-8 h-8 text-zinc-500 mx-auto mb-2" />
+            <p className="text-sm font-semibold text-zinc-300">
+              No se encontraron ejercicios que coincidan con &quot;{searchTerm}&quot;
+            </p>
+            <button
+              type="button"
+              onClick={() => setSearchTerm('')}
+              className="mt-3 text-xs text-[#00FF87] font-bold hover:underline"
+            >
+              Limpiar búsqueda
+            </button>
+          </div>
+        ) : (
         <div className="space-y-4">
           {filteredRmLogs.map((log) => {
             const isExpanded = expandedExerciseId === log.id;
@@ -389,14 +390,14 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
               <div
                 key={log.id}
                 id={`rm-exercise-card-${log.id}`}
-                className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 shadow-2xs hover:shadow-xs transition-all overflow-hidden"
+                className="bg-[#1C1C1E] rounded-2xl border border-white/[0.08] shadow-lg hover:border-white/20 transition-all overflow-hidden"
               >
                 {/* Exercise Summary Header */}
                 <div className="p-4 sm:p-5">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                     {/* Left: Image / Name / Badges */}
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-zinc-100 border border-zinc-200/80 overflow-hidden shrink-0 flex items-center justify-center">
+                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-zinc-900 border border-white/10 overflow-hidden shrink-0 flex items-center justify-center">
                         {imageUrl ? (
                           <img
                             src={imageUrl}
@@ -404,55 +405,55 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <Dumbbell className="w-6 h-6 text-zinc-400" />
+                          <Dumbbell className="w-6 h-6 text-zinc-500" />
                         )}
                       </div>
 
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-0.5">
                           {log.category && (
-                            <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-600">
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-zinc-800 text-zinc-400 border border-white/5">
                               {log.category}
                             </span>
                           )}
-                          <span className="text-[11px] text-zinc-600 font-medium">
+                          <span className="text-[11px] text-[#A1A1AA] font-medium">
                             {log.records.length} {log.records.length === 1 ? 'registro' : 'registros'}
                           </span>
                         </div>
-                        <h2 className="text-base sm:text-lg font-bold text-zinc-900 tracking-tight truncate">
+                        <h2 className="text-base sm:text-lg font-black text-white tracking-tight truncate">
                           {log.exerciseName}
                         </h2>
                       </div>
                     </div>
 
                     {/* Right: Metrics + Action buttons */}
-                    <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-100">
+                    <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/[0.06]">
                       {/* Metric 1: Latest RM */}
-                      <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl px-3 py-1.5 text-center min-w-[90px]">
-                        <span className="block text-[10px] font-bold text-emerald-800 uppercase tracking-wide">
+                      <div className="bg-zinc-900/80 border border-[#00FF87]/30 rounded-xl px-3 py-1.5 text-center min-w-[90px] shadow-inner">
+                        <span className="block text-[10px] font-bold text-[#00FF87] uppercase tracking-wide">
                           Último RM
                         </span>
-                        <span className="text-base sm:text-lg font-black text-zinc-900 font-mono">
+                        <span className="text-base sm:text-lg font-black text-white font-mono">
                           {latestRecord ? `${latestRecord.weight} kg` : '--'}
                         </span>
                         {latestRecord && (
-                          <span className="block text-[10px] text-emerald-700 font-medium">
+                          <span className="block text-[10px] text-zinc-400 font-medium">
                             {formatRmDate(latestRecord.date)}
                           </span>
                         )}
                       </div>
 
                       {/* Metric 2: PR Record */}
-                      <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl px-3 py-1.5 text-center min-w-[90px] hidden xs:block">
-                        <div className="flex items-center justify-center gap-1 text-[10px] font-bold text-amber-800 uppercase tracking-wide">
-                          <Sparkles className="w-3 h-3 text-amber-600" />
+                      <div className="bg-zinc-900/80 border border-[#00E5FF]/30 rounded-xl px-3 py-1.5 text-center min-w-[90px] hidden xs:block shadow-inner">
+                        <div className="flex items-center justify-center gap-1 text-[10px] font-bold text-[#00E5FF] uppercase tracking-wide">
+                          <Sparkles className="w-3 h-3 text-[#00E5FF]" />
                           <span>Récord Max</span>
                         </div>
-                        <span className="text-base sm:text-lg font-black text-zinc-900 font-mono">
+                        <span className="text-base sm:text-lg font-black text-white font-mono">
                           {highestRecord ? `${highestRecord.weight} kg` : '--'}
                         </span>
                         {highestRecord && (
-                          <span className="block text-[10px] text-amber-700 font-medium">
+                          <span className="block text-[10px] text-zinc-400 font-medium">
                             {formatRmDate(highestRecord.date)}
                           </span>
                         )}
@@ -469,10 +470,10 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
                             setQuickDate(getTodayDateString());
                             setQuickNotes('');
                           }}
-                          className="px-2.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs transition-all active:scale-95 flex items-center gap-1 shadow-2xs"
+                          className="px-3 min-h-[44px] rounded-xl bg-[#00FF87] hover:bg-[#00e57a] text-black font-extrabold text-xs transition-all active:scale-[0.97] flex items-center gap-1 shadow-[0_0_15px_rgba(0,255,135,0.25)]"
                           title="Añadir nuevo registro rápido"
                         >
-                          <Plus className="w-3.5 h-3.5" />
+                          <Plus className="w-3.5 h-3.5 stroke-[3]" />
                           <span className="hidden sm:inline">Nuevo RM</span>
                         </button>
 
@@ -480,10 +481,10 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
                           id={`btn-toggle-history-${log.id}`}
                           type="button"
                           onClick={() => setExpandedExerciseId(isExpanded ? null : log.id)}
-                          className={`p-2 rounded-xl border transition-colors ${
+                          className={`min-h-[44px] min-w-[44px] p-2.5 rounded-xl border transition-all active:scale-95 flex items-center justify-center ${
                             isExpanded
-                              ? 'bg-zinc-100 text-zinc-900 border-zinc-300'
-                              : 'bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50'
+                              ? 'bg-zinc-800 text-white border-white/20'
+                              : 'bg-zinc-900 text-zinc-400 border-white/10 hover:text-white hover:border-white/20'
                           }`}
                           title={isExpanded ? 'Ocultar historial' : 'Ver historial'}
                           aria-label={isExpanded ? 'Ocultar historial' : 'Ver historial'}
@@ -499,7 +500,7 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
                           id={`btn-delete-rm-exercise-${log.id}`}
                           type="button"
                           onClick={() => handleDeleteExercise(log.id, log.exerciseName)}
-                          className="p-2 rounded-xl text-zinc-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          className="min-h-[44px] min-w-[44px] p-2.5 rounded-xl border border-red-500/20 bg-zinc-900 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all active:scale-95 flex items-center justify-center"
                           title="Eliminar ejercicio de RMs"
                           aria-label="Eliminar ejercicio de RMs"
                         >
@@ -512,10 +513,10 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
 
                 {/* History Drawer Section */}
                 {isExpanded && (
-                  <div className="border-t border-zinc-100 bg-zinc-50/60 p-4 sm:p-5 animate-in slide-in-from-top-2 duration-150">
+                  <div className="border-t border-white/[0.08] bg-black/40 p-4 sm:p-5 animate-in slide-in-from-top-2 duration-150">
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-xs font-bold text-zinc-600 uppercase tracking-wider flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+                      <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-[#00FF87]" />
                         <span>Historial de registros ({log.records.length})</span>
                       </h3>
 
@@ -527,7 +528,7 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
                           setQuickDate(getTodayDateString());
                           setQuickNotes('');
                         }}
-                        className="text-xs font-bold text-emerald-700 hover:text-emerald-800 inline-flex items-center gap-1"
+                        className="text-xs font-bold text-[#00FF87] hover:underline inline-flex items-center gap-1"
                       >
                         <Plus className="w-3.5 h-3.5" /> <span>Añadir registro hoy</span>
                       </button>
@@ -544,11 +545,11 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
                           return (
                             <div
                               key={record.id}
-                              className="p-3 rounded-2xl bg-white border border-emerald-500 shadow-xs"
+                              className="p-3.5 rounded-2xl bg-[#1C1C1E] border border-[#00FF87]/50 shadow-lg"
                             >
                               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-2.5">
                                 <div>
-                                  <label className="block text-[10px] font-bold text-zinc-600 uppercase mb-0.5">
+                                  <label className="block text-[10px] font-bold text-zinc-400 uppercase mb-0.5">
                                     Peso (kg) *
                                   </label>
                                   <input
@@ -557,24 +558,24 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
                                     min="0"
                                     value={editWeight}
                                     onChange={(e) => setEditWeight(e.target.value)}
-                                    className="w-full px-2.5 py-1.5 text-xs font-bold rounded-lg border border-zinc-300 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                    className="w-full min-h-[44px] px-3 py-2 text-xs font-bold rounded-xl border border-white/10 bg-zinc-900 text-white focus:outline-none focus:border-[#00FF87]"
                                   />
                                 </div>
 
                                 <div>
-                                  <label className="block text-[10px] font-bold text-zinc-600 uppercase mb-0.5">
+                                  <label className="block text-[10px] font-bold text-zinc-400 uppercase mb-0.5">
                                     Fecha *
                                   </label>
                                   <input
                                     type="date"
                                     value={editDate}
                                     onChange={(e) => setEditDate(e.target.value)}
-                                    className="w-full px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-zinc-300 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                    className="w-full min-h-[44px] px-3 py-2 text-xs font-semibold rounded-xl border border-white/10 bg-zinc-900 text-white focus:outline-none focus:border-[#00FF87]"
                                   />
                                 </div>
 
                                 <div>
-                                  <label className="block text-[10px] font-bold text-zinc-600 uppercase mb-0.5">
+                                  <label className="block text-[10px] font-bold text-zinc-400 uppercase mb-0.5">
                                     Notas (opcional)
                                   </label>
                                   <input
@@ -582,7 +583,7 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
                                     placeholder="RPE 9.5, agarre cerrado..."
                                     value={editNotes}
                                     onChange={(e) => setEditNotes(e.target.value)}
-                                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-zinc-300 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                    className="w-full min-h-[44px] px-3 py-2 text-xs rounded-xl border border-white/10 bg-zinc-900 text-white focus:outline-none focus:border-[#00FF87]"
                                   />
                                 </div>
                               </div>
@@ -591,14 +592,14 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => setEditingRecordId(null)}
-                                  className="px-2.5 py-1 text-xs font-semibold text-zinc-600 hover:bg-zinc-100 rounded-lg"
+                                  className="px-3 min-h-[40px] text-xs font-semibold text-zinc-400 hover:text-white rounded-xl"
                                 >
                                   Cancelar
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleSaveEditRecord(log.id, record.id)}
-                                  className="px-3 py-1 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg flex items-center gap-1 shadow-2xs"
+                                  className="px-4 min-h-[40px] text-xs font-bold text-black bg-[#00FF87] hover:bg-[#00e57a] rounded-xl flex items-center gap-1 active:scale-95"
                                 >
                                   <Check className="w-3.5 h-3.5" /> Guardar
                                 </button>
@@ -610,31 +611,31 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
                         return (
                           <div
                             key={record.id}
-                            className="flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-white border border-zinc-200/80 text-xs hover:border-zinc-300 transition-colors"
+                            className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/90 border border-white/[0.06] hover:border-white/15 transition-all text-xs"
                           >
-                            <div className="flex items-center gap-3">
-                              <span className="font-mono font-black text-sm sm:text-base text-zinc-900 min-w-[70px]">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <span className="font-mono font-black text-sm sm:text-base text-white min-w-[70px]">
                                 {record.weight} kg
                               </span>
 
                               {nextRecord && (
                                 <span
-                                  className={`inline-flex items-center gap-0.5 font-bold text-[11px] px-1.5 py-0.5 rounded-md ${
+                                  className={`inline-flex items-center gap-0.5 font-bold text-[11px] px-2 py-0.5 rounded-full ${
                                     diff > 0
-                                      ? 'bg-emerald-100 text-emerald-800'
+                                      ? 'bg-[#00FF87]/20 text-[#00FF87]'
                                       : diff < 0
-                                      ? 'bg-rose-100 text-rose-800'
-                                      : 'bg-zinc-100 text-zinc-600'
+                                      ? 'bg-rose-500/20 text-rose-400'
+                                      : 'bg-zinc-800 text-zinc-400'
                                   }`}
                                 >
                                   {diff > 0 ? (
                                     <>
-                                      <ArrowUpRight className="w-3 h-3 text-emerald-600" />
+                                      <ArrowUpRight className="w-3 h-3 text-[#00FF87]" />
                                       +{diff.toFixed(1)} kg
                                     </>
                                   ) : diff < 0 ? (
                                     <>
-                                      <ArrowDownRight className="w-3 h-3 text-rose-600" />
+                                      <ArrowDownRight className="w-3 h-3 text-rose-400" />
                                       {diff.toFixed(1)} kg
                                     </>
                                   ) : (
@@ -646,13 +647,13 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
                                 </span>
                               )}
 
-                              <span className="text-zinc-600 font-medium">
+                              <span className="text-zinc-400 font-medium">
                                 {formatRmDate(record.date)}
                               </span>
 
                               {record.notes && (
-                                <span className="hidden sm:inline-flex items-center gap-1 text-zinc-600 bg-zinc-50 px-2 py-0.5 rounded-md border border-zinc-200/60 truncate max-w-xs">
-                                  <FileText className="w-3 h-3 shrink-0 text-zinc-400" />
+                                <span className="hidden sm:inline-flex items-center gap-1 text-[#A1A1AA] bg-zinc-800/80 px-2 py-0.5 rounded-md border border-white/5 truncate max-w-xs">
+                                  <FileText className="w-3 h-3 shrink-0 text-zinc-500" />
                                   <span className="truncate">{record.notes}</span>
                                 </span>
                               )}
@@ -662,7 +663,7 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
                               <button
                                 type="button"
                                 onClick={() => handleStartEditRecord(record)}
-                                className="p-1 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition-colors"
+                                className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors"
                                 title="Editar registro"
                                 aria-label="Editar registro"
                               >
@@ -672,7 +673,7 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
                               <button
                                 type="button"
                                 onClick={() => handleDeleteRecord(log.id, record.id)}
-                                className="p-1 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                className="p-1.5 text-zinc-400 hover:text-rose-400 rounded-lg hover:bg-rose-500/10 transition-colors"
                                 title="Eliminar registro"
                                 aria-label="Eliminar registro"
                               >
@@ -695,29 +696,29 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
       {quickLogTarget && (
         <div
           id="modal-quick-add-rm"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
           onClick={() => setQuickLogTarget(null)}
         >
           <div
-            className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-zinc-200 animate-in zoom-in-95 duration-200"
+            className="bg-[#1C1C1E] rounded-3xl max-w-md w-full p-6 shadow-2xl border border-white/[0.08] animate-in zoom-in-95 duration-200 text-white"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-3 mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
-                  <Trophy className="w-5 h-5 text-amber-600" />
+                <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-white/10 text-[#00FF87] flex items-center justify-center shrink-0">
+                  <Trophy className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base sm:text-lg font-black text-zinc-900 tracking-tight">
+                  <h3 className="text-base sm:text-lg font-black text-white tracking-tight">
                     Nuevo registro de RM
                   </h3>
-                  <p className="text-xs text-zinc-600 font-semibold">{quickLogTarget.exerciseName}</p>
+                  <p className="text-xs text-[#A1A1AA] font-semibold">{quickLogTarget.exerciseName}</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setQuickLogTarget(null)}
-                className="p-1 text-zinc-400 hover:text-zinc-600 rounded-lg hover:bg-zinc-100"
+                className="p-1 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -725,7 +726,7 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
 
             <div className="space-y-3.5 mb-5">
               <div>
-                <label className="block text-xs font-bold text-zinc-700 uppercase tracking-wide mb-1">
+                <label className="block text-xs font-bold text-[#A1A1AA] uppercase tracking-wide mb-1">
                   Peso Máximo (kg) *
                 </label>
                 <input
@@ -736,24 +737,24 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
                   value={quickWeight}
                   onChange={(e) => setQuickWeight(e.target.value)}
                   autoFocus
-                  className="w-full px-3.5 py-2.5 text-base font-bold rounded-xl border border-zinc-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full min-h-[48px] px-3.5 py-2.5 text-base font-bold rounded-xl border border-white/10 bg-zinc-900 text-white focus:outline-none focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/20"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-zinc-700 uppercase tracking-wide mb-1">
+                <label className="block text-xs font-bold text-[#A1A1AA] uppercase tracking-wide mb-1">
                   Fecha *
                 </label>
                 <input
                   type="date"
                   value={quickDate}
                   onChange={(e) => setQuickDate(e.target.value)}
-                  className="w-full px-3.5 py-2 text-xs font-semibold rounded-xl border border-zinc-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full min-h-[48px] px-3.5 py-2 text-xs font-semibold rounded-xl border border-white/10 bg-zinc-900 text-white focus:outline-none focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/20"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-zinc-700 uppercase tracking-wide mb-1">
+                <label className="block text-xs font-bold text-[#A1A1AA] uppercase tracking-wide mb-1">
                   Notas / Observaciones (opcional)
                 </label>
                 <input
@@ -761,7 +762,7 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
                   placeholder="Ej: Nueva barra, RPE 10, técnica perfecta..."
                   value={quickNotes}
                   onChange={(e) => setQuickNotes(e.target.value)}
-                  className="w-full px-3.5 py-2 text-xs rounded-xl border border-zinc-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full min-h-[48px] px-3.5 py-2 text-xs rounded-xl border border-white/10 bg-zinc-900 text-white focus:outline-none focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/20"
                 />
               </div>
             </div>
@@ -770,7 +771,7 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
               <button
                 type="button"
                 onClick={() => setQuickLogTarget(null)}
-                className="px-4 py-2.5 text-xs sm:text-sm font-semibold text-zinc-600 hover:bg-zinc-100 rounded-xl"
+                className="px-4 min-h-[48px] text-xs sm:text-sm font-semibold text-zinc-400 hover:text-white rounded-xl"
               >
                 Cancelar
               </button>
@@ -778,9 +779,9 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
                 id="btn-submit-quick-rm"
                 type="button"
                 onClick={() => handleAddRecordToLog(quickLogTarget.id)}
-                className="px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs transition-all active:scale-95 flex items-center gap-1.5"
+                className="px-5 min-h-[48px] text-xs sm:text-sm font-extrabold text-black bg-[#00FF87] hover:bg-[#00e57a] rounded-xl shadow-[0_0_20px_rgba(0,255,135,0.35)] transition-all active:scale-[0.97] flex items-center gap-1.5"
               >
-                <Plus className="w-4 h-4" /> Guardar RM
+                <Plus className="w-4 h-4 stroke-[3]" /> Guardar RM
               </button>
             </div>
           </div>
@@ -791,24 +792,24 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
       {isAddModalOpen && (
         <div
           id="modal-add-rm-from-catalog"
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200 overflow-hidden"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200 overflow-hidden"
           onClick={() => setIsAddModalOpen(false)}
         >
           <div
-            className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl border border-zinc-200 animate-in zoom-in-95 duration-200 overflow-hidden"
+            className="bg-[#1C1C1E] rounded-3xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl border border-white/[0.08] animate-in zoom-in-95 duration-200 overflow-hidden text-white"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="p-4 sm:p-5 border-b border-zinc-200 flex items-center justify-between">
+            <div className="p-4 sm:p-5 border-b border-white/[0.08] flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
-                  <Trophy className="w-5 h-5 text-amber-600" />
+                <div className="w-9 h-9 rounded-xl bg-zinc-900 border border-white/10 text-[#00FF87] flex items-center justify-center">
+                  <Trophy className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base sm:text-lg font-black text-zinc-900">
+                  <h3 className="text-base sm:text-lg font-black text-white">
                     Añadir ejercicio a RMs
                   </h3>
-                  <p className="text-xs text-zinc-600 font-medium">
+                  <p className="text-xs text-[#A1A1AA] font-medium">
                     Selecciona un ejercicio de tu biblioteca
                   </p>
                 </div>
@@ -816,7 +817,7 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(false)}
-                className="p-1.5 text-zinc-400 hover:text-zinc-700 rounded-xl hover:bg-zinc-100"
+                className="p-1.5 text-zinc-400 hover:text-white rounded-xl hover:bg-zinc-800"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -828,20 +829,20 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
                 <>
                   {/* Search within available catalog */}
                   <div className="relative">
-                    <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Search className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       placeholder="Buscar en tu biblioteca de ejercicios..."
                       value={catalogSearch}
                       onChange={(e) => setCatalogSearch(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-zinc-200 bg-zinc-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      className="w-full min-h-[48px] pl-10 pr-3 py-2 text-xs rounded-xl border border-white/10 bg-zinc-900 text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#00FF87]"
                     />
                   </div>
 
                   {/* List of library exercises */}
                   <div className="space-y-2 max-h-64 sm:max-h-72 overflow-y-auto pr-1">
                     {availableCatalog.length === 0 ? (
-                      <div className="text-center py-8 text-zinc-600 text-xs">
+                      <div className="text-center py-8 text-zinc-500 text-xs">
                         {catalog.length === 0 ? (
                           <span>No hay ejercicios creados en la biblioteca.</span>
                         ) : (
@@ -861,10 +862,10 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
                                 : ''
                             );
                           }}
-                          className="w-full flex items-center justify-between p-3 rounded-2xl border border-zinc-200 hover:border-emerald-500 hover:bg-emerald-50/30 text-left transition-all group"
+                          className="w-full flex items-center justify-between p-3 rounded-2xl border border-white/10 hover:border-[#00FF87] hover:bg-[#00FF87]/10 text-left transition-all group active:scale-[0.98]"
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-10 h-10 rounded-xl bg-zinc-100 border border-zinc-200 overflow-hidden shrink-0 flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-white/10 overflow-hidden shrink-0 flex items-center justify-center">
                               {exercise.imageUrl ? (
                                 <img
                                   src={exercise.imageUrl}
@@ -872,21 +873,21 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
                                   className="w-full h-full object-cover"
                                 />
                               ) : (
-                                <Dumbbell className="w-5 h-5 text-zinc-400" />
+                                <Dumbbell className="w-5 h-5 text-zinc-500" />
                               )}
                             </div>
                             <div className="min-w-0">
-                              <span className="block font-bold text-xs sm:text-sm text-zinc-900 truncate group-hover:text-emerald-950">
+                              <span className="block font-bold text-xs sm:text-sm text-white truncate group-hover:text-[#00FF87]">
                                 {exercise.name}
                               </span>
                               {exercise.category && (
-                                <span className="text-[10px] text-zinc-600 font-semibold">
+                                <span className="text-[10px] text-zinc-400 font-semibold">
                                   {exercise.category}
                                 </span>
                               )}
                             </div>
                           </div>
-                          <span className="text-xs font-bold text-emerald-600 shrink-0 ml-2">
+                          <span className="text-xs font-bold text-[#00FF87] shrink-0 ml-2">
                             Elegir &rarr;
                           </span>
                         </button>
@@ -897,9 +898,9 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
               ) : (
                 /* Step 2: Form to set initial RM */
                 <div className="space-y-4 animate-in fade-in duration-150">
-                  <div className="flex items-center justify-between p-3 rounded-2xl bg-zinc-100 border border-zinc-200">
+                  <div className="flex items-center justify-between p-3 rounded-2xl bg-zinc-900 border border-white/10">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-white border border-zinc-200 overflow-hidden shrink-0 flex items-center justify-center">
+                      <div className="w-9 h-9 rounded-xl bg-black border border-white/10 overflow-hidden shrink-0 flex items-center justify-center">
                         {selectedCatalogExercise.imageUrl ? (
                           <img
                             src={selectedCatalogExercise.imageUrl}
@@ -911,10 +912,10 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
                         )}
                       </div>
                       <div className="min-w-0">
-                        <span className="text-xs font-bold text-zinc-900 block truncate">
+                        <span className="text-xs font-bold text-white block truncate">
                           {selectedCatalogExercise.name}
                         </span>
-                        <span className="text-[10px] text-zinc-600 font-medium">
+                        <span className="text-[10px] text-zinc-400 font-medium">
                           {selectedCatalogExercise.category || 'General'}
                         </span>
                       </div>
@@ -922,14 +923,14 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setSelectedCatalogExercise(null)}
-                      className="text-xs font-bold text-zinc-500 hover:text-zinc-800"
+                      className="text-xs font-bold text-[#00FF87] hover:underline"
                     >
                       Cambiar
                     </button>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-zinc-700 uppercase tracking-wide mb-1">
+                    <label className="block text-xs font-bold text-[#A1A1AA] uppercase tracking-wide mb-1">
                       Peso Máximo (1RM) *
                     </label>
                     <div className="relative">
@@ -941,7 +942,7 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
                         value={initialWeight}
                         onChange={(e) => setInitialWeight(e.target.value)}
                         autoFocus
-                        className="w-full px-3.5 py-2.5 text-base font-bold rounded-xl border border-zinc-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 pr-10"
+                        className="w-full min-h-[48px] px-3.5 py-2.5 text-base font-bold rounded-xl border border-white/10 bg-zinc-900 text-white focus:outline-none focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/20 pr-10"
                       />
                       <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400">
                         kg
@@ -950,19 +951,19 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-zinc-700 uppercase tracking-wide mb-1">
+                    <label className="block text-xs font-bold text-[#A1A1AA] uppercase tracking-wide mb-1">
                       Fecha del registro *
                     </label>
                     <input
                       type="date"
                       value={initialDate}
                       onChange={(e) => setInitialDate(e.target.value)}
-                      className="w-full px-3.5 py-2 text-xs font-semibold rounded-xl border border-zinc-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full min-h-[48px] px-3.5 py-2 text-xs font-semibold rounded-xl border border-white/10 bg-zinc-900 text-white focus:outline-none focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/20"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-zinc-700 uppercase tracking-wide mb-1">
+                    <label className="block text-xs font-bold text-[#A1A1AA] uppercase tracking-wide mb-1">
                       Notas / Observaciones (opcional)
                     </label>
                     <input
@@ -970,7 +971,7 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
                       placeholder="Ej: Marca conseguida en competición, RPE 10..."
                       value={initialNotes}
                       onChange={(e) => setInitialNotes(e.target.value)}
-                      className="w-full px-3.5 py-2 text-xs rounded-xl border border-zinc-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full min-h-[48px] px-3.5 py-2 text-xs rounded-xl border border-white/10 bg-zinc-900 text-white focus:outline-none focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/20"
                     />
                   </div>
                 </div>
@@ -979,11 +980,11 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
 
             {/* Modal Footer */}
             {selectedCatalogExercise && (
-              <div className="p-4 border-t border-zinc-200 bg-zinc-50 flex items-center justify-end gap-2.5">
+              <div className="p-4 border-t border-white/[0.08] bg-zinc-900/80 flex items-center justify-end gap-2.5">
                 <button
                   type="button"
                   onClick={() => setSelectedCatalogExercise(null)}
-                  className="px-4 py-2 text-xs font-semibold text-zinc-600 hover:bg-zinc-200 rounded-xl"
+                  className="px-4 min-h-[48px] text-xs font-semibold text-zinc-400 hover:text-white rounded-xl"
                 >
                   Volver
                 </button>
@@ -991,15 +992,16 @@ export const RmLogsView: React.FC<RmLogsViewProps> = ({
                   id="btn-confirm-add-rm"
                   type="button"
                   onClick={handleConfirmAddExercise}
-                  className="px-5 py-2 text-xs sm:text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs transition-all active:scale-95 flex items-center gap-1.5"
+                  className="px-5 min-h-[48px] text-xs sm:text-sm font-extrabold text-black bg-[#00FF87] hover:bg-[#00e57a] rounded-xl shadow-[0_0_20px_rgba(0,255,135,0.35)] transition-all active:scale-[0.97] flex items-center gap-1.5"
                 >
-                  <Plus className="w-4 h-4" /> Guardar en RMs
+                  <Plus className="w-4 h-4 stroke-[3]" /> Guardar en RMs
                 </button>
               </div>
             )}
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

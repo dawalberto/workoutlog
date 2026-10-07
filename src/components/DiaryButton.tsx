@@ -41,11 +41,11 @@ export const DiaryButton: React.FC<DiaryButtonProps> = ({
         onClick={handleClick}
         title={tooltip}
         aria-label={tooltip}
-        className={`relative p-1.5 rounded-lg text-zinc-500 hover:text-emerald-700 hover:bg-emerald-50 active:scale-95 transition-all shrink-0 ${className}`}
+        className={`relative p-2 rounded-xl text-zinc-400 hover:text-[#00FF87] hover:bg-zinc-800 active:scale-95 transition-all shrink-0 ${className}`}
       >
-        <BookOpen className="w-3.5 h-3.5" />
+        <BookOpen className="w-4 h-4" />
         {hasEntries && (
-          <span className="absolute -top-1 -right-1 px-1 min-w-[14px] h-[14px] leading-[14px] text-[9px] font-black rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-2xs">
+          <span className="absolute -top-1 -right-1 px-1 min-w-[14px] h-[14px] leading-[14px] text-[9px] font-black rounded-full bg-[#00FF87] text-black flex items-center justify-center shadow-xs">
             {count}
           </span>
         )}
@@ -60,16 +60,16 @@ export const DiaryButton: React.FC<DiaryButtonProps> = ({
       onClick={handleClick}
       title={tooltip}
       aria-label={tooltip}
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold transition-all shrink-0 active:scale-95 select-none ${
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all shrink-0 active:scale-95 select-none ${
         hasEntries
-          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/90 hover:bg-emerald-100/80 shadow-2xs'
-          : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 border border-zinc-200/80 hover:text-zinc-900'
+          ? 'bg-[#00FF87]/15 text-[#00FF87] border border-[#00FF87]/30 hover:bg-[#00FF87]/25 shadow-[0_0_8px_rgba(0,255,135,0.2)]'
+          : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-white/10'
       } ${className}`}
     >
-      <BookOpen className={`w-3 h-3 ${hasEntries ? 'text-emerald-600' : 'text-zinc-400'}`} />
+      <BookOpen className={`w-3.5 h-3.5 ${hasEntries ? 'text-[#00FF87]' : 'text-zinc-500'}`} />
       <span>Diario</span>
       {hasEntries && (
-        <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-emerald-600 text-white ml-0.5">
+        <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-[#00FF87] text-black ml-0.5">
           {count}
         </span>
       )}

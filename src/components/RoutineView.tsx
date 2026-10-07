@@ -1,3 +1,8 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   ArrowLeft, 
@@ -7,29 +12,32 @@ import {
   Clock, 
   RotateCcw, 
   CheckCircle2, 
-  Dumbbell,
-  FileText,
-  ArrowUpDown,
-  Flag
+  Dumbbell, 
+  FileText, 
+  ArrowUpDown, 
+  Flag,
+  Zap,
+  Activity
 } from 'lucide-react';
 import { 
   Exercise, 
   ExerciseDefinition, 
   Routine, 
   RoutineSubMode, 
-  ActiveWorkoutSession,
-  WorkoutCompletionSummary,
-  ExerciseRmLog,
-  ExerciseDiary 
+  ActiveWorkoutSession, 
+  WorkoutCompletionSummary, 
+  ExerciseRmLog, 
+  ExerciseDiary,
+  ActiveRestTimer
 } from '../types';
 import { 
   getRoutineTotalSeconds, 
   formatSecondsToTime, 
-  formatWorkoutDuration 
+  formatWorkoutDuration,
+  formatExerciseSummary
 } from '../utils/timeCalculations';
 import { useWorkoutTimer } from '../hooks/useWorkoutTimer';
 import { ExerciseCard } from './ExerciseCard';
-import { RestTimerBar } from './RestTimerBar';
 import { AddExerciseModal } from './AddExerciseModal';
 import { ReorderExercisesModal } from './ReorderExercisesModal';
 import { WorkoutFinishConfirmModal } from './WorkoutFinishConfirmModal';
@@ -51,6 +59,8 @@ interface RoutineViewProps {
   onFinishSession: (summary: WorkoutCompletionSummary) => void;
   onCheckRmWeight?: (exerciseName: string, newWeight: number, exerciseId?: string) => void;
   onOpenDiary?: (exerciseName: string, exerciseId?: string) => void;
+  onStartRestTimer?: (timer: ActiveRestTimer) => void;
+  onCloseRestTimer?: () => void;
 }
 
 export const RoutineView: React.FC<RoutineViewProps> = ({
@@ -69,15 +79,11 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
   onFinishSession,
   onCheckRmWeight,
   onOpenDiary,
+  onStartRestTimer,
+  onCloseRestTimer,
 }) => {
   const [subMode, setSubMode] = useState<RoutineSubMode>(initialMode);
   const [isFinishConfirmOpen, setIsFinishConfirmOpen] = useState(false);
-  const [activeTimer, setActiveTimer] = useState<{
-    initialSeconds: number;
-    exerciseName?: string;
-    setNumber?: number;
-    key?: number;
-  } | null>(null);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showReorderModal, setShowReorderModal] = useState(false);
@@ -119,51 +125,50 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
     });
   };
 
-  // Infallible absolute live elapsed time (based on epoch ms Date.now() - session.startTime)
-  const elapsedSeconds = useWorkoutTimer(session?.startTime);
+  // Stopwatch timer for workout duration
+  const elapsedSeconds = useWorkoutTimer(session?.startTime || null);
 
+  // Total calculated time of the routine
   const totalWorkoutSeconds = getRoutineTotalSeconds(routine);
 
-  // Overall workout completion calculation based on persistent session state
-  const completedSetIds = new Set(session?.completedSetIds || []);
-  const allSetsInRoutine = routine.exercises.flatMap((ex) => ex.sets);
-  const totalSetsCount = allSetsInRoutine.length;
-  const completedSetsCount = allSetsInRoutine.filter((s) => completedSetIds.has(s.id)).length;
-  const completionPercentage = totalSetsCount > 0 ? Math.round((completedSetsCount / totalSetsCount) * 100) : 0;
+  // Session set completions
+  const completedSetIds = new Set<string>(session?.completedSetIds || []);
+  const totalSetsCount = routine.exercises.reduce((acc, ex) => acc + ex.sets.length, 0);
+  const completedSetsCount = routine.exercises.reduce(
+    (acc, ex) => acc + ex.sets.filter((s) => completedSetIds.has(s.id)).length,
+    0
+  );
   const allExercisesCompleted = totalSetsCount > 0 && completedSetsCount === totalSetsCount;
+  const completionPercentage = totalSetsCount > 0 ? Math.round((completedSetsCount / totalSetsCount) * 100) : 0;
 
-  // Toggle set completion (Execution Mode only)
+  // Handler when user toggles a set check
   const handleToggleSetComplete = (setId: string, restSeconds: number, exerciseName: string, setNumber: number) => {
-    const isNowCompleted = !completedSetIds.has(setId);
+    initRestAudioContext();
 
-    // Rule: "Si el usuario no le da a iniciar manualmente se activará automáticamente en cuanto marque cualquier serie como completada."
-    if (isNowCompleted && (!session || !session.startTime)) {
+    if (!session?.startTime) {
       onStartSession(routine.id);
     }
 
+    const wasCompleted = completedSetIds.has(setId);
     onToggleSetComplete(routine.id, setId);
 
-    if (isNowCompleted) {
-      // Ensure ambient audio context is initialized on user gesture without interrupting music
-      initRestAudioContext();
-
-      // Start rest timer if rest seconds > 0
+    if (!wasCompleted) {
       if (restSeconds > 0) {
-        setActiveTimer({
+        onStartRestTimer?.({
+          routineId: routine.id,
           initialSeconds: restSeconds,
+          targetEndTime: Date.now() + restSeconds * 1000,
           exerciseName,
           setNumber,
           key: Date.now(),
         });
       }
 
-      // Check if this completion finishes all sets of the exercise:
       const exIndex = routine.exercises.findIndex((ex) => ex.sets.some((s) => s.id === setId));
       if (exIndex !== -1) {
         const targetEx = routine.exercises[exIndex];
         const willBeAllCompleted = targetEx.sets.every((s) => s.id === setId || completedSetIds.has(s.id));
         if (willBeAllCompleted) {
-          // Collapse current exercise and uncollapse the next exercise
           setCollapsedExerciseIds((prev) => {
             const next = new Set(prev);
             next.add(targetEx.id);
@@ -180,7 +185,7 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
 
   const handleResetSession = () => {
     if (window.confirm('¿Reiniciar el progreso de la sesión actual?')) {
-      setActiveTimer(null);
+      onCloseRestTimer?.();
       onResetSession(routine.id);
     }
   };
@@ -204,10 +209,12 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
         name: ex.name,
         completedSets: ex.sets.filter((s) => completedSetIds.has(s.id)).length,
         totalSets: ex.sets.length,
+        summaryText: formatExerciseSummary(ex.sets),
+        sets: ex.sets,
       })),
     };
 
-    setActiveTimer(null);
+    onCloseRestTimer?.();
     onFinishSession(summary);
   };
 
@@ -282,43 +289,43 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
   };
 
   return (
-    <div id="routine-view-container" className="min-h-screen bg-zinc-50 pb-28">
-      {/* Top sticky bar - Always visible while scrolling */}
-      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-zinc-200/90 shadow-2xs pt-[env(safe-area-inset-top,0px)]">
-        <div className="max-w-4xl mx-auto px-3 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between gap-2 sm:gap-3">
+    <div id="routine-view-container" className="min-h-screen bg-[#0D0D0D] text-white pb-32">
+      {/* Top sticky bar */}
+      <div className="sticky top-0 z-40 bg-[#121214]/90 backdrop-blur-xl border-b border-white/[0.08] shadow-lg pt-[env(safe-area-inset-top,0px)]">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
             <button
               id="btn-back-to-routines"
               type="button"
               onClick={onBack}
-              className="shrink-0 inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 text-xs font-semibold rounded-lg text-zinc-700 hover:bg-zinc-100 transition-colors active:scale-95"
+              className="shrink-0 min-h-[44px] inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl text-zinc-300 hover:text-white bg-zinc-900 border border-white/10 hover:border-white/20 transition-all active:scale-[0.97]"
             >
               <ArrowLeft className="w-4 h-4" /> <span>Rutinas</span>
             </button>
 
-            {/* In-header live workout timer indicator when scrolled down in training mode */}
+            {/* In-header live workout stopwatch */}
             {subMode === 'execute' && session?.startTime && (
               <div 
-                className="hidden xs:flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-emerald-50 border border-emerald-200/80 text-emerald-800 font-mono font-bold text-xs shrink-0 shadow-2xs"
+                className="hidden xs:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 border border-[#00FF87]/30 text-[#00FF87] font-mono font-bold text-xs shrink-0 shadow-inner"
                 title="Tiempo de entrenamiento transcurrido"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <Clock className="w-3 h-3 text-emerald-600" />
+                <span className="w-2 h-2 rounded-full bg-[#00FF87] animate-ping" />
+                <Clock className="w-3.5 h-3.5" />
                 <span>{formatWorkoutDuration(elapsedSeconds)}</span>
               </div>
             )}
           </div>
 
-          {/* Mode Switcher Tabs - Always visible at hand */}
-          <div className="shrink-0 flex items-center p-1 bg-zinc-100 rounded-xl border border-zinc-200/80 shadow-2xs">
+          {/* Mode Switcher Tabs */}
+          <div className="shrink-0 flex items-center p-1 bg-zinc-900/90 rounded-2xl border border-white/[0.08] shadow-inner">
             <button
               id="tab-mode-edit"
               type="button"
               onClick={() => setSubMode('edit')}
-              className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-bold rounded-lg transition-all shrink-0 active:scale-95 ${
+              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all shrink-0 active:scale-95 ${
                 subMode === 'edit'
-                  ? 'bg-white text-zinc-950 shadow-xs ring-1 ring-black/5'
-                  : 'text-zinc-500 hover:text-zinc-900'
+                  ? 'bg-zinc-800 text-white border border-white/10 shadow-sm'
+                  : 'text-zinc-400 hover:text-white'
               }`}
             >
               <Edit3 className="w-3.5 h-3.5" /> <span>Editar</span>
@@ -328,10 +335,10 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
               id="tab-mode-execute"
               type="button"
               onClick={() => setSubMode('execute')}
-              className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-bold rounded-lg transition-all shrink-0 active:scale-95 ${
+              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-extrabold rounded-xl transition-all shrink-0 active:scale-95 ${
                 subMode === 'execute'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-zinc-500 hover:text-zinc-900'
+                  ? 'bg-[#00FF87] text-black shadow-[0_0_12px_rgba(0,255,135,0.4)]'
+                  : 'text-zinc-400 hover:text-white'
               }`}
             >
               <Play className="w-3.5 h-3.5 fill-current" /> <span>Entrenar</span>
@@ -340,14 +347,14 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-3 sm:px-6 pt-4 sm:pt-6">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6">
         {/* Routine Meta Card */}
-        <div className="bg-white rounded-2xl border border-zinc-200 p-4 sm:p-6 shadow-xs mb-4 sm:mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
+        <div className="bg-[#1C1C1E] rounded-2xl border border-white/[0.08] p-5 sm:p-6 shadow-xl mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
               {subMode === 'edit' ? (
                 <div>
-                  <label htmlFor="routine-name-input" className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider mb-1">
+                  <label htmlFor="routine-name-input" className="block text-[11px] font-extrabold text-[#A1A1AA] uppercase tracking-wider mb-1">
                     Nombre de la Rutina
                   </label>
                   <input
@@ -356,22 +363,22 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
                     value={routine.name}
                     onChange={(e) => handleNameChange(e.target.value)}
                     placeholder="Ej: Torso Hipertrofia, Pierna Fuerza..."
-                    className="w-full text-xl sm:text-2xl font-black text-zinc-900 bg-transparent border-b border-zinc-300 focus:border-emerald-600 focus:outline-none pb-1 transition-colors"
+                    className="w-full text-xl sm:text-2xl font-black text-white bg-transparent border-b border-white/10 focus:border-[#00FF87] focus:outline-none pb-1 transition-colors"
                   />
                 </div>
               ) : (
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 text-[11px] font-bold rounded-md bg-emerald-100 text-emerald-800 uppercase tracking-wide">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="px-2.5 py-0.5 text-[10px] font-black rounded-lg bg-[#00FF87]/15 text-[#00FF87] border border-[#00FF87]/30 uppercase tracking-wider">
                       Modo Entrenamiento
                     </span>
                     {allExercisesCompleted && (
-                      <span className="px-2 py-0.5 text-[11px] font-bold rounded-md bg-emerald-600 text-white">
+                      <span className="px-2.5 py-0.5 text-[10px] font-black rounded-lg bg-[#00E5FF]/20 text-[#00E5FF] border border-[#00E5FF]/40 uppercase tracking-wider">
                         ¡Entrenamiento Completo!
                       </span>
                     )}
                   </div>
-                  <h1 className="text-xl sm:text-2xl font-black text-zinc-900 tracking-tight mt-1">
+                  <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight mt-1">
                     {routine.name || 'Rutina sin nombre'}
                   </h1>
                 </div>
@@ -381,8 +388,8 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
               <div className="mt-3">
                 {subMode === 'edit' ? (
                   <div>
-                    <label htmlFor="routine-notes-input" className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider mb-1">
-                      Notas / Descripción
+                    <label htmlFor="routine-notes-input" className="block text-[11px] font-extrabold text-[#A1A1AA] uppercase tracking-wider mb-1">
+                      Notas / Objetivos
                     </label>
                     <textarea
                       id="routine-notes-input"
@@ -390,13 +397,13 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
                       value={routine.notes || ''}
                       onChange={(e) => handleNotesChange(e.target.value)}
                       placeholder="Objetivos del día, notas sobre descansos, peso objetivo..."
-                      className="w-full text-sm text-zinc-700 bg-zinc-50 border border-zinc-200 rounded-xl p-2.5 focus:bg-white focus:border-emerald-500 focus:outline-none transition-colors"
+                      className="w-full text-xs sm:text-sm text-zinc-200 bg-zinc-900 border border-white/10 rounded-xl p-3 focus:bg-black focus:border-[#00FF87] focus:outline-none transition-all"
                     />
                   </div>
                 ) : (
                   routine.notes && (
-                    <p className="text-xs sm:text-sm text-zinc-600 flex items-start gap-1.5 bg-zinc-50 p-3 rounded-xl border border-zinc-100">
-                      <FileText className="w-4 h-4 text-zinc-600 shrink-0 mt-0.5" />
+                    <p className="text-xs sm:text-sm text-[#A1A1AA] flex items-start gap-2 bg-zinc-900/60 p-3 rounded-xl border border-white/5 leading-relaxed">
+                      <FileText className="w-4 h-4 text-[#00FF87] shrink-0 mt-0.5" />
                       <span>{routine.notes}</span>
                     </p>
                   )
@@ -404,81 +411,79 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
               </div>
             </div>
 
-            {/* Calculated Total Workout Duration Badge */}
-            <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center p-2.5 sm:p-3 rounded-xl bg-zinc-100 border border-zinc-200/80 shrink-0 w-full sm:w-auto">
-              <span className="text-[11px] font-semibold text-zinc-600 uppercase tracking-wide">
-                Tiempo Estimado Total
+            {/* Estimated Workout Duration Badge */}
+            <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center p-3 sm:p-4 rounded-xl bg-zinc-900 border border-white/10 shrink-0 w-full sm:w-auto shadow-inner">
+              <span className="text-[10px] font-extrabold text-[#A1A1AA] uppercase tracking-wider">
+                Tiempo Estimado
               </span>
-              <div className="flex items-center gap-1.5 text-zinc-900 font-extrabold text-lg sm:text-xl">
-                <Clock className="w-5 h-5 text-emerald-600" />
+              <div className="flex items-center gap-1.5 text-white font-black font-mono text-lg sm:text-xl">
+                <Clock className="w-5 h-5 text-[#00FF87]" />
                 <span>~{formatSecondsToTime(totalWorkoutSeconds)}</span>
               </div>
-              <span className="text-[10px] text-zinc-600 hidden sm:block">
-                (series + descansos + transiciones)
+              <span className="text-[10px] text-zinc-500 hidden sm:block">
+                (series + descansos)
               </span>
             </div>
           </div>
 
-          {/* Progress bar and Live Elapsed Stopwatch in Execution Mode */}
+          {/* Progress bar and Live Stopwatch in Execution Mode */}
           {subMode === 'execute' && (
-            <div className="mt-5 pt-4 border-t border-zinc-100">
-              <div className="flex items-center justify-between text-xs font-semibold mb-1.5 flex-wrap gap-2">
-                <span className="text-zinc-600">
-                  Progreso: <strong className="text-zinc-900">{completedSetsCount}</strong> de {totalSetsCount} series completadas
+            <div className="mt-6 pt-5 border-t border-white/[0.08]">
+              <div className="flex items-center justify-between text-xs font-semibold mb-2 flex-wrap gap-2">
+                <span className="text-[#A1A1AA]">
+                  Progreso: <strong className="text-white font-black">{completedSetsCount}</strong> de {totalSetsCount} series completadas
                 </span>
 
                 <div className="flex items-center gap-2 sm:gap-3">
                   {session?.startTime ? (
                     <div
                       id="workout-live-stopwatch"
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 font-mono font-bold text-xs shadow-2xs"
+                      className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-zinc-900 border border-[#00FF87]/30 text-[#00FF87] font-mono font-black text-xs shadow-inner"
                       title="Tiempo transcurrido desde el inicio de la rutina"
                     >
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="w-2 h-2 rounded-full bg-[#00FF87] animate-ping" />
+                      <Clock className="w-3.5 h-3.5" />
                       <span>{formatWorkoutDuration(elapsedSeconds)}</span>
                     </div>
                   ) : (
                     <span className="text-[11px] text-zinc-500 italic">No iniciada</span>
                   )}
-                  <span className="text-emerald-600 font-bold">{completionPercentage}%</span>
+                  <span className="text-[#00FF87] font-black text-sm">{completionPercentage}%</span>
                 </div>
               </div>
 
-              <div className="w-full h-2.5 bg-zinc-100 rounded-full overflow-hidden border border-zinc-200/60">
+              {/* Glowing Progress Bar */}
+              <div className="w-full h-3 bg-zinc-900 rounded-full overflow-hidden border border-white/10 p-0.5">
                 <div
-                  className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                  className="h-full bg-gradient-to-r from-[#00FF87] to-[#00E5FF] rounded-full transition-all duration-300 shadow-[0_0_12px_rgba(0,255,135,0.5)]"
                   style={{ width: `${completionPercentage}%` }}
                 />
               </div>
 
-              {/* Workout Session Controls: Start / Finish / Reset */}
-              <div className={`mt-3.5 flex flex-wrap items-center justify-between gap-2.5 p-3 rounded-2xl border transition-colors ${
-                session?.startTime
-                  ? 'bg-emerald-50/40 border-emerald-200/80'
-                  : 'bg-zinc-50 border-zinc-200/80'
-              }`}>
+              {/* Workout Session Controls (Ergonomic Touch Targets >= 48px) */}
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-zinc-900/80 border border-white/[0.08]">
                 {!session?.startTime ? (
                   <>
-                    <div className="text-xs text-zinc-600 flex items-center gap-1.5">
-                      <Play className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span>Pulsa iniciar o marca cualquier serie para comenzar automáticamente.</span>
+                    <div className="text-xs text-[#A1A1AA] flex items-center gap-2">
+                      <Play className="w-4 h-4 text-[#00FF87] shrink-0" />
+                      <span>Pulsa iniciar o marca cualquier serie para comenzar el entrenamiento.</span>
                     </div>
                     <button
                       id="btn-start-workout-session"
                       type="button"
                       onClick={() => onStartSession(routine.id)}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all active:scale-95"
+                      className="min-h-[48px] inline-flex items-center gap-2 px-6 text-sm font-extrabold rounded-2xl bg-[#00FF87] hover:bg-[#00e57a] text-black shadow-[0_0_20px_rgba(0,255,135,0.35)] transition-all active:scale-[0.97]"
                     >
-                      <Play className="w-3.5 h-3.5 fill-current" /> Iniciar rutina
+                      <Play className="w-4 h-4 fill-current" />
+                      <span>Iniciar Rutina</span>
                     </button>
                   </>
                 ) : (
                   <>
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping shrink-0" />
-                      <span className="font-bold text-zinc-900">Entrenamiento en curso</span>
-                      <span className="text-emerald-700 font-mono font-bold">
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#00FF87] animate-ping shrink-0 shadow-[0_0_8px_#00FF87]" />
+                      <span className="font-extrabold text-white">Entrenamiento en Curso</span>
+                      <span className="text-[#00FF87] font-mono font-bold">
                         ({formatWorkoutDuration(elapsedSeconds)})
                       </span>
                     </div>
@@ -488,19 +493,21 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
                         id="btn-reset-session"
                         type="button"
                         onClick={handleResetSession}
-                        className="inline-flex items-center gap-1 text-xs text-zinc-600 hover:text-zinc-800 px-2.5 py-1.5 rounded-lg hover:bg-zinc-200/60 transition-colors"
+                        className="min-h-[44px] inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-400 hover:text-white px-3 py-2 rounded-xl bg-zinc-800/60 hover:bg-zinc-800 border border-white/5 transition-colors active:scale-[0.97]"
                         title="Reiniciar progreso"
                       >
-                        <RotateCcw className="w-3 h-3" /> Reiniciar
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Reiniciar</span>
                       </button>
 
                       <button
                         id="btn-finish-workout-session"
                         type="button"
                         onClick={() => setIsFinishConfirmOpen(true)}
-                        className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white shadow-xs transition-all active:scale-95"
+                        className="min-h-[48px] inline-flex items-center gap-2 px-5 text-sm font-extrabold rounded-2xl bg-[#00E5FF] hover:bg-[#00cbe2] text-black shadow-[0_0_20px_rgba(0,229,255,0.3)] transition-all active:scale-[0.97]"
                       >
-                        <Flag className="w-3.5 h-3.5 text-emerald-400" /> Finalizar rutina
+                        <Flag className="w-4 h-4 stroke-[2.5]" />
+                        <span>Finalizar Rutina</span>
                       </button>
                     </div>
                   </>
@@ -510,26 +517,26 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
           )}
         </div>
 
-        {/* Exercises List */}
+        {/* Exercises List Header & Buttons */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-600 flex items-center gap-2">
-              <Dumbbell className="w-4 h-4 text-emerald-600" />
-              Ejercicios ({routine.exercises.length})
+          <div className="flex items-center justify-between pb-1">
+            <h2 className="text-sm font-extrabold uppercase tracking-wider text-[#A1A1AA] flex items-center gap-2">
+              <Dumbbell className="w-4 h-4 text-[#00FF87]" />
+              <span>Ejercicios ({routine.exercises.length})</span>
             </h2>
 
             {subMode === 'edit' && (
-              <div className="flex items-center gap-1.5 sm:gap-2">
+              <div className="flex items-center gap-2">
                 {routine.exercises.length > 1 && (
                   <button
                     id="btn-show-reorder-exercises"
                     type="button"
                     onClick={() => setShowReorderModal(true)}
-                    className="p-1.5 sm:p-2 rounded-lg border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors active:scale-95 shadow-2xs"
+                    className="min-h-[44px] min-w-[44px] p-2.5 rounded-xl border border-white/10 bg-[#1C1C1E] text-zinc-300 hover:text-white hover:border-[#00FF87]/40 transition-all active:scale-[0.97] flex items-center justify-center shadow-md"
                     title="Ordenar ejercicios"
                     aria-label="Ordenar ejercicios"
                   >
-                    <ArrowUpDown className="w-4 h-4 text-emerald-600" />
+                    <ArrowUpDown className="w-4 h-4 text-[#00FF87]" />
                   </button>
                 )}
 
@@ -537,9 +544,10 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
                   id="btn-show-add-exercise"
                   type="button"
                   onClick={() => setShowAddModal(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 transition-colors active:scale-95 shadow-2xs"
+                  className="min-h-[44px] inline-flex items-center gap-2 px-4 text-xs font-extrabold rounded-xl bg-[#00FF87] text-black hover:bg-[#00e57a] shadow-[0_0_15px_rgba(0,255,135,0.25)] transition-all active:scale-[0.97]"
                 >
-                  <Plus className="w-3.5 h-3.5" /> Ejercicio
+                  <Plus className="w-4 h-4 stroke-[2.5]" />
+                  <span>Añadir Ejercicio</span>
                 </button>
               </div>
             )}
@@ -547,15 +555,17 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
 
           {/* Exercise cards list */}
           {routine.exercises.length === 0 ? (
-            <div className="text-center py-12 px-4 rounded-2xl border-2 border-dashed border-zinc-200 bg-white">
-              <Dumbbell className="w-10 h-10 text-zinc-300 mx-auto mb-2" />
-              <p className="text-sm font-semibold text-zinc-600">Esta rutina no tiene ejercicios todavía.</p>
+            <div className="text-center py-16 px-4 rounded-2xl border-2 border-dashed border-white/10 bg-[#1C1C1E]">
+              <Dumbbell className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
+              <p className="text-sm font-bold text-white">Esta rutina no tiene ejercicios todavía.</p>
+              <p className="text-xs text-[#A1A1AA] mt-1 mb-4">Añade ejercicios de tu biblioteca o crea uno nuevo.</p>
               <button
                 type="button"
                 onClick={() => setShowAddModal(true)}
-                className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+                className="min-h-[48px] inline-flex items-center gap-2 px-5 text-xs font-extrabold rounded-2xl bg-[#00FF87] text-black hover:bg-[#00e57a] transition-all shadow-[0_0_15px_rgba(0,255,135,0.3)] active:scale-[0.97]"
               >
-                <Plus className="w-4 h-4" /> Añadir primer ejercicio
+                <Plus className="w-4 h-4 stroke-[2.5]" />
+                <span>Añadir Primer Ejercicio</span>
               </button>
             </div>
           ) : (
@@ -612,17 +622,6 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
         onConfirm={handleConfirmFinish}
         onCancel={() => setIsFinishConfirmOpen(false)}
       />
-
-      {/* Floating Rest Timer Bar when active */}
-      {activeTimer && (
-        <RestTimerBar
-          key={activeTimer.key || `${activeTimer.exerciseName}-${activeTimer.setNumber}`}
-          initialSeconds={activeTimer.initialSeconds}
-          exerciseName={activeTimer.exerciseName}
-          setNumber={activeTimer.setNumber}
-          onClose={() => setActiveTimer(null)}
-        />
-      )}
     </div>
   );
 };

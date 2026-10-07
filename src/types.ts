@@ -95,6 +95,15 @@ export interface ActiveWorkoutSession {
   completedSetIds: string[]; // array of set IDs marked complete
 }
 
+export interface ActiveRestTimer {
+  routineId: string;
+  initialSeconds: number;
+  targetEndTime: number; // Date.now() + initialSeconds * 1000
+  exerciseName?: string;
+  setNumber?: number;
+  key?: number;
+}
+
 export interface WorkoutCompletionSummary {
   routineId: string;
   routineName: string;
@@ -109,6 +118,8 @@ export interface WorkoutCompletionSummary {
     completedSets: number;
     totalSets: number | null;
     position?: number;
+    summaryText?: string;
+    sets?: WorkoutSet[];
   }[];
 }
 
@@ -116,4 +127,3 @@ export interface WorkoutHistoryLog extends WorkoutCompletionSummary {
   id: string; // unique ID of this completed workout log
   completedAt: string; // ISO date-time string (e.g. "2026-09-24T12:00:00.000Z")
 }
-
