@@ -13,6 +13,7 @@ import {
 import { Exercise, ExerciseDefinition, WorkoutSet, ExerciseRmLog, ExerciseDiary } from '../types';
 import { RmBadge } from './RmBadge';
 import { DiaryButton } from './DiaryButton';
+import { TimePickerField } from './TimePickerField';
 
 interface AddExerciseModalProps {
   isOpen: boolean;
@@ -565,23 +566,12 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-zinc-400 mb-1">Descanso (s)</label>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      step="5"
-                      min="0"
-                      max="600"
+                    <TimePickerField
+                      variant="compact"
+                      label="Descanso"
                       value={customRest}
-                      onFocus={(e) => e.target.select()}
-                      onChange={(e) => setCustomRest(e.target.value)}
-                      onBlur={() => {
-                        if (customRest === '' || isNaN(Number(customRest)) || Number(customRest) < 0) {
-                          setCustomRest(0);
-                        }
-                      }}
-                      className="w-full min-h-[44px] text-center text-xs font-bold py-1.5 rounded-lg border border-white/10 bg-black/40 text-white focus:outline-none focus:border-[#00FF87]"
+                      onChange={(secs) => setCustomRest(secs)}
+                      modalTitle="Tiempo de descanso por defecto"
                     />
                   </div>
                 </div>

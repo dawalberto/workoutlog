@@ -24,6 +24,7 @@ import { VideoPreview } from './VideoPreview';
 import { formatSecondsToTime } from '../utils/timeCalculations';
 import { RmBadge } from './RmBadge';
 import { DiaryButton } from './DiaryButton';
+import { TimePickerField } from './TimePickerField';
 
 interface ExerciseCatalogProps {
   exercises: ExerciseDefinition[];
@@ -763,18 +764,12 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-zinc-400 mb-1">Descanso (s)</label>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      step="5"
-                      min="0"
-                      max="600"
+                    <TimePickerField
+                      variant="compact"
+                      label="Descanso"
                       value={formDefaultRest}
-                      onFocus={(e) => e.target.select()}
-                      onChange={(e) => setFormDefaultRest(e.target.value)}
-                      className="w-full min-h-[44px] text-center text-xs font-black rounded-xl border border-white/10 bg-zinc-800 text-white focus:border-[#00FF87] focus:outline-none"
+                      onChange={(secs) => setFormDefaultRest(secs)}
+                      modalTitle="Tiempo de descanso por defecto"
                     />
                   </div>
                 </div>

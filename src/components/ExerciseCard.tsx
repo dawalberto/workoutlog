@@ -28,6 +28,7 @@ import {
 import { VideoPreview } from './VideoPreview';
 import { RmBadge } from './RmBadge';
 import { DiaryButton } from './DiaryButton';
+import { TimePickerField } from './TimePickerField';
 
 interface ExerciseCardProps {
   exercise: Exercise;
@@ -88,6 +89,11 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
       }
       return s;
     });
+    onUpdateExercise({ ...exercise, sets: updatedSets });
+  };
+
+  const handleApplyRestToAllSets = (newRest: number) => {
+    const updatedSets = exercise.sets.map((s) => ({ ...s, restSeconds: newRest }));
     onUpdateExercise({ ...exercise, sets: updatedSets });
   };
 
@@ -478,35 +484,17 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
 
                       {/* Rest */}
                       <td className="py-3 px-2 text-center">
-                        {isExecutionMode ? (
-                          <span
-                            className={`text-xs font-mono font-bold px-2 py-1 rounded-lg ${
-                              isCompleted ? 'text-zinc-400 bg-zinc-900/60' : 'text-zinc-200 bg-zinc-800'
-                            }`}
-                          >
-                            {set.restSeconds}s
-                          </span>
-                        ) : (
-                          <div className="flex items-center justify-center">
-                            <input
-                              type="number"
-                              inputMode="numeric"
-                              pattern="[0-9]*"
-                              step="5"
-                              min="0"
-                              max="600"
-                              value={set.restSeconds}
-                              onFocus={(e) => e.target.select()}
-                              onChange={(e) => handleUpdateSet(set.id, 'restSeconds', e.target.value)}
-                              onBlur={() => {
-                                if (set.restSeconds === '' || isNaN(Number(set.restSeconds)) || Number(set.restSeconds) < 0) {
-                                  handleUpdateSet(set.id, 'restSeconds', 0);
-                                }
-                              }}
-                              className="w-16 sm:w-20 min-h-[48px] text-center text-xs font-mono font-bold py-2 px-1 rounded-xl border border-white/10 bg-zinc-900 text-white focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/30 focus:outline-none transition-all shadow-inner"
-                            />
-                          </div>
-                        )}
+                        <div className="flex items-center justify-center">
+                          <TimePickerField
+                            variant="table"
+                            value={set.restSeconds}
+                            onChange={(secs) => handleUpdateSet(set.id, 'restSeconds', secs)}
+                            onApplyToAllSets={(secs) => handleApplyRestToAllSets(secs)}
+                            allowApplyToAll={exercise.sets.length > 1}
+                            modalTitle={`Descanso Serie ${set.setNumber} · ${exercise.name}`}
+                            className="min-w-[70px]"
+                          />
+                        </div>
                       </td>
 
                       {/* Estimated Set Time */}
