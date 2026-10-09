@@ -29,8 +29,8 @@ The backend already supports test-mode Checkout and entitlement webhooks, but th
 - [x] `plan-catalog`: Add the plan catalog and account entry point, styled consistently with the existing app and Google sign-in control; include focused UI tests.
 - [x] `checkout-return`: Connect authenticated plan selection to Checkout, provide success/cancel return feedback, and refresh entitlement without treating a redirect as proof of payment; include frontend/backend route tests.
 - [x] `billing-portal`: Add an authenticated Billing Portal session route and matching account UI with focused tests.
-- [ ] `payment-lifecycle`: Handle lifetime full refunds and disputes according to the assumptions above, retain idempotency and test-only safeguards, and cover relevant webhook/database behavior with focused tests.
-- [ ] `local-billing-flow`: Add or extend local automated flow coverage for monthly, annual, and lifetime checkout, duplicate webhooks, cancellation/expiry, and lifetime refund/dispute outcomes without contacting Stripe.
+- [x] `payment-lifecycle`: Handle lifetime full refunds and disputes according to the assumptions above, retain idempotency and test-only safeguards, and cover relevant webhook/database behavior with focused tests.
+- [x] `local-billing-flow`: Add or extend local automated flow coverage for monthly, annual, and lifetime checkout, duplicate webhooks, cancellation/expiry, and lifetime refund/dispute outcomes without contacting Stripe.
 
 ## Acceptance criteria and checks
 
@@ -63,10 +63,15 @@ The backend already supports test-mode Checkout and entitlement webhooks, but th
 - `billing-portal` GREEN: frontend `pnpm test tests/services/billing.test.ts tests/billing.test.tsx --reporter=dot` passed (2 files, 21 tests) and `pnpm lint` passed; backend `pnpm test tests/billing.test.ts --reporter=dot` passed (1 file, 14 tests) and `pnpm typecheck` passed.
 - `billing-portal` backend work-unit commit: `35db78d` (`feat(billing): add authenticated portal sessions`).
 - `billing-portal` frontend work-unit commit: `4831768` (`feat(billing): add self-service payment portal`).
-- `payment-lifecycle` is blocked by the allowed edit surfaces: Stripe dispute events identify a PaymentIntent but do not provide a customer ID, while `BillingAdmin` only resolves ownership from a customer ID. Safely binding dispute/refund updates to the existing lifetime source requires a service-role PaymentIntent-to-customer/user lookup in `back-workoutlog/src/plugins/billing-admin.ts` and its RPC type in `back-workoutlog/src/types/supabase-database.ts`; neither path is authorized for editing.
-- `local-billing-flow` remains pending because it depends on the unimplemented lifetime lifecycle and must exercise that ownership-bound webhook path.
-- No lifecycle draft, test, or migration was retained or committed after identifying the required out-of-scope lookup. No Stripe network operation was made.
+- `payment-lifecycle` implementation: persist the verified lifetime Checkout PaymentIntent, authenticated owner/customer mapping, immutable Checkout source ID, and paid total/currency; apply only verified, amount-and-currency-matched refund and dispute updates to that linked source. Full refunds revoke, partial refunds preserve access, open/lost disputes suspend it, and a later win restores it only while not fully refunded. Unknown/unmatched lifecycle events fail explicitly; existing subscription cancellation and immediate `past_due` loss behavior remain unchanged.
+- `payment-lifecycle` RED: `pnpm test -- tests/stripe-webhook.test.ts --reporter=dot` failed four new lifecycle assertions before the webhook handlers were implemented.
+- `payment-lifecycle` GREEN: `pnpm exec vitest run tests/stripe-webhook.test.ts tests/billing.test.ts --reporter=dot` passed (2 files, 31 tests); `supabase test db --local supabase/tests/billing.test.sql` passed (66 pgTAP tests), including ownership, source isolation, amount/currency checks, replay idempotency, and private-table permissions.
+- `payment-lifecycle` work-unit commit: backend `9774911` (`feat(billing): link lifetime payments to webhook lifecycle`). Rollback boundary: `src/plugins/billing-admin.ts`, `src/routes/stripe-webhook.ts`, `src/types/supabase-database.ts`, `supabase/migrations/20261009090000_lifetime_payment_lifecycle.sql`, `supabase/tests/billing.test.sql`, `tests/stripe-webhook.test.ts`, and `tests/billing.test.ts`.
+- `local-billing-flow` implementation: add a deterministic Fastify/API and mocked-webhook flow test for server-priced monthly, annual, and lifetime Checkout, duplicate delivery, partial/full refunds, dispute open/win/loss, cancellation, and expired periods. No Stripe API or network integration is used.
+- `local-billing-flow` GREEN: `pnpm exec vitest run tests/billing-flow.test.ts --reporter=dot` passed (1 file, 1 test).
+- `local-billing-flow` work-unit commit: backend `bada011` (`test(billing): exercise local checkout webhook flow`). Rollback boundary: `tests/billing-flow.test.ts`.
+- Final backend checks: `pnpm test` passed (12 files, 74 tests); `pnpm lint`, `pnpm typecheck`, and `pnpm build` passed; `supabase test db --local supabase/tests/billing.test.sql` passed (66 pgTAP tests).
+- The new migration was applied only to local Supabase for pgTAP verification. No external network, Stripe API/CLI, secret or `.env` reads, live-mode changes, push, PR, deployment, or `main` changes occurred.
 - Final frontend checks: `pnpm test` passed (8 files, 71 tests); `pnpm lint` passed; `pnpm build` passed with the existing large-chunk warning.
-- Final backend checks: `pnpm test` passed (11 files, 69 tests); `pnpm lint`, `pnpm typecheck`, and `pnpm build` passed; `supabase test db --local supabase/tests/billing.test.sql` passed (24 pgTAP tests).
 - Environment note: backend commands warn that Node 22.13.0 is below the package requirement of Node >=24; all reported backend checks still passed.
-- Next step: authorize the two backend service/type paths above, then complete `payment-lifecycle` before `local-billing-flow`.
+- Next step: no billing tasks remain; keep both feature branches local until the user authorizes any PR, push, or deployment action.
