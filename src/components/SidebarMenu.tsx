@@ -24,6 +24,7 @@ interface SidebarMenuProps {
   userEmail: string | null;
   isPremiumActive: boolean;
   isEntitlementLoading: boolean;
+  isOnline: boolean;
   isSigningIn: boolean;
   premiumExpiry: string | null;
   error: string | null;
@@ -47,6 +48,7 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
   userEmail,
   isPremiumActive,
   isEntitlementLoading,
+  isOnline,
   isSigningIn,
   premiumExpiry,
   error,
@@ -393,7 +395,13 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
         {/* Drawer Footer */}
         <div className="p-4 border-t border-white/[0.08] bg-[#0D0D0D] flex items-center justify-between">
           <PWAInstallButton />
-          <span className="text-[11px] text-zinc-500 font-mono font-semibold">v2.2 • Offline Gym</span>
+          <span className="inline-flex items-center gap-1.5 text-[11px] text-zinc-500 font-mono font-semibold">
+            <span
+              aria-hidden="true"
+              className={`h-1.5 w-1.5 rounded-full ${isOnline ? 'bg-[#00FF87]' : 'bg-amber-400'}`}
+            />
+            {isOnline ? 'En línea' : 'Sin conexión'}
+          </span>
         </div>
       </div>
     </div>

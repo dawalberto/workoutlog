@@ -326,9 +326,6 @@ export default function App() {
             routinesCount={routines.length}
             catalogCount={catalog.length}
             isPremiumActive={account.isPremiumActive}
-            isAuthenticated={Boolean(account.user)}
-            isEntitlementLoading={account.isEntitlementLoading}
-            sync={sync}
             onOpenMenu={() => setIsMenuOpen(true)}
           />
 
@@ -422,6 +419,7 @@ export default function App() {
         userEmail={account.user?.email ?? null}
         isPremiumActive={account.isPremiumActive}
         isEntitlementLoading={account.isEntitlementLoading}
+        isOnline={sync.isOnline}
         isSigningIn={account.isSigningIn}
         premiumExpiry={account.entitlement?.entitlement?.validUntil ?? null}
         error={account.error ?? storageError}

@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
+import { AppHeader } from '../src/components/AppHeader';
 import { BillingPlansModal } from '../src/components/BillingPlansModal';
 import { SidebarMenu } from '../src/components/SidebarMenu';
 import { AppTab } from '../src/types';
@@ -26,6 +27,19 @@ function textContent(node: React.ReactNode): string {
   if (!React.isValidElement(node)) return '';
   const element = node as React.ReactElement<{ children?: React.ReactNode }>;
   return React.Children.toArray(element.props.children).map(textContent).join('');
+}
+
+function renderHeader(isPremiumActive: boolean) {
+  return renderToStaticMarkup(
+    <AppHeader
+      activeTab={AppTab.ROUTINES}
+      onSelectTab={() => undefined}
+      routinesCount={1}
+      catalogCount={1}
+      isPremiumActive={isPremiumActive}
+      onOpenMenu={() => undefined}
+    />,
+  );
 }
 
 describe('billing plan catalog', () => {
@@ -228,6 +242,22 @@ describe('billing plan catalog', () => {
   });
 });
 
+describe('application header', () => {
+  it('omits the large sync status row while retaining account and menu access', () => {
+    const markup = renderHeader(false);
+
+    expect(markup).not.toContain('role="status"');
+    expect(markup).not.toContain('Sincronizado');
+    expect(markup).toContain('Free');
+    expect(markup).toContain('btn-open-sidebar-menu');
+  });
+
+  it('shows a diamond only beside the active Premium badge', () => {
+    expect(renderHeader(true)).toContain('lucide-diamond');
+    expect(renderHeader(false)).not.toContain('lucide-diamond');
+  });
+});
+
 describe('account menu billing entry point', () => {
   it('keeps the account section in the dark neon design and Spanish UI', () => {
     const markup = renderToStaticMarkup(
@@ -246,6 +276,7 @@ describe('account menu billing entry point', () => {
         userEmail={null}
         isPremiumActive={false}
         isEntitlementLoading={false}
+        isOnline={false}
         isSigningIn={false}
         premiumExpiry={null}
         error={null}
@@ -255,9 +286,41 @@ describe('account menu billing entry point', () => {
     );
 
     expect(markup).toContain('aria-label="Cuenta"');
+    expect(markup).toContain('Sin conexión');
+    expect(markup).not.toContain('Offline Gym');
     expect(markup).toContain('bg-[#121214]');
     expect(markup).not.toContain('bg-zinc-50');
     expect(markup).toContain('Continuar con Google');
     expect(markup).toContain('Ver planes');
+  });
+
+  it('shows the online connectivity state in the sidebar footer', () => {
+    const markup = renderToStaticMarkup(
+      <SidebarMenu
+        isOpen
+        onClose={() => undefined}
+        activeTab={AppTab.ROUTINES}
+        onSelectTab={() => undefined}
+        routinesCount={0}
+        catalogCount={0}
+        rmCount={0}
+        historyCount={0}
+        onOpenBackup={() => undefined}
+        onOpenBillingPlans={() => undefined}
+        isAuthenticated={false}
+        userEmail={null}
+        isPremiumActive={false}
+        isEntitlementLoading={false}
+        isOnline
+        isSigningIn={false}
+        premiumExpiry={null}
+        error={null}
+        onSignIn={async () => undefined}
+        onSignOut={async () => undefined}
+      />,
+    );
+
+    expect(markup).toContain('En línea');
+    expect(markup).not.toContain('Offline Gym');
   });
 });
