@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Diamond, Flame, Menu } from 'lucide-react';
+import { Flame, Gem, Menu } from 'lucide-react';
 import { AppTab } from '../types';
 
 export interface AppHeaderProps {
@@ -107,7 +107,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             >
               {isPremiumActive ? (
                 <>
-                  <Diamond aria-hidden="true" className="mr-1 inline h-3 w-3" />
+                  <Gem aria-hidden="true" className="mr-1 inline h-3 w-3" />
                   Premium
                 </>
               ) : (

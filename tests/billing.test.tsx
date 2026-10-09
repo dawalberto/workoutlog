@@ -301,9 +301,9 @@ describe('application header', () => {
     expect(markup).toContain('btn-open-sidebar-menu');
   });
 
-  it('shows a diamond only beside the active Premium badge', () => {
-    expect(renderHeader(true)).toContain('lucide-diamond');
-    expect(renderHeader(false)).not.toContain('lucide-diamond');
+  it('shows a Lucide gemstone only beside the active Premium badge', () => {
+    expect(renderHeader(true)).toContain('lucide-gem');
+    expect(renderHeader(false)).not.toContain('lucide-gem');
   });
 });
 
