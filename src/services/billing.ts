@@ -71,13 +71,40 @@ export async function createBillingPortalSession(
   return payload.portalUrl;
 }
 
-export function getBillingReturnStatus(pathname: string): BillingReturnStatus | null {
-  const match = pathname.match(/\/billing\/(success|cancel)\/?$/);
+export function getBillingReturnStatus(
+  pathname: string,
+  basePath = import.meta.env.BASE_URL,
+): BillingReturnStatus | null {
+  const match = getBillingReturnMatch(pathname, basePath);
   return match?.[1] === 'success' || match?.[1] === 'cancel' ? match[1] : null;
 }
 
-export function getBillingReturnPath(pathname: string): string {
-  return pathname.replace(/\/billing\/(?:success|cancel)\/?$/, '') || '/';
+export function getBillingReturnPath(
+  pathname: string,
+  basePath = import.meta.env.BASE_URL,
+): string {
+  return getBillingReturnMatch(pathname, basePath)
+    ? `${getBasePathPrefix(basePath) || ''}/`
+    : pathname;
+}
+
+function getBillingReturnMatch(
+  pathname: string,
+  basePath: string,
+): RegExpMatchArray | null {
+  const prefix = getBasePathPrefix(basePath);
+  if (prefix && !pathname.startsWith(`${prefix}/`)) return null;
+  const appPath = prefix ? pathname.slice(prefix.length) : pathname;
+  return appPath.match(/^\/billing\/(success|cancel)\/?$/);
+}
+
+function getBasePathPrefix(basePath: string): string {
+  const normalized = basePath.trim().replace(/\/+$/, '');
+  return normalized && normalized !== '/'
+    ? normalized.startsWith('/')
+      ? normalized
+      : `/${normalized}`
+    : '';
 }
 
 function checkoutErrorMessage(status: number): string {

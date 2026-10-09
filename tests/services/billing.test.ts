@@ -142,19 +142,33 @@ describe('billing portal client', () => {
 
 describe('billing return paths', () => {
   it.each([
-    ['/billing/success', 'success'],
-    ['/billing/cancel', 'cancel'],
-    ['/app/billing/success/', 'success'],
-    ['/routines', null],
-  ] as const)('recognizes %s as %s', (pathname, expected) => {
-    expect(getBillingReturnStatus(pathname)).toBe(expected);
+    ['/workoutlog/billing/success', '/workoutlog/', 'success'],
+    ['/workoutlog/billing/cancel/', '/workoutlog/', 'cancel'],
+    ['/billing/success', '/', 'success'],
+    ['/billing/cancel/', '/', 'cancel'],
+    ['/billing/success', '/workoutlog/', null],
+    ['/workoutlog/routines', '/workoutlog/', null],
+  ] as const)('recognizes %s under base %s as %s', (pathname, basePath, expected) => {
+    expect(getBillingReturnStatus(pathname, basePath)).toBe(expected);
   });
 
   it.each([
-    ['/billing/success', '/'],
-    ['/app/billing/cancel/', '/app'],
-    ['/routines', '/routines'],
-  ])('clears the billing return suffix from %s', (pathname, expected) => {
-    expect(getBillingReturnPath(pathname)).toBe(expected);
+    ['/workoutlog/billing/success', '/workoutlog/', '/workoutlog/'],
+    ['/billing/cancel/', '/', '/'],
+    ['/workoutlog/routines', '/workoutlog/', '/workoutlog/routines'],
+  ] as const)('clears the billing return suffix from %s under %s', (pathname, basePath, expected) => {
+    expect(getBillingReturnPath(pathname, basePath)).toBe(expected);
+  });
+
+  it('uses Vite BASE_URL when no explicit base is provided', () => {
+    const basePrefix =
+      import.meta.env.BASE_URL === '/'
+        ? ''
+        : import.meta.env.BASE_URL.replace(/\/+$/, '');
+
+    expect(
+      getBillingReturnStatus(`${basePrefix}/billing/success`),
+    ).toBe('success');
+    expect(getBillingReturnStatus(`${basePrefix}/routines`)).toBeNull();
   });
 });

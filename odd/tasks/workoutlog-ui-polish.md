@@ -31,7 +31,7 @@ The app currently spends header space on sync status that the user does not want
 - [x] `header-connectivity-polish`: Remove the prominent header sync banner, make the sidebar footer connectivity label reflect the actual online state, and add a Premium-only diamond icon to the header badge.
 - [x] `premium-plan-clarity`: Show an active badge only for plan(s) identified by trustworthy entitlement metadata; add compelling but verified plan benefits. Extend the backend entitlement response/storage only as needed to expose plan IDs accurately.
 - [x] `blur-save-set-fields`: Keep reps/weight drafts local while editing and persist the normalized value on blur, avoiding per-keystroke backend sync; retain existing explicit-save and picker behavior.
-- [ ] `checkout-return-base-path`: Generate and recognize Stripe success/cancel routes with the configured Vite base path so GitHub Pages returns do not land on a blank page.
+- [x] `checkout-return-base-path`: Generate and recognize Stripe success/cancel routes with the configured Vite base path so GitHub Pages returns do not land on a blank page.
 
 ## Acceptance criteria and checks
 
@@ -64,8 +64,14 @@ The app currently spends header space on sync status that the user does not want
 - Blur-save test-first evidence: `pnpm exec vitest run tests/exercise-card.test.tsx` initially failed all 4 regressions because typing called the parent updater; after implementation it passed (1 file, 4 tests). `pnpm lint` passed.
 - Blur-save rollback boundary: revert only `src/components/ExerciseCard.tsx` draft/blur handling and `tests/exercise-card.test.tsx`; time-picker behavior and parent storage wiring remain untouched.
 - Blur-save runtime boundary: N/A; this is an input-component interaction exercised through focused Vitest callbacks, with persistence remaining behind the existing parent updater.
-- Blur-save work-unit commit identity will be recorded after its commit.
-- The user reported Checkout success returns to `/billing/success` without the GitHub Pages `/workoutlog/` base, producing a blank page. Add regression coverage for both the configured deployment base and local root mode.
+- Blur-save work-unit commit: `d835127` (`fix(ui): persist set edits on blur`).
+- The user reported Checkout success returned to `/billing/success` without the GitHub Pages `/workoutlog/` base, producing a blank page. Added regression coverage for both the configured deployment base and local root mode.
 - Frontend CodeGraph exact-symbol queries mapped the edit targets; the backend index had zero nodes, so the billing/account flow was mapped through narrow local source reads.
-- Next step: complete `checkout-return-base-path` with a separate behavior work unit.
+- `checkout-return-base-path` complete: backend Checkout success/cancel and Billing Portal URLs use a securely validated `BILLING_FRONTEND_BASE_PATH` (default `/`); frontend return detection and cleanup use Vite's `import.meta.env.BASE_URL`. `/workoutlog/` builds and root/local paths are both covered. Configure `BILLING_FRONTEND_BASE_PATH=/workoutlog/` for GitHub Pages; leave it unset or `/` for root hosting, and set it to `/workoutlog/` for subpath local development.
+- Checkout test-first evidence: frontend `pnpm exec vitest run tests/services/billing.test.ts` first failed 3 base-path cases, then passed (1 file, 17 tests). Backend `pnpm exec vitest run tests/billing.test.ts` first failed 13 cases; after implementation `pnpm exec vitest run tests/billing.test.ts tests/config/env.test.ts` passed (2 files, 32 tests).
+- Checkout rollback boundary: backend `src/config/env.ts`, `src/plugins/stripe.ts`, `src/routes/billing.ts`, and billing/config tests; frontend `src/services/billing.ts` and `tests/services/billing.test.ts`. The existing entitlement refresh, session ID cleanup, and no-payment-proof return message remain unchanged.
+- Checkout runtime boundary: local Fastify injection tests used mocked Stripe clients; no external Stripe operation or deployment was performed.
+- Checkout backend and frontend work-unit commit identities will be recorded after their commits.
+- Full verification: frontend `pnpm test` passed (9 files, 85 tests), `pnpm lint` passed, and `pnpm build` passed with the existing large-chunk warning (782.51 kB minified JS). Backend `pnpm test` passed (12 files, 99 tests), `pnpm lint`, `pnpm typecheck`, and `pnpm build` passed; Node v22.13.0 emitted the existing package requirement warning for Node >=24. `supabase test db --local supabase/tests/billing.test.sql` passed (92 pgTAP tests).
+- Delivery remains local-only: no PRs or pushes were created. Planned future slices follow the existing `stacked-to-main` strategy; actual per-commit counts and boundaries will be recorded after the checkout commits.
 - Engram mirror: pending; the memory provider is unavailable in this runtime.
