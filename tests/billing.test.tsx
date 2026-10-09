@@ -74,6 +74,55 @@ describe('billing plan catalog', () => {
     expect(markup).not.toContain('Rutinas ilimitadas');
   });
 
+  it('marks only the active plan IDs returned by the account entitlement', () => {
+    const markup = renderToStaticMarkup(
+      <BillingPlansModal
+        isOpen
+        isAuthenticated
+        isPremiumActive
+        activePlanIds={['monthly', 'lifetime']}
+        isEntitlementLoading={false}
+        isBillingLoading={false}
+        billingError={null}
+        returnStatus={null}
+        onClose={() => undefined}
+        onSignIn={async () => undefined}
+        onCheckout={async () => undefined}
+        onOpenBillingPortal={async () => undefined}
+        onRefreshEntitlement={async () => undefined}
+      />,
+    );
+
+    expect(markup).toContain('data-active-plan="monthly"');
+    expect(markup).toContain('data-active-plan="lifetime"');
+    expect(markup).not.toContain('data-active-plan="annual"');
+    expect(markup.match(/data-active-plan=/g)).toHaveLength(2);
+  });
+
+  it('shows generic Premium feedback when a legacy entitlement has no known plan', () => {
+    const markup = renderToStaticMarkup(
+      <BillingPlansModal
+        isOpen
+        isAuthenticated
+        isPremiumActive
+        activePlanIds={[]}
+        isEntitlementLoading={false}
+        isBillingLoading={false}
+        billingError={null}
+        returnStatus={null}
+        onClose={() => undefined}
+        onSignIn={async () => undefined}
+        onCheckout={async () => undefined}
+        onOpenBillingPortal={async () => undefined}
+        onRefreshEntitlement={async () => undefined}
+      />,
+    );
+
+    expect(markup).toContain('Premium activo');
+    expect(markup).toContain('No se pudo identificar el plan asociado');
+    expect(markup).not.toContain('data-active-plan=');
+  });
+
   it('prompts guests to authenticate before they choose a paid plan', () => {
     const markup = renderToStaticMarkup(
       <BillingPlansModal

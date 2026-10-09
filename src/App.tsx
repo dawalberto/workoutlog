@@ -431,6 +431,7 @@ export default function App() {
         isOpen={isBillingPlansOpen}
         isAuthenticated={Boolean(account.user)}
         isPremiumActive={account.isPremiumActive}
+        activePlanIds={account.entitlement?.entitlement?.activePlanIds ?? []}
         isEntitlementLoading={account.isEntitlementLoading}
         isBillingLoading={account.isBillingLoading}
         billingError={account.error}

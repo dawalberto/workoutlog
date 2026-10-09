@@ -9,6 +9,7 @@ interface BillingPlansModalProps {
   isOpen: boolean;
   isAuthenticated: boolean;
   isPremiumActive: boolean;
+  activePlanIds?: BillingPlan[];
   isEntitlementLoading: boolean;
   isBillingLoading: boolean;
   billingError: string | null;
@@ -25,28 +26,38 @@ const premiumPlans: {
   title: string;
   price: string;
   period: string;
-  description: string;
+  benefits: string[];
 }[] = [
   {
     id: 'monthly',
     title: 'Premium mensual',
     price: '€5.99',
     period: 'al mes',
-    description: 'Sincronización en la nube',
+    benefits: [
+      'Rutinas sin límite',
+      'Sincronización en la nube con cuenta y conexión',
+    ],
   },
   {
     id: 'annual',
     title: 'Premium anual',
     price: '€60',
     period: 'al año',
-    description: 'Sincronización en la nube',
+    benefits: [
+      'Rutinas sin límite',
+      'Sincronización en la nube con cuenta y conexión',
+    ],
   },
   {
     id: 'lifetime',
     title: 'Premium de por vida',
     price: '€210',
     period: 'pago único',
-    description: 'Acceso Premium permanente y sincronización en la nube',
+    benefits: [
+      'Acceso Premium permanente',
+      'Rutinas sin límite',
+      'Sincronización en la nube con cuenta y conexión',
+    ],
   },
 ];
 
@@ -54,6 +65,7 @@ export const BillingPlansModal: React.FC<BillingPlansModalProps> = ({
   isOpen,
   isAuthenticated,
   isPremiumActive,
+  activePlanIds = [],
   isEntitlementLoading,
   isBillingLoading,
   billingError,
@@ -65,6 +77,10 @@ export const BillingPlansModal: React.FC<BillingPlansModalProps> = ({
   onRefreshEntitlement,
 }) => {
   if (!isOpen) return null;
+
+  const currentPlans = premiumPlans.filter(
+    (plan) => isPremiumActive && activePlanIds.includes(plan.id),
+  );
 
   return (
     <div
@@ -103,6 +119,18 @@ export const BillingPlansModal: React.FC<BillingPlansModalProps> = ({
           </button>
         </header>
 
+        {isPremiumActive && (
+          <p
+            aria-live="polite"
+            className="mx-4 mt-4 rounded-xl border border-[#00FF87]/20 bg-[#00FF87]/[0.06] px-4 py-3 text-sm font-bold text-[#00FF87] sm:mx-6"
+            role="status"
+          >
+            {currentPlans.length > 0
+              ? `Premium activo · ${currentPlans.map((plan) => plan.title).join(' · ')}`
+              : 'Premium activo. No se pudo identificar el plan asociado.'}
+          </p>
+        )}
+
         <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-6 lg:grid-cols-4">
           <article className="flex flex-col rounded-2xl border border-white/10 bg-[#0D0D0D] p-4">
             <div className="flex-1">
@@ -115,9 +143,6 @@ export const BillingPlansModal: React.FC<BillingPlansModalProps> = ({
               <p className="mt-3 rounded-xl border border-white/[0.08] bg-zinc-900/70 px-3 py-2 text-xs font-semibold text-zinc-300">
                 Hasta 3 rutinas
               </p>
-              <p className="mt-2 rounded-xl border border-white/[0.08] bg-zinc-900/70 px-3 py-2 text-xs font-semibold text-zinc-300">
-                Datos en este dispositivo
-              </p>
             </div>
             <span className="mt-4 rounded-xl border border-white/10 px-3 py-2 text-center text-xs font-bold text-zinc-400">
               Plan gratuito
@@ -127,15 +152,20 @@ export const BillingPlansModal: React.FC<BillingPlansModalProps> = ({
           {premiumPlans.map((plan) => (
             <article
               className={`relative flex flex-col rounded-2xl border bg-[#0D0D0D] p-4 ${
-                plan.id === 'annual'
+                isPremiumActive && activePlanIds.includes(plan.id)
                   ? 'border-[#00FF87]/50 shadow-[0_0_20px_rgba(0,255,135,0.08)]'
                   : 'border-white/10'
               }`}
+              data-active-plan={
+                isPremiumActive && activePlanIds.includes(plan.id)
+                  ? plan.id
+                  : undefined
+              }
               key={plan.id}
             >
-              {plan.id === 'annual' && (
+              {isPremiumActive && activePlanIds.includes(plan.id) && (
                 <span className="absolute -top-2.5 right-4 rounded-full bg-[#00FF87] px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-black shadow-[0_0_12px_rgba(0,255,135,0.3)]">
-                  Premium
+                  Plan actual
                 </span>
               )}
               <div className="flex-1">
@@ -148,9 +178,16 @@ export const BillingPlansModal: React.FC<BillingPlansModalProps> = ({
                 <p className="mt-0.5 text-xs font-semibold text-zinc-500">
                   {plan.period}
                 </p>
-                <p className="mt-3 rounded-xl border border-[#00FF87]/15 bg-[#00FF87]/[0.06] px-3 py-2 text-xs font-semibold text-zinc-200">
-                  {plan.description}
-                </p>
+                <ul className="mt-3 space-y-2">
+                  {plan.benefits.map((benefit) => (
+                    <li
+                      className="rounded-xl border border-[#00FF87]/15 bg-[#00FF87]/[0.06] px-3 py-2 text-xs font-semibold text-zinc-200"
+                      key={benefit}
+                    >
+                      {benefit}
+                    </li>
+                  ))}
+                </ul>
               </div>
               <button
                 className={`mt-4 rounded-xl px-3 py-2 text-xs font-black transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 ${
@@ -178,7 +215,9 @@ export const BillingPlansModal: React.FC<BillingPlansModalProps> = ({
                 type="button"
               >
                 {isPremiumActive
-                  ? 'Premium activo'
+                  ? activePlanIds.includes(plan.id)
+                    ? 'Plan actual'
+                    : 'Premium activo'
                   : isEntitlementLoading
                     ? 'Verificando cuenta…'
                     : isBillingLoading

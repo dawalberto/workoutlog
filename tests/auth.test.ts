@@ -6,13 +6,15 @@ import {
   signInWithGoogle,
   signOut,
 } from '../src/services/auth';
+import type { AccountEntitlementResponse } from '../src/services/auth';
 import { createSupabaseBrowserClient } from '../src/services/supabase';
 
-const entitlementResponse = {
+const entitlementResponse: AccountEntitlementResponse = {
   userId: 'user-a',
   entitlement: {
     tier: 'premium',
     validUntil: '2030-01-01T00:00:00.000Z',
+    activePlanIds: ['monthly'],
   },
   premium: true,
 };
@@ -86,6 +88,25 @@ describe('account entitlement and Supabase auth', () => {
     ).rejects.toThrow('Invalid entitlement response');
   });
 
+  it('treats legacy Premium entitlements without plan metadata as unclassified', async () => {
+    const legacyResponse = {
+      ...entitlementResponse,
+      entitlement: { tier: 'premium', validUntil: null },
+    };
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify(legacyResponse)));
+
+    await expect(
+      loadAccountEntitlement(
+        'https://api.example.test',
+        'session-access-token',
+        fetchMock as unknown as typeof fetch,
+      ),
+    ).resolves.toEqual({
+      ...legacyResponse,
+      entitlement: { ...legacyResponse.entitlement, activePlanIds: [] },
+    });
+  });
+
   it('does not make a request when the backend origin is missing', async () => {
     const fetchMock = vi.fn();
 
@@ -101,7 +122,11 @@ describe('account entitlement and Supabase auth', () => {
       isPremiumEntitlementActive(
         {
           ...entitlementResponse,
-          entitlement: { tier: 'premium', validUntil: '2027-12-31T23:59:59.000Z' },
+          entitlement: {
+            tier: 'premium',
+            validUntil: '2027-12-31T23:59:59.000Z',
+            activePlanIds: [],
+          },
         },
         now,
       ),
@@ -110,7 +135,11 @@ describe('account entitlement and Supabase auth', () => {
       isPremiumEntitlementActive(
         {
           ...entitlementResponse,
-          entitlement: { tier: 'premium', validUntil: null },
+          entitlement: {
+            tier: 'premium',
+            validUntil: null,
+            activePlanIds: [],
+          },
         },
         now,
       ),

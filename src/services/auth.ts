@@ -1,10 +1,12 @@
 import type { SupabaseBrowserClient } from './supabase';
+import type { BillingPlan } from './billing';
 
 export interface AccountEntitlementResponse {
   userId: string;
   entitlement: {
     tier: string;
     validUntil: string | null;
+    activePlanIds: BillingPlan[];
   } | null;
   premium: boolean;
 }
@@ -28,9 +30,16 @@ function isAccountEntitlementResponse(value: unknown): value is AccountEntitleme
   if (!response.entitlement || typeof response.entitlement !== 'object') return false;
 
   const entitlement = response.entitlement as Record<string, unknown>;
+  const activePlanIds = entitlement.activePlanIds;
   return (
     typeof entitlement.tier === 'string' &&
-    (entitlement.validUntil === null || typeof entitlement.validUntil === 'string')
+    (entitlement.validUntil === null || typeof entitlement.validUntil === 'string') &&
+    (activePlanIds === undefined ||
+      (Array.isArray(activePlanIds) &&
+        activePlanIds.every(
+          (plan): plan is BillingPlan =>
+            plan === 'monthly' || plan === 'annual' || plan === 'lifetime',
+        )))
   );
 }
 
@@ -53,7 +62,15 @@ export async function loadAccountEntitlement(
   if (!isAccountEntitlementResponse(payload)) {
     throw new Error('Invalid entitlement response.');
   }
-  return payload;
+  return {
+    ...payload,
+    entitlement: payload.entitlement
+      ? {
+          ...payload.entitlement,
+          activePlanIds: [...new Set(payload.entitlement.activePlanIds ?? [])],
+        }
+      : null,
+  };
 }
 
 export function isPremiumEntitlementActive(
