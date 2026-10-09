@@ -67,6 +67,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
 }) => {
   const [showVideoInput, setShowVideoInput] = useState(false);
   const [showImageInput, setShowImageInput] = useState(false);
+  const [setDrafts, setSetDrafts] = useState<Record<string, string>>({});
 
   // Check if all sets of this exercise are completed in the current session
   const totalSetsCount = exercise.sets.length;
@@ -90,6 +91,59 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
       return s;
     });
     onUpdateExercise({ ...exercise, sets: updatedSets });
+  };
+
+  const setDraftKey = (setId: string, field: 'reps' | 'weight') =>
+    `${setId}:${field}`;
+
+  const handleSetDraftChange = (
+    setId: string,
+    field: 'reps' | 'weight',
+    value: string,
+  ) => {
+    const key = setDraftKey(setId, field);
+    setSetDrafts((drafts) => ({ ...drafts, [key]: value }));
+  };
+
+  const handleCommitReps = (set: WorkoutSet, inputValue: string) => {
+    const key = setDraftKey(set.id, 'reps');
+    if (!(key in setDrafts)) return;
+
+    const value =
+      !inputValue || isNaN(Number(inputValue)) || Number(inputValue) < 1
+        ? 1
+        : Number(inputValue);
+    setSetDrafts((drafts) => {
+      const nextDrafts = { ...drafts };
+      delete nextDrafts[key];
+      return nextDrafts;
+    });
+    if (Number(set.reps) !== value) {
+      handleUpdateSet(set.id, 'reps', value);
+    }
+  };
+
+  const handleCommitWeight = (set: WorkoutSet, inputValue: string) => {
+    const key = setDraftKey(set.id, 'weight');
+    if (!(key in setDrafts)) return;
+
+    const parsedValue = Number(inputValue);
+    const value =
+      inputValue === '' || isNaN(parsedValue) || parsedValue < 0
+        ? 0
+        : parsedValue;
+    const changed = Number(set.weight) !== value;
+    setSetDrafts((drafts) => {
+      const nextDrafts = { ...drafts };
+      delete nextDrafts[key];
+      return nextDrafts;
+    });
+    if (!changed) return;
+
+    handleUpdateSet(set.id, 'weight', value);
+    if (value > 0 && onCheckRmWeight) {
+      onCheckRmWeight(exercise.name, value, exercise.definitionId);
+    }
   };
 
   const handleApplyRestToAllSets = (newRest: number) => {
@@ -425,14 +479,28 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                               pattern="[0-9]*"
                               min="1"
                               max="999"
-                              value={set.reps}
-                              onFocus={(e) => e.target.select()}
-                              onChange={(e) => handleUpdateSet(set.id, 'reps', e.target.value)}
-                              onBlur={() => {
-                                if (!set.reps || isNaN(Number(set.reps)) || Number(set.reps) < 1) {
-                                  handleUpdateSet(set.id, 'reps', 1);
-                                }
+                              value={
+                                setDrafts[setDraftKey(set.id, 'reps')] ??
+                                set.reps
+                              }
+                              onFocus={(e) => {
+                                e.target.select();
+                                handleSetDraftChange(
+                                  set.id,
+                                  'reps',
+                                  String(set.reps),
+                                );
                               }}
+                              onChange={(e) =>
+                                handleSetDraftChange(
+                                  set.id,
+                                  'reps',
+                                  e.target.value,
+                                )
+                              }
+                              onBlur={(e) =>
+                                handleCommitReps(set, e.currentTarget.value)
+                              }
                               className="w-16 sm:w-20 min-h-[48px] text-center text-sm font-extrabold py-2 px-1 rounded-xl border border-white/10 bg-zinc-900 text-white focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/30 focus:outline-none transition-all shadow-inner"
                             />
                           </div>
@@ -461,21 +529,28 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                               step="0.5"
                               min="0"
                               max="999"
-                              value={set.weight}
-                              onFocus={(e) => e.target.select()}
-                              onChange={(e) => handleUpdateSet(set.id, 'weight', e.target.value)}
-                              onBlur={(e) => {
-                                const inputVal = e.target.value;
-                                const val = Number(inputVal);
-                                if (inputVal === '' || isNaN(val) || val < 0) {
-                                  handleUpdateSet(set.id, 'weight', 0);
-                                } else {
-                                  handleUpdateSet(set.id, 'weight', val);
-                                  if (val > 0 && onCheckRmWeight) {
-                                    onCheckRmWeight(exercise.name, val, exercise.definitionId);
-                                  }
-                                }
+                              value={
+                                setDrafts[setDraftKey(set.id, 'weight')] ??
+                                set.weight
+                              }
+                              onFocus={(e) => {
+                                e.target.select();
+                                handleSetDraftChange(
+                                  set.id,
+                                  'weight',
+                                  String(set.weight),
+                                );
                               }}
+                              onChange={(e) =>
+                                handleSetDraftChange(
+                                  set.id,
+                                  'weight',
+                                  e.target.value,
+                                )
+                              }
+                              onBlur={(e) =>
+                                handleCommitWeight(set, e.currentTarget.value)
+                              }
                               className="w-16 sm:w-20 min-h-[48px] text-center text-sm font-extrabold py-2 px-1 rounded-xl border border-white/10 bg-zinc-900 text-white focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/30 focus:outline-none transition-all shadow-inner"
                             />
                           </div>

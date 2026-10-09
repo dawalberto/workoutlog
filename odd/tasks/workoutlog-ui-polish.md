@@ -30,7 +30,7 @@ The app currently spends header space on sync status that the user does not want
 
 - [x] `header-connectivity-polish`: Remove the prominent header sync banner, make the sidebar footer connectivity label reflect the actual online state, and add a Premium-only diamond icon to the header badge.
 - [x] `premium-plan-clarity`: Show an active badge only for plan(s) identified by trustworthy entitlement metadata; add compelling but verified plan benefits. Extend the backend entitlement response/storage only as needed to expose plan IDs accurately.
-- [ ] `blur-save-set-fields`: Keep reps/weight drafts local while editing and persist the normalized value on blur, avoiding per-keystroke backend sync; retain existing explicit-save and picker behavior.
+- [x] `blur-save-set-fields`: Keep reps/weight drafts local while editing and persist the normalized value on blur, avoiding per-keystroke backend sync; retain existing explicit-save and picker behavior.
 - [ ] `checkout-return-base-path`: Generate and recognize Stripe success/cancel routes with the configured Vite base path so GitHub Pages returns do not land on a blank page.
 
 ## Acceptance criteria and checks
@@ -56,10 +56,16 @@ The app currently spends header space on sync status that the user does not want
 - `premium-plan-clarity` complete: Stripe subscription metadata and lifetime sources persist validated `monthly`, `annual`, or `lifetime` plan IDs in private entitlement sources. The owner-scoped entitlement RPC returns only currently active IDs, dynamically excluding expired or inactive sources; legacy/manual Premium without provider metadata returns an empty list. The UI marks only returned plans and shows generic feedback when no plan is known.
 - Premium task verification: frontend `pnpm test -- tests/auth.test.ts tests/billing.test.tsx` passed (8 files, 78 tests) and `pnpm lint` passed. Backend `pnpm test -- tests/auth.test.ts tests/billing.test.ts tests/stripe-webhook.test.ts` passed (12 files, 86 tests), `pnpm typecheck` passed, and `supabase test db --local supabase/tests/billing.test.sql` passed (92 pgTAP tests). Backend Node 22 emitted the existing Node >=24 engine warning.
 - Premium task rollback boundary: backend plan metadata migration, its pgTAP assertions, and the account/webhook/billing persistence changes in `back-workoutlog`; frontend plan metadata parsing, modal badges/benefits, and their tests in `workoutlog`. The existing header work and unrelated local files are outside this boundary.
-- Premium backend work-unit commit: `8d24c54` (`feat(billing): persist trusted active plan metadata`); frontend work-unit commit identity will be recorded after its commit.
+- Premium backend work-unit commit: `8d24c54` (`feat(billing): persist trusted active plan metadata`).
+- Premium frontend work-unit commit: `be4eec8` (`feat(ui): clarify active Premium plans and benefits`).
 - Premium runtime boundary: local pgTAP exercised the database/RPC contract; Stripe calls remained mocked, with no remote Stripe runtime used.
 - User authorization covers `back-workoutlog/src/plugins/supabase-client.ts` and other necessary backend changes, as recorded above.
+- `blur-save-set-fields` complete: reps and weight use component-local drafts; validation and normalized values commit on blur only when the value changes, and positive changed weights retain their RM check. The picker and explicit-save forms were not modified.
+- Blur-save test-first evidence: `pnpm exec vitest run tests/exercise-card.test.tsx` initially failed all 4 regressions because typing called the parent updater; after implementation it passed (1 file, 4 tests). `pnpm lint` passed.
+- Blur-save rollback boundary: revert only `src/components/ExerciseCard.tsx` draft/blur handling and `tests/exercise-card.test.tsx`; time-picker behavior and parent storage wiring remain untouched.
+- Blur-save runtime boundary: N/A; this is an input-component interaction exercised through focused Vitest callbacks, with persistence remaining behind the existing parent updater.
+- Blur-save work-unit commit identity will be recorded after its commit.
 - The user reported Checkout success returns to `/billing/success` without the GitHub Pages `/workoutlog/` base, producing a blank page. Add regression coverage for both the configured deployment base and local root mode.
 - Frontend CodeGraph exact-symbol queries mapped the edit targets; the backend index had zero nodes, so the billing/account flow was mapped through narrow local source reads.
-- Next step: complete `blur-save-set-fields` and `checkout-return-base-path` with separate behavior work units.
+- Next step: complete `checkout-return-base-path` with a separate behavior work unit.
 - Engram mirror: pending; the memory provider is unavailable in this runtime.
