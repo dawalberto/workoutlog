@@ -14,7 +14,6 @@ import {
   Dumbbell, 
   Layers, 
   Flame,
-  Activity,
   Zap
 } from 'lucide-react';
 import { Routine, ActiveWorkoutSession } from '../types';
@@ -80,7 +79,7 @@ export const RoutineList: React.FC<RoutineListProps> = ({
 
         {/* Bento Grid Summary Cards (only if routines exist) */}
         {routines.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 my-6">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 my-6">
             {/* Bento Card 1: Total Rutinas */}
             <div className="bg-[#1C1C1E] border border-white/[0.08] rounded-2xl p-4 sm:p-5 flex flex-col justify-between hover:border-white/20 transition-colors shadow-lg">
               <div className="flex items-center justify-between text-zinc-400 mb-2">
@@ -110,34 +109,6 @@ export const RoutineList: React.FC<RoutineListProps> = ({
                   {totalSetsOverall}
                 </span>
                 <span className="text-xs text-[#A1A1AA]">series listas</span>
-              </div>
-            </div>
-
-            {/* Bento Card 3: Sesiones en vivo / Tiempo */}
-            <div className="col-span-2 sm:col-span-1 bg-[#1C1C1E] border border-white/[0.08] rounded-2xl p-4 sm:p-5 flex flex-col justify-between hover:border-white/20 transition-colors shadow-lg">
-              <div className="flex items-center justify-between text-zinc-400 mb-2">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#A1A1AA]">
-                  Estado Gym
-                </span>
-                <Activity className="w-4 h-4 text-[#00FF87]" />
-              </div>
-              <div className="flex items-baseline gap-2">
-                {activeSessionsCount > 0 ? (
-                  <>
-                    <span className="text-xl sm:text-2xl font-black text-[#00FF87] flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-[#00FF87] animate-ping" />
-                      {activeSessionsCount}
-                    </span>
-                    <span className="text-xs text-[#00FF87] font-semibold">en directo</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="text-xl sm:text-2xl font-black text-white">
-                      ~{formatSecondsToTime(totalEstSecondsOverall)}
-                    </span>
-                    <span className="text-xs text-[#A1A1AA]">total est.</span>
-                  </>
-                )}
               </div>
             </div>
           </div>

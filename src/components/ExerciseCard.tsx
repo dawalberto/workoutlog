@@ -28,6 +28,7 @@ import {
 import { VideoPreview } from './VideoPreview';
 import { RmBadge } from './RmBadge';
 import { DiaryButton } from './DiaryButton';
+import { TimePickerField } from './TimePickerField';
 
 interface ExerciseCardProps {
   exercise: Exercise;
@@ -91,6 +92,11 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
     onUpdateExercise({ ...exercise, sets: updatedSets });
   };
 
+  const handleApplyRestToAllSets = (newRest: number) => {
+    const updatedSets = exercise.sets.map((s) => ({ ...s, restSeconds: newRest }));
+    onUpdateExercise({ ...exercise, sets: updatedSets });
+  };
+
   const handleDuplicateSet = (indexToDuplicate: number) => {
     const setToDuplicate = exercise.sets[indexToDuplicate];
     if (!setToDuplicate) return;
@@ -141,8 +147,8 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
     >
       {/* Exercise Card Header */}
       <div className="p-4 sm:p-5 border-b border-white/[0.06] bg-[#18181A]/50">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-start sm:items-center justify-between gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             {/* Exercise Thumbnail or Index Badge */}
             {exercise.imageUrl ? (
               <div className="w-12 h-12 rounded-xl overflow-hidden border border-white/10 shrink-0 bg-zinc-900 relative shadow-sm">
@@ -236,11 +242,24 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
             </div>
           </div>
 
-          {/* Action Toolbar */}
-          <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-white/[0.06] shrink-0">
+          {/* Dedicated Top-Right Chevron Toggle Button - ALWAYS visible, fixed position on mobile & desktop */}
+          <button
+            type="button"
+            onClick={handleToggleCollapse}
+            className="p-2 sm:p-2.5 rounded-xl text-zinc-300 hover:text-white bg-zinc-900/90 hover:bg-zinc-800 border border-white/10 transition-colors active:scale-95 shrink-0 ml-1.5 shadow-sm"
+            title={isCollapsed ? 'Desplegar ejercicio' : 'Plegar ejercicio'}
+            aria-label={isCollapsed ? 'Desplegar ejercicio' : 'Plegar ejercicio'}
+          >
+            {isCollapsed ? <ChevronDown className="w-5 h-5 text-[#00FF87]" /> : <ChevronUp className="w-5 h-5 text-zinc-300" />}
+          </button>
+        </div>
+
+        {/* Action & Metadata Toolbar */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-white/[0.06] mt-3">
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
             {isCollapsed && summaryText && (
               <span
-                className="inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] sm:text-[11px] font-mono font-semibold bg-zinc-900 text-zinc-300 border border-white/10 whitespace-nowrap shadow-inner"
+                className="inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] sm:text-[11px] font-mono font-semibold bg-zinc-900 text-zinc-300 border border-white/10 shadow-inner max-w-[200px] sm:max-w-none truncate"
                 title="Resumen: series x repeticiones · peso - descanso"
               >
                 {summaryText}
@@ -259,58 +278,46 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
               <Clock className="w-3.5 h-3.5 text-[#00FF87]" />
               <span>~{formatSecondsToTime(totalExerciseSeconds)}</span>
             </div>
+          </div>
 
-            <div className="flex items-center gap-1 shrink-0">
-              {!isExecutionMode && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setShowImageInput(!showImageInput)}
-                    title="Configurar imagen miniatura / preview"
-                    className={`p-2 rounded-xl border text-xs transition-colors active:scale-95 ${
-                      exercise.imageUrl
-                        ? 'bg-[#00FF87]/20 text-[#00FF87] border-[#00FF87]/40'
-                        : 'bg-zinc-900 text-zinc-400 border-white/10 hover:text-white hover:border-white/20'
-                    }`}
-                  >
-                    <ImageIcon className="w-4 h-4" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setShowVideoInput(!showVideoInput)}
-                    title="Configurar enlace de video"
-                    className={`p-2 rounded-xl border text-xs transition-colors active:scale-95 ${
-                      exercise.videoUrl
-                        ? 'bg-[#00FF87]/20 text-[#00FF87] border-[#00FF87]/40'
-                        : 'bg-zinc-900 text-zinc-400 border-white/10 hover:text-white hover:border-white/20'
-                    }`}
-                  >
-                    <Video className="w-4 h-4" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={onDeleteExercise}
-                    title="Eliminar ejercicio"
-                    className="p-2 rounded-xl border border-red-500/20 bg-zinc-900 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors active:scale-95"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </>
-              )}
+          {!isExecutionMode && (
+            <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+              <button
+                type="button"
+                onClick={() => setShowImageInput(!showImageInput)}
+                title="Configurar imagen miniatura / preview"
+                className={`p-2 rounded-xl border text-xs transition-colors active:scale-95 ${
+                  exercise.imageUrl
+                    ? 'bg-[#00FF87]/20 text-[#00FF87] border-[#00FF87]/40'
+                    : 'bg-zinc-900 text-zinc-400 border-white/10 hover:text-white hover:border-white/20'
+                }`}
+              >
+                <ImageIcon className="w-4 h-4" />
+              </button>
 
               <button
                 type="button"
-                onClick={handleToggleCollapse}
-                className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors active:scale-95"
-                title={isCollapsed ? 'Desplegar ejercicio' : 'Plegar ejercicio'}
-                aria-label={isCollapsed ? 'Desplegar ejercicio' : 'Plegar ejercicio'}
+                onClick={() => setShowVideoInput(!showVideoInput)}
+                title="Configurar enlace de video"
+                className={`p-2 rounded-xl border text-xs transition-colors active:scale-95 ${
+                  exercise.videoUrl
+                    ? 'bg-[#00FF87]/20 text-[#00FF87] border-[#00FF87]/40'
+                    : 'bg-zinc-900 text-zinc-400 border-white/10 hover:text-white hover:border-white/20'
+                }`}
               >
-                {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                <Video className="w-4 h-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={onDeleteExercise}
+                title="Eliminar ejercicio"
+                className="p-2 rounded-xl border border-red-500/20 bg-zinc-900 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors active:scale-95"
+              >
+                <Trash2 className="w-4 h-4" />
               </button>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Media Inputs in Edit Mode */}
@@ -477,35 +484,17 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
 
                       {/* Rest */}
                       <td className="py-3 px-2 text-center">
-                        {isExecutionMode ? (
-                          <span
-                            className={`text-xs font-mono font-bold px-2 py-1 rounded-lg ${
-                              isCompleted ? 'text-zinc-400 bg-zinc-900/60' : 'text-zinc-200 bg-zinc-800'
-                            }`}
-                          >
-                            {set.restSeconds}s
-                          </span>
-                        ) : (
-                          <div className="flex items-center justify-center">
-                            <input
-                              type="number"
-                              inputMode="numeric"
-                              pattern="[0-9]*"
-                              step="5"
-                              min="0"
-                              max="600"
-                              value={set.restSeconds}
-                              onFocus={(e) => e.target.select()}
-                              onChange={(e) => handleUpdateSet(set.id, 'restSeconds', e.target.value)}
-                              onBlur={() => {
-                                if (set.restSeconds === '' || isNaN(Number(set.restSeconds)) || Number(set.restSeconds) < 0) {
-                                  handleUpdateSet(set.id, 'restSeconds', 0);
-                                }
-                              }}
-                              className="w-16 sm:w-20 min-h-[48px] text-center text-xs font-mono font-bold py-2 px-1 rounded-xl border border-white/10 bg-zinc-900 text-white focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/30 focus:outline-none transition-all shadow-inner"
-                            />
-                          </div>
-                        )}
+                        <div className="flex items-center justify-center">
+                          <TimePickerField
+                            variant="table"
+                            value={set.restSeconds}
+                            onChange={(secs) => handleUpdateSet(set.id, 'restSeconds', secs)}
+                            onApplyToAllSets={(secs) => handleApplyRestToAllSets(secs)}
+                            allowApplyToAll={exercise.sets.length > 1}
+                            modalTitle={`Descanso Serie ${set.setNumber} · ${exercise.name}`}
+                            className="min-w-[70px]"
+                          />
+                        </div>
                       </td>
 
                       {/* Estimated Set Time */}
