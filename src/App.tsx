@@ -21,6 +21,7 @@ import { RmLogsView } from './components/RmLogsView';
 import { WorkoutHistoryView } from './components/WorkoutHistoryView';
 import { ExerciseDiaryView } from './components/ExerciseDiaryView';
 import { SidebarMenu } from './components/SidebarMenu';
+import { BillingPlansModal } from './components/BillingPlansModal';
 import { RmRecordAlertModal } from './components/RmRecordAlertModal';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { DataBackupModal } from './components/DataBackupModal';
@@ -47,6 +48,7 @@ export default function App() {
   // Navigation & Modal Visibility
   const [activeTab, setActiveTab] = useState<AppTab>(AppTab.ROUTINES);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isBillingPlansOpen, setIsBillingPlansOpen] = useState(false);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
 
@@ -378,6 +380,7 @@ export default function App() {
         historyCount={workoutHistory.length}
         diaryCount={getTotalDiaryEntriesCount(exerciseDiary)}
         onOpenBackup={() => setIsBackupModalOpen(true)}
+        onOpenBillingPlans={() => setIsBillingPlansOpen(true)}
         isAuthenticated={Boolean(account.user)}
         userEmail={account.user?.email ?? null}
         isPremiumActive={account.isPremiumActive}
@@ -387,6 +390,14 @@ export default function App() {
         error={account.error ?? storageError}
         onSignIn={account.signInWithGoogle}
         onSignOut={account.signOut}
+      />
+
+      <BillingPlansModal
+        isOpen={isBillingPlansOpen}
+        isAuthenticated={Boolean(account.user)}
+        isPremiumActive={account.isPremiumActive}
+        onClose={() => setIsBillingPlansOpen(false)}
+        onSignIn={account.signInWithGoogle}
       />
 
       {/* RM New Record Detection Alert Modal */}

@@ -19,6 +19,7 @@ interface SidebarMenuProps {
   historyCount: number;
   diaryCount?: number;
   onOpenBackup: () => void;
+  onOpenBillingPlans: () => void;
   isAuthenticated: boolean;
   userEmail: string | null;
   isPremiumActive: boolean;
@@ -41,6 +42,7 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
   historyCount,
   diaryCount = 0,
   onOpenBackup,
+  onOpenBillingPlans,
   isAuthenticated,
   userEmail,
   isPremiumActive,
@@ -332,49 +334,58 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
           </div>
 
           <section
-            aria-label="Account"
-            className="mx-3 mb-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-3"
+            aria-label="Cuenta"
+            className="mx-3 mb-3 rounded-2xl border border-white/10 bg-[#121214] p-3"
           >
             <div className="flex items-center justify-between gap-2">
-              <h2 className="text-sm font-bold text-zinc-900">Account</h2>
+              <h2 className="text-sm font-bold text-white">Cuenta</h2>
               <span
                 className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
                   isPremiumActive
-                    ? 'bg-emerald-100 text-emerald-800'
-                    : 'bg-zinc-200 text-zinc-700'
+                  ? 'bg-emerald-500/15 text-emerald-300'
+                  : 'bg-zinc-800 text-zinc-300'
                 }`}
               >
                 {isPremiumActive ? 'Premium' : 'Free'}
               </span>
             </div>
-            <p className="mt-1 break-all text-[11px] text-zinc-600">
+            <p className="mt-1 break-all text-[11px] text-zinc-400">
               {userEmail ??
-                (isAuthenticated ? 'Signed in' : 'Signed out — your data stays on this device.')}
+                (isAuthenticated
+                ? 'Sesión iniciada'
+                : 'Sesión sin iniciar; tus datos siguen en este dispositivo.')}
             </p>
             {isEntitlementLoading && isAuthenticated && (
-              <p className="mt-1 text-[11px] text-zinc-500">Checking account status…</p>
+              <p className="mt-1 text-[11px] text-zinc-500">Comprobando el estado de la cuenta…</p>
             )}
             {premiumExpiry && Number.isFinite(Date.parse(premiumExpiry)) && (
               <p className="mt-1 text-[11px] text-zinc-500">
-                Premium expiry: {new Date(premiumExpiry).toLocaleDateString()}
+                Premium hasta: {new Date(premiumExpiry).toLocaleDateString('es-ES')}
               </p>
             )}
             {error && (
-              <p role="alert" className="mt-2 text-[11px] text-red-700">
+              <p role="alert" className="mt-2 text-[11px] text-red-300">
                 {error}
               </p>
             )}
             <button
               type="button"
+              onClick={onOpenBillingPlans}
+              className="mt-3 w-full rounded-xl border border-[#00FF87]/30 bg-[#00FF87]/10 px-3 py-2 text-xs font-black text-[#00FF87] transition-all hover:bg-[#00FF87]/15 active:scale-[0.98]"
+            >
+              Ver planes
+            </button>
+            <button
+              type="button"
               onClick={() => void (isAuthenticated ? onSignOut() : onSignIn())}
               disabled={isSigningIn}
-              className="mt-3 w-full rounded-xl bg-zinc-900 px-3 py-2 text-xs font-bold text-white transition hover:bg-zinc-700 disabled:cursor-wait disabled:opacity-60"
+              className="mt-2 w-full rounded-xl bg-[#00FF87] px-3 py-2 text-xs font-black text-black transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
             >
               {isSigningIn
-                ? 'Signing in…'
+                ? 'Conectando…'
                 : isAuthenticated
-                  ? 'Sign out'
-                  : 'Sign in with Google'}
+                ? 'Cerrar sesión'
+                : 'Continuar con Google'}
             </button>
           </section>
         </div>
