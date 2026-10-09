@@ -7,6 +7,7 @@ import { AppTab } from '../src/types';
 
 type ButtonElement = React.ReactElement<{
   children?: React.ReactNode;
+  disabled?: boolean;
   onClick?: React.MouseEventHandler<HTMLButtonElement>;
 }>;
 
@@ -156,6 +157,36 @@ describe('billing plan catalog', () => {
       ['annual'],
       ['lifetime'],
     ]);
+  });
+
+  it('blocks every paid checkout until entitlement loading completes', () => {
+    const onCheckout = vi.fn(async () => undefined);
+    const tree = BillingPlansModal({
+      isOpen: true,
+      isAuthenticated: true,
+      isPremiumActive: false,
+      isEntitlementLoading: true,
+      isBillingLoading: false,
+      billingError: null,
+      returnStatus: null,
+      onClose: () => undefined,
+      onSignIn: async () => undefined,
+      onCheckout,
+      onOpenBillingPortal: async () => undefined,
+      onRefreshEntitlement: async () => undefined,
+    }) as React.ReactNode;
+    const checkoutButtons = findButtons(tree).filter((button) =>
+      ['Elegir plan', 'Verificando cuenta…'].includes(
+        textContent(button.props.children),
+      ),
+    );
+
+    expect(checkoutButtons).toHaveLength(3);
+    for (const button of checkoutButtons) {
+      expect(button.props.disabled).toBe(true);
+      button.props.onClick?.({} as React.MouseEvent<HTMLButtonElement>);
+    }
+    expect(onCheckout).not.toHaveBeenCalled();
   });
 
   it('offers billing management only after authentication', () => {

@@ -152,23 +152,40 @@ export const BillingPlansModal: React.FC<BillingPlansModalProps> = ({
                   {plan.description}
                 </p>
               </div>
-            <button
+              <button
                 className={`mt-4 rounded-xl px-3 py-2 text-xs font-black transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 ${
                   isPremiumActive
                     ? 'border border-[#00FF87]/30 bg-[#00FF87]/10 text-[#00FF87]'
-                  : 'bg-[#00FF87] text-black shadow-[0_0_12px_rgba(0,255,135,0.14)] hover:brightness-110'
+                    : 'bg-[#00FF87] text-black shadow-[0_0_12px_rgba(0,255,135,0.14)] hover:brightness-110'
                 }`}
-                disabled={!isAuthenticated || isPremiumActive || isBillingLoading}
-                onClick={() => void onCheckout(plan.id)}
+                disabled={
+                  !isAuthenticated ||
+                  isPremiumActive ||
+                  isEntitlementLoading ||
+                  isBillingLoading
+                }
+                onClick={() => {
+                  if (
+                    !isAuthenticated ||
+                    isPremiumActive ||
+                    isEntitlementLoading ||
+                    isBillingLoading
+                  ) {
+                    return;
+                  }
+                  void onCheckout(plan.id);
+                }}
                 type="button"
-            >
+              >
                 {isPremiumActive
                   ? 'Premium activo'
-                  : isBillingLoading
-                    ? 'Preparando pago…'
-                    : isAuthenticated
-                      ? 'Elegir plan'
-                      : 'Inicia sesión'}
+                  : isEntitlementLoading
+                    ? 'Verificando cuenta…'
+                    : isBillingLoading
+                      ? 'Preparando pago…'
+                      : isAuthenticated
+                        ? 'Elegir plan'
+                        : 'Inicia sesión'}
               </button>
             </article>
           ))}
