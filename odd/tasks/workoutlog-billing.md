@@ -62,4 +62,11 @@ The backend already supports test-mode Checkout and entitlement webhooks, but th
 - `billing-portal` RED: frontend Portal API/UI tests failed before implementation; backend Portal route tests observed 404/503 responses before the authenticated route existed.
 - `billing-portal` GREEN: frontend `pnpm test tests/services/billing.test.ts tests/billing.test.tsx --reporter=dot` passed (2 files, 21 tests) and `pnpm lint` passed; backend `pnpm test tests/billing.test.ts --reporter=dot` passed (1 file, 14 tests) and `pnpm typecheck` passed.
 - `billing-portal` backend work-unit commit: `35db78d` (`feat(billing): add authenticated portal sessions`).
-- Next step: implement `payment-lifecycle` with lifetime refund/dispute handling and subscription expiry rules.
+- `billing-portal` frontend work-unit commit: `4831768` (`feat(billing): add self-service payment portal`).
+- `payment-lifecycle` is blocked by the allowed edit surfaces: Stripe dispute events identify a PaymentIntent but do not provide a customer ID, while `BillingAdmin` only resolves ownership from a customer ID. Safely binding dispute/refund updates to the existing lifetime source requires a service-role PaymentIntent-to-customer/user lookup in `back-workoutlog/src/plugins/billing-admin.ts` and its RPC type in `back-workoutlog/src/types/supabase-database.ts`; neither path is authorized for editing.
+- `local-billing-flow` remains pending because it depends on the unimplemented lifetime lifecycle and must exercise that ownership-bound webhook path.
+- No lifecycle draft, test, or migration was retained or committed after identifying the required out-of-scope lookup. No Stripe network operation was made.
+- Final frontend checks: `pnpm test` passed (8 files, 71 tests); `pnpm lint` passed; `pnpm build` passed with the existing large-chunk warning.
+- Final backend checks: `pnpm test` passed (11 files, 69 tests); `pnpm lint`, `pnpm typecheck`, and `pnpm build` passed; `supabase test db --local supabase/tests/billing.test.sql` passed (24 pgTAP tests).
+- Environment note: backend commands warn that Node 22.13.0 is below the package requirement of Node >=24; all reported backend checks still passed.
+- Next step: authorize the two backend service/type paths above, then complete `payment-lifecycle` before `local-billing-flow`.
