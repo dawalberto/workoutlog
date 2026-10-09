@@ -11,6 +11,7 @@ import {
   type SupabaseBrowserClient,
 } from '../services/supabase';
 import {
+  createBillingPortalSession,
   createBillingCheckoutSession,
   type BillingPlan,
 } from '../services/billing';
@@ -31,6 +32,7 @@ export interface UseAuthReturn {
   error: string | null;
   refreshEntitlement: () => Promise<AccountEntitlementResponse | null>;
   requestCheckoutSession: (plan: BillingPlan) => Promise<string | null>;
+  requestBillingPortalSession: () => Promise<string | null>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -206,6 +208,31 @@ export function useAuth(): UseAuthReturn {
     }
   };
 
+  const requestBillingPortalSession = async () => {
+    setIsBillingLoading(true);
+    setError(null);
+    try {
+      const client = clientRef.current ?? getSupabaseBrowserClient();
+      if (!client) {
+        throw new Error('Supabase authentication is not configured.');
+      }
+      const { data, error: sessionError } = await client.auth.getSession();
+      if (sessionError) throw sessionError;
+      if (!data.session) {
+        throw new Error('Inicia sesión para gestionar tus pagos.');
+      }
+      return await createBillingPortalSession(
+        backendApiOrigin,
+        data.session.access_token,
+      );
+    } catch (billingError: unknown) {
+      setError(getErrorMessage(billingError));
+      return null;
+    } finally {
+      setIsBillingLoading(false);
+    }
+  };
+
   const validUntil = entitlement?.entitlement?.validUntil;
   const isPremiumActive = isPremiumEntitlementActive(entitlement, clock);
 
@@ -257,6 +284,7 @@ export function useAuth(): UseAuthReturn {
     error,
     refreshEntitlement,
     requestCheckoutSession,
+    requestBillingPortalSession,
     signInWithGoogle,
     signOut,
   };

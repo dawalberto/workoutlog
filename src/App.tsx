@@ -86,6 +86,11 @@ export default function App() {
     if (checkoutUrl) window.location.assign(checkoutUrl);
   };
 
+  const handleOpenBillingPortal = async () => {
+    const portalUrl = await account.requestBillingPortalSession();
+    if (portalUrl) window.location.assign(portalUrl);
+  };
+
   // Storage Layer (IndexedDB with automatic legacy localStorage migration)
   const {
     isStorageLoaded,
@@ -438,6 +443,7 @@ export default function App() {
         }}
         onSignIn={account.signInWithGoogle}
         onCheckout={handleCheckout}
+        onOpenBillingPortal={handleOpenBillingPortal}
         onRefreshEntitlement={async () => {
           await account.refreshEntitlement();
         }}

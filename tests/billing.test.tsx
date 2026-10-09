@@ -41,6 +41,7 @@ describe('billing plan catalog', () => {
         onClose={() => undefined}
         onSignIn={async () => undefined}
         onCheckout={async () => undefined}
+        onOpenBillingPortal={async () => undefined}
         onRefreshEntitlement={async () => undefined}
       />,
     );
@@ -71,6 +72,7 @@ describe('billing plan catalog', () => {
         onClose={() => undefined}
         onSignIn={async () => undefined}
         onCheckout={async () => undefined}
+        onOpenBillingPortal={async () => undefined}
         onRefreshEntitlement={async () => undefined}
       />,
     );
@@ -92,6 +94,7 @@ describe('billing plan catalog', () => {
         onClose={() => undefined}
         onSignIn={async () => undefined}
         onCheckout={async () => undefined}
+        onOpenBillingPortal={async () => undefined}
         onRefreshEntitlement={async () => undefined}
       />,
     );
@@ -114,6 +117,7 @@ describe('billing plan catalog', () => {
         onClose={() => undefined}
         onSignIn={async () => undefined}
         onCheckout={async () => undefined}
+        onOpenBillingPortal={async () => undefined}
         onRefreshEntitlement={async () => undefined}
       />,
     );
@@ -135,6 +139,7 @@ describe('billing plan catalog', () => {
       onClose: () => undefined,
       onSignIn: async () => undefined,
       onCheckout,
+      onOpenBillingPortal: async () => undefined,
       onRefreshEntitlement: async () => undefined,
     }) as React.ReactNode;
     const checkoutButtons = findButtons(tree).filter(
@@ -151,6 +156,44 @@ describe('billing plan catalog', () => {
       ['annual'],
       ['lifetime'],
     ]);
+  });
+
+  it('offers billing management only after authentication', () => {
+    const authenticated = renderToStaticMarkup(
+      <BillingPlansModal
+        isOpen
+        isAuthenticated
+        isPremiumActive
+        isEntitlementLoading={false}
+        isBillingLoading={false}
+        billingError={null}
+        returnStatus={null}
+        onClose={() => undefined}
+        onSignIn={async () => undefined}
+        onCheckout={async () => undefined}
+        onOpenBillingPortal={async () => undefined}
+        onRefreshEntitlement={async () => undefined}
+      />,
+    );
+    const guest = renderToStaticMarkup(
+      <BillingPlansModal
+        isOpen
+        isAuthenticated={false}
+        isPremiumActive={false}
+        isEntitlementLoading={false}
+        isBillingLoading={false}
+        billingError={null}
+        returnStatus={null}
+        onClose={() => undefined}
+        onSignIn={async () => undefined}
+        onCheckout={async () => undefined}
+        onOpenBillingPortal={async () => undefined}
+        onRefreshEntitlement={async () => undefined}
+      />,
+    );
+
+    expect(authenticated).toContain('Gestionar pagos');
+    expect(guest).not.toContain('Gestionar pagos');
   });
 });
 

@@ -16,6 +16,7 @@ interface BillingPlansModalProps {
   onClose: () => void;
   onSignIn: () => Promise<void>;
   onCheckout: (plan: BillingPlan) => Promise<void>;
+  onOpenBillingPortal: () => Promise<void>;
   onRefreshEntitlement: () => Promise<void>;
 }
 
@@ -60,6 +61,7 @@ export const BillingPlansModal: React.FC<BillingPlansModalProps> = ({
   onClose,
   onSignIn,
   onCheckout,
+  onOpenBillingPortal,
   onRefreshEntitlement,
 }) => {
   if (!isOpen) return null;
@@ -220,6 +222,25 @@ export const BillingPlansModal: React.FC<BillingPlansModalProps> = ({
           >
             {billingError}
           </p>
+        )}
+
+        {isAuthenticated && (
+          <footer className="mx-4 mb-4 flex flex-col gap-3 rounded-2xl border border-white/10 bg-zinc-900/60 p-4 sm:mx-6 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-bold text-white">¿Ya tienes un plan?</p>
+              <p className="mt-1 text-xs text-zinc-400">
+                Gestiona tu suscripción y método de pago en el portal seguro.
+              </p>
+            </div>
+            <button
+              className="shrink-0 rounded-xl border border-white/10 bg-zinc-800 px-4 py-2.5 text-xs font-black text-white transition-all hover:border-[#00FF87]/40 hover:text-[#00FF87] active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
+              disabled={isBillingLoading}
+              onClick={() => void onOpenBillingPortal()}
+              type="button"
+            >
+              Gestionar pagos
+            </button>
+          </footer>
         )}
 
         {!isAuthenticated && (

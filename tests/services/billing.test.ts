@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  createBillingPortalSession,
   createBillingCheckoutSession,
   getBillingReturnPath,
   getBillingReturnStatus,
@@ -85,6 +86,57 @@ describe('billing Checkout client', () => {
         unavailableResponse as unknown as typeof fetch,
       ),
     ).rejects.toThrow('El servicio de pagos no está disponible. Inténtalo de nuevo más tarde.');
+  });
+});
+
+describe('billing portal client', () => {
+  it('requests the authenticated Portal and validates its destination', async () => {
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            portalUrl: 'https://billing.stripe.com/p/session',
+          }),
+        ),
+    );
+
+    await expect(
+      createBillingPortalSession(
+        'https://api.example.test',
+        'local-session-token',
+        fetchMock as unknown as typeof fetch,
+      ),
+    ).resolves.toBe('https://billing.stripe.com/p/session');
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.example.test/api/v1/billing/portal',
+      expect.objectContaining({
+        method: 'POST',
+        headers: { Authorization: 'Bearer local-session-token' },
+      }),
+    );
+  });
+
+  it('surfaces missing customer linkage and rejects untrusted Portal URLs', async () => {
+    const missingCustomer = vi.fn(async () => new Response('{}', { status: 404 }));
+    await expect(
+      createBillingPortalSession(
+        'https://api.example.test',
+        'local-session-token',
+        missingCustomer as unknown as typeof fetch,
+      ),
+    ).rejects.toThrow('No hay una cuenta de pagos vinculada a tu usuario.');
+
+    const untrustedPortal = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ portalUrl: 'https://attacker.example/' })),
+    );
+    await expect(
+      createBillingPortalSession(
+        'https://api.example.test',
+        'local-session-token',
+        untrustedPortal as unknown as typeof fetch,
+      ),
+    ).rejects.toThrow('Portal destination is not trusted.');
   });
 });
 

@@ -28,7 +28,7 @@ The backend already supports test-mode Checkout and entitlement webhooks, but th
 
 - [x] `plan-catalog`: Add the plan catalog and account entry point, styled consistently with the existing app and Google sign-in control; include focused UI tests.
 - [x] `checkout-return`: Connect authenticated plan selection to Checkout, provide success/cancel return feedback, and refresh entitlement without treating a redirect as proof of payment; include frontend/backend route tests.
-- [ ] `billing-portal`: Add an authenticated Billing Portal session route and matching account UI with focused tests.
+- [x] `billing-portal`: Add an authenticated Billing Portal session route and matching account UI with focused tests.
 - [ ] `payment-lifecycle`: Handle lifetime full refunds and disputes according to the assumptions above, retain idempotency and test-only safeguards, and cover relevant webhook/database behavior with focused tests.
 - [ ] `local-billing-flow`: Add or extend local automated flow coverage for monthly, annual, and lifetime checkout, duplicate webhooks, cancellation/expiry, and lifetime refund/dispute outcomes without contacting Stripe.
 
@@ -57,4 +57,9 @@ The backend already supports test-mode Checkout and entitlement webhooks, but th
 - `checkout-return` RED: service and return-state tests failed before the client and return UI were implemented (11 expected failures).
 - `checkout-return` GREEN: `pnpm test -- tests/services/billing.test.ts tests/billing.test.tsx` passed (8 files, 68 tests); `pnpm lint` passed; backend `pnpm test tests/billing.test.ts --reporter=dot` passed (1 file, 10 tests).
 - Environment note: backend commands report Node 22.13.0 although the package requires Node >=24; the selected route tests still passed.
-- Next step: implement `billing-portal` with explicit handling for authenticated users who have no linked Stripe customer.
+- `checkout-return` work-unit commit: `b343998` (`feat(billing): connect authenticated Checkout returns`).
+- `billing-portal` implementation: added authenticated Portal session creation for the user's mapped customer, a configured-frontend return URL, explicit 404 handling when no customer is linked, URL validation, and account UI for payment management.
+- `billing-portal` RED: frontend Portal API/UI tests failed before implementation; backend Portal route tests observed 404/503 responses before the authenticated route existed.
+- `billing-portal` GREEN: frontend `pnpm test tests/services/billing.test.ts tests/billing.test.tsx --reporter=dot` passed (2 files, 21 tests) and `pnpm lint` passed; backend `pnpm test tests/billing.test.ts --reporter=dot` passed (1 file, 14 tests) and `pnpm typecheck` passed.
+- `billing-portal` backend work-unit commit: `35db78d` (`feat(billing): add authenticated portal sessions`).
+- Next step: implement `payment-lifecycle` with lifetime refund/dispute handling and subscription expiry rules.

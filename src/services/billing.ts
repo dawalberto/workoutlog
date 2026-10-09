@@ -39,6 +39,38 @@ export async function createBillingCheckoutSession(
   return payload.checkoutUrl;
 }
 
+export async function createBillingPortalSession(
+  apiOrigin: string,
+  accessToken: string,
+  fetcher: typeof fetch = fetch,
+): Promise<string> {
+  const origin = apiOrigin.trim().replace(/\/+$/, '');
+  if (!origin) throw new Error('Backend API origin is not configured.');
+
+  const response = await fetcher(`${origin}/api/v1/billing/portal`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!response.ok) {
+    throw new Error(portalErrorMessage(response.status));
+  }
+
+  const payload: unknown = await response.json();
+  if (
+    !payload ||
+    typeof payload !== 'object' ||
+    !('portalUrl' in payload) ||
+    typeof payload.portalUrl !== 'string'
+  ) {
+    throw new Error('Invalid Billing Portal response.');
+  }
+  if (!isTrustedStripeDestination(payload.portalUrl, 'billing.stripe.com')) {
+    throw new Error('Portal destination is not trusted.');
+  }
+
+  return payload.portalUrl;
+}
+
 export function getBillingReturnStatus(pathname: string): BillingReturnStatus | null {
   const match = pathname.match(/\/billing\/(success|cancel)\/?$/);
   return match?.[1] === 'success' || match?.[1] === 'cancel' ? match[1] : null;
@@ -54,6 +86,17 @@ function checkoutErrorMessage(status: number): string {
     return 'El servicio de pagos no está disponible. Inténtalo de nuevo más tarde.';
   }
   return 'No se pudo iniciar el pago. Inténtalo de nuevo.';
+}
+
+function portalErrorMessage(status: number): string {
+  if (status === 401) return 'Tu sesión ha caducado. Inicia sesión de nuevo.';
+  if (status === 404) {
+    return 'No hay una cuenta de pagos vinculada a tu usuario.';
+  }
+  if (status === 503) {
+    return 'El portal de pagos no está disponible. Inténtalo de nuevo más tarde.';
+  }
+  return 'No se pudo abrir el portal de pagos. Inténtalo de nuevo.';
 }
 
 function isTrustedStripeDestination(value: string, hostname: string): boolean {
