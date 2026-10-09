@@ -24,7 +24,7 @@ The app currently spends header space on sync status that the user does not want
 - Route: delegated direct; one bounded writer owns the multi-file frontend/backend changes and their tests.
 - Delivery strategy: `auto-chain` with the previously selected `stacked-to-main` PR strategy. No PR or push will be created.
 - Forecast: approximately 650 authored changed lines across the four behavior units; split by behavior and report actual sizes.
-- Frontend RDD is enabled by default; backend RDD is clone-local off. Do not start or toggle native review; the user previously chose to leave frontend candidates unreviewed.
+- Frontend RDD is on; backend RDD is clone-local off. The user deferred native review, so no review was started or toggled.
 
 ## Tasks
 
@@ -71,7 +71,11 @@ The app currently spends header space on sync status that the user does not want
 - Checkout test-first evidence: frontend `pnpm exec vitest run tests/services/billing.test.ts` first failed 3 base-path cases, then passed (1 file, 17 tests). Backend `pnpm exec vitest run tests/billing.test.ts` first failed 13 cases; after implementation `pnpm exec vitest run tests/billing.test.ts tests/config/env.test.ts` passed (2 files, 32 tests).
 - Checkout rollback boundary: backend `src/config/env.ts`, `src/plugins/stripe.ts`, `src/routes/billing.ts`, and billing/config tests; frontend `src/services/billing.ts` and `tests/services/billing.test.ts`. The existing entitlement refresh, session ID cleanup, and no-payment-proof return message remain unchanged.
 - Checkout runtime boundary: local Fastify injection tests used mocked Stripe clients; no external Stripe operation or deployment was performed.
-- Checkout backend and frontend work-unit commit identities will be recorded after their commits.
+- Checkout backend work-unit commit: `c73e0fe` (`fix(billing): honor frontend return base path`).
+- Checkout frontend work-unit commit: `114e156` (`fix(ui): honor Vite base path on billing return`).
 - Full verification: frontend `pnpm test` passed (9 files, 85 tests), `pnpm lint` passed, and `pnpm build` passed with the existing large-chunk warning (782.51 kB minified JS). Backend `pnpm test` passed (12 files, 99 tests), `pnpm lint`, `pnpm typecheck`, and `pnpm build` passed; Node v22.13.0 emitted the existing package requirement warning for Node >=24. `supabase test db --local supabase/tests/billing.test.sql` passed (92 pgTAP tests).
-- Delivery remains local-only: no PRs or pushes were created. Planned future slices follow the existing `stacked-to-main` strategy; actual per-commit counts and boundaries will be recorded after the checkout commits.
+- Actual authored changed lines across these behavior commits: header 169; Premium 657 (backend 455, frontend 202); blur-save 324; Checkout return 248 (backend 163, frontend 85); total 1,398. Generated build output and pre-existing unrelated commits are excluded.
+- Planned `stacked-to-main` slices only (no PRs opened): frontend header (`e9433a1` + `ea2310c`, 169 lines) → Premium UI (`be4eec8`, 202; depends on backend plan API) → blur-save (`d835127`, 324) → return UI (`114e156`, 85; depends on backend return config). Backend plan metadata (`8d24c54`, 455) → return config (`c73e0fe`, 163).
+- The backend Premium commit is 55 lines over the 400-line review budget. A cohesive future PR split is migration + pgTAP (251 lines), then backend API wiring and tests (204 lines), before the dependent Premium UI slice. This would require reconstructing PR slices; no history rewrite, PR, push, or size exception was attempted.
+- Delivery remains local-only: no PRs or pushes were created. Existing local branches and all pre-existing untracked files/CodeGraph artifacts remain untouched.
 - Engram mirror: pending; the memory provider is unavailable in this runtime.
