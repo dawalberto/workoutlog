@@ -1,7 +1,12 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Play, Pause, X, Plus, Bell, RotateCcw } from 'lucide-react';
 import { formatStopwatch } from '../utils/timeCalculations';
-import { playTimerFinishBeep, triggerTimerVibration } from '../utils/audioBeep';
+import { 
+  playTimerFinishBeep, 
+  triggerTimerVibration,
+  startRestAudioKeepAlive,
+  stopRestAudioKeepAlive 
+} from '../utils/audioBeep';
 
 interface RestTimerBarProps {
   initialSeconds: number;
@@ -55,6 +60,7 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
     hasFinishedRef.current = true;
     setHasFinished(true);
     setSecondsLeft(0);
+    stopRestAudioKeepAlive();
 
     // Audio and haptic vibration feedback
     if (shouldPlaySound) {
@@ -104,7 +110,12 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
 
   // Setup ticking Web Worker + fallback interval + Page Visibility / Focus listeners
   useEffect(() => {
-    if (isPaused || hasFinished) return;
+    if (isPaused || hasFinished) {
+      stopRestAudioKeepAlive();
+      return;
+    }
+
+    startRestAudioKeepAlive();
 
     let worker: Worker | null = null;
     try {
@@ -154,6 +165,7 @@ export const RestTimerBar: React.FC<RestTimerBarProps> = ({
     window.addEventListener('focus', onFocus);
 
     return () => {
+      stopRestAudioKeepAlive();
       if (worker) {
         worker.postMessage('stop');
         worker.terminate();

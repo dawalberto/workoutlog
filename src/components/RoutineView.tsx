@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   ArrowLeft, 
   Play, 
@@ -50,6 +50,7 @@ interface RoutineViewProps {
   exerciseDiary?: ExerciseDiary[];
   initialMode: RoutineSubMode;
   session?: ActiveWorkoutSession | null;
+  activeRestTimer?: ActiveRestTimer | null;
   onSaveRoutine: (updatedRoutine: Routine) => void;
   onSaveToCatalog: (def: ExerciseDefinition) => void;
   onBack: () => void;
@@ -70,6 +71,7 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
   exerciseDiary = [],
   initialMode,
   session,
+  activeRestTimer,
   onSaveRoutine,
   onSaveToCatalog,
   onBack,
@@ -88,30 +90,113 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
   const [showAddModal, setShowAddModal] = useState(false);
   const [showReorderModal, setShowReorderModal] = useState(false);
 
-  // Collapse state: By default, all exercises collapsed except the first one (index > 0)
-  const [collapsedExerciseIds, setCollapsedExerciseIds] = useState<Set<string>>(() => {
-    const set = new Set<string>();
-    routine.exercises.forEach((ex, idx) => {
-      if (idx > 0) {
-        set.add(ex.id);
-      }
-    });
-    return set;
-  });
+  // Helper to find the active exercise ID when returning to an in-progress workout session
+  const findActiveExerciseId = useCallback((): string => {
+    if (routine.exercises.length === 0) return '';
 
+    // 1. If rest timer is active for this routine, match the exercise name
+    if (activeRestTimer?.routineId === routine.id && activeRestTimer.exerciseName) {
+      const match = routine.exercises.find(
+        (ex) => ex.name.trim().toLowerCase() === activeRestTimer.exerciseName?.trim().toLowerCase()
+      );
+      if (match) return match.id;
+    }
+
+    // 2. If sets were completed in this session, check backwards from the last touched set
+    if (session?.completedSetIds && session.completedSetIds.length > 0) {
+      const completedSetIdSet = new Set(session.completedSetIds);
+      for (let i = session.completedSetIds.length - 1; i >= 0; i--) {
+        const setId = session.completedSetIds[i];
+        const ex = routine.exercises.find((e) => e.sets.some((s) => s.id === setId));
+        if (ex) {
+          // If this exercise is in progress (some sets done, but not all), this is the active one!
+          const isComplete = ex.sets.every((s) => completedSetIdSet.has(s.id));
+          if (!isComplete) {
+            return ex.id;
+          }
+        }
+      }
+
+      // If the last touched exercise is completed, find the next incomplete exercise
+      const nextIncomplete = routine.exercises.find(
+        (e) => !e.sets.every((s) => completedSetIdSet.has(s.id))
+      );
+      if (nextIncomplete) {
+        return nextIncomplete.id;
+      }
+    }
+
+    // 3. Fallback: first incomplete exercise in routine, or the first exercise
+    const completedSetIdSet = new Set(session?.completedSetIds || []);
+    const firstIncomplete = routine.exercises.find(
+      (e) => !e.sets.every((s) => completedSetIdSet.has(s.id))
+    );
+    return firstIncomplete ? firstIncomplete.id : routine.exercises[0]?.id || '';
+  }, [routine.exercises, routine.id, activeRestTimer, session?.completedSetIds]);
+
+  // Compute initial collapsed state:
+  // - If workout is in progress: ONLY the active exercise is uncollapsed; all others collapsed.
+  // - If workout not started: only exercise 0 is uncollapsed; all others collapsed.
+  const computeInitialCollapsed = useCallback((): Set<string> => {
+    const isSessionActive = Boolean(
+      session?.startTime || (session?.completedSetIds && session.completedSetIds.length > 0)
+    );
+
+    const set = new Set<string>();
+
+    if (isSessionActive && routine.exercises.length > 0) {
+      const activeId = findActiveExerciseId();
+      routine.exercises.forEach((ex) => {
+        if (ex.id !== activeId) {
+          set.add(ex.id);
+        }
+      });
+    } else {
+      // Default: index 0 uncollapsed, others collapsed
+      routine.exercises.forEach((ex, idx) => {
+        if (idx > 0) {
+          set.add(ex.id);
+        }
+      });
+    }
+    return set;
+  }, [routine.exercises, session?.startTime, session?.completedSetIds, findActiveExerciseId]);
+
+  // Collapse state
+  const [collapsedExerciseIds, setCollapsedExerciseIds] = useState<Set<string>>(computeInitialCollapsed);
+
+  // Sync collapsed state and automatically scroll to active exercise on routine mount/change
   const prevRoutineIdRef = useRef(routine.id);
   useEffect(() => {
     if (prevRoutineIdRef.current !== routine.id) {
       prevRoutineIdRef.current = routine.id;
-      const initialSet = new Set<string>();
-      routine.exercises.forEach((ex, idx) => {
-        if (idx > 0) {
-          initialSet.add(ex.id);
-        }
-      });
-      setCollapsedExerciseIds(initialSet);
+      setCollapsedExerciseIds(computeInitialCollapsed());
     }
-  }, [routine.id, routine.exercises]);
+  }, [routine.id, computeInitialCollapsed]);
+
+  // Auto-scroll effect:
+  // If workout session is active in this routine, scroll smoothly to the current exercise.
+  // Otherwise, reset scroll to top of window.
+  useEffect(() => {
+    const isSessionActive = Boolean(
+      session?.startTime || (session?.completedSetIds && session.completedSetIds.length > 0)
+    );
+
+    if (isSessionActive && routine.exercises.length > 0) {
+      const activeId = findActiveExerciseId();
+      if (activeId) {
+        const timer = setTimeout(() => {
+          const cardEl = document.getElementById(`exercise-card-${activeId}`);
+          if (cardEl) {
+            cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 120);
+        return () => clearTimeout(timer);
+      }
+    } else {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+  }, [routine.id, session?.startTime, findActiveExerciseId]);
 
   const handleToggleCollapseExercise = (exerciseId: string) => {
     setCollapsedExerciseIds((prev) => {

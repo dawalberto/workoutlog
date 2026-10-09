@@ -26,7 +26,6 @@ import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { DataBackupModal } from './components/DataBackupModal';
 import { WorkoutSummaryModal } from './components/WorkoutSummaryModal';
 import { AppHeader } from './components/AppHeader';
-import { AppFooter } from './components/AppFooter';
 import { AppLoadingScreen } from './components/AppLoadingScreen';
 import { ActiveWorkoutTopBanner } from './components/ActiveWorkoutTopBanner';
 import { ToastNotification } from './components/ToastNotification';
@@ -213,6 +212,11 @@ export default function App() {
     setFeedbackMessage(msg);
   };
 
+  // Reset scroll to top when changing tabs
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [activeTab]);
+
   // Wait for IndexedDB hydration before rendering the view to avoid state flash
   if (!isStorageLoaded) {
     return <AppLoadingScreen />;
@@ -228,9 +232,13 @@ export default function App() {
           exerciseDiary={exerciseDiary}
           initialMode={routineSubMode}
           session={activeSessions[activeRoutine.id]}
+          activeRestTimer={activeRestTimer}
           onSaveRoutine={saveRoutine}
           onSaveToCatalog={createCatalogExercise}
-          onBack={closeRoutine}
+          onBack={() => {
+            closeRoutine();
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+          }}
           onStartSession={startSession}
           onToggleSetComplete={toggleSetComplete}
           onResetSession={handleResetSession}
@@ -309,8 +317,6 @@ export default function App() {
               />
             )}
           </main>
-
-          <AppFooter onOpenBackup={() => setIsBackupModalOpen(true)} />
 
           {/* Bottom Tab Bar */}
           <BottomTabBar
