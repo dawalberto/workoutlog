@@ -10,6 +10,10 @@ import {
   getSupabaseBrowserClient,
   type SupabaseBrowserClient,
 } from '../services/supabase';
+import {
+  createBillingCheckoutSession,
+  type BillingPlan,
+} from '../services/billing';
 
 export interface AuthenticatedIdentity {
   id: string;
@@ -23,7 +27,10 @@ export interface UseAuthReturn {
   isLoading: boolean;
   isEntitlementLoading: boolean;
   isSigningIn: boolean;
+  isBillingLoading: boolean;
   error: string | null;
+  refreshEntitlement: () => Promise<AccountEntitlementResponse | null>;
+  requestCheckoutSession: (plan: BillingPlan) => Promise<string | null>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -41,8 +48,10 @@ export function useAuth(): UseAuthReturn {
   const [isLoading, setIsLoading] = useState(true);
   const [isEntitlementLoading, setIsEntitlementLoading] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [isBillingLoading, setIsBillingLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [clock, setClock] = useState(() => Date.now());
+  const resolutionRef = useRef(0);
 
   useEffect(() => {
     const client = getSupabaseBrowserClient();
@@ -55,15 +64,13 @@ export function useAuth(): UseAuthReturn {
     let isMounted = true;
     let authEventReceived = false;
     let sessionKey: string | null | undefined;
-    let resolution = 0;
-
     const handleSession = (session: Awaited<ReturnType<typeof client.auth.getSession>>['data']['session']) => {
       const nextSessionKey = session
         ? `${session.user.id}:${session.access_token}`
         : null;
       if (nextSessionKey === sessionKey) return;
       sessionKey = nextSessionKey;
-      const currentResolution = ++resolution;
+      const currentResolution = ++resolutionRef.current;
 
       setIsLoading(false);
       setError(null);
@@ -78,19 +85,19 @@ export function useAuth(): UseAuthReturn {
 
       void loadAccountEntitlement(backendApiOrigin, session.access_token)
         .then((result) => {
-          if (!isMounted || currentResolution !== resolution) return;
+          if (!isMounted || currentResolution !== resolutionRef.current) return;
           if (result.userId !== session.user.id) {
             throw new Error('Account entitlement does not match the signed-in user.');
           }
           setEntitlement(result);
         })
         .catch((loadError: unknown) => {
-          if (!isMounted || currentResolution !== resolution) return;
+          if (!isMounted || currentResolution !== resolutionRef.current) return;
           setEntitlement(null);
           setError(getErrorMessage(loadError));
         })
         .finally(() => {
-          if (isMounted && currentResolution === resolution) {
+          if (isMounted && currentResolution === resolutionRef.current) {
             setIsEntitlementLoading(false);
           }
         });
@@ -120,10 +127,84 @@ export function useAuth(): UseAuthReturn {
 
     return () => {
       isMounted = false;
-      resolution += 1;
+      resolutionRef.current += 1;
       data.subscription.unsubscribe();
     };
   }, []);
+
+  const refreshEntitlement = async () => {
+    const client = clientRef.current ?? getSupabaseBrowserClient();
+    if (!client) {
+      setUser(null);
+      setEntitlement(null);
+      setIsEntitlementLoading(false);
+      return null;
+    }
+
+    const currentResolution = ++resolutionRef.current;
+    setIsEntitlementLoading(true);
+    setError(null);
+    try {
+      const { data, error: sessionError } = await client.auth.getSession();
+      if (sessionError) throw sessionError;
+      if (currentResolution !== resolutionRef.current) return null;
+      const session = data.session;
+      if (!session) {
+        if (currentResolution === resolutionRef.current) {
+          setUser(null);
+          setEntitlement(null);
+        }
+        return null;
+      }
+
+      setUser({ id: session.user.id, email: session.user.email ?? null });
+      const result = await loadAccountEntitlement(
+        backendApiOrigin,
+        session.access_token,
+      );
+      if (result.userId !== session.user.id) {
+        throw new Error('Account entitlement does not match the signed-in user.');
+      }
+      if (currentResolution === resolutionRef.current) setEntitlement(result);
+      return result;
+    } catch (refreshError: unknown) {
+      if (currentResolution === resolutionRef.current) {
+        setEntitlement(null);
+        setError(getErrorMessage(refreshError));
+      }
+      return null;
+    } finally {
+      if (currentResolution === resolutionRef.current) {
+        setIsEntitlementLoading(false);
+      }
+    }
+  };
+
+  const requestCheckoutSession = async (plan: BillingPlan) => {
+    setIsBillingLoading(true);
+    setError(null);
+    try {
+      const client = clientRef.current ?? getSupabaseBrowserClient();
+      if (!client) {
+        throw new Error('Supabase authentication is not configured.');
+      }
+      const { data, error: sessionError } = await client.auth.getSession();
+      if (sessionError) throw sessionError;
+      if (!data.session) {
+        throw new Error('Inicia sesión para continuar con Premium.');
+      }
+      return await createBillingCheckoutSession(
+        backendApiOrigin,
+        data.session.access_token,
+        plan,
+      );
+    } catch (billingError: unknown) {
+      setError(getErrorMessage(billingError));
+      return null;
+    } finally {
+      setIsBillingLoading(false);
+    }
+  };
 
   const validUntil = entitlement?.entitlement?.validUntil;
   const isPremiumActive = isPremiumEntitlementActive(entitlement, clock);
@@ -172,7 +253,10 @@ export function useAuth(): UseAuthReturn {
     isLoading,
     isEntitlementLoading,
     isSigningIn,
+    isBillingLoading,
     error,
+    refreshEntitlement,
+    requestCheckoutSession,
     signInWithGoogle,
     signOut,
   };

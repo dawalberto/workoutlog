@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Routine,
   ExerciseDefinition,
@@ -43,6 +43,12 @@ import { useRoutines } from './hooks/useRoutines';
 import { useWorkoutSession } from './hooks/useWorkoutSession';
 import { useRmTracker } from './hooks/useRmTracker';
 import { useExerciseDiaryNavigation } from './hooks/useExerciseDiaryNavigation';
+import {
+  getBillingReturnPath,
+  getBillingReturnStatus,
+  type BillingPlan,
+  type BillingReturnStatus,
+} from './services/billing';
 
 export default function App() {
   // Navigation & Modal Visibility
@@ -51,8 +57,34 @@ export default function App() {
   const [isBillingPlansOpen, setIsBillingPlansOpen] = useState(false);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+  const [billingReturnStatus, setBillingReturnStatus] =
+    useState<BillingReturnStatus | null>(() =>
+      typeof window === 'undefined'
+        ? null
+        : getBillingReturnStatus(window.location.pathname),
+    );
 
   const account = useAuth();
+
+  useEffect(() => {
+    if (!billingReturnStatus || account.isLoading) return;
+    setIsBillingPlansOpen(true);
+    void account.refreshEntitlement();
+
+    const url = new URL(window.location.href);
+    url.pathname = getBillingReturnPath(url.pathname);
+    url.searchParams.delete('session_id');
+    window.history.replaceState(
+      window.history.state,
+      '',
+      `${url.pathname}${url.search}${url.hash}`,
+    );
+  }, [billingReturnStatus, account.isLoading]);
+
+  const handleCheckout = async (plan: BillingPlan) => {
+    const checkoutUrl = await account.requestCheckoutSession(plan);
+    if (checkoutUrl) window.location.assign(checkoutUrl);
+  };
 
   // Storage Layer (IndexedDB with automatic legacy localStorage migration)
   const {
@@ -396,8 +428,19 @@ export default function App() {
         isOpen={isBillingPlansOpen}
         isAuthenticated={Boolean(account.user)}
         isPremiumActive={account.isPremiumActive}
-        onClose={() => setIsBillingPlansOpen(false)}
+        isEntitlementLoading={account.isEntitlementLoading}
+        isBillingLoading={account.isBillingLoading}
+        billingError={account.error}
+        returnStatus={billingReturnStatus}
+        onClose={() => {
+          setIsBillingPlansOpen(false);
+          setBillingReturnStatus(null);
+        }}
         onSignIn={account.signInWithGoogle}
+        onCheckout={handleCheckout}
+        onRefreshEntitlement={async () => {
+          await account.refreshEntitlement();
+        }}
       />
 
       {/* RM New Record Detection Alert Modal */}

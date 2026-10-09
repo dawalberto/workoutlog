@@ -27,7 +27,7 @@ The backend already supports test-mode Checkout and entitlement webhooks, but th
 ## Tasks
 
 - [x] `plan-catalog`: Add the plan catalog and account entry point, styled consistently with the existing app and Google sign-in control; include focused UI tests.
-- [ ] `checkout-return`: Connect authenticated plan selection to Checkout, provide success/cancel return feedback, and refresh entitlement without treating a redirect as proof of payment; include frontend/backend route tests.
+- [x] `checkout-return`: Connect authenticated plan selection to Checkout, provide success/cancel return feedback, and refresh entitlement without treating a redirect as proof of payment; include frontend/backend route tests.
 - [ ] `billing-portal`: Add an authenticated Billing Portal session route and matching account UI with focused tests.
 - [ ] `payment-lifecycle`: Handle lifetime full refunds and disputes according to the assumptions above, retain idempotency and test-only safeguards, and cover relevant webhook/database behavior with focused tests.
 - [ ] `local-billing-flow`: Add or extend local automated flow coverage for monthly, annual, and lifetime checkout, duplicate webhooks, cancellation/expiry, and lifetime refund/dispute outcomes without contacting Stripe.
@@ -52,4 +52,9 @@ The backend already supports test-mode Checkout and entitlement webhooks, but th
 - `plan-catalog` implementation: added a responsive Free/monthly/annual/lifetime catalog with the confirmed €5.99/€60/€210 prices and only established benefits; connected it to the account drawer and aligned the account/Google controls with the dark neon Spanish UI.
 - `plan-catalog` RED: `pnpm test -- tests/billing.test.tsx` failed because `BillingPlansModal` did not yet exist.
 - `plan-catalog` GREEN: `pnpm test -- tests/billing.test.tsx tests/sync-wiring.test.tsx` passed (7 files, 53 tests); `pnpm lint` passed.
-- Next step: implement `checkout-return`, keeping the hosted redirect distinct from verified entitlement and recording each work-unit commit identity here.
+- `plan-catalog` work-unit commit: `ca3d7ef` (`feat(billing): add Spanish plan catalog`).
+- `checkout-return` implementation: added authenticated monthly/annual/lifetime Checkout requests, strict Stripe-host validation before redirect, success/cancel feedback, one entitlement refresh on return, and an explicit manual refresh instead of polling.
+- `checkout-return` RED: service and return-state tests failed before the client and return UI were implemented (11 expected failures).
+- `checkout-return` GREEN: `pnpm test -- tests/services/billing.test.ts tests/billing.test.tsx` passed (8 files, 68 tests); `pnpm lint` passed; backend `pnpm test tests/billing.test.ts --reporter=dot` passed (1 file, 10 tests).
+- Environment note: backend commands report Node 22.13.0 although the package requires Node >=24; the selected route tests still passed.
+- Next step: implement `billing-portal` with explicit handling for authenticated users who have no linked Stripe customer.

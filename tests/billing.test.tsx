@@ -1,8 +1,31 @@
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import React from 'react';
+import { describe, expect, it, vi } from 'vitest';
 import { BillingPlansModal } from '../src/components/BillingPlansModal';
 import { SidebarMenu } from '../src/components/SidebarMenu';
 import { AppTab } from '../src/types';
+
+type ButtonElement = React.ReactElement<{
+  children?: React.ReactNode;
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
+}>;
+
+function findButtons(node: React.ReactNode): ButtonElement[] {
+  if (!React.isValidElement(node)) return [];
+  const element = node as React.ReactElement<{ children?: React.ReactNode }>;
+  const button = element.type === 'button' ? [element as ButtonElement] : [];
+  return [
+    ...button,
+    ...React.Children.toArray(element.props.children).flatMap(findButtons),
+  ];
+}
+
+function textContent(node: React.ReactNode): string {
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (!React.isValidElement(node)) return '';
+  const element = node as React.ReactElement<{ children?: React.ReactNode }>;
+  return React.Children.toArray(element.props.children).map(textContent).join('');
+}
 
 describe('billing plan catalog', () => {
   it('shows the confirmed prices and only established plan benefits', () => {
@@ -11,8 +34,14 @@ describe('billing plan catalog', () => {
         isOpen
         isAuthenticated
         isPremiumActive={false}
+        isEntitlementLoading={false}
+        isBillingLoading={false}
+        billingError={null}
+        returnStatus={null}
         onClose={() => undefined}
         onSignIn={async () => undefined}
+        onCheckout={async () => undefined}
+        onRefreshEntitlement={async () => undefined}
       />,
     );
 
@@ -35,13 +64,93 @@ describe('billing plan catalog', () => {
         isOpen
         isAuthenticated={false}
         isPremiumActive={false}
+        isEntitlementLoading={false}
+        isBillingLoading={false}
+        billingError={null}
+        returnStatus={null}
         onClose={() => undefined}
         onSignIn={async () => undefined}
+        onCheckout={async () => undefined}
+        onRefreshEntitlement={async () => undefined}
       />,
     );
 
     expect(markup).toContain('Inicia sesión para continuar con Premium');
     expect(markup).toContain('Continuar con Google');
+  });
+
+  it('does not treat a successful Checkout redirect as proof of Premium', () => {
+    const markup = renderToStaticMarkup(
+      <BillingPlansModal
+        isOpen
+        isAuthenticated
+        isPremiumActive={false}
+        isEntitlementLoading={false}
+        isBillingLoading={false}
+        billingError={null}
+        returnStatus="success"
+        onClose={() => undefined}
+        onSignIn={async () => undefined}
+        onCheckout={async () => undefined}
+        onRefreshEntitlement={async () => undefined}
+      />,
+    );
+
+    expect(markup).toContain('La vuelta de Stripe no confirma el pago');
+    expect(markup).toContain('Actualizar estado');
+    expect(markup).not.toContain('Premium activo confirmado');
+  });
+
+  it('shows cancellation feedback without granting Premium', () => {
+    const markup = renderToStaticMarkup(
+      <BillingPlansModal
+        isOpen
+        isAuthenticated
+        isPremiumActive={false}
+        isEntitlementLoading={false}
+        isBillingLoading={false}
+        billingError={null}
+        returnStatus="cancel"
+        onClose={() => undefined}
+        onSignIn={async () => undefined}
+        onCheckout={async () => undefined}
+        onRefreshEntitlement={async () => undefined}
+      />,
+    );
+
+    expect(markup).toContain('No completaste el proceso de pago');
+    expect(markup).not.toContain('Premium activo confirmado');
+  });
+
+  it('sends the selected plan to the checkout action', async () => {
+    const onCheckout = vi.fn(async () => undefined);
+    const tree = BillingPlansModal({
+      isOpen: true,
+      isAuthenticated: true,
+      isPremiumActive: false,
+      isEntitlementLoading: false,
+      isBillingLoading: false,
+      billingError: null,
+      returnStatus: null,
+      onClose: () => undefined,
+      onSignIn: async () => undefined,
+      onCheckout,
+      onRefreshEntitlement: async () => undefined,
+    }) as React.ReactNode;
+    const checkoutButtons = findButtons(tree).filter(
+      (button) => textContent(button.props.children) === 'Elegir plan',
+    );
+
+    for (const button of checkoutButtons) {
+      button.props.onClick?.({} as React.MouseEvent<HTMLButtonElement>);
+    }
+
+    expect(checkoutButtons).toHaveLength(3);
+    expect(onCheckout.mock.calls).toEqual([
+      ['monthly'],
+      ['annual'],
+      ['lifetime'],
+    ]);
   });
 });
 
