@@ -8,6 +8,7 @@ import {
 } from '../src/services/auth';
 import type { AccountEntitlementResponse } from '../src/services/auth';
 import { createSupabaseBrowserClient } from '../src/services/supabase';
+import { hasAccountPremiumAccess } from '../src/hooks/useAuth';
 
 const entitlementResponse: AccountEntitlementResponse = {
   userId: 'user-a',
@@ -54,6 +55,13 @@ afterEach(async () => {
 });
 
 describe('account entitlement and Supabase auth', () => {
+  it('grants Premium capabilities to signed-in accounts and keeps guests Free', () => {
+    expect(
+      hasAccountPremiumAccess({ id: 'user-a', email: 'user@example.test' }),
+    ).toBe(true);
+    expect(hasAccountPremiumAccess(null)).toBe(false);
+  });
+
   it('requests the verified entitlement route with the session bearer token', async () => {
     const fetchMock = vi.fn(async () => new Response(JSON.stringify(entitlementResponse)));
 

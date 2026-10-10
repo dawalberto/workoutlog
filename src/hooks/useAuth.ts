@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  isPremiumEntitlementActive,
   loadAccountEntitlement,
   signInWithGoogle as startGoogleSignIn,
   signOut as endSupabaseSession,
@@ -43,6 +42,12 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Account status could not be loaded.';
 }
 
+export function hasAccountPremiumAccess(
+  user: AuthenticatedIdentity | null,
+): boolean {
+  return user !== null;
+}
+
 export function useAuth(): UseAuthReturn {
   const clientRef = useRef<SupabaseBrowserClient | null>(null);
   const [user, setUser] = useState<AuthenticatedIdentity | null>(null);
@@ -52,7 +57,6 @@ export function useAuth(): UseAuthReturn {
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [isBillingLoading, setIsBillingLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [clock, setClock] = useState(() => Date.now());
   const resolutionRef = useRef(0);
 
   useEffect(() => {
@@ -233,22 +237,7 @@ export function useAuth(): UseAuthReturn {
     }
   };
 
-  const validUntil = entitlement?.entitlement?.validUntil;
-  const isPremiumActive = isPremiumEntitlementActive(entitlement, clock);
-
-  useEffect(() => {
-    if (!isPremiumActive || !validUntil) return;
-    const remaining = Date.parse(validUntil) - Date.now();
-    if (remaining <= 0) {
-      setClock(Date.now());
-      return;
-    }
-    const timeout = window.setTimeout(
-      () => setClock(Date.now()),
-      Math.min(remaining + 1, 2_147_000_000),
-    );
-    return () => window.clearTimeout(timeout);
-  }, [isPremiumActive, validUntil, clock]);
+  const isPremiumActive = hasAccountPremiumAccess(user);
 
   const signInWithGoogle = async () => {
     setIsSigningIn(true);
