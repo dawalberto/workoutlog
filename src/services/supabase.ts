@@ -1,11 +1,12 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '../types/database.types';
 
 export interface SupabasePublicConfig {
   url: string;
   publishableKey: string;
 }
 
-export type SupabaseBrowserClient = SupabaseClient;
+export type SupabaseBrowserClient = SupabaseClient<Database>;
 
 let browserClient: SupabaseBrowserClient | null | undefined;
 
@@ -23,7 +24,7 @@ export function createSupabaseBrowserClient(
     const parsedUrl = new URL(url);
     if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') return null;
 
-    return createClient(url, publishableKey, {
+    return createClient<Database>(url, publishableKey, {
       auth: {
         autoRefreshToken: true,
         detectSessionInUrl: true,
