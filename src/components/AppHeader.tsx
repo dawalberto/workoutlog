@@ -99,7 +99,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           {/* Right: Hamburger Menu Trigger */}
           <div className="flex items-center gap-2 shrink-0">
             <span
-              className={`hidden sm:inline-flex px-2.5 py-1 rounded-full text-[11px] font-bold ${
+              className={`hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold ${
                 isPremiumActive
                   ? 'bg-emerald-500/15 text-emerald-300'
                   : 'bg-zinc-800 text-zinc-400'
