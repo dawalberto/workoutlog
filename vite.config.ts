@@ -5,6 +5,8 @@ import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(() => {
+  const base = process.env.VERCEL === '1' ? '/' : '/workoutlog/';
+
   return {
     plugins: [
       react(),
@@ -22,7 +24,7 @@ export default defineConfig(() => {
           'manifest.webmanifest',
         ],
         manifest: {
-          id: '/workoutlog/',
+          id: base,
           name: 'WorkoutLog – Planificador de Rutinas',
           short_name: 'WorkoutLog',
           description: 'Planificador y ejecutor de rutinas de entrenamiento minimalista con cálculo de tiempos, cronómetro de descansos y catálogo de ejercicios.',
@@ -63,7 +65,7 @@ export default defineConfig(() => {
         },
       }),
     ],
-    base: '/workoutlog/',
+    base,
     resolve: {
       alias: {
         '@': path.resolve(import.meta.dirname || process.cwd(), '.'),
