@@ -16,6 +16,29 @@ function createLocalStorage(initial: Record<string, string> = {}) {
   };
 }
 
+async function readStoredOutbox(scope: string) {
+  const db = await storage.getDatabase();
+  const transaction = db.transaction(storage.SYNC_OUTBOX_STORE, 'readonly');
+  const request = transaction.objectStore(storage.SYNC_OUTBOX_STORE).index('scope').getAll(scope);
+  return new Promise<
+    Array<{
+      sequence: number;
+      operationId: string;
+      scope: string;
+      recordId: string;
+      change: {
+        table: string;
+        operation: 'upsert' | 'delete';
+        baseRevision: string;
+        record: Record<string, unknown>;
+      };
+    }>
+  >((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
 async function createV1Database(
   values: Record<string, unknown> = {},
 ): Promise<void> {
@@ -376,6 +399,103 @@ describe('IndexedDB storage', () => {
         'exercise_diary_entries',
       ]),
     );
+  });
+
+  it('orders a guest queue child-first but transfers catalog parents before routine children', async () => {
+    const definition = { id: 'transfer-definition', name: 'Transfer definition' };
+    const routine = {
+      id: 'transfer-routine',
+      name: 'Transfer routine',
+      exercises: [
+        {
+          id: 'transfer-routine-exercise',
+          definitionId: definition.id,
+          name: definition.name,
+          sets: [],
+        },
+      ],
+      createdAt: '2024-01-01T00:00:00.000Z',
+      updatedAt: '2024-01-01T00:00:00.000Z',
+    };
+
+    await storage.setStoredItem(storage.DB_KEYS.ROUTINES, [routine]);
+    await storage.setStoredItem(storage.DB_KEYS.CATALOG, [definition]);
+
+    const guestOutbox = await readStoredOutbox('guest');
+    expect(guestOutbox.map((operation) => operation.change.table)).toEqual([
+      'routines',
+      'routine_exercises',
+      'exercise_definitions',
+    ]);
+
+    expect(await storage.transferGuestDataToOwnerOnce('transfer-owner')).toBe(true);
+    const ownerStoredOutbox = await readStoredOutbox('owner:transfer-owner');
+    expect(ownerStoredOutbox.map((operation) => operation.change.table)).toEqual([
+      'exercise_definitions',
+      'routines',
+      'routine_exercises',
+    ]);
+    const ownerOutbox = await storage.getPendingSyncOperations({ ownerId: 'transfer-owner' });
+    expect(
+      ownerOutbox.map((operation) => operation.request.changes[0]?.table),
+    ).toEqual(['exercise_definitions', 'routines', 'routine_exercises']);
+    expect(ownerOutbox[2]?.request.changes[0]?.record).toMatchObject({
+      routine_id: routine.id,
+      definition_id: definition.id,
+    });
+  });
+
+  it('sorts an already-persisted child-first queue without changing stored operations', async () => {
+    const definition = { id: 'queued-definition', name: 'Queued definition' };
+    const routine = {
+      id: 'queued-routine',
+      name: 'Queued routine',
+      exercises: [
+        {
+          id: 'queued-routine-exercise',
+          definitionId: definition.id,
+          name: definition.name,
+          sets: [],
+        },
+      ],
+      createdAt: '2024-01-01T00:00:00.000Z',
+      updatedAt: '2024-01-01T00:00:00.000Z',
+    };
+
+    await storage.setStoredItem(storage.DB_KEYS.ROUTINES, [routine]);
+    await storage.setStoredItem(storage.DB_KEYS.CATALOG, [definition]);
+
+    const storedBefore = await readStoredOutbox('guest');
+    expect(storedBefore.map((operation) => operation.change.table)).toEqual([
+      'routines',
+      'routine_exercises',
+      'exercise_definitions',
+    ]);
+
+    const pending = await storage.getPendingSyncOperations();
+    expect(pending.map((operation) => operation.request.changes[0]?.table)).toEqual([
+      'routines',
+      'exercise_definitions',
+      'routine_exercises',
+    ]);
+    expect(pending.map((operation) => operation.sequence)).toEqual([
+      storedBefore[0]?.sequence,
+      storedBefore[2]?.sequence,
+      storedBefore[1]?.sequence,
+    ]);
+    expect(pending.map((operation) => operation.request.operationId)).toEqual([
+      storedBefore[0]?.operationId,
+      storedBefore[2]?.operationId,
+      storedBefore[1]?.operationId,
+    ]);
+    expect(
+      pending.map((operation) => operation.request.changes[0]),
+    ).toEqual([
+      storedBefore[0]?.change,
+      storedBefore[2]?.change,
+      storedBefore[1]?.change,
+    ]);
+    expect(await readStoredOutbox('guest')).toEqual(storedBefore);
   });
 
   it('atomically records a local upsert, its server revision, and a later tombstone', async () => {

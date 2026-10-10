@@ -16,6 +16,7 @@ import {
   applyRemoteSyncChange,
   diffSyncCollection,
   getSyncCollection,
+  orderSyncOperations,
   type SyncRemoteChange,
   type SyncQueueEntry,
   type SyncPushChange,
@@ -127,8 +128,8 @@ function createOperationId(): string {
 }
 
 const legacyCollectionKeys = [
-  DB_KEYS.ROUTINES,
   DB_KEYS.CATALOG,
+  DB_KEYS.ROUTINES,
   DB_KEYS.ACTIVE_SESSIONS,
   DB_KEYS.RM_LOGS,
   DB_KEYS.WORKOUT_HISTORY,
@@ -638,11 +639,12 @@ export async function getPendingSyncOperations(
   );
   await completed;
 
-  return (stored as StoredSyncOperation[])
-    .filter((operation): operation is StoredSyncOperation & { sequence: number } =>
+  const pending = (stored as StoredSyncOperation[]).filter(
+    (operation): operation is StoredSyncOperation & { sequence: number } =>
       Number.isInteger(operation.sequence),
-    )
-    .sort((left, right) => left.sequence - right.sequence)
+  );
+
+  return orderSyncOperations(pending)
     .map((operation) => ({
       sequence: operation.sequence,
       request: {

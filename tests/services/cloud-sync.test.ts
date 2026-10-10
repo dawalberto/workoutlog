@@ -188,6 +188,149 @@ describe('cloud sync', () => {
     ).toEqual([{ id: 'definition-1', name: 'Later edit' }]);
   });
 
+  it('avoids synthetic FK push rejection and preserves rejected batch state atomically', async () => {
+    const scope = { ownerId: account.ownerId };
+    const definition = { id: 'fk-definition', name: 'Synthetic definition' };
+    const routine = {
+      id: 'fk-routine',
+      name: 'Synthetic routine',
+      exercises: [
+        {
+          id: 'fk-routine-exercise',
+          definitionId: definition.id,
+          name: definition.name,
+          sets: [
+            {
+              id: 'fk-set',
+              setNumber: 1,
+              reps: 8,
+              weight: 20,
+              restSeconds: 60,
+            },
+          ],
+        },
+      ],
+      createdAt: '2024-01-01T00:00:00.000Z',
+      updatedAt: '2024-01-01T00:00:00.000Z',
+    };
+    await storage.setScopedStoredItem(storage.DB_KEYS.ROUTINES, [routine], scope);
+    await storage.setScopedStoredItem(storage.DB_KEYS.CATALOG, [definition], scope);
+    const queuedBefore = await storage.getPendingSyncOperations(scope);
+
+    const backendRows = new Map<string, Record<string, unknown>>();
+    let serverRevision = 0;
+    const applySyntheticPush = (request: {
+      operationId: string;
+      changes: Array<{
+        table: string;
+        operation: 'upsert' | 'delete';
+        record: Record<string, unknown>;
+      }>;
+    }) => {
+      const staged = new Map(backendRows);
+      for (const change of request.changes) {
+        const record = change.record;
+        if (change.operation === 'delete') {
+          staged.delete(`${change.table}:${String(record.id ?? record.routine_id)}`);
+          continue;
+        }
+        if (
+          change.table === 'routine_exercises' &&
+          (!staged.has(`routines:${String(record.routine_id)}`) ||
+            !staged.has(`exercise_definitions:${String(record.definition_id)}`))
+        ) {
+          return { status: 400, changes: [] };
+        }
+        if (
+          change.table === 'workout_sets' &&
+          !staged.has(`routine_exercises:${String(record.routine_exercise_id)}`)
+        ) {
+          return { status: 400, changes: [] };
+        }
+        const id = String(record.id ?? record.routine_id);
+        staged.set(`${change.table}:${id}`, record);
+      }
+      backendRows.clear();
+      for (const [key, record] of staged) backendRows.set(key, record);
+      return {
+        status: 200,
+        changes: request.changes.map((change) => ({
+          table: change.table,
+          id: String(change.record.id ?? change.record.routine_id),
+          revision: String(++serverRevision),
+          deletedAt: change.operation === 'delete' ? '2024-01-02T00:00:00.000Z' : null,
+        })),
+      };
+    };
+
+    const rejected = applySyntheticPush({
+      operationId: 'synthetic-invalid-batch',
+      changes: [
+        {
+          table: 'exercise_definitions',
+          operation: 'upsert',
+          record: definition,
+        },
+        {
+          table: 'routine_exercises',
+          operation: 'upsert',
+          record: {
+            id: 'orphan-exercise',
+            routine_id: 'missing-routine',
+            definition_id: definition.id,
+          },
+        },
+      ],
+    });
+    expect(rejected.status).toBe(400);
+    expect(backendRows.size).toBe(0);
+
+    const pushedTables: string[] = [];
+    const pushedOperationIds: string[] = [];
+    const fetcher = makeFetch(async (_input, init) => {
+      if (init?.method !== 'POST') return jsonResponse(pullResponse());
+      const request = JSON.parse(String(init.body));
+      const result = applySyntheticPush(request);
+      if (result.status !== 200) {
+        return jsonResponse(
+          {
+            statusCode: 400,
+            error: 'Bad Request',
+            message: 'One or more sync changes are invalid',
+          },
+          400,
+        );
+      }
+      pushedOperationIds.push(request.operationId);
+      pushedTables.push(...request.changes.map((change: { table: string }) => change.table));
+      return jsonResponse({
+        operationId: request.operationId,
+        changes: result.changes,
+      });
+    });
+
+    await cloudSync.syncCloudData({ ...account, fetcher });
+
+    expect(pushedTables).toContain('exercise_definitions');
+    expect(pushedTables.indexOf('exercise_definitions')).toBeLessThan(
+      pushedTables.indexOf('routine_exercises'),
+    );
+    expect(pushedTables.indexOf('routine_exercises')).toBeLessThan(
+      pushedTables.indexOf('workout_sets'),
+    );
+    expect(new Set(pushedOperationIds)).toEqual(
+      new Set(queuedBefore.map((operation) => operation.request.operationId)),
+    );
+    expect(await storage.getPendingSyncOperations(scope)).toHaveLength(0);
+    expect(await storage.getScopedStoredItem(storage.DB_KEYS.ROUTINES, [], scope)).toEqual([
+      routine,
+    ]);
+    expect(backendRows.has('exercise_definitions:fk-definition')).toBe(true);
+    expect(backendRows.has('routines:fk-routine')).toBe(true);
+    expect(backendRows.has('routine_exercises:fk-routine-exercise')).toBe(true);
+    expect(backendRows.has('workout_sets:fk-set')).toBe(true);
+  });
+
   it('makes no request while signed out, offline, Free, or Premium-expired', async () => {
     const fetcher = makeFetch(async () => {
       throw new Error('fetch must not be called');

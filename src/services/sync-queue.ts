@@ -56,6 +56,12 @@ export interface SyncQueueEntry {
   };
 }
 
+export interface SyncOperationForOrdering {
+  sequence: number;
+  recordId: string;
+  change: SyncPushChange;
+}
+
 export interface SyncRemoteChange {
   table: SyncTable;
   id: string;
@@ -70,20 +76,100 @@ interface SyncRecord {
   record: Record<string, unknown>;
 }
 
-const deleteOrder: Record<SyncTable, number> = {
-  workout_sets: 0,
-  routine_exercises: 1,
-  routines: 2,
-  active_session_completed_sets: 3,
-  active_workout_sessions: 4,
-  rm_records: 5,
-  rm_logs: 6,
-  workout_history_exercises: 7,
-  workout_history: 8,
-  exercise_diary_entries: 9,
-  exercise_diaries: 10,
-  exercise_definitions: 11,
-};
+interface SyncForeignKey {
+  parentTable: SyncTable;
+  childTable: SyncTable;
+  parentColumns: readonly string[];
+  childColumns: readonly string[];
+  deleteChildFirst: boolean;
+}
+
+const syncForeignKeys: readonly SyncForeignKey[] = [
+  {
+    parentTable: 'routines',
+    childTable: 'routine_exercises',
+    parentColumns: ['id'],
+    childColumns: ['routine_id'],
+    deleteChildFirst: true,
+  },
+  {
+    parentTable: 'exercise_definitions',
+    childTable: 'routine_exercises',
+    parentColumns: ['id'],
+    childColumns: ['definition_id'],
+    deleteChildFirst: false,
+  },
+  {
+    parentTable: 'routine_exercises',
+    childTable: 'workout_sets',
+    parentColumns: ['routine_id', 'id'],
+    childColumns: ['routine_id', 'routine_exercise_id'],
+    deleteChildFirst: true,
+  },
+  {
+    parentTable: 'routines',
+    childTable: 'active_workout_sessions',
+    parentColumns: ['id'],
+    childColumns: ['routine_id'],
+    deleteChildFirst: true,
+  },
+  {
+    parentTable: 'active_workout_sessions',
+    childTable: 'active_session_completed_sets',
+    parentColumns: ['routine_id'],
+    childColumns: ['routine_id'],
+    deleteChildFirst: true,
+  },
+  {
+    parentTable: 'workout_sets',
+    childTable: 'active_session_completed_sets',
+    parentColumns: ['routine_id', 'id'],
+    childColumns: ['routine_id', 'set_id'],
+    deleteChildFirst: true,
+  },
+  {
+    parentTable: 'exercise_definitions',
+    childTable: 'rm_logs',
+    parentColumns: ['id'],
+    childColumns: ['definition_id'],
+    deleteChildFirst: false,
+  },
+  {
+    parentTable: 'rm_logs',
+    childTable: 'rm_records',
+    parentColumns: ['id'],
+    childColumns: ['log_id'],
+    deleteChildFirst: true,
+  },
+  {
+    parentTable: 'routines',
+    childTable: 'workout_history',
+    parentColumns: ['id'],
+    childColumns: ['routine_id'],
+    deleteChildFirst: false,
+  },
+  {
+    parentTable: 'workout_history',
+    childTable: 'workout_history_exercises',
+    parentColumns: ['id'],
+    childColumns: ['history_id'],
+    deleteChildFirst: true,
+  },
+  {
+    parentTable: 'exercise_definitions',
+    childTable: 'exercise_diaries',
+    parentColumns: ['id'],
+    childColumns: ['definition_id'],
+    deleteChildFirst: false,
+  },
+  {
+    parentTable: 'exercise_diaries',
+    childTable: 'exercise_diary_entries',
+    parentColumns: ['id'],
+    childColumns: ['diary_id'],
+    deleteChildFirst: true,
+  },
+];
 
 const identityColumns: Record<SyncTable, string[]> = {
   exercise_definitions: ['id'],
@@ -99,6 +185,173 @@ const identityColumns: Record<SyncTable, string[]> = {
   exercise_diaries: ['id'],
   exercise_diary_entries: ['id'],
 };
+
+export function orderSyncOperations<T extends SyncOperationForOrdering>(
+  operations: readonly T[],
+): T[] {
+  const queued = operations
+    .map((operation, inputIndex) => ({ operation, inputIndex }))
+    .sort(
+      (left, right) =>
+        left.operation.sequence - right.operation.sequence ||
+        left.inputIndex - right.inputIndex,
+    );
+  const operationCount = queued.length;
+  const nodes: Array<{
+    orderIndex: number;
+    barrier: boolean;
+    outgoing: Set<number>;
+    incomingCount: number;
+  }> = queued.map((_, orderIndex) => ({
+    orderIndex,
+    barrier: false,
+    outgoing: new Set(),
+    incomingCount: 0,
+  }));
+
+  const addEdge = (from: number, to: number) => {
+    if (from === to || nodes[from]!.outgoing.has(to)) return;
+    nodes[from]!.outgoing.add(to);
+    nodes[to]!.incomingCount += 1;
+  };
+
+  const previousByRecord = new Map<string, number>();
+  for (let index = 0; index < operationCount; index += 1) {
+    const { operation } = queued[index]!;
+    const recordKey = JSON.stringify([operation.change.table, operation.recordId]);
+    const previous = previousByRecord.get(recordKey);
+    if (previous !== undefined) addEdge(previous, index);
+    previousByRecord.set(recordKey, index);
+  }
+
+  for (const foreignKey of syncForeignKeys) {
+    const parentsByKey = new Map<string, number[]>();
+    const parentDeletes: number[] = [];
+    const childDeletes: number[] = [];
+
+    for (let index = 0; index < operationCount; index += 1) {
+      const change = queued[index]!.operation.change;
+      if (change.table === foreignKey.parentTable && change.operation === 'delete') {
+        parentDeletes.push(index);
+      }
+      if (change.table === foreignKey.childTable && change.operation === 'delete') {
+        childDeletes.push(index);
+      }
+      if (change.table !== foreignKey.parentTable || change.operation !== 'upsert') continue;
+      const key = foreignKeyKey(change.record, foreignKey.parentColumns);
+      if (key === undefined) continue;
+      const matchingParents = parentsByKey.get(key) ?? [];
+      matchingParents.push(index);
+      parentsByKey.set(key, matchingParents);
+    }
+
+    for (let index = 0; index < operationCount; index += 1) {
+      const change = queued[index]!.operation.change;
+      if (change.table !== foreignKey.childTable || change.operation !== 'upsert') continue;
+      const key = foreignKeyKey(change.record, foreignKey.childColumns);
+      if (key === undefined) continue;
+      for (const parentIndex of parentsByKey.get(key) ?? []) {
+        addEdge(parentIndex, index);
+      }
+    }
+
+    if (!foreignKey.deleteChildFirst || childDeletes.length === 0 || parentDeletes.length === 0) {
+      continue;
+    }
+
+    // Delete payloads only carry identity columns, so deletion dependencies are table-wide.
+    const firstParent = parentDeletes[0]!;
+    const barrierIndex = nodes.length;
+    nodes.push({
+      orderIndex: firstParent,
+      barrier: true,
+      outgoing: new Set(),
+      incomingCount: 0,
+    });
+    for (const childIndex of childDeletes) addEdge(childIndex, barrierIndex);
+    for (const parentIndex of parentDeletes) addEdge(barrierIndex, parentIndex);
+  }
+
+  const compareNodePriority = (leftIndex: number, rightIndex: number) => {
+    const left = nodes[leftIndex]!;
+    const right = nodes[rightIndex]!;
+    return (
+      left.orderIndex - right.orderIndex ||
+      Number(right.barrier) - Number(left.barrier) ||
+      leftIndex - rightIndex
+    );
+  };
+  const ready: number[] = [];
+  const addReady = (nodeIndex: number) => {
+    ready.push(nodeIndex);
+    let current = ready.length - 1;
+    while (current > 0) {
+      const parent = Math.floor((current - 1) / 2);
+      if (compareNodePriority(ready[parent]!, ready[current]!) <= 0) break;
+      [ready[parent], ready[current]] = [ready[current]!, ready[parent]!];
+      current = parent;
+    }
+  };
+  const popReady = () => {
+    if (ready.length === 0) return undefined;
+    const first = ready[0]!;
+    const last = ready.pop()!;
+    if (ready.length === 0) return first;
+    ready[0] = last;
+    let current = 0;
+    while (true) {
+      const left = current * 2 + 1;
+      const right = left + 1;
+      let smallest = current;
+      if (
+        left < ready.length &&
+        compareNodePriority(ready[left]!, ready[smallest]!) < 0
+      ) {
+        smallest = left;
+      }
+      if (
+        right < ready.length &&
+        compareNodePriority(ready[right]!, ready[smallest]!) < 0
+      ) {
+        smallest = right;
+      }
+      if (smallest === current) break;
+      [ready[current], ready[smallest]] = [ready[smallest]!, ready[current]!];
+      current = smallest;
+    }
+    return first;
+  };
+
+  for (let index = 0; index < nodes.length; index += 1) {
+    if (nodes[index]!.incomingCount === 0) addReady(index);
+  }
+
+  const orderedIndices: number[] = [];
+  while (ready.length > 0) {
+    const nodeIndex = popReady()!;
+    if (nodeIndex < operationCount) orderedIndices.push(nodeIndex);
+    for (const dependent of nodes[nodeIndex]!.outgoing) {
+      nodes[dependent]!.incomingCount -= 1;
+      if (nodes[dependent]!.incomingCount === 0) addReady(dependent);
+    }
+  }
+
+  const orderedSet = new Set(orderedIndices);
+  for (let index = 0; index < operationCount; index += 1) {
+    if (!orderedSet.has(index)) orderedIndices.push(index);
+  }
+
+  return orderedIndices.map((index) => queued[index]!.operation);
+}
+
+function foreignKeyKey(
+  record: Record<string, unknown>,
+  columns: readonly string[],
+): string | undefined {
+  const values = columns.map((column) => record[column]);
+  if (values.some((value) => value === null || value === undefined)) return undefined;
+  return JSON.stringify(values);
+}
 
 export function getSyncCollection(key: string): SyncCollection | null {
   switch (key) {
@@ -162,7 +415,6 @@ export function diffSyncCollection(
     });
   }
 
-  removed.sort((left, right) => deleteOrder[left.table] - deleteOrder[right.table]);
   return [...changes, ...removed];
 }
 
