@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Routine,
   ExerciseDefinition,
@@ -21,7 +21,6 @@ import { RmLogsView } from './components/RmLogsView';
 import { WorkoutHistoryView } from './components/WorkoutHistoryView';
 import { ExerciseDiaryView } from './components/ExerciseDiaryView';
 import { SidebarMenu } from './components/SidebarMenu';
-import { BillingPlansModal } from './components/BillingPlansModal';
 import { RmRecordAlertModal } from './components/RmRecordAlertModal';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { DataBackupModal } from './components/DataBackupModal';
@@ -43,54 +42,14 @@ import { useRoutines } from './hooks/useRoutines';
 import { useWorkoutSession } from './hooks/useWorkoutSession';
 import { useRmTracker } from './hooks/useRmTracker';
 import { useExerciseDiaryNavigation } from './hooks/useExerciseDiaryNavigation';
-import { BILLING_UI_ENABLED } from './config/features';
-import {
-  getBillingReturnPath,
-  getBillingReturnStatus,
-  type BillingPlan,
-  type BillingReturnStatus,
-} from './services/billing';
 
 export default function App() {
   // Navigation & Modal Visibility
   const [activeTab, setActiveTab] = useState<AppTab>(AppTab.ROUTINES);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isBillingPlansOpen, setIsBillingPlansOpen] = useState(false);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
-  const [billingReturnStatus, setBillingReturnStatus] =
-    useState<BillingReturnStatus | null>(() =>
-      typeof window === 'undefined'
-        ? null
-        : getBillingReturnStatus(window.location.pathname),
-    );
-
   const account = useAuth();
-
-  useEffect(() => {
-    if (!BILLING_UI_ENABLED || !billingReturnStatus || account.isLoading) return;
-    setIsBillingPlansOpen(true);
-    void account.refreshEntitlement();
-
-    const url = new URL(window.location.href);
-    url.pathname = getBillingReturnPath(url.pathname);
-    url.searchParams.delete('session_id');
-    window.history.replaceState(
-      window.history.state,
-      '',
-      `${url.pathname}${url.search}${url.hash}`,
-    );
-  }, [billingReturnStatus, account.isLoading]);
-
-  const handleCheckout = async (plan: BillingPlan) => {
-    const checkoutUrl = await account.requestCheckoutSession(plan);
-    if (checkoutUrl) window.location.assign(checkoutUrl);
-  };
-
-  const handleOpenBillingPortal = async () => {
-    const portalUrl = await account.requestBillingPortalSession();
-    if (portalUrl) window.location.assign(portalUrl);
-  };
 
   // Storage Layer (IndexedDB with automatic legacy localStorage migration)
   const {
@@ -111,11 +70,11 @@ export default function App() {
     setExerciseDiary,
     applyImportData,
     refreshStorage,
-  } = useAppStorage(account.user?.id, account.isPremiumActive);
+  } = useAppStorage(account.user?.id, account.isSyncEnabled);
 
   const sync = useSync({
     ownerId: account.user?.id ?? null,
-    premiumActive: account.isPremiumActive,
+    premiumActive: account.isSyncEnabled,
     isStorageLoaded,
     isOwnerHydrationComplete: isGuestTransferComplete,
     onSynced: refreshStorage,
@@ -147,7 +106,7 @@ export default function App() {
     catalog,
     setCatalog,
     onNotify: setFeedbackMessage,
-    isPremiumActive: account.isPremiumActive,
+    isPremiumActive: account.isSyncEnabled,
   });
 
   // Workout Session Lifecycle Hook
@@ -252,7 +211,7 @@ export default function App() {
       mode: 'merge' | 'overwrite';
     }
   ) => {
-    if (!isRoutineCountAllowed(newRoutines.length, account.isPremiumActive)) {
+    if (!isRoutineCountAllowed(newRoutines.length, account.isSyncEnabled)) {
       setFeedbackMessage(ROUTINE_LIMIT_ERROR_MESSAGE);
       return;
     }
@@ -326,7 +285,7 @@ export default function App() {
             onSelectTab={setActiveTab}
             routinesCount={routines.length}
             catalogCount={catalog.length}
-            isPremiumActive={account.isPremiumActive}
+            isPremiumActive={account.isSyncEnabled}
             onOpenMenu={() => setIsMenuOpen(true)}
           />
 
@@ -415,41 +374,16 @@ export default function App() {
         historyCount={workoutHistory.length}
         diaryCount={getTotalDiaryEntriesCount(exerciseDiary)}
         onOpenBackup={() => setIsBackupModalOpen(true)}
-        onOpenBillingPlans={() => setIsBillingPlansOpen(true)}
         isAuthenticated={Boolean(account.user)}
         userEmail={account.user?.email ?? null}
-        isPremiumActive={account.isPremiumActive}
-        isEntitlementLoading={account.isEntitlementLoading}
+        isSyncEnabled={account.isSyncEnabled}
+        isSyncEligibilityLoading={account.isSyncEligibilityLoading}
         isOnline={sync.isOnline}
         isSigningIn={account.isSigningIn}
-        premiumExpiry={account.entitlement?.entitlement?.validUntil ?? null}
         error={account.error ?? storageError}
         onSignIn={account.signInWithGoogle}
         onSignOut={account.signOut}
       />
-
-      {BILLING_UI_ENABLED && (
-        <BillingPlansModal
-          isOpen={isBillingPlansOpen}
-          isAuthenticated={Boolean(account.user)}
-          isPremiumActive={account.isPremiumActive}
-          activePlanIds={account.entitlement?.entitlement?.activePlanIds ?? []}
-          isEntitlementLoading={account.isEntitlementLoading}
-          isBillingLoading={account.isBillingLoading}
-          billingError={account.error}
-          returnStatus={billingReturnStatus}
-          onClose={() => {
-            setIsBillingPlansOpen(false);
-            setBillingReturnStatus(null);
-          }}
-          onSignIn={account.signInWithGoogle}
-          onCheckout={handleCheckout}
-          onOpenBillingPortal={handleOpenBillingPortal}
-          onRefreshEntitlement={async () => {
-            await account.refreshEntitlement();
-          }}
-        />
-      )}
 
       {/* RM New Record Detection Alert Modal */}
       <RmRecordAlertModal
@@ -482,7 +416,7 @@ export default function App() {
         rmLogs={rmLogs}
         workoutHistory={workoutHistory}
         exerciseDiary={exerciseDiary}
-        isPremiumActive={account.isPremiumActive}
+        isPremiumActive={account.isSyncEnabled}
         onImportComplete={handleImportComplete}
       />
 

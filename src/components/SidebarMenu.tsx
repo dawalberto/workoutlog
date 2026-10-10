@@ -6,7 +6,6 @@
 import React from 'react';
 import { Flame, Dumbbell, Trophy, Calendar, BookOpen, ArrowDownUp, X, ChevronRight } from 'lucide-react';
 import { AppTab } from '../types';
-import { BILLING_UI_ENABLED } from '../config/features';
 import { PWAInstallButton } from './PWAInstallButton';
 
 interface SidebarMenuProps {
@@ -20,14 +19,12 @@ interface SidebarMenuProps {
   historyCount: number;
   diaryCount?: number;
   onOpenBackup: () => void;
-  onOpenBillingPlans: () => void;
   isAuthenticated: boolean;
   userEmail: string | null;
-  isPremiumActive: boolean;
-  isEntitlementLoading: boolean;
+  isSyncEnabled: boolean;
+  isSyncEligibilityLoading: boolean;
   isOnline: boolean;
   isSigningIn: boolean;
-  premiumExpiry: string | null;
   error: string | null;
   onSignIn: () => Promise<void>;
   onSignOut: () => Promise<void>;
@@ -44,14 +41,12 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
   historyCount,
   diaryCount = 0,
   onOpenBackup,
-  onOpenBillingPlans,
   isAuthenticated,
   userEmail,
-  isPremiumActive,
-  isEntitlementLoading,
+  isSyncEnabled,
+  isSyncEligibilityLoading,
   isOnline,
   isSigningIn,
-  premiumExpiry,
   error,
   onSignIn,
   onSignOut,
@@ -344,12 +339,12 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
               <h2 className="text-sm font-bold text-white">Cuenta</h2>
               <span
                 className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                  isPremiumActive
+                  isSyncEnabled
                   ? 'bg-emerald-500/15 text-emerald-300'
                   : 'bg-zinc-800 text-zinc-300'
                 }`}
               >
-                {isPremiumActive ? 'Premium' : 'Free'}
+                {isSyncEnabled ? 'Sincronización activa' : 'Solo local'}
               </span>
             </div>
             <p className="mt-1 break-all text-[11px] text-zinc-400">
@@ -358,29 +353,13 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
                 ? 'Sesión iniciada'
                 : 'Sesión sin iniciar; tus datos siguen en este dispositivo.')}
             </p>
-            {isEntitlementLoading && isAuthenticated && (
-              <p className="mt-1 text-[11px] text-zinc-500">Comprobando el estado de la cuenta…</p>
+            {isSyncEligibilityLoading && isAuthenticated && (
+              <p className="mt-1 text-[11px] text-zinc-500">Comprobando la sincronización…</p>
             )}
-            {BILLING_UI_ENABLED &&
-              premiumExpiry &&
-              Number.isFinite(Date.parse(premiumExpiry)) && (
-                <p className="mt-1 text-[11px] text-zinc-500">
-                  Premium hasta: {new Date(premiumExpiry).toLocaleDateString('es-ES')}
-                </p>
-              )}
             {error && (
               <p role="alert" className="mt-2 text-[11px] text-red-300">
                 {error}
               </p>
-            )}
-            {BILLING_UI_ENABLED && (
-              <button
-                type="button"
-                onClick={onOpenBillingPlans}
-                className="mt-3 w-full rounded-xl border border-[#00FF87]/30 bg-[#00FF87]/10 px-3 py-2 text-xs font-black text-[#00FF87] transition-all hover:bg-[#00FF87]/15 active:scale-[0.98]"
-              >
-                Ver planes
-              </button>
             )}
             <button
               type="button"

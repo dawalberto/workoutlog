@@ -1,58 +1,32 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
-  isPremiumEntitlementActive,
-  loadAccountEntitlement,
+  loadSyncEligibility,
   signInWithGoogle,
   signOut,
 } from '../src/services/auth';
 import { createSupabaseBrowserClient } from '../src/services/supabase';
-import { hasAccountPremiumAccess } from '../src/hooks/useAuth';
 
-describe('account entitlement and Supabase auth', () => {
+describe('Supabase authentication and sync eligibility', () => {
   it('loads sync eligibility through the typed Supabase RPC', async () => {
     const client = {
       rpc: vi.fn(async () => ({ data: { eligible: true }, error: null })),
     };
 
-    await expect(
-      loadAccountEntitlement(client as never, 'user-a'),
-    ).resolves.toEqual({
-      userId: 'user-a',
-      premium: true,
-      entitlement: {
-        tier: 'sync',
-        validUntil: null,
-        activePlanIds: [],
-      },
-    });
+    await expect(loadSyncEligibility(client as never)).resolves.toBe(true);
     expect(client.rpc).toHaveBeenCalledWith('get_sync_entitlement');
   });
 
-  it('rejects an unavailable or malformed entitlement RPC response', async () => {
+  it('treats a denied or malformed eligibility response as unavailable', async () => {
     await expect(
-      loadAccountEntitlement(
+      loadSyncEligibility(
         { rpc: vi.fn(async () => ({ data: { eligible: false }, error: null })) } as never,
-        'user-a',
       ),
-    ).rejects.toThrow('Invalid sync entitlement response');
+    ).resolves.toBe(false);
     await expect(
-      loadAccountEntitlement(
+      loadSyncEligibility(
         { rpc: vi.fn(async () => ({ data: null, error: new Error('offline') })) } as never,
-        'user-a',
       ),
-    ).rejects.toThrow('Sync entitlement request failed: offline');
-  });
-
-  it('grants signed-in accounts sync access without Stripe plan metadata', () => {
-    expect(hasAccountPremiumAccess({ id: 'user-a', email: 'user@example.test' })).toBe(true);
-    expect(hasAccountPremiumAccess(null)).toBe(false);
-    expect(
-      isPremiumEntitlementActive({
-        userId: 'user-a',
-        premium: true,
-        entitlement: { tier: 'sync', validUntil: null, activePlanIds: [] },
-      }),
-    ).toBe(true);
+    ).rejects.toThrow('Sync eligibility request failed: offline');
   });
 
   it('keeps local use available without public Supabase configuration', async () => {

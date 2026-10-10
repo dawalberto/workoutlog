@@ -1,8 +1,6 @@
 {
   "name": "WorkoutLog",
-  "description": "Planificador y ejecutor de rutinas de entrenamiento con gestión de series, cálculo de tiempos, cronómetro de descansos y catálogo de ejercicios.",
+  "description": "Planificador y ejecutor de rutinas de entrenamiento con gesti\u00f3n de series, c\u00e1lculo de tiempos, cron\u00f3metro de descansos y cat\u00e1logo de ejercicios.",
   "requestFramePermissions": [],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
+  "majorCapabilities": []
 }

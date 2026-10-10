@@ -1,37 +1,15 @@
 import type { SupabaseBrowserClient } from './supabase';
-import type { BillingPlan } from './billing';
-
-export interface AccountEntitlementResponse {
-  userId: string;
-  entitlement: {
-    tier: string;
-    validUntil: string | null;
-    activePlanIds: BillingPlan[];
-  } | null;
-  premium: boolean;
-}
 
 export interface AuthActionResult {
   error: string | null;
 }
 
-export async function loadAccountEntitlement(
+export async function loadSyncEligibility(
   client: SupabaseBrowserClient,
-  userId: string,
-): Promise<AccountEntitlementResponse> {
+): Promise<boolean> {
   const { data, error } = await client.rpc('get_sync_entitlement');
-  if (error) throw new Error(`Sync entitlement request failed: ${error.message}`);
-  const payload = objectValue(data);
-  if (!payload || payload.eligible !== true) throw new Error('Invalid sync entitlement response.');
-  return {
-    userId,
-    premium: true,
-    entitlement: {
-      tier: 'sync',
-      validUntil: null,
-      activePlanIds: [],
-    },
-  };
+  if (error) throw new Error(`Sync eligibility request failed: ${error.message}`);
+  return objectValue(data)?.eligible === true;
 }
 
 function objectValue(value: unknown): Record<string, unknown> | null {
@@ -40,20 +18,8 @@ function objectValue(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
-export function isPremiumEntitlementActive(
-  entitlement: AccountEntitlementResponse | null,
-  now = Date.now(),
-): boolean {
-  if (!entitlement?.premium || !entitlement.entitlement) return false;
-  const validUntil = entitlement.entitlement.validUntil;
-  if (validUntil === null) return true;
-
-  const expiration = Date.parse(validUntil);
-  return Number.isFinite(expiration) && expiration > now;
-}
-
 function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : 'Account operation failed.';
+  return error instanceof Error ? error.message : 'Authentication operation failed.';
 }
 
 export async function signInWithGoogle(

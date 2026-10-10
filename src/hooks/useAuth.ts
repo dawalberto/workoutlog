@@ -1,19 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  loadAccountEntitlement,
+  loadSyncEligibility,
   signInWithGoogle as startGoogleSignIn,
   signOut as endSupabaseSession,
-  type AccountEntitlementResponse,
 } from '../services/auth';
 import {
   getSupabaseBrowserClient,
   type SupabaseBrowserClient,
 } from '../services/supabase';
-import {
-  createBillingPortalSession,
-  createBillingCheckoutSession,
-  type BillingPlan,
-} from '../services/billing';
 
 export interface AuthenticatedIdentity {
   id: string;
@@ -22,41 +16,27 @@ export interface AuthenticatedIdentity {
 
 export interface UseAuthReturn {
   user: AuthenticatedIdentity | null;
-  entitlement: AccountEntitlementResponse | null;
-  isPremiumActive: boolean;
+  isSyncEnabled: boolean;
   isLoading: boolean;
-  isEntitlementLoading: boolean;
+  isSyncEligibilityLoading: boolean;
   isSigningIn: boolean;
-  isBillingLoading: boolean;
   error: string | null;
-  refreshEntitlement: () => Promise<AccountEntitlementResponse | null>;
-  requestCheckoutSession: (plan: BillingPlan) => Promise<string | null>;
-  requestBillingPortalSession: () => Promise<string | null>;
+  refreshSyncEligibility: () => Promise<boolean>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
-// Billing migration is intentionally deferred; this origin is not used for auth or sync.
-const billingApiOrigin = import.meta.env.VITE_BACKEND_API_ORIGIN ?? '';
-
 function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : 'Account status could not be loaded.';
-}
-
-export function hasAccountPremiumAccess(
-  user: AuthenticatedIdentity | null,
-): boolean {
-  return user !== null;
+  return error instanceof Error ? error.message : 'Authentication status could not be loaded.';
 }
 
 export function useAuth(): UseAuthReturn {
   const clientRef = useRef<SupabaseBrowserClient | null>(null);
   const [user, setUser] = useState<AuthenticatedIdentity | null>(null);
-  const [entitlement, setEntitlement] = useState<AccountEntitlementResponse | null>(null);
+  const [isSyncEnabled, setIsSyncEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isEntitlementLoading, setIsEntitlementLoading] = useState(false);
+  const [isSyncEligibilityLoading, setIsSyncEligibilityLoading] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
-  const [isBillingLoading, setIsBillingLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const resolutionRef = useRef(0);
 
@@ -81,8 +61,8 @@ export function useAuth(): UseAuthReturn {
 
       setIsLoading(false);
       setError(null);
-      setIsEntitlementLoading(Boolean(session));
-      setEntitlement(null);
+      setIsSyncEligibilityLoading(Boolean(session));
+      setIsSyncEnabled(false);
       setUser(
         session
           ? { id: session.user.id, email: session.user.email ?? null }
@@ -90,22 +70,18 @@ export function useAuth(): UseAuthReturn {
       );
       if (!session) return;
 
-      void loadAccountEntitlement(client, session.user.id)
-        .then((result) => {
+      void loadSyncEligibility(client)
+        .then((eligible) => {
           if (!isMounted || currentResolution !== resolutionRef.current) return;
-          if (result.userId !== session.user.id) {
-            throw new Error('Account entitlement does not match the signed-in user.');
-          }
-          setEntitlement(result);
+          setIsSyncEnabled(eligible);
         })
         .catch((loadError: unknown) => {
           if (!isMounted || currentResolution !== resolutionRef.current) return;
-          setEntitlement(null);
           setError(getErrorMessage(loadError));
         })
         .finally(() => {
           if (isMounted && currentResolution === resolutionRef.current) {
-            setIsEntitlementLoading(false);
+            setIsSyncEligibilityLoading(false);
           }
         });
     };
@@ -139,103 +115,47 @@ export function useAuth(): UseAuthReturn {
     };
   }, []);
 
-  const refreshEntitlement = async () => {
+  const refreshSyncEligibility = async (): Promise<boolean> => {
     const client = clientRef.current ?? getSupabaseBrowserClient();
     if (!client) {
       setUser(null);
-      setEntitlement(null);
-      setIsEntitlementLoading(false);
-      return null;
+      setIsSyncEnabled(false);
+      setIsSyncEligibilityLoading(false);
+      return false;
     }
 
     const currentResolution = ++resolutionRef.current;
-    setIsEntitlementLoading(true);
+    setIsSyncEligibilityLoading(true);
     setError(null);
     try {
       const { data, error: sessionError } = await client.auth.getSession();
       if (sessionError) throw sessionError;
-      if (currentResolution !== resolutionRef.current) return null;
+      if (currentResolution !== resolutionRef.current) return false;
       const session = data.session;
       if (!session) {
         if (currentResolution === resolutionRef.current) {
           setUser(null);
-          setEntitlement(null);
+          setIsSyncEnabled(false);
         }
-        return null;
+        return false;
       }
 
       setUser({ id: session.user.id, email: session.user.email ?? null });
-      const result = await loadAccountEntitlement(client, session.user.id);
-      if (result.userId !== session.user.id) {
-        throw new Error('Account entitlement does not match the signed-in user.');
-      }
-      if (currentResolution === resolutionRef.current) setEntitlement(result);
-      return result;
+      const eligible = await loadSyncEligibility(client);
+      if (currentResolution === resolutionRef.current) setIsSyncEnabled(eligible);
+      return eligible;
     } catch (refreshError: unknown) {
       if (currentResolution === resolutionRef.current) {
-        setEntitlement(null);
+        setIsSyncEnabled(false);
         setError(getErrorMessage(refreshError));
       }
-      return null;
+      return false;
     } finally {
       if (currentResolution === resolutionRef.current) {
-        setIsEntitlementLoading(false);
+        setIsSyncEligibilityLoading(false);
       }
     }
   };
-
-  const requestCheckoutSession = async (plan: BillingPlan) => {
-    setIsBillingLoading(true);
-    setError(null);
-    try {
-      const client = clientRef.current ?? getSupabaseBrowserClient();
-      if (!client) {
-        throw new Error('Supabase authentication is not configured.');
-      }
-      const { data, error: sessionError } = await client.auth.getSession();
-      if (sessionError) throw sessionError;
-      if (!data.session) {
-        throw new Error('Inicia sesión para continuar con Premium.');
-      }
-      return await createBillingCheckoutSession(
-        billingApiOrigin,
-        data.session.access_token,
-        plan,
-      );
-    } catch (billingError: unknown) {
-      setError(getErrorMessage(billingError));
-      return null;
-    } finally {
-      setIsBillingLoading(false);
-    }
-  };
-
-  const requestBillingPortalSession = async () => {
-    setIsBillingLoading(true);
-    setError(null);
-    try {
-      const client = clientRef.current ?? getSupabaseBrowserClient();
-      if (!client) {
-        throw new Error('Supabase authentication is not configured.');
-      }
-      const { data, error: sessionError } = await client.auth.getSession();
-      if (sessionError) throw sessionError;
-      if (!data.session) {
-        throw new Error('Inicia sesión para gestionar tus pagos.');
-      }
-      return await createBillingPortalSession(
-        billingApiOrigin,
-        data.session.access_token,
-      );
-    } catch (billingError: unknown) {
-      setError(getErrorMessage(billingError));
-      return null;
-    } finally {
-      setIsBillingLoading(false);
-    }
-  };
-
-  const isPremiumActive = hasAccountPremiumAccess(user);
 
   const signInWithGoogle = async () => {
     setIsSigningIn(true);
@@ -255,23 +175,19 @@ export function useAuth(): UseAuthReturn {
       return;
     }
     setUser(null);
-    setEntitlement(null);
-    setIsEntitlementLoading(false);
+    setIsSyncEnabled(false);
+    setIsSyncEligibilityLoading(false);
     setError(null);
   };
 
   return {
     user,
-    entitlement,
-    isPremiumActive,
+    isSyncEnabled,
     isLoading,
-    isEntitlementLoading,
+    isSyncEligibilityLoading,
     isSigningIn,
-    isBillingLoading,
     error,
-    refreshEntitlement,
-    requestCheckoutSession,
-    requestBillingPortalSession,
+    refreshSyncEligibility,
     signInWithGoogle,
     signOut,
   };
