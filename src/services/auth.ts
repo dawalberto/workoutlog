@@ -15,62 +15,29 @@ export interface AuthActionResult {
   error: string | null;
 }
 
-function isAccountEntitlementResponse(value: unknown): value is AccountEntitlementResponse {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
-
-  const response = value as Record<string, unknown>;
-  if (
-    typeof response.userId !== 'string' ||
-    response.userId.length === 0 ||
-    typeof response.premium !== 'boolean'
-  ) {
-    return false;
-  }
-  if (response.entitlement === null) return true;
-  if (!response.entitlement || typeof response.entitlement !== 'object') return false;
-
-  const entitlement = response.entitlement as Record<string, unknown>;
-  const activePlanIds = entitlement.activePlanIds;
-  return (
-    typeof entitlement.tier === 'string' &&
-    (entitlement.validUntil === null || typeof entitlement.validUntil === 'string') &&
-    (activePlanIds === undefined ||
-      (Array.isArray(activePlanIds) &&
-        activePlanIds.every(
-          (plan): plan is BillingPlan =>
-            plan === 'monthly' || plan === 'annual' || plan === 'lifetime',
-        )))
-  );
+export async function loadAccountEntitlement(
+  client: SupabaseBrowserClient,
+  userId: string,
+): Promise<AccountEntitlementResponse> {
+  const { data, error } = await client.rpc('get_sync_entitlement');
+  if (error) throw new Error(`Sync entitlement request failed: ${error.message}`);
+  const payload = objectValue(data);
+  if (!payload || payload.eligible !== true) throw new Error('Invalid sync entitlement response.');
+  return {
+    userId,
+    premium: true,
+    entitlement: {
+      tier: 'sync',
+      validUntil: null,
+      activePlanIds: [],
+    },
+  };
 }
 
-export async function loadAccountEntitlement(
-  apiOrigin: string,
-  accessToken: string,
-  fetcher: typeof fetch = fetch,
-): Promise<AccountEntitlementResponse> {
-  const origin = apiOrigin.trim().replace(/\/+$/, '');
-  if (!origin) throw new Error('Backend API origin is not configured.');
-
-  const response = await fetcher(`${origin}/api/v1/account/entitlement`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-  if (!response.ok) {
-    throw new Error(`Account entitlement request failed (${response.status}).`);
-  }
-
-  const payload: unknown = await response.json();
-  if (!isAccountEntitlementResponse(payload)) {
-    throw new Error('Invalid entitlement response.');
-  }
-  return {
-    ...payload,
-    entitlement: payload.entitlement
-      ? {
-          ...payload.entitlement,
-          activePlanIds: [...new Set(payload.entitlement.activePlanIds ?? [])],
-        }
-      : null,
-  };
+function objectValue(value: unknown): Record<string, unknown> | null {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
 }
 
 export function isPremiumEntitlementActive(

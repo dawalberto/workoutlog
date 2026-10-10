@@ -1,3 +1,5 @@
+import type { Json } from '../types/database.types';
+import type { SupabaseBrowserClient } from './supabase';
 import {
   acknowledgeSyncOperation,
   applyRemoteSyncChanges,
@@ -34,15 +36,12 @@ const PULL_LIMIT = 500;
 const MAX_PULL_PAGES = 100;
 const MAX_REQUEST_ATTEMPTS = 3;
 const MAX_STALE_CONFLICTS = 5;
-const backendApiOrigin = import.meta.env.VITE_BACKEND_API_ORIGIN ?? '';
 
 export interface CloudSyncOptions {
   ownerId: string | null;
-  accessToken: string | null;
   premiumActive: boolean;
   online: boolean;
-  apiOrigin?: string;
-  fetcher?: typeof fetch;
+  client: SupabaseBrowserClient | null;
   maxRequestAttempts?: number;
   canSync?: () => boolean;
 }
@@ -60,12 +59,6 @@ export class CloudSyncError extends Error {
   }
 }
 
-interface SyncPullResponse {
-  changes: SyncRemoteChange[];
-  nextCursor: string;
-  hasMore: boolean;
-}
-
 interface SyncPushAcknowledgement {
   operationId: string;
   changes: ServerRevisionUpdate[];
@@ -76,38 +69,25 @@ export async function syncCloudData(
 ): Promise<CloudSyncResult> {
   const {
     ownerId,
-    accessToken,
     premiumActive,
     online,
-    fetcher = fetch,
+    client,
     maxRequestAttempts = MAX_REQUEST_ATTEMPTS,
   } = options;
   if (
     !ownerId ||
-    !accessToken ||
     !premiumActive ||
     !online ||
+    !client ||
     options.canSync?.() === false
   ) {
     return { status: 'skipped', pulled: 0, pushed: 0 };
   }
-  const authenticatedOwnerId = ownerId;
-  const bearerToken = accessToken;
+
+  const scope: StorageScope = { ownerId };
   const canSync = () => options.canSync?.() ?? true;
-
-  const origin = (options.apiOrigin ?? backendApiOrigin).trim().replace(/\/+$/, '');
-  if (!origin) throw new CloudSyncError('Backend API origin is not configured.');
-
-  const scope: StorageScope = { ownerId: authenticatedOwnerId };
   await flushScopedStorageWrites(scope);
-  let pulled = await pullChanges({
-    origin,
-    accessToken: bearerToken,
-    scope,
-    fetcher,
-    maxRequestAttempts,
-    canSync,
-  });
+  let pulled = await pullChanges({ client, scope, canSync });
   const initialPendingCount = (await getPendingSyncOperations(scope)).length;
   const maxPushRequests = initialPendingCount + MAX_STALE_CONFLICTS;
   let pushed = 0;
@@ -128,47 +108,18 @@ export async function syncCloudData(
       throw new CloudSyncError('Sync push exceeded the server batch limit.');
     }
 
-    const response = await requestWithRetry(
-      `${origin}/api/v1/sync/push`,
-      {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          Authorization: `Bearer ${bearerToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(operation.request),
-      },
-      fetcher,
+    const push = await pushWithRetry(
+      client,
+      operation,
       maxRequestAttempts,
       canSync,
     );
-
-    if (response.status === 409) {
-      const conflict = await readJson(response);
-      const code = objectValue(conflict)?.code;
-      if (code === 'sync_operation_conflict') {
-        throw new CloudSyncError(
-          'Sync rejected a reused operation ID with a different payload.',
-        );
-      }
-      if (code !== 'sync_stale_revision_conflict') {
-        throw new CloudSyncError('Sync returned an unrecognized conflict response.');
-      }
+    if (push.kind === 'stale') {
       staleConflicts += 1;
       if (staleConflicts > MAX_STALE_CONFLICTS) {
         throw new CloudSyncError('Sync stopped after repeated stale revisions.');
       }
-
-      pulled += await pullChanges({
-        origin,
-        accessToken: bearerToken,
-        scope,
-        fetcher,
-        maxRequestAttempts,
-        canSync,
-        fromBeginning: true,
-      });
+      pulled += await pullChanges({ client, scope, canSync, fromBeginning: true });
       const pendingAfterPull = await getPendingSyncOperations(scope);
       if (
         pendingAfterPull.some(
@@ -183,17 +134,11 @@ export async function syncCloudData(
       continue;
     }
 
-    if (!response.ok) throw await httpError(response, 'Sync push');
-    const acknowledgement = parsePushAcknowledgement(await readJson(response));
-    validateAcknowledgement(acknowledgement, operation);
+    validateAcknowledgement(push.acknowledgement, operation);
     for (let index = 0; index < operation.request.changes.length; index += 1) {
       const requestedChange = operation.request.changes[index]!;
-      const result = acknowledgement.changes[index]!;
-      await acknowledgeSyncOperation(
-        operation.request.operationId,
-        result,
-        scope,
-      );
+      const result = push.acknowledgement.changes[index]!;
+      await acknowledgeSyncOperation(operation.request.operationId, result, scope);
       if (result.table !== requestedChange.table) {
         throw new CloudSyncError('Sync acknowledgement changed the record table.');
       }
@@ -208,173 +153,120 @@ export async function syncCloudData(
 }
 
 interface PullOptions {
-  origin: string;
-  accessToken: string;
+  client: SupabaseBrowserClient;
   scope: StorageScope;
-  fetcher: typeof fetch;
-  maxRequestAttempts: number;
   canSync: () => boolean;
   fromBeginning?: boolean;
 }
 
 async function pullChanges(options: PullOptions): Promise<number> {
-  let cursor = options.fromBeginning ? '0' : await getServerCursor(options.scope);
-  let pageCount = 0;
-  let changeCount = 0;
+  const cursor = options.fromBeginning ? '0' : await getServerCursor(options.scope);
+  const changes: SyncRemoteChange[] = [];
 
-  while (true) {
-    pageCount += 1;
-    if (pageCount > MAX_PULL_PAGES) {
-      throw new CloudSyncError('Sync pull stopped after too many pages.');
-    }
-    const query = new URLSearchParams({ cursor, limit: String(PULL_LIMIT) });
-    const response = await requestWithRetry(
-      `${options.origin}/api/v1/sync/pull?${query.toString()}`,
-      {
-        method: 'GET',
-        headers: {
-          Accept: 'application/json',
-          Authorization: `Bearer ${options.accessToken}`,
-        },
-      },
-      options.fetcher,
-      options.maxRequestAttempts,
-      options.canSync,
-    );
-    if (!response.ok) throw await httpError(response, 'Sync pull');
+  // The schema exposes RLS-protected per-table reads rather than one atomic feed.
+  // Querying every table from the same cursor is eventually complete: revisions
+  // created during this pass remain above the stored cursor for the next pass.
+  for (const table of SYNC_TABLES) {
+    let tableCursor = cursor;
+    for (let page = 1; page <= MAX_PULL_PAGES; page += 1) {
+      if (!options.canSync()) {
+        throw new CloudSyncError('Sync eligibility changed before the request.');
+      }
+      const { data, error } = await options.client
+        .from(table)
+        .select('*')
+        .gt('server_revision', tableCursor as never)
+        .order('server_revision', { ascending: true })
+        .limit(PULL_LIMIT);
+      if (error) throw new CloudSyncError(`Sync pull failed: ${error.message}`);
 
-    const page = parsePullResponse(await readJson(response));
-    if (page.hasMore && compareRevisions(page.nextCursor, cursor) <= 0) {
-      throw new CloudSyncError('Sync pull returned a non-advancing cursor.');
+      const rows = (data ?? []) as unknown as Array<Record<string, unknown>>;
+      for (const row of rows) {
+        changes.push(parseTableRow(table, row));
+      }
+      if (rows.length < PULL_LIMIT) break;
+      const lastRevision = changes.at(-1)?.revision;
+      if (!lastRevision || compareRevisions(lastRevision, tableCursor) <= 0) {
+        throw new CloudSyncError('Sync pull returned a non-advancing cursor.');
+      }
+      tableCursor = lastRevision;
+      if (page === MAX_PULL_PAGES) {
+        throw new CloudSyncError('Sync pull stopped after too many pages.');
+      }
     }
-    await applyRemoteSyncChanges(page.changes, page.nextCursor, options.scope);
-    changeCount += page.changes.length;
-    cursor = page.nextCursor;
-    if (!page.hasMore) return changeCount;
   }
+
+  changes.sort((left, right) => compareRevisions(left.revision, right.revision));
+  const nextCursor = changes.at(-1)?.revision ?? cursor;
+  await applyRemoteSyncChanges(changes, nextCursor, options.scope);
+  return changes.length;
 }
 
-async function requestWithRetry(
-  url: string,
-  init: RequestInit,
-  fetcher: typeof fetch,
+function parseTableRow(
+  table: SyncTable,
+  row: Record<string, unknown>,
+): SyncRemoteChange {
+  const revision = row.server_revision;
+  if (
+    !(typeof revision === 'number' || typeof revision === 'string') ||
+    !isDecimalRevision(String(revision))
+  ) {
+    throw new CloudSyncError('Sync pull returned an invalid server revision.');
+  }
+  const record = { ...row };
+  const id = syncRecordId(table, record);
+  const change: SyncRemoteChange = {
+    table,
+    id,
+    revision: String(revision),
+    deletedAt: typeof row.deleted_at === 'string' ? row.deleted_at : null,
+    record,
+  };
+  validateRemoteChange(change);
+  return change;
+}
+
+async function pushWithRetry(
+  client: SupabaseBrowserClient,
+  operation: SyncQueueEntry,
   maxAttempts: number,
   canRequest: () => boolean,
-): Promise<Response> {
+): Promise<
+  | { kind: 'acknowledgement'; acknowledgement: SyncPushAcknowledgement }
+  | { kind: 'stale' }
+> {
   const attempts = Math.max(1, Math.floor(maxAttempts));
-  let lastStatus: number | null = null;
+  let lastError: string | null = null;
 
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     if (!canRequest()) {
       throw new CloudSyncError('Sync eligibility changed before the request.');
     }
-    let response: Response;
-    try {
-      response = await fetcher(url, init);
-    } catch {
-      if (attempt === attempts) {
-        throw new CloudSyncError(
-          `Sync request failed after ${attempts} attempts.`,
-        );
-      }
-      continue;
+    const { data, error } = await client.rpc('sync_push', {
+      p_operation_id: operation.request.operationId,
+      p_changes: operation.request.changes as unknown as Json,
+    });
+    if (!error) {
+      return {
+        kind: 'acknowledgement',
+        acknowledgement: parsePushAcknowledgement(data),
+      };
     }
 
-    if (
-      (response.status >= 500 || response.status === 429) &&
-      attempt < attempts
-    ) {
-      lastStatus = response.status;
-      continue;
+    const message = error.message || 'unknown RPC error';
+    if (message.includes('sync_stale_revision_conflict')) return { kind: 'stale' };
+    if (message.includes('sync_operation_conflict')) {
+      throw new CloudSyncError(
+        'Sync rejected a reused operation ID with a different payload.',
+      );
     }
-    if (response.status >= 500 || response.status === 429) {
-      lastStatus = response.status;
-      break;
-    }
-    return response;
+    lastError = message;
+    if (attempt === attempts) break;
   }
 
   throw new CloudSyncError(
-    lastStatus === null
-      ? `Sync request failed after ${attempts} attempts.`
-      : `Sync request failed after ${attempts} attempts (${lastStatus}).`,
+    `Sync push failed after ${attempts} attempts${lastError ? `: ${lastError}` : '.'}`,
   );
-}
-
-async function readJson(response: Response): Promise<unknown> {
-  try {
-    return await response.json();
-  } catch {
-    throw new CloudSyncError('Sync service returned invalid JSON.');
-  }
-}
-
-async function httpError(response: Response, operation: string): Promise<CloudSyncError> {
-  const body = await readJson(response);
-  const message = objectValue(body)?.message;
-  const suffix = typeof message === 'string' ? `: ${message}` : '';
-  return new CloudSyncError(`${operation} failed (${response.status})${suffix}`);
-}
-
-function parsePullResponse(value: unknown): SyncPullResponse {
-  const response = objectValue(value);
-  if (
-    !response ||
-    !Array.isArray(response.changes) ||
-    typeof response.nextCursor !== 'string' ||
-    !isDecimalRevision(response.nextCursor) ||
-    typeof response.hasMore !== 'boolean'
-  ) {
-    throw new CloudSyncError('Sync pull returned an invalid response.');
-  }
-  return {
-    changes: response.changes.map(parseRemoteChange),
-    nextCursor: response.nextCursor,
-    hasMore: response.hasMore,
-  };
-}
-
-function parseRemoteChange(value: unknown): SyncRemoteChange {
-  const change = objectValue(value);
-  const record = objectValue(change?.record);
-  if (
-    !change ||
-    typeof change.table !== 'string' ||
-    !SYNC_TABLES.includes(change.table as SyncTable) ||
-    typeof change.id !== 'string' ||
-    !change.id ||
-    typeof change.revision !== 'string' ||
-    !isDecimalRevision(change.revision) ||
-    !(change.deletedAt === null || typeof change.deletedAt === 'string') ||
-    !record
-  ) {
-    throw new CloudSyncError('Sync pull returned an invalid change.');
-  }
-  const table = change.table as SyncTable;
-  if (
-    table === 'workout_history' ||
-    table === 'workout_history_exercises'
-  ) {
-    try {
-      validateWorkoutHistoryRecord(
-        table,
-        change.id,
-        record,
-        change.deletedAt === null,
-      );
-    } catch {
-      throw new CloudSyncError(
-        'Sync pull returned an invalid workout history record.',
-      );
-    }
-  }
-  return {
-    table,
-    id: change.id,
-    revision: change.revision,
-    deletedAt: change.deletedAt as string | null,
-    record,
-  };
 }
 
 function parsePushAcknowledgement(value: unknown): SyncPushAcknowledgement {
@@ -410,6 +302,26 @@ function parsePushAcknowledgement(value: unknown): SyncPushAcknowledgement {
       };
     }),
   };
+}
+
+function validateRemoteChange(change: SyncRemoteChange): void {
+  if (
+    change.table === 'workout_history' ||
+    change.table === 'workout_history_exercises'
+  ) {
+    try {
+      validateWorkoutHistoryRecord(
+        change.table,
+        change.id,
+        change.record,
+        change.deletedAt === null,
+      );
+    } catch {
+      throw new CloudSyncError(
+        'Sync pull returned an invalid workout history record.',
+      );
+    }
+  }
 }
 
 function validateAcknowledgement(

@@ -36,7 +36,8 @@ export interface UseAuthReturn {
   signOut: () => Promise<void>;
 }
 
-const backendApiOrigin = import.meta.env.VITE_BACKEND_API_ORIGIN ?? '';
+// Billing migration is intentionally deferred; this origin is not used for auth or sync.
+const billingApiOrigin = import.meta.env.VITE_BACKEND_API_ORIGIN ?? '';
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Account status could not be loaded.';
@@ -89,7 +90,7 @@ export function useAuth(): UseAuthReturn {
       );
       if (!session) return;
 
-      void loadAccountEntitlement(backendApiOrigin, session.access_token)
+      void loadAccountEntitlement(client, session.user.id)
         .then((result) => {
           if (!isMounted || currentResolution !== resolutionRef.current) return;
           if (result.userId !== session.user.id) {
@@ -164,10 +165,7 @@ export function useAuth(): UseAuthReturn {
       }
 
       setUser({ id: session.user.id, email: session.user.email ?? null });
-      const result = await loadAccountEntitlement(
-        backendApiOrigin,
-        session.access_token,
-      );
+      const result = await loadAccountEntitlement(client, session.user.id);
       if (result.userId !== session.user.id) {
         throw new Error('Account entitlement does not match the signed-in user.');
       }
@@ -200,7 +198,7 @@ export function useAuth(): UseAuthReturn {
         throw new Error('Inicia sesión para continuar con Premium.');
       }
       return await createBillingCheckoutSession(
-        backendApiOrigin,
+        billingApiOrigin,
         data.session.access_token,
         plan,
       );
@@ -226,7 +224,7 @@ export function useAuth(): UseAuthReturn {
         throw new Error('Inicia sesión para gestionar tus pagos.');
       }
       return await createBillingPortalSession(
-        backendApiOrigin,
+        billingApiOrigin,
         data.session.access_token,
       );
     } catch (billingError: unknown) {

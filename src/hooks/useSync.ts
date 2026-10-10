@@ -207,9 +207,9 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
           };
           const result = await syncCloudData({
             ownerId: latest.ownerId,
-            accessToken: session.access_token,
             premiumActive: latest.premiumActive,
             online: isBrowserOnline(),
+            client,
             canSync: isCurrentSync,
           });
           if (!isCurrentSync()) {
