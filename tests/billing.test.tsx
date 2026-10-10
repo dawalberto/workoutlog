@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { AppHeader } from '../src/components/AppHeader';
 import { BillingPlansModal } from '../src/components/BillingPlansModal';
 import { SidebarMenu } from '../src/components/SidebarMenu';
+import { BILLING_UI_ENABLED } from '../src/config/features';
 import { AppTab } from '../src/types';
 
 type ButtonElement = React.ReactElement<{
@@ -308,7 +309,7 @@ describe('application header', () => {
 });
 
 describe('account menu billing entry point', () => {
-  it('keeps the account section in the dark neon design and Spanish UI', () => {
+  it('hides the billing entry point by default and keeps the account UI in Spanish', () => {
     const markup = renderToStaticMarkup(
       <SidebarMenu
         isOpen
@@ -340,7 +341,8 @@ describe('account menu billing entry point', () => {
     expect(markup).toContain('bg-[#121214]');
     expect(markup).not.toContain('bg-zinc-50');
     expect(markup).toContain('Continuar con Google');
-    expect(markup).toContain('Ver planes');
+    expect(BILLING_UI_ENABLED).toBe(false);
+    expect(markup).not.toContain('Ver planes');
   });
 
   it('shows the online connectivity state in the sidebar footer', () => {

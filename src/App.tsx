@@ -43,6 +43,7 @@ import { useRoutines } from './hooks/useRoutines';
 import { useWorkoutSession } from './hooks/useWorkoutSession';
 import { useRmTracker } from './hooks/useRmTracker';
 import { useExerciseDiaryNavigation } from './hooks/useExerciseDiaryNavigation';
+import { BILLING_UI_ENABLED } from './config/features';
 import {
   getBillingReturnPath,
   getBillingReturnStatus,
@@ -67,7 +68,7 @@ export default function App() {
   const account = useAuth();
 
   useEffect(() => {
-    if (!billingReturnStatus || account.isLoading) return;
+    if (!BILLING_UI_ENABLED || !billingReturnStatus || account.isLoading) return;
     setIsBillingPlansOpen(true);
     void account.refreshEntitlement();
 
@@ -427,26 +428,28 @@ export default function App() {
         onSignOut={account.signOut}
       />
 
-      <BillingPlansModal
-        isOpen={isBillingPlansOpen}
-        isAuthenticated={Boolean(account.user)}
-        isPremiumActive={account.isPremiumActive}
-        activePlanIds={account.entitlement?.entitlement?.activePlanIds ?? []}
-        isEntitlementLoading={account.isEntitlementLoading}
-        isBillingLoading={account.isBillingLoading}
-        billingError={account.error}
-        returnStatus={billingReturnStatus}
-        onClose={() => {
-          setIsBillingPlansOpen(false);
-          setBillingReturnStatus(null);
-        }}
-        onSignIn={account.signInWithGoogle}
-        onCheckout={handleCheckout}
-        onOpenBillingPortal={handleOpenBillingPortal}
-        onRefreshEntitlement={async () => {
-          await account.refreshEntitlement();
-        }}
-      />
+      {BILLING_UI_ENABLED && (
+        <BillingPlansModal
+          isOpen={isBillingPlansOpen}
+          isAuthenticated={Boolean(account.user)}
+          isPremiumActive={account.isPremiumActive}
+          activePlanIds={account.entitlement?.entitlement?.activePlanIds ?? []}
+          isEntitlementLoading={account.isEntitlementLoading}
+          isBillingLoading={account.isBillingLoading}
+          billingError={account.error}
+          returnStatus={billingReturnStatus}
+          onClose={() => {
+            setIsBillingPlansOpen(false);
+            setBillingReturnStatus(null);
+          }}
+          onSignIn={account.signInWithGoogle}
+          onCheckout={handleCheckout}
+          onOpenBillingPortal={handleOpenBillingPortal}
+          onRefreshEntitlement={async () => {
+            await account.refreshEntitlement();
+          }}
+        />
+      )}
 
       {/* RM New Record Detection Alert Modal */}
       <RmRecordAlertModal

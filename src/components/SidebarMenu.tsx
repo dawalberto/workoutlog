@@ -6,6 +6,7 @@
 import React from 'react';
 import { Flame, Dumbbell, Trophy, Calendar, BookOpen, ArrowDownUp, X, ChevronRight } from 'lucide-react';
 import { AppTab } from '../types';
+import { BILLING_UI_ENABLED } from '../config/features';
 import { PWAInstallButton } from './PWAInstallButton';
 
 interface SidebarMenuProps {
@@ -360,23 +361,27 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
             {isEntitlementLoading && isAuthenticated && (
               <p className="mt-1 text-[11px] text-zinc-500">Comprobando el estado de la cuenta…</p>
             )}
-            {premiumExpiry && Number.isFinite(Date.parse(premiumExpiry)) && (
-              <p className="mt-1 text-[11px] text-zinc-500">
-                Premium hasta: {new Date(premiumExpiry).toLocaleDateString('es-ES')}
-              </p>
-            )}
+            {BILLING_UI_ENABLED &&
+              premiumExpiry &&
+              Number.isFinite(Date.parse(premiumExpiry)) && (
+                <p className="mt-1 text-[11px] text-zinc-500">
+                  Premium hasta: {new Date(premiumExpiry).toLocaleDateString('es-ES')}
+                </p>
+              )}
             {error && (
               <p role="alert" className="mt-2 text-[11px] text-red-300">
                 {error}
               </p>
             )}
-            <button
-              type="button"
-              onClick={onOpenBillingPlans}
-              className="mt-3 w-full rounded-xl border border-[#00FF87]/30 bg-[#00FF87]/10 px-3 py-2 text-xs font-black text-[#00FF87] transition-all hover:bg-[#00FF87]/15 active:scale-[0.98]"
-            >
-              Ver planes
-            </button>
+            {BILLING_UI_ENABLED && (
+              <button
+                type="button"
+                onClick={onOpenBillingPlans}
+                className="mt-3 w-full rounded-xl border border-[#00FF87]/30 bg-[#00FF87]/10 px-3 py-2 text-xs font-black text-[#00FF87] transition-all hover:bg-[#00FF87]/15 active:scale-[0.98]"
+              >
+                Ver planes
+              </button>
+            )}
             <button
               type="button"
               onClick={() => void (isAuthenticated ? onSignOut() : onSignIn())}
