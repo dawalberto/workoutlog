@@ -4,6 +4,7 @@ import {
   signInWithGoogle,
   signOut,
 } from '../src/services/auth';
+import { getOAuthRedirectUrl } from '../src/hooks/useAuth';
 import { createSupabaseBrowserClient } from '../src/services/supabase';
 
 describe('Supabase authentication and sync eligibility', () => {
@@ -34,6 +35,12 @@ describe('Supabase authentication and sync eligibility', () => {
     await expect(signInWithGoogle(null, 'http://localhost:3000')).resolves.toEqual({
       error: 'Supabase authentication is not configured. Local use remains available.',
     });
+  });
+
+  it('preserves a non-root Vite base path in the OAuth redirect URL', () => {
+    expect(getOAuthRedirectUrl('https://dawalberto.github.io', '/workoutlog/')).toBe(
+      'https://dawalberto.github.io/workoutlog/',
+    );
   });
 
   it('surfaces Supabase OAuth and sign-out failures without throwing', async () => {

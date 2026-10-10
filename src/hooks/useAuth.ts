@@ -30,6 +30,10 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Authentication status could not be loaded.';
 }
 
+export function getOAuthRedirectUrl(origin: string, baseUrl: string): string {
+  return new URL(baseUrl, origin).toString();
+}
+
 export function useAuth(): UseAuthReturn {
   const clientRef = useRef<SupabaseBrowserClient | null>(null);
   const [user, setUser] = useState<AuthenticatedIdentity | null>(null);
@@ -162,7 +166,9 @@ export function useAuth(): UseAuthReturn {
     setError(null);
     const result = await startGoogleSignIn(
       clientRef.current ?? getSupabaseBrowserClient(),
-      typeof window === 'undefined' ? '' : window.location.origin,
+      typeof window === 'undefined'
+        ? ''
+        : getOAuthRedirectUrl(window.location.origin, import.meta.env.BASE_URL),
     );
     setError(result.error);
     setIsSigningIn(false);
