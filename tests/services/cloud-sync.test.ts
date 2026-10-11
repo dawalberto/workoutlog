@@ -128,6 +128,32 @@ describe('cloud sync', () => {
     ).toMatchObject({ serverRevision: '5', deleted: false });
   });
 
+  it('retains pending operations when sync_push exhausts its retry budget', async () => {
+    const scope = { ownerId: 'owner-1' };
+    await storage.setScopedStoredItem(
+      storage.DB_KEYS.CATALOG,
+      [{ id: 'definition-1', name: 'Bench press' }],
+      scope,
+    );
+    const rpc = vi.fn(async () => ({
+      data: null,
+      error: new Error('RPC unavailable'),
+    }));
+    const client = createClient({}, rpc);
+
+    await expect(
+      cloudSync.syncCloudData({
+        ownerId: scope.ownerId,
+        premiumActive: true,
+        online: true,
+        client: client as never,
+      }),
+    ).rejects.toThrow('Sync push failed after 3 attempts: RPC unavailable');
+
+    expect(rpc).toHaveBeenCalledTimes(3);
+    expect(await storage.getPendingSyncOperations(scope)).toHaveLength(1);
+  });
+
   it('preserves local-only behavior when signed out, offline, unentitled, or unconfigured', async () => {
     const client = createClient();
     for (const options of [

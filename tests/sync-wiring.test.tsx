@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { IDBFactory } from 'fake-indexeddb';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SyncStatus } from '../src/components/SyncStatus';
+import type { UseSyncOptions } from '../src/hooks/useSync';
 
 type HookHarness = ReturnType<typeof createHookHarness>;
 
@@ -563,5 +564,136 @@ describe('sync wiring', () => {
 
     retry?.props.onClick?.();
     expect(onRetry).toHaveBeenCalledOnce();
+  });
+
+  it('does not restart a failed sync when storage refreshes collections', async () => {
+    const hookHarness = createHookHarness();
+    const pendingOperation = {
+      request: {
+        operationId: 'failed-operation',
+        changes: [{ table: 'exercise_definitions', operation: 'upsert' }],
+      },
+    };
+    const syncCloudData = vi.fn(async (): Promise<{
+      status: 'synced';
+      pulled: number;
+      pushed: number;
+    }> => {
+      throw new Error('RPC unavailable');
+    });
+
+    vi.doMock('react', async (importOriginal) => {
+      const actual = await importOriginal<typeof import('react')>();
+      return {
+        ...actual,
+        useState: (initial: unknown) => activeHarness!.useState(initial),
+        useRef: (initial: unknown) => activeHarness!.useRef(initial),
+        useMemo: (factory: () => unknown, deps: readonly unknown[]) =>
+          activeHarness!.useMemo(factory, deps),
+        useCallback: (callback: (...args: never[]) => unknown, deps: readonly unknown[]) =>
+          activeHarness!.useMemo(() => callback, deps),
+        useEffect: (callback: () => void | (() => void), deps?: readonly unknown[]) =>
+          activeHarness!.useEffect(callback, deps),
+      };
+    });
+    vi.doMock('../src/services/db', () => ({
+      flushScopedStorageWrites: vi.fn(async () => undefined),
+      getPendingSyncOperations: vi.fn(async () => [pendingOperation]),
+    }));
+    vi.doMock('../src/services/cloud-sync', () => ({
+      createSyncCoordinator: (sync: () => Promise<void>) => ({
+        run: sync,
+        dispose: vi.fn(),
+      }),
+      syncCloudData,
+    }));
+    vi.doMock('../src/services/supabase', () => ({
+      getSupabaseBrowserClient: () => ({
+        auth: {
+          getSession: async () => ({
+            data: { session: { user: { id: 'owner-1' } } },
+            error: null,
+          }),
+        },
+      }),
+    }));
+    Object.assign(window, {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    });
+    Object.defineProperty(navigator, 'onLine', {
+      configurable: true,
+      value: true,
+    });
+
+    const { useSync } = await import('../src/hooks/useSync');
+    type SyncCollections = Pick<
+      UseSyncOptions,
+      | 'routines'
+      | 'catalog'
+      | 'activeSessions'
+      | 'rmLogs'
+      | 'workoutHistory'
+      | 'exerciseDiary'
+    >;
+    const defaultCollections: SyncCollections = {
+      routines: [],
+      catalog: [],
+      activeSessions: {},
+      rmLogs: [],
+      workoutHistory: [],
+      exerciseDiary: [],
+    };
+    const renderSync = (collections: SyncCollections = defaultCollections) =>
+      hookHarness.render(() => useSync({
+        ownerId: 'owner-1',
+        premiumActive: true,
+        isStorageLoaded: true,
+        isOwnerHydrationComplete: true,
+        onSynced: vi.fn(async () => undefined),
+        ...collections,
+      }));
+
+    renderSync();
+    await hookHarness.runEffects();
+    for (let attempt = 0; attempt < 10 && syncCloudData.mock.calls.length === 0; attempt += 1) {
+      await Promise.resolve();
+    }
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      await Promise.resolve();
+    }
+
+    const remoteCollections: SyncCollections = {
+      routines: [],
+      catalog: [{ id: 'remote-definition', name: 'Pulled during sync' }],
+      activeSessions: {},
+      rmLogs: [],
+      workoutHistory: [],
+      exerciseDiary: [],
+    };
+    renderSync(remoteCollections);
+    await hookHarness.runEffects();
+    await Promise.resolve();
+
+    expect(syncCloudData).toHaveBeenCalledTimes(1);
+
+    syncCloudData.mockResolvedValueOnce({
+      status: 'synced',
+      pulled: 1,
+      pushed: 0,
+    });
+    const { retry } = renderSync(remoteCollections);
+    retry();
+    for (let attempt = 0; attempt < 10 && syncCloudData.mock.calls.length < 2; attempt += 1) {
+      await Promise.resolve();
+    }
+    renderSync({
+      ...remoteCollections,
+      catalog: [...remoteCollections.catalog],
+    });
+    await hookHarness.runEffects();
+    await Promise.resolve();
+
+    expect(syncCloudData).toHaveBeenCalledTimes(2);
   });
 });

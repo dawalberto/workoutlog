@@ -59,10 +59,17 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Cloud sync failed.';
 }
 
+function pendingOperationsSignature(
+  operations: Awaited<ReturnType<typeof getPendingSyncOperations>>,
+): string {
+  return operations.map((operation) => JSON.stringify(operation.request)).join('\n');
+}
+
 export function useSync(options: UseSyncOptions): UseSyncResult {
   const optionsRef = useRef(options);
   optionsRef.current = options;
   const coordinatorRef = useRef<SyncCoordinator | null>(null);
+  const failedPendingSignatureRef = useRef<string | null>(null);
   const mountedRef = useRef(true);
   const [status, setStatus] = useState<UseSyncStatus>(initialStatus);
   const [isOnline, setIsOnline] = useState(isBrowserOnline);
@@ -72,6 +79,14 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
   }>({ ownerId: options.ownerId, count: 0 });
   const pendingChanges =
     pendingState.ownerId === options.ownerId ? pendingState.count : 0;
+  const collectionContentsSignature = JSON.stringify([
+    options.routines,
+    options.catalog,
+    options.activeSessions,
+    options.rmLogs,
+    options.workoutHistory,
+    options.exerciseDiary,
+  ]);
 
   const refreshPendingChanges = useCallback(async (ownerId: string) => {
     try {
@@ -130,12 +145,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
   }, [
     options.ownerId,
     options.isStorageLoaded,
-    options.routines,
-    options.catalog,
-    options.activeSessions,
-    options.rmLogs,
-    options.workoutHistory,
-    options.exerciseDiary,
+    collectionContentsSignature,
     refreshPendingChanges,
   ]);
 
@@ -149,6 +159,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
     ) {
       coordinatorRef.current?.dispose();
       coordinatorRef.current = null;
+      failedPendingSignatureRef.current = null;
       setStatus((previous) => ({
         ...previous,
         state: 'idle',
@@ -157,6 +168,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
       return;
     }
 
+    const syncOwnerId = current.ownerId;
     if (!coordinatorRef.current) {
       const runSync = async () => {
         const latest = optionsRef.current;
@@ -220,6 +232,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
             if (mountedRef.current) setStatus(initialStatus);
             return;
           }
+          failedPendingSignatureRef.current = null;
           if (result.pulled > 0) await latest.onSynced();
           await refreshPendingChanges(syncOwnerId);
           if (mountedRef.current) {
@@ -243,6 +256,15 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
               return;
             }
             await refreshPendingChanges(current.ownerId);
+            try {
+              const operations = await getPendingSyncOperations({
+                ownerId: syncOwnerId,
+              });
+              failedPendingSignatureRef.current =
+                pendingOperationsSignature(operations);
+            } catch {
+              failedPendingSignatureRef.current = null;
+            }
             setStatus((previous) => ({
               ...previous,
               state: 'error',
@@ -258,24 +280,38 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
         window,
       );
     }
-    void coordinatorRef.current.run();
+    const startReactiveSync = async () => {
+      const failedPendingSignature = failedPendingSignatureRef.current;
+      if (failedPendingSignature !== null) {
+        try {
+          const operations = await getPendingSyncOperations({
+            ownerId: syncOwnerId,
+          });
+          if (pendingOperationsSignature(operations) === failedPendingSignature) {
+            return;
+          }
+          failedPendingSignatureRef.current = null;
+        } catch {
+          failedPendingSignatureRef.current = null;
+        }
+      }
+      void coordinatorRef.current?.run();
+    };
+    void startReactiveSync();
   }, [
     options.ownerId,
     options.premiumActive,
     options.isStorageLoaded,
     options.isOwnerHydrationComplete,
-    options.onSynced,
-    options.routines,
-    options.catalog,
-    options.activeSessions,
-    options.rmLogs,
-    options.workoutHistory,
-    options.exerciseDiary,
+    collectionContentsSignature,
     refreshPendingChanges,
   ]);
 
   const retry = () => {
-    if (isOnline) void coordinatorRef.current?.run();
+    if (isOnline) {
+      failedPendingSignatureRef.current = null;
+      void coordinatorRef.current?.run();
+    }
   };
 
   return { status, isOnline, pendingChanges, retry };
