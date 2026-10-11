@@ -42,7 +42,7 @@ Summarize affected collections, identity/offline behavior, migration, conflict h
 
 ## References
 
-- [IndexedDB service](../../src/services/db.ts)
-- [Storage hook](../../src/hooks/useAppStorage.ts)
-- [Record types](../../src/types.ts)
-- [Backup import and export](../../src/utils/backup.ts)
+- [IndexedDB service](../../../src/services/db.ts)
+- [Storage hook](../../../src/hooks/useAppStorage.ts)
+- [Record types](../../../src/types.ts)
+- [Backup import and export](../../../src/utils/backup.ts)
