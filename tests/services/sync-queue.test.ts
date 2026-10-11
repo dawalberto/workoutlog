@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   orderSyncOperations,
+  optionalSyncReference,
   type SyncPushChange,
   type SyncTable,
 } from '../../src/services/sync-queue';
@@ -33,6 +34,21 @@ function operation(
 }
 
 describe('sync queue ordering', () => {
+  it.each(['routine_exercises', 'rm_logs', 'exercise_diaries', 'workout_history'] as const)(
+    'identifies only the optional snapshot reference for %s',
+    (table) => {
+      const column = table === 'workout_history' ? 'routine_id' : 'definition_id';
+      const change: SyncPushChange = { table, operation: 'upsert', baseRevision: '0', record: { [column]: 'parent' } };
+      expect(optionalSyncReference(change)).toEqual({
+        column, parentTable: table === 'workout_history' ? 'routines' : 'exercise_definitions', parentId: 'parent',
+      });
+      expect(optionalSyncReference({ ...change, operation: 'delete' })).toBeNull();
+      expect(optionalSyncReference({ ...change, record: { [column]: null } })).toBeNull();
+    },
+  );
+  it('does not normalize required parents as optional references', () => {
+    expect(optionalSyncReference({ table: 'active_workout_sessions', operation: 'upsert', baseRevision: '0', record: { routine_id: 'missing' } })).toBeNull();
+  });
   it('moves pending parent upserts before children across the foreign-key graph', () => {
     const queued = [
       operation(0, 'active_session_completed_sets', 'completion', 'upsert', {

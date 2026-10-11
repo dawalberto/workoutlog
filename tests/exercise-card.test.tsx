@@ -98,7 +98,7 @@ async function setupExerciseCard() {
       onBlur: (event: { currentTarget: { value: string } }) => void;
     }>;
 
-  return { findSetInput, onUpdateExercise, onCheckRmWeight };
+  return { findSetInput, onUpdateExercise, onCheckRmWeight, render, props };
 }
 
 afterEach(() => {
@@ -108,6 +108,37 @@ afterEach(() => {
 });
 
 describe('ExerciseCard set field edits', () => {
+  it.each(['name', 'notes', 'imageUrl', 'videoUrl'] as const)(
+    'drafts %s until blur and merges the latest external exercise data',
+    async (field) => {
+      const { render, props, onUpdateExercise } = await setupExerciseCard();
+      if (field === 'imageUrl' || field === 'videoUrl') {
+        const title = field === 'imageUrl' ? 'Configurar imagen miniatura / preview' : 'Configurar enlace de video';
+        const button = findElement(render() as ReactNode, (element) => element.props.title === title);
+        (button!.props.onClick as () => void)();
+      }
+      const placeholder = {
+        name: 'Nombre del ejercicio (ej. Press banca, Sentadilla...)',
+        notes: 'Notas de técnica o consejos (opcional)',
+        imageUrl: 'URL de imagen preview (https://...)',
+        videoUrl: 'Enlace de video (YouTube, Vimeo, mp4)...',
+      }[field];
+      const input = () => findElement(render() as ReactNode, (element) =>
+        element.type === 'input' && (element.props.placeholder === placeholder ||
+          (field === 'imageUrl' && element.props.type === 'url' && String(element.props.placeholder).includes('imagen')) ||
+          (field === 'videoUrl' && element.props.type === 'url' && String(element.props.placeholder).includes('youtube'))),
+      )!;
+      expect(input()).toBeDefined();
+      (input().props.onChange as (e: unknown) => void)({ target: { value: 'Draft' } });
+      expect(onUpdateExercise).not.toHaveBeenCalled();
+      props.exercise = { ...exercise, category: 'External category' };
+      expect(input().props.value).toBe('Draft');
+      (input().props.onBlur as (e: unknown) => void)({ currentTarget: { value: 'Draft' } });
+      expect(onUpdateExercise).toHaveBeenCalledExactlyOnceWith({ ...props.exercise, [field]: 'Draft' });
+      props.exercise = { ...props.exercise, [field]: 'Remote value' };
+      expect(input().props.value).toBe('Remote value');
+    },
+  );
   it('keeps reps local while typing and commits the normalized number once on blur', async () => {
     const { findSetInput, onUpdateExercise } = await setupExerciseCard();
     const repsInput = findSetInput('numeric');

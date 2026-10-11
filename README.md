@@ -10,6 +10,13 @@ WorkoutLog is a browser-first workout tracker. Routines, sessions, records, hist
 - **No billing:** WorkoutLog has no Stripe client, plan UI, payment configuration, or billing database surface.
 - **No Edge Function today:** direct browser-to-Supabase synchronization covers the active feature set.
 
+### Sync and editing
+
+- Sync waits for owner-scoped IndexedDB hydration. Local queued edits trigger pushes; login, reconnect, Retry, and 30-second online polling also pull remote changes. Routine and exercise fields commit on blur rather than every keystroke.
+- Refresh reconciles normalized record IDs, retaining local edits without overwriting unrelated remote sets or resurrecting remote deletions. Editing preserves scroll; completing an exercise advances to the next incomplete exercise.
+- Storage, network, and rejected-operation failures show a sync error and retain unacknowledged changes locally. Retry after recovery. A push drains up to three queue snapshots per pass; continuously arriving edits beyond that limit remain pending and produce an explicit error, not a false “synced” status.
+- Missing optional parent references are cleared only after a foreign-key rejection and a successful lookup confirms absence. The snapshot remains intact and the changed queue payload receives a fresh operation UUID; lookup errors and missing required parents retain the original operation.
+
 ## Local development
 
 Requires Node.js 24, pnpm 10, the Supabase CLI, and Docker for the local Supabase stack.

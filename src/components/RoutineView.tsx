@@ -89,6 +89,35 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showReorderModal, setShowReorderModal] = useState(false);
+  const [textDrafts, setTextDrafts] = useState<Record<string, string>>({});
+  const routineFieldProps = (field: 'name' | 'notes') => {
+    const key = `${routine.id}:${field}`;
+    return {
+      value: textDrafts[key] ?? routine[field] ?? '',
+      onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const value = event.target.value;
+        setTextDrafts((drafts) => ({ ...drafts, [key]: value }));
+      },
+      onBlur: (event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        if (!(key in textDrafts)) return;
+        const value = event.currentTarget.value;
+        setTextDrafts((drafts) => {
+          const next = { ...drafts };
+          delete next[key];
+          return next;
+        });
+        if (value !== (routine[field] ?? '')) {
+          onSaveRoutine({ ...routine, [field]: value, updatedAt: new Date().toISOString() });
+        }
+      },
+      onKeyDown: (event: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        if (event.key === 'Enter' && (field === 'name' || event.ctrlKey || event.metaKey)) {
+          event.preventDefault();
+          event.currentTarget.blur();
+        }
+      },
+    };
+  };
 
   // Helper to find the active exercise ID when returning to an in-progress workout session
   const findActiveExerciseId = useCallback((): string => {
@@ -174,10 +203,12 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
     }
   }, [routine.id, computeInitialCollapsed]);
 
-  // Auto-scroll effect:
-  // If workout session is active in this routine, scroll smoothly to the current exercise.
-  // Otherwise, reset scroll to top of window.
+  const scrollContextRef = useRef({ findActiveExerciseId, session, routine });
+  scrollContextRef.current = { findActiveExerciseId, session, routine };
+  const activeExerciseId = findActiveExerciseId();
+  // Scroll on actual workout advancement, not callback or routine object identity.
   useEffect(() => {
+    const { findActiveExerciseId, session, routine } = scrollContextRef.current;
     const isSessionActive = Boolean(
       session?.startTime || (session?.completedSetIds && session.completedSetIds.length > 0)
     );
@@ -196,7 +227,7 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
     } else {
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     }
-  }, [routine.id, session?.startTime, findActiveExerciseId]);
+  }, [routine.id, session?.startTime, activeExerciseId]);
 
   const handleToggleCollapseExercise = (exerciseId: string) => {
     setCollapsedExerciseIds((prev) => {
@@ -304,22 +335,6 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
   };
 
   // Routine Updates
-  const handleNameChange = (name: string) => {
-    onSaveRoutine({
-      ...routine,
-      name,
-      updatedAt: new Date().toISOString(),
-    });
-  };
-
-  const handleNotesChange = (notes: string) => {
-    onSaveRoutine({
-      ...routine,
-      notes,
-      updatedAt: new Date().toISOString(),
-    });
-  };
-
   const handleUpdateExercise = (index: number, updatedExercise: Exercise) => {
     const updatedExercises = [...routine.exercises];
     updatedExercises[index] = updatedExercise;
@@ -445,8 +460,7 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
                   <input
                     id="routine-name-input"
                     type="text"
-                    value={routine.name}
-                    onChange={(e) => handleNameChange(e.target.value)}
+                    {...routineFieldProps('name')}
                     placeholder="Ej: Torso Hipertrofia, Pierna Fuerza..."
                     className="w-full text-xl sm:text-2xl font-black text-white bg-transparent border-b border-white/10 focus:border-[#00FF87] focus:outline-none pb-1 transition-colors"
                   />
@@ -479,10 +493,9 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
                     <textarea
                       id="routine-notes-input"
                       rows={2}
-                      value={routine.notes || ''}
-                      onChange={(e) => handleNotesChange(e.target.value)}
+                      {...routineFieldProps('notes')}
                       placeholder="Objetivos del día, notas sobre descansos, peso objetivo..."
-                      className="w-full text-xs sm:text-sm text-zinc-200 bg-zinc-900 border border-white/10 rounded-xl p-3 focus:bg-black focus:border-[#00FF87] focus:outline-none transition-all"
+                      className="w-full text-base sm:text-sm text-zinc-200 bg-zinc-900 border border-white/10 rounded-xl p-3 focus:bg-black focus:border-[#00FF87] focus:outline-none transition-all"
                     />
                   </div>
                 ) : (

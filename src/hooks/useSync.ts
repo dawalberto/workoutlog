@@ -70,6 +70,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
   optionsRef.current = options;
   const coordinatorRef = useRef<SyncCoordinator | null>(null);
   const failedPendingSignatureRef = useRef<string | null>(null);
+  const pullRequestedRef = useRef(true);
   const mountedRef = useRef(true);
   const [status, setStatus] = useState<UseSyncStatus>(initialStatus);
   const [isOnline, setIsOnline] = useState(isBrowserOnline);
@@ -102,8 +103,14 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
           ),
         });
       }
-    } catch {
-      return;
+    } catch (error) {
+      if (mountedRef.current && optionsRef.current.ownerId === ownerId) {
+        setStatus((previous) => ({
+          ...previous,
+          state: 'error',
+          error: errorMessage(error),
+        }));
+      }
     }
   }, []);
 
@@ -118,7 +125,11 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const handleOnline = () => setIsOnline(isBrowserOnline());
+    const handleOnline = () => {
+      pullRequestedRef.current = true;
+      failedPendingSignatureRef.current = null;
+      setIsOnline(isBrowserOnline());
+    };
     const handleOffline = () => {
       setIsOnline(false);
       setStatus((previous) => ({
@@ -135,6 +146,16 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  useEffect(() => {
+    coordinatorRef.current?.dispose();
+    coordinatorRef.current = null;
+    pullRequestedRef.current = true;
+    failedPendingSignatureRef.current = null;
+  }, [
+    options.ownerId, options.premiumActive,
+    options.isStorageLoaded, options.isOwnerHydrationComplete,
+  ]);
 
   useEffect(() => {
     if (!options.ownerId || !options.isStorageLoaded) {
@@ -172,6 +193,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
     if (!coordinatorRef.current) {
       const runSync = async () => {
         const latest = optionsRef.current;
+        if (latest.ownerId !== syncOwnerId) return;
         if (
           !latest.ownerId ||
           !latest.premiumActive ||
@@ -204,8 +226,8 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
             if (mountedRef.current) setStatus(initialStatus);
             return;
           }
+          if (optionsRef.current.ownerId !== latest.ownerId) return;
 
-          const syncOwnerId = latest.ownerId;
           const isCurrentSync = () => {
             const current = optionsRef.current;
             return (
@@ -217,12 +239,15 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
               isBrowserOnline()
             );
           };
+          const pull = pullRequestedRef.current;
+          pullRequestedRef.current = false;
           const result = await syncCloudData({
             ownerId: latest.ownerId,
             premiumActive: latest.premiumActive,
             online: isBrowserOnline(),
             client,
             canSync: isCurrentSync,
+            pull,
           });
           if (!isCurrentSync()) {
             if (mountedRef.current) setStatus(initialStatus);
@@ -233,7 +258,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
             return;
           }
           failedPendingSignatureRef.current = null;
-          if (result.pulled > 0) await latest.onSynced();
+          if (pull || result.pulled > 0) await optionsRef.current.onSynced();
           await refreshPendingChanges(syncOwnerId);
           if (mountedRef.current) {
             setStatus({
@@ -246,6 +271,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
           if (mountedRef.current) {
             const current = optionsRef.current;
             if (
+              current.ownerId !== syncOwnerId ||
               !current.ownerId ||
               !current.premiumActive ||
               !current.isStorageLoaded ||
@@ -282,11 +308,11 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
     }
     const startReactiveSync = async () => {
       const failedPendingSignature = failedPendingSignatureRef.current;
+      await flushScopedStorageWrites({ ownerId: syncOwnerId });
+      const operations = await getPendingSyncOperations({ ownerId: syncOwnerId });
+      if (!pullRequestedRef.current && operations.length === 0) return;
       if (failedPendingSignature !== null) {
         try {
-          const operations = await getPendingSyncOperations({
-            ownerId: syncOwnerId,
-          });
           if (pendingOperationsSignature(operations) === failedPendingSignature) {
             return;
           }
@@ -297,7 +323,22 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
       }
       void coordinatorRef.current?.run();
     };
-    void startReactiveSync();
+    void startReactiveSync().catch((error) => {
+      const current = optionsRef.current;
+      if (
+        mountedRef.current &&
+        current.ownerId === syncOwnerId &&
+        current.premiumActive &&
+        current.isStorageLoaded &&
+        current.isOwnerHydrationComplete
+      ) {
+        setStatus((previous) => ({
+          ...previous,
+          state: 'error',
+          error: errorMessage(error),
+        }));
+      }
+    });
   }, [
     options.ownerId,
     options.premiumActive,
@@ -307,9 +348,24 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
     refreshPendingChanges,
   ]);
 
+  useEffect(() => {
+    if (!options.ownerId || !options.premiumActive ||
+      !options.isStorageLoaded || !options.isOwnerHydrationComplete) return;
+    const timer = setInterval(() => {
+      if (!isBrowserOnline() || failedPendingSignatureRef.current !== null) return;
+      pullRequestedRef.current = true;
+      void coordinatorRef.current?.run();
+    }, 30_000);
+    return () => clearInterval(timer);
+  }, [
+    options.ownerId, options.premiumActive,
+    options.isStorageLoaded, options.isOwnerHydrationComplete,
+  ]);
+
   const retry = () => {
     if (isOnline) {
       failedPendingSignatureRef.current = null;
+      pullRequestedRef.current = true;
       void coordinatorRef.current?.run();
     }
   };

@@ -99,6 +99,9 @@ function createHookHarness() {
         }
       }
     },
+    dispose() {
+      slots.forEach((slot) => slot.cleanup?.());
+    },
   };
   return harness;
 }
@@ -695,5 +698,113 @@ describe('sync wiring', () => {
     await Promise.resolve();
 
     expect(syncCloudData).toHaveBeenCalledTimes(2);
+    hookHarness.dispose();
+  });
+
+  it.each([false, true])('handles reactive scheduling and reports queue startup failure (%s)', async (failStartup) => {
+    vi.useFakeTimers();
+    const harness = createHookHarness();
+    let pending: Array<{ request: { operationId: string; changes: unknown[] } }> = [];
+    const syncCloudData = vi.fn(async () => {
+      pending = [];
+      return { status: 'synced', pulled: 0, pushed: 1 };
+    });
+    vi.doMock('react', async (original) => ({
+      ...await original<typeof import('react')>(),
+      useState: (initial: unknown) => activeHarness!.useState(initial),
+      useRef: (initial: unknown) => activeHarness!.useRef(initial),
+      useCallback: (callback: unknown, deps: readonly unknown[]) => activeHarness!.useMemo(() => callback, deps),
+      useEffect: (callback: () => void | (() => void), deps?: readonly unknown[]) => activeHarness!.useEffect(callback, deps),
+    }));
+    let rejectQueueRead = false;
+    const getPendingSyncOperations = vi.fn(async () => {
+      if (rejectQueueRead) throw new Error('IndexedDB queue unavailable');
+      return pending;
+    });
+    vi.doMock('../src/services/db', () => ({
+      flushScopedStorageWrites: vi.fn(async () => undefined),
+      getPendingSyncOperations,
+    }));
+    vi.doMock('../src/services/cloud-sync', async (original) => ({
+      ...await original<typeof import('../src/services/cloud-sync')>(), syncCloudData,
+    }));
+    vi.doMock('../src/services/supabase', () => ({
+      getSupabaseBrowserClient: () => ({
+        auth: { getSession: async () => ({ data: { session: { user: { id: 'owner-1' } } }, error: null }) },
+      }),
+    }));
+    const target = new EventTarget();
+    Object.assign(window, {
+      addEventListener: target.addEventListener.bind(target),
+      removeEventListener: target.removeEventListener.bind(target),
+    });
+    Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
+    const { useSync } = await import('../src/hooks/useSync');
+    const options: UseSyncOptions = {
+      ownerId: 'owner-1', premiumActive: true, isStorageLoaded: true, isOwnerHydrationComplete: true,
+      onSynced: vi.fn(async () => undefined), routines: [], catalog: [], activeSessions: {},
+      rmLogs: [], workoutHistory: [], exerciseDiary: [],
+    };
+    const render = () => harness.render(() => useSync(options));
+    const settle = async () => { await harness.runEffects(); await vi.advanceTimersByTimeAsync(0); };
+    try {
+      options.isOwnerHydrationComplete = false;
+      render(); await settle();
+      expect(syncCloudData).not.toHaveBeenCalled();
+      options.isOwnerHydrationComplete = true;
+      render(); await settle();
+      expect(syncCloudData).toHaveBeenLastCalledWith(expect.objectContaining({ pull: true }));
+      options.catalog = [{ id: 'local', name: 'Edited' }];
+      pending = [{ request: { operationId: 'edit', changes: [{}] } }];
+      if (failStartup) {
+        // First count the pending operation, then fail the reactive startup read.
+        render(); await harness.runEffects(); await vi.advanceTimersByTimeAsync(0);
+        pending = [{ request: { operationId: 'retained', changes: [{}] } }];
+        options.catalog = [{ id: 'local', name: 'Second edit' }];
+        getPendingSyncOperations.mockResolvedValueOnce(pending);
+        rejectQueueRead = true;
+        render(); await settle();
+        expect(render().status).toMatchObject({ state: 'error', error: 'IndexedDB queue unavailable' });
+        expect(render().pendingChanges).toBe(1);
+        expect(pending).toHaveLength(1);
+        expect(syncCloudData).toHaveBeenCalledTimes(2);
+        rejectQueueRead = false;
+        render().retry(); await settle();
+        expect(render().status.state).toBe('synced');
+        expect(pending).toHaveLength(0);
+        return;
+      }
+      render(); await settle();
+      expect(syncCloudData).toHaveBeenCalledTimes(2);
+      expect(syncCloudData).toHaveBeenLastCalledWith(expect.objectContaining({ pull: false }));
+      options.catalog = [...options.catalog];
+      render(); await settle();
+      expect(syncCloudData).toHaveBeenCalledTimes(2);
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(syncCloudData).toHaveBeenLastCalledWith(expect.objectContaining({ pull: true }));
+      expect(syncCloudData).toHaveBeenCalledTimes(3);
+      Object.defineProperty(navigator, 'onLine', { configurable: true, value: false });
+      target.dispatchEvent(new Event('offline'));
+      pending = [{ request: { operationId: 'offline-edit', changes: [{}] } }];
+      options.catalog = [{ id: 'local', name: 'Offline edit' }];
+      render(); await settle();
+      expect(syncCloudData).toHaveBeenCalledTimes(3);
+      Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
+      target.dispatchEvent(new Event('online')); await settle();
+      expect(syncCloudData).toHaveBeenCalledTimes(4);
+      expect(syncCloudData).toHaveBeenLastCalledWith(expect.objectContaining({ pull: true }));
+      render().retry(); await settle();
+      expect(syncCloudData).toHaveBeenCalledTimes(5);
+      expect(syncCloudData).toHaveBeenLastCalledWith(expect.objectContaining({ pull: true }));
+      options.ownerId = 'owner-2';
+      render(); await settle();
+      expect(syncCloudData).toHaveBeenCalledTimes(5);
+    } finally {
+      harness.dispose();
+      vi.useRealTimers();
+      vi.doUnmock('../src/services/db');
+      vi.doUnmock('../src/services/cloud-sync');
+      vi.doUnmock('../src/services/supabase');
+    }
   });
 });

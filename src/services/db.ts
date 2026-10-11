@@ -17,6 +17,8 @@ import {
   diffSyncCollection,
   getSyncCollection,
   orderSyncOperations,
+  optionalSyncReference,
+  type SyncCollection,
   type SyncRemoteChange,
   type SyncQueueEntry,
   type SyncPushChange,
@@ -71,6 +73,7 @@ interface StoredSyncOperation {
 interface SyncCursor {
   scope: string;
   cursor: string;
+  tables?: Partial<Record<SyncTable, string>>;
 }
 
 export interface AppStorageData {
@@ -656,6 +659,7 @@ export async function getPendingSyncOperations(
 
 export async function getServerCursor(
   scope: StorageScope = GUEST_STORAGE_SCOPE,
+  table?: SyncTable,
 ): Promise<string> {
   const db = await getDatabase();
   const transaction = db.transaction(SYNC_CURSOR_STORE, 'readonly');
@@ -664,7 +668,37 @@ export async function getServerCursor(
     transaction.objectStore(SYNC_CURSOR_STORE).get(scopeKey(scope)),
   );
   await completed;
-  return (cursor as SyncCursor | undefined)?.cursor ?? '0';
+  const stored = cursor as SyncCursor | undefined;
+  return table
+    ? stored?.tables?.[table] ?? '0'
+    : stored?.cursor ?? '0';
+}
+
+export async function repairRejectedSyncReference(
+  operationId: string,
+  column: string,
+  parentId: string,
+  scope: StorageScope,
+): Promise<boolean> {
+  const db = await getDatabase();
+  const transaction = db.transaction(SYNC_OUTBOX_STORE, 'readwrite');
+  const completed = transactionComplete(transaction);
+  const store = transaction.objectStore(SYNC_OUTBOX_STORE);
+  let repaired = false;
+  const request = store.index('operationId').get(operationId);
+  request.onsuccess = () => {
+    const operation = request.result as StoredSyncOperation | undefined;
+    if (!operation || operation.scope !== scopeKey(scope)) return;
+    const reference = optionalSyncReference(operation.change);
+    if (reference?.column !== column || reference.parentId !== parentId) return;
+    // The original transaction was rejected, so a changed payload needs a new receipt identity.
+    operation.operationId = createOperationId();
+    operation.change.record = { ...operation.change.record, [column]: null };
+    store.put(operation);
+    repaired = true;
+  };
+  await completed;
+  return repaired;
 }
 
 export async function setServerCursor(
@@ -732,6 +766,8 @@ export async function applyRemoteSyncChanges(
   changes: SyncRemoteChange[],
   cursor: string,
   scope: StorageScope = GUEST_STORAGE_SCOPE,
+  tableCursors?: Partial<Record<SyncTable, string>>,
+  pendingAtPullStart?: ReadonlySet<string>,
 ): Promise<void> {
   assertServerRevision(cursor);
   for (const change of changes) assertServerRevision(change.revision);
@@ -779,6 +815,9 @@ export async function applyRemoteSyncChanges(
           operation.change.table === change.table &&
           !removedOperations.has(operation.sequence ?? -1),
       );
+      const concurrentOperations = change.deletedAt === null && pendingAtPullStart
+        ? matchingOperations.filter((operation) => !pendingAtPullStart.has(operation.operationId))
+        : [];
       const serverAcceptedAfterLocalBase = matchingOperations.some(
         (operation) =>
           compareServerRevisions(
@@ -789,6 +828,12 @@ export async function applyRemoteSyncChanges(
 
       if (serverAcceptedAfterLocalBase) {
         for (const operation of matchingOperations) {
+          if (concurrentOperations.includes(operation)) {
+            operation.change.baseRevision = change.revision;
+            operation.operationId = createOperationId();
+            outboxStore.put(operation);
+            continue;
+          }
           if (operation.sequence !== undefined) {
             removedOperations.add(operation.sequence);
           }
@@ -812,7 +857,15 @@ export async function applyRemoteSyncChanges(
         current ?? defaultCollectionValue(collectionKey),
         change,
       );
-      values.set(collectionKey, next);
+      let merged = next;
+      for (const operation of concurrentOperations) {
+        merged = applyRemoteSyncChange(merged, {
+          table: change.table, id: change.id, revision: change.revision,
+          deletedAt: operation.change.operation === 'delete' ? new Date().toISOString() : null,
+          record: operation.change.record,
+        });
+      }
+      values.set(collectionKey, merged);
       changedCollections.add(collectionKey);
       latestMetadata.set(keyForRecord, {
         key: keyForRecord,
@@ -821,7 +874,9 @@ export async function applyRemoteSyncChanges(
         id: change.id,
         serverRevision: change.revision,
         localRevision: previous?.localRevision ?? 0,
-        deleted: change.deletedAt !== null,
+        deleted: concurrentOperations.length > 0
+          ? concurrentOperations.at(-1)!.change.operation === 'delete'
+          : change.deletedAt !== null,
       });
     }
 
@@ -837,7 +892,16 @@ export async function applyRemoteSyncChanges(
     const previousCursor = storedCursor?.cursor ?? '0';
     const nextCursor =
       compareServerRevisions(cursor, previousCursor) > 0 ? cursor : previousCursor;
-    cursorStore.put({ scope: owner, cursor: nextCursor } satisfies SyncCursor);
+    const tables = { ...storedCursor?.tables };
+    for (const [table, revision] of Object.entries(tableCursors ?? {})) {
+      const previous = tables[table as SyncTable] ?? '0';
+      tables[table as SyncTable] =
+        compareServerRevisions(revision, previous) > 0 ? revision : previous;
+    }
+    cursorStore.put({
+      scope: owner, cursor: nextCursor,
+      ...(tableCursors || storedCursor?.tables ? { tables } : {}),
+    } satisfies SyncCursor);
   };
 
   for (const key of syncCollectionKeys) {
@@ -874,6 +938,52 @@ export async function applyRemoteSyncChanges(
 
 function defaultCollectionValue(key: (typeof syncCollectionKeys)[number]): unknown {
   return key === DB_KEYS.ACTIVE_SESSIONS ? {} : [];
+}
+
+export function mergeSyncRefresh<T>(
+  baseline: T,
+  current: T,
+  remote: T,
+  collection: SyncCollection,
+): T {
+  if (JSON.stringify(baseline) === JSON.stringify(current)) return remote;
+  const empty = collection === 'activeSessions' ? {} : [];
+  const identity = (record: { table: SyncTable; id: string }) =>
+    JSON.stringify([record.table, record.id]);
+  const before = new Map(
+    diffSyncCollection(collection, empty, baseline).map((record) => [identity(record), record]),
+  );
+  const received = new Set(diffSyncCollection(collection, empty, remote).map(identity));
+  const deleted = [...before.values()].filter((record) => !received.has(identity(record)));
+  const parentColumns: Partial<Record<SyncTable, string>> = {
+    routines: 'routine_id',
+    routine_exercises: 'routine_exercise_id',
+    active_workout_sessions: 'routine_id',
+    rm_logs: 'log_id',
+    workout_history: 'history_id',
+    exercise_diaries: 'diary_id',
+  };
+  let merged: unknown = remote;
+  // Replay only normalized records edited during the read, never their unchanged children.
+  for (const change of diffSyncCollection(collection, baseline, current)) {
+    const key = identity(change);
+    if (change.operation === 'upsert' && (
+      (before.has(key) && !received.has(key)) ||
+      deleted.some((parent) => {
+        const column = parentColumns[parent.table];
+        if (!column || parent.table === change.table) return false;
+        return change.record[column] === (parent.record.id ?? parent.record.routine_id);
+      })
+    )) continue;
+    merged = applyRemoteSyncChange(merged, {
+      ...change,
+      revision: '0',
+      deletedAt: change.operation === 'delete' ? '1970-01-01T00:00:00.000Z' : null,
+      // Outbox deletion identities omit parent IDs needed to remove nested UI records.
+      record: change.operation === 'delete' ? before.get(key)!.record : change.record,
+    });
+  }
+  return merged as T;
 }
 
 export async function loadScopedAppStorageData(

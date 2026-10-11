@@ -171,6 +171,23 @@ const syncForeignKeys: readonly SyncForeignKey[] = [
   },
 ];
 
+export function optionalSyncReference(change: SyncPushChange): {
+  column: string;
+  parentTable: 'routines' | 'exercise_definitions';
+  parentId: string;
+} | null {
+  if (change.operation !== 'upsert') return null;
+  const foreignKey = syncForeignKeys.find(
+    (key) => key.childTable === change.table && !key.deleteChildFirst,
+  );
+  if (!foreignKey) return null;
+  const column = foreignKey.childColumns[0]!;
+  const parentId = change.record[column];
+  return typeof parentId === 'string' && parentId.length > 0
+    ? { column, parentTable: foreignKey.parentTable === 'routines' ? 'routines' : 'exercise_definitions', parentId }
+    : null;
+}
+
 const identityColumns: Record<SyncTable, string[]> = {
   exercise_definitions: ['id'],
   routines: ['id'],

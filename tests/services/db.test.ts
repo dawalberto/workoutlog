@@ -1,5 +1,6 @@
 import { IDBFactory } from 'fake-indexeddb';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Routine } from '../../src/types';
 
 type DbModule = typeof import('../../src/services/db');
 
@@ -88,6 +89,83 @@ afterEach(async () => {
 });
 
 describe('IndexedDB storage', () => {
+  it('merges edits during refresh while retaining remote additions and local deletions', () => {
+    const baseline = [{ id: 'edit', name: 'Old' }, { id: 'deleted', name: 'Delete' }];
+    const current = [{ id: 'edit', name: 'Typed during refresh' }];
+    const remote = [{ id: 'edit', name: 'Remote' }, { id: 'deleted', name: 'Delete' }, { id: 'new', name: 'Other device' }];
+    expect(storage.mergeSyncRefresh(baseline, current, remote, 'catalog')).toEqual([
+      { id: 'edit', name: 'Typed during refresh' }, { id: 'new', name: 'Other device' },
+    ]);
+    expect(storage.mergeSyncRefresh(baseline, [...baseline], remote, 'catalog')).toEqual(remote);
+    expect(storage.mergeSyncRefresh(baseline, current, [], 'catalog')).toEqual([]);
+  });
+  it.each(['local', 'remote'] as const)('retains remote nested set edits and %s deletion during a local routine rename', async (deletion) => {
+    const scope = { ownerId: 'nested-refresh-owner' };
+    const baseline: Routine[] = [{
+      id: 'routine-string', name: 'Before', createdAt: '2024-01-01', updatedAt: '2024-01-01',
+      exercises: [{
+        id: 'exercise-string', name: 'Snapshot', sets: [
+          { id: 'set-string', setNumber: 1, reps: '8', weight: 20, restSeconds: '60' },
+          { id: 'deleted-set', setNumber: 2, reps: '8', weight: 30, restSeconds: '60' },
+        ],
+      }],
+    }];
+    await storage.setScopedStoredItem(storage.DB_KEYS.ROUTINES, baseline, scope);
+    for (const operation of await storage.getPendingSyncOperations(scope)) {
+      const change = operation.request.changes[0];
+      await storage.acknowledgeSyncOperation(operation.request.operationId, {
+        table: change.table, id: change.record.id as string, revision: '1', deletedAt: null,
+      }, scope);
+    }
+    const pendingAtPullStart = new Set<string>();
+    const current = [{
+      ...baseline[0]!, name: 'Renamed during refresh',
+      exercises: [{
+        ...baseline[0]!.exercises[0]!,
+        sets: baseline[0]!.exercises[0]!.sets.filter((set) => deletion !== 'local' || set.id !== 'deleted-set'),
+      }],
+    }];
+    await storage.setScopedStoredItem(storage.DB_KEYS.ROUTINES, current, scope);
+    await storage.applyRemoteSyncChanges([
+      {
+        table: 'workout_sets', id: 'set-string', revision: '2', deletedAt: null,
+        record: { id: 'set-string', routine_id: 'routine-string', routine_exercise_id: 'exercise-string', position: 0, reps: '8', weight: 40, rest_seconds: '60' },
+      },
+      ...(deletion === 'remote' ? [{
+        table: 'workout_sets' as const, id: 'deleted-set', revision: '3', deletedAt: '2024-01-02',
+        record: { id: 'deleted-set', routine_id: 'routine-string', routine_exercise_id: 'exercise-string' },
+      }] : []),
+    ], '3', scope, undefined, pendingAtPullStart);
+    const remote = (await storage.loadScopedAppStorageData(scope)).routines;
+    const merged = storage.mergeSyncRefresh(baseline, current, remote, 'routines');
+    expect(merged[0]!.name).toBe('Renamed during refresh');
+    expect(merged[0]!.exercises[0]!.sets).toEqual([{
+      id: 'set-string', setNumber: 1, reps: '8', weight: 40, restSeconds: '60',
+    }]);
+    await storage.setScopedStoredItem(storage.DB_KEYS.ROUTINES, merged, scope);
+    const pending = await storage.getPendingSyncOperations(scope);
+    expect(pending.some((operation) => operation.request.changes.some(
+      (change) => change.table === 'workout_sets' && change.operation === 'upsert',
+    ))).toBe(false);
+    expect(pending.some((operation) => operation.request.changes.some(
+      (change) => change.table === 'routines' && change.record.name === 'Renamed during refresh',
+    ))).toBe(true);
+  });
+  it('repairs only the rejected optional reference with a new operation identity and unchanged snapshot', async () => {
+    const scope = { ownerId: 'owner-repair' };
+    const logs = [{ id: 'rm', exerciseId: 'missing', exerciseName: 'Snapshot', records: [] }];
+    await storage.setScopedStoredItem(storage.DB_KEYS.RM_LOGS, logs, scope);
+    const [original] = await storage.getPendingSyncOperations(scope);
+    expect(await storage.repairRejectedSyncReference(original!.request.operationId, 'definition_id', 'missing', scope)).toBe(true);
+    const [repaired] = await storage.getPendingSyncOperations(scope);
+    expect(repaired!.request.operationId).not.toBe(original!.request.operationId);
+    expect(repaired!.sequence).toBe(original!.sequence);
+    expect(repaired!.request.changes[0]).toEqual({
+      ...original!.request.changes[0], record: { ...original!.request.changes[0].record, definition_id: null },
+    });
+    expect(await storage.getScopedStoredItem(storage.DB_KEYS.RM_LOGS, [], scope)).toEqual(logs);
+    expect(await storage.repairRejectedSyncReference(repaired!.request.operationId, 'definition_id', 'missing', { ownerId: 'other' })).toBe(false);
+  });
   it('upgrades v1 while preserving collection IDs and nested snapshots', async () => {
     const expected = {
       routines: [

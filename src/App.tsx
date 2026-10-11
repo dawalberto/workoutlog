@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Routine,
   ExerciseDefinition,
@@ -42,6 +42,7 @@ import { useRoutines } from './hooks/useRoutines';
 import { useWorkoutSession } from './hooks/useWorkoutSession';
 import { useRmTracker } from './hooks/useRmTracker';
 import { useExerciseDiaryNavigation } from './hooks/useExerciseDiaryNavigation';
+import { flushScopedStorageWrites, loadScopedAppStorageData, mergeSyncRefresh } from './services/db';
 
 export default function App() {
   // Navigation & Modal Visibility
@@ -69,15 +70,31 @@ export default function App() {
     exerciseDiary,
     setExerciseDiary,
     applyImportData,
-    refreshStorage,
   } = useAppStorage(account.user?.id, account.isSyncEnabled);
+
+  const syncOwnerRef = useRef(account.user?.id);
+  syncOwnerRef.current = account.user?.id;
+  const refreshSyncedStorage = async () => {
+    const ownerId = account.user?.id;
+    if (!ownerId || !isStorageLoaded) return;
+    await flushScopedStorageWrites({ ownerId });
+    const data = await loadScopedAppStorageData({ ownerId });
+    if (syncOwnerRef.current !== ownerId) return;
+    // A refresh must not replace edits made while its IndexedDB reads were pending.
+    setRoutines((current) => mergeSyncRefresh(routines, current, data.routines, 'routines'));
+    setCatalog((current) => mergeSyncRefresh(catalog, current, data.catalog, 'catalog'));
+    setActiveSessions((current) => mergeSyncRefresh(activeSessions, current, data.activeSessions, 'activeSessions'));
+    setRmLogs((current) => mergeSyncRefresh(rmLogs, current, data.rmLogs, 'rmLogs'));
+    setWorkoutHistory((current) => mergeSyncRefresh(workoutHistory, current, data.workoutHistory, 'workoutHistory'));
+    setExerciseDiary((current) => mergeSyncRefresh(exerciseDiary, current, data.exerciseDiary, 'exerciseDiary'));
+  };
 
   const sync = useSync({
     ownerId: account.user?.id ?? null,
     premiumActive: account.isSyncEnabled,
     isStorageLoaded,
     isOwnerHydrationComplete: isGuestTransferComplete,
-    onSynced: refreshStorage,
+    onSynced: refreshSyncedStorage,
     routines,
     catalog,
     activeSessions,

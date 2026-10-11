@@ -68,6 +68,31 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
   const [showVideoInput, setShowVideoInput] = useState(false);
   const [showImageInput, setShowImageInput] = useState(false);
   const [setDrafts, setSetDrafts] = useState<Record<string, string>>({});
+  const [textDrafts, setTextDrafts] = useState<Record<string, string>>({});
+  type TextField = 'name' | 'notes' | 'imageUrl' | 'videoUrl';
+  const textFieldProps = (field: TextField) => {
+    const key = `${exercise.id}:${field}`;
+    return {
+      value: textDrafts[key] ?? exercise[field] ?? '',
+      onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
+        const value = event.target.value;
+        setTextDrafts((drafts) => ({ ...drafts, [key]: value }));
+      },
+      onBlur: (event: React.FocusEvent<HTMLInputElement>) => {
+        if (!(key in textDrafts)) return;
+        const value = event.currentTarget.value;
+        setTextDrafts((drafts) => {
+          const next = { ...drafts };
+          delete next[key];
+          return next;
+        });
+        if (value !== (exercise[field] ?? '')) onUpdateExercise({ ...exercise, [field]: value });
+      },
+      onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === 'Enter') event.currentTarget.blur();
+      },
+    };
+  };
 
   // Check if all sets of this exercise are completed in the current session
   const totalSetsCount = exercise.sets.length;
@@ -268,8 +293,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                   <div className="flex items-center gap-2">
                     <input
                       type="text"
-                      value={exercise.name}
-                      onChange={(e) => onUpdateExercise({ ...exercise, name: e.target.value })}
+                      {...textFieldProps('name')}
                       placeholder="Nombre del ejercicio (ej. Press banca, Sentadilla...)"
                       className="flex-1 text-base sm:text-lg font-black text-white bg-transparent border-b border-white/10 hover:border-white/30 focus:border-[#00FF87] focus:outline-none px-1 py-1 rounded transition-colors min-w-0"
                     />
@@ -286,10 +310,9 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                   </div>
                   <input
                     type="text"
-                    value={exercise.notes || ''}
-                    onChange={(e) => onUpdateExercise({ ...exercise, notes: e.target.value })}
+                    {...textFieldProps('notes')}
                     placeholder="Notas de técnica o consejos (opcional)"
-                    className="w-full text-xs sm:text-sm text-[#A1A1AA] placeholder:text-zinc-600 bg-transparent border-b border-white/5 hover:border-white/20 focus:border-[#00FF87] focus:outline-none px-1 py-1 rounded transition-colors"
+                    className="w-full text-base sm:text-sm text-[#A1A1AA] placeholder:text-zinc-600 bg-transparent border-b border-white/5 hover:border-white/20 focus:border-[#00FF87] focus:outline-none px-1 py-1 rounded transition-colors"
                   />
                 </div>
               )}
@@ -379,10 +402,9 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
           <div className="mt-3 pt-3 border-t border-white/[0.06] flex items-center gap-2.5">
             <input
               type="url"
-              value={exercise.imageUrl || ''}
-              onChange={(e) => onUpdateExercise({ ...exercise, imageUrl: e.target.value })}
+              {...textFieldProps('imageUrl')}
               placeholder="URL de imagen preview (https://...)"
-              className="flex-1 text-xs px-3 py-2 rounded-xl border border-white/10 bg-zinc-900 text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#00FF87]"
+              className="flex-1 text-base sm:text-xs px-3 py-2 rounded-xl border border-white/10 bg-zinc-900 text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#00FF87]"
             />
             {exercise.imageUrl && (
               <button
@@ -401,10 +423,9 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
             <Video className="w-4 h-4 text-zinc-400 shrink-0" />
             <input
               type="url"
-              value={exercise.videoUrl || ''}
-              onChange={(e) => onUpdateExercise({ ...exercise, videoUrl: e.target.value })}
+              {...textFieldProps('videoUrl')}
               placeholder="Enlace de video (YouTube, Vimeo, mp4)..."
-              className="w-full text-xs px-3 py-2 rounded-xl border border-white/10 bg-zinc-900 text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#00FF87]"
+              className="w-full text-base sm:text-xs px-3 py-2 rounded-xl border border-white/10 bg-zinc-900 text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#00FF87]"
             />
           </div>
         )}

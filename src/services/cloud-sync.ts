@@ -6,11 +6,13 @@ import {
   flushScopedStorageWrites,
   getPendingSyncOperations,
   getServerCursor,
+  repairRejectedSyncReference,
   type ServerRevisionUpdate,
   type StorageScope,
 } from './db';
 import {
   syncRecordId,
+  optionalSyncReference,
   validateWorkoutHistoryRecord,
   type SyncQueueEntry,
   type SyncRemoteChange,
@@ -36,6 +38,7 @@ const PULL_LIMIT = 500;
 const MAX_PULL_PAGES = 100;
 const MAX_REQUEST_ATTEMPTS = 3;
 const MAX_STALE_CONFLICTS = 5;
+const MAX_PUSH_DRAIN_ROUNDS = 3;
 
 export interface CloudSyncOptions {
   ownerId: string | null;
@@ -44,6 +47,7 @@ export interface CloudSyncOptions {
   client: SupabaseBrowserClient | null;
   maxRequestAttempts?: number;
   canSync?: () => boolean;
+  pull?: boolean;
 }
 
 export interface CloudSyncResult {
@@ -87,23 +91,33 @@ export async function syncCloudData(
   const scope: StorageScope = { ownerId };
   const canSync = () => options.canSync?.() ?? true;
   await flushScopedStorageWrites(scope);
-  let pulled = await pullChanges({ client, scope, canSync });
-  const initialPendingCount = (await getPendingSyncOperations(scope)).length;
-  const maxPushRequests = initialPendingCount + MAX_STALE_CONFLICTS;
+  let pulled = options.pull === false ? 0 : await pullChanges({ client, scope, canSync });
   let pushed = 0;
-  let requests = 0;
+  let drainRounds = 0;
   let staleConflicts = 0;
+  const admittedSequences = new Set<number>();
   const attemptedOperationIds = new Set<string>();
 
-  while (requests < maxPushRequests) {
+  while (true) {
     await flushScopedStorageWrites(scope);
-    const [operation] = await getPendingSyncOperations(scope);
+    const pending = await getPendingSyncOperations(scope);
+    const [operation] = pending;
     if (!operation) break;
+    if (!admittedSequences.has(operation.sequence)) {
+      if (drainRounds === MAX_PUSH_DRAIN_ROUNDS) {
+        throw new CloudSyncError(
+          `Sync stopped after ${MAX_PUSH_DRAIN_ROUNDS} queue drain rounds; pending changes are retained.`,
+        );
+      }
+      // Admit an entire queue snapshot, including dependency-ordered parents.
+      // Repairs keep their sequence; newly queued edits consume another round.
+      for (const entry of pending) admittedSequences.add(entry.sequence);
+      drainRounds += 1;
+    }
     if (attemptedOperationIds.has(operation.request.operationId)) {
       throw new CloudSyncError('Sync stopped after an unresolved stale operation.');
     }
     attemptedOperationIds.add(operation.request.operationId);
-    requests += 1;
     if (operation.request.changes.length > 100) {
       throw new CloudSyncError('Sync push exceeded the server batch limit.');
     }
@@ -114,6 +128,28 @@ export async function syncCloudData(
       maxRequestAttempts,
       canSync,
     );
+    if (push.kind === 'foreign-key') {
+      const reference = optionalSyncReference(operation.request.changes[0]);
+      if (!reference) {
+        throw new CloudSyncError('Sync push failed: required parent is missing (foreign key violation).');
+      }
+      if (!canSync()) throw new CloudSyncError('Sync eligibility changed before the request.');
+      const { data, error } = await client.from(reference.parentTable)
+        .select('id').eq('id', reference.parentId).limit(1);
+      if (error) {
+        throw new CloudSyncError(`Sync parent lookup failed: ${error.message}`);
+      }
+      if ((data ?? []).length > 0) {
+        throw new CloudSyncError('Sync push failed: unresolved foreign key violation.');
+      }
+      if (!canSync()) throw new CloudSyncError('Sync eligibility changed before repair.');
+      if (!await repairRejectedSyncReference(
+        operation.request.operationId, reference.column, reference.parentId, scope,
+      )) {
+        throw new CloudSyncError('Sync could not repair the rejected optional reference.');
+      }
+      continue;
+    }
     if (push.kind === 'stale') {
       staleConflicts += 1;
       if (staleConflicts > MAX_STALE_CONFLICTS) {
@@ -161,13 +197,16 @@ interface PullOptions {
 
 async function pullChanges(options: PullOptions): Promise<number> {
   const cursor = options.fromBeginning ? '0' : await getServerCursor(options.scope);
+  const pendingAtPullStart = new Set(
+    (await getPendingSyncOperations(options.scope)).map((operation) => operation.request.operationId),
+  );
   const changes: SyncRemoteChange[] = [];
+  const tableCursors: Partial<Record<SyncTable, string>> = {};
 
-  // The schema exposes RLS-protected per-table reads rather than one atomic feed.
-  // Querying every table from the same cursor is eventually complete: revisions
-  // created during this pass remain above the stored cursor for the next pass.
+  // Each table advances independently; a later table cannot skip unseen revisions
+  // committed to an earlier table while this non-atomic read is in progress.
   for (const table of SYNC_TABLES) {
-    let tableCursor = cursor;
+    let tableCursor = options.fromBeginning ? '0' : await getServerCursor(options.scope, table);
     for (let page = 1; page <= MAX_PULL_PAGES; page += 1) {
       if (!options.canSync()) {
         throw new CloudSyncError('Sync eligibility changed before the request.');
@@ -184,8 +223,11 @@ async function pullChanges(options: PullOptions): Promise<number> {
       for (const row of rows) {
         changes.push(parseTableRow(table, row));
       }
-      if (rows.length < PULL_LIMIT) break;
       const lastRevision = changes.at(-1)?.revision;
+      if (rows.length < PULL_LIMIT) {
+        tableCursors[table] = rows.length > 0 ? lastRevision! : tableCursor;
+        break;
+      }
       if (!lastRevision || compareRevisions(lastRevision, tableCursor) <= 0) {
         throw new CloudSyncError('Sync pull returned a non-advancing cursor.');
       }
@@ -198,7 +240,7 @@ async function pullChanges(options: PullOptions): Promise<number> {
 
   changes.sort((left, right) => compareRevisions(left.revision, right.revision));
   const nextCursor = changes.at(-1)?.revision ?? cursor;
-  await applyRemoteSyncChanges(changes, nextCursor, options.scope);
+  await applyRemoteSyncChanges(changes, nextCursor, options.scope, tableCursors, pendingAtPullStart);
   return changes.length;
 }
 
@@ -234,6 +276,7 @@ async function pushWithRetry(
 ): Promise<
   | { kind: 'acknowledgement'; acknowledgement: SyncPushAcknowledgement }
   | { kind: 'stale' }
+  | { kind: 'foreign-key' }
 > {
   const attempts = Math.max(1, Math.floor(maxAttempts));
   let lastError: string | null = null;
@@ -259,6 +302,10 @@ async function pushWithRetry(
       throw new CloudSyncError(
         'Sync rejected a reused operation ID with a different payload.',
       );
+    }
+    if (error.code === '23503') return { kind: 'foreign-key' };
+    if (/^(22|23|28|42)/.test(error.code ?? '') || error.code === 'P0001') {
+      throw new CloudSyncError('Sync push was rejected; pending changes are retained.');
     }
     lastError = message;
     if (attempt === attempts) break;
