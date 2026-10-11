@@ -8,7 +8,7 @@ Last verified: 2026-10-11
 
 - TypeScript everywhere; `pnpm lint` (`tsc --noEmit`) is the only linter. No ESLint/Prettier — match the surrounding style.
 - Single quotes, semicolons, 2-space indentation, **relative imports**.
-- Components: `export const Name: React.FC<NameProps>` + `export interface NameProps`.
+- Components: `export const Name: React.FC<NameProps>` + `interface NameProps` in the same file. In new code, export the props interface (as `SyncStatus.tsx` and `RmBadge.tsx` do); 23 of 31 components keep it unexported — do not churn them.
 - State in `App.tsx`, logic in hooks, persistence in `useAppStorage` / `src/services/db.ts`. No context, no store.
 - Code, identifiers, comments: **English**. UI copy: **Spanish**.
 - Text inputs commit on **blur**.
@@ -20,7 +20,7 @@ Last verified: 2026-10-11
 | Kind | Convention | Example |
 |---|---|---|
 | Component file + export | PascalCase, one component per file | [`src/components/RoutineList.tsx`](../../src/components/RoutineList.tsx) → `RoutineList` |
-| Props | `export interface <Component>Props` | `RmBadgeProps` in [`RmBadge.tsx`](../../src/components/RmBadge.tsx) |
+| Props | `export interface <Component>Props` in new code (some older components leave it unexported) | `RmBadgeProps` in [`RmBadge.tsx`](../../src/components/RmBadge.tsx) |
 | Hook | `useThing` in `src/hooks/useThing.ts`, with `UseThingProps` / `UseThingReturn` | [`useRmTracker.ts`](../../src/hooks/useRmTracker.ts) |
 | Service | kebab-case or short lowercase file names | `sync-queue.ts`, `cloud-sync.ts`, `db.ts` |
 | Utility | camelCase file, pure functions | [`rmCalculations.ts`](../../src/utils/rmCalculations.ts) |

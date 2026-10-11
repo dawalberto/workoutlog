@@ -42,6 +42,32 @@ Last verified: 2026-10-11
 
 `TODO(human): confirm which tools honor applyTo outside GitHub Copilot in your setup.`
 
+### Scoped instruction globs
+
+| File | `applyTo` |
+|---|---|
+| `frontend.instructions.md` | `src/App.tsx,src/main.tsx,src/components/**,src/hooks/**,src/utils/**,src/data/**,src/index.css,src/types.ts` |
+| `sync-contract.instructions.md` | `src/services/**,src/types/database.types.ts,src/utils/backup.ts,src/hooks/useSync.ts,src/hooks/useAppStorage.ts,src/hooks/useAuth.ts` |
+| `database.instructions.md` | `supabase/**` |
+| `testing.instructions.md` | `tests/**,supabase/tests/**` |
+| `ci-build.instructions.md` | `.github/workflows/**,vite.config.ts,vitest.config.ts,tsconfig.json,package.json,pnpm-workspace.yaml,index.html,scripts/**` |
+| `docs.instructions.md` | `docs/**,README.md,AGENTS.md,CLAUDE.md,.github/**/*.md,odd/**` |
+
+Globs overlap on purpose (for example `src/utils/backup.ts` gets both frontend and sync-contract rules).
+
+### Skills by trigger
+
+| Skill | Trigger |
+|---|---|
+| `workoutlog-feature-end-to-end` | New feature or user-facing change across UI, hooks, storage, sync |
+| `workoutlog-supabase-migration` | Migration, schema, RLS, policy, grant, RPC, pgTAP |
+| `workoutlog-sync-contract-change` | New synced table/column, `sync_push` change, outbox shape |
+| `workoutlog-testing` | Tests, Vitest, pgTAP, fixtures, mocks |
+| `workoutlog-offline-sync` | Offline sync, IndexedDB, browser storage, cloud sync |
+| `workoutlog-ui-style` | UI, CSS, styling, component, layout, Neon Bento |
+
+Custom agents (`.github/agents/*.agent.md`): `reviewer` and `architect` are read-only (`tools: ["read", "search"]`); `docs-keeper` may also edit docs and agent files. Prompts (`.github/prompts/*.prompt.md`) take `${input:…}` variables: `new-feature` (`feature`, `featureName`), `review-pr` (`target`), `explain-module` (`module`).
+
 ## ODD workflow
 
 Organic Driven Development is the maintainer's workflow for agent-assisted work.
@@ -78,7 +104,7 @@ When a trigger happens, update the listed files in the same PR.
 | Changed CI/deploy workflow | [git workflow](standards/git-workflow.md), [overview](architecture/overview.md#deployment-topology), `ci-build.instructions.md`, PR template |
 | New migration / RPC | [backend](architecture/backend.md) (schema, RPCs, migration history), `database.instructions.md`, `workoutlog-supabase-migration` skill if the procedure changed |
 | New synced table or field | [frontend–backend strategy](architecture/frontend-backend-strategy.md) (duplication table, checklist), [glossary](domain/glossary.md), `sync-contract.instructions.md`, `workoutlog-sync-contract-change` and `workoutlog-offline-sync` skills |
-| New skill / agent / prompt / workflow | The table above, `AGENTS.md` skill list |
+| New skill / agent / prompt / workflow | The tables above (files, globs, skills), `AGENTS.md` skill list and pointers |
 | Renamed or moved paths | Every link to them: run a link check over `docs/**/*.md`, `AGENTS.md`, `.github/**/*.md`; fix `applyTo` globs |
 | New UI tokens or UX rule | `workoutlog-ui-style` skill (single source), not the docs |
 | Resolved `TODO(human)` | Replace the marker with the confirmed fact and update `Last verified` |

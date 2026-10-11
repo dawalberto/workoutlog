@@ -69,3 +69,9 @@ Supabase Cloud Free is suitable for this app's current direct-sync architecture,
 ## Deployment
 
 GitHub Pages remains the frontend deployment target. The deploy workflow builds the static application; Supabase migrations are managed separately with the Supabase CLI. No VPS, Docker container, or Edge Function is deployed by this repository.
+
+## Documentation
+
+- [Documentation index](docs/README.md) — architecture, standards, ADRs, glossary.
+- [Onboarding](docs/onboarding.md) — setup, verification, first PR.
+- [AGENTS.md](AGENTS.md) — rules and commands for AI coding agents.

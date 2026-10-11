@@ -4,7 +4,7 @@ description: "Trigger: visual, UI, styling, CSS, Tailwind, design, layout, Bento
 license: Apache-2.0
 metadata:
   author: "dawalberto"
-  version: "1.0"
+  version: "1.1"
 ---
 
 ## Activation Contract
@@ -20,6 +20,7 @@ Load for any task modifying or adding UI components, pages, layouts, modals, for
 - All text inputs, selects, and textareas must have at least 16px font size on mobile to prevent iOS auto-zoom.
 - Respect progressive disclosure (Hick's Law): keep cards collapsible in workout mode with monospace summary badges (`font-mono text-xs`).
 - Fixed bottom navigations, banners, and modals must account for safe area insets (`pb-[env(safe-area-inset-bottom,0px)]` and `pt-[env(safe-area-inset-top,0px)]`).
+- All user-facing copy, toasts, and `aria-label`s must be in Spanish; identifiers and comments stay in English.
 
 ## Decision Gates
 
@@ -50,3 +51,5 @@ Report components modified, styling tokens applied, UX laws honored (Fitts', Hic
 - [Base stylesheet](../../../src/index.css)
 - [Bento card implementation](../../../src/components/RoutineList.tsx)
 - [Exercise card & progressive disclosure](../../../src/components/ExerciseCard.tsx)
+- [Frontend architecture](../../../docs/architecture/frontend.md)
+- [Coding standards](../../../docs/standards/coding-standards.md)
