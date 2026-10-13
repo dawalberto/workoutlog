@@ -8,6 +8,38 @@ export interface FlattenedDiaryEntry extends ExerciseDiaryEntry {
   category?: string;
 }
 
+export function formatDiaryDateDisplay(dateString: string): { formatted: string; tag: string | null } {
+  try {
+    const [year, month, day] = dateString.split('-').map(Number);
+    const d = new Date(year, month - 1, day);
+    if (isNaN(d.getTime())) return { formatted: dateString, tag: null };
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const isToday = d.getTime() === today.getTime();
+    const isYesterday = d.getTime() === yesterday.getTime();
+
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    };
+    const formatted = d.toLocaleDateString('es-ES', options);
+
+    return {
+      formatted: formatted.charAt(0).toUpperCase() + formatted.slice(1),
+      tag: isToday ? 'Hoy' : isYesterday ? 'Ayer' : null,
+    };
+  } catch {
+    return { formatted: dateString, tag: null };
+  }
+}
+
 /**
  * Finds a diary for an exercise by definition ID or normalized name.
  */
