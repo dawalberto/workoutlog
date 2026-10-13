@@ -38,9 +38,20 @@ function createHarness() {
 
 type Props = { children?: ReactNode; [key: string]: unknown };
 function find(node: ReactNode, id: string): React.ReactElement<Props> | undefined {
-  if (Array.isArray(node)) return node.map((child) => find(child, id)).find(Boolean);
+  if (Array.isArray(node)) {
+    for (const child of node) {
+      const match = find(child, id);
+      if (match) return match;
+    }
+    return undefined;
+  }
   if (!isValidElement<Props>(node)) return undefined;
-  return node.props.id === id ? node : find(node.props.children, id);
+  if (node.props.id === id) return node;
+  if (typeof node.type === 'function') {
+    const renderComponent = node.type as (props: Props) => ReactNode;
+    return find(renderComponent(node.props), id);
+  }
+  return find(node.props.children, id);
 }
 
 async function setup() {
