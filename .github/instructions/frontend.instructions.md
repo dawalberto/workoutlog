@@ -25,7 +25,7 @@ Load the [UI style skill](../skills/workoutlog-ui-style/SKILL.md) for any visual
 - Default exports for components; module-level mutable state; React context or a global store.
 - Calling Supabase, IndexedDB, or `localStorage` from a component.
 - Firing update handlers on every keystroke (floods the sync outbox).
-- New "Premium"/"Free plan" naming; T3 removes the existing legacy naming in this branch. Guests are limited by `FREE_ROUTINE_LIMIT` in `src/utils/backup.ts`.
+- Plan labels or billing-tier terminology; sync is enabled for signed-in users, and guests are limited by `GUEST_ROUTINE_LIMIT` in `src/utils/backup.ts`.
 - Light zinc backgrounds or generic grays (legacy in `SyncStatus.tsx`, `index.html`); use the Neon Bento tokens.
 - Growing the 700–1000-line components (`RmLogsView`, `DataBackupModal`, …); extract subcomponents when touching them heavily.
 

@@ -40,7 +40,7 @@ interface DataBackupModalProps {
   rmLogs: ExerciseRmLog[];
   workoutHistory: WorkoutHistoryLog[];
   exerciseDiary: ExerciseDiary[];
-  isPremiumActive: boolean;
+  isSyncEnabled: boolean;
   onImportComplete: (
     newCatalog: ExerciseDefinition[],
     newRoutines: Routine[],
@@ -73,7 +73,7 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
   rmLogs,
   workoutHistory,
   exerciseDiary,
-  isPremiumActive,
+  isSyncEnabled,
   onImportComplete,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('export');
@@ -293,7 +293,7 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
         const newWorkoutHistory = parsedData.workoutHistory;
         const newExerciseDiary = parsedData.exerciseDiary;
 
-        if (!isRoutineCountAllowed(newRoutines.length, isPremiumActive)) {
+        if (!isRoutineCountAllowed(newRoutines.length, isSyncEnabled)) {
           setParseError(ROUTINE_LIMIT_ERROR_MESSAGE);
           return;
         }
@@ -323,7 +323,7 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
         const historyMerge = mergeWorkoutHistory(workoutHistory, parsedData.workoutHistory);
         const diaryMerge = mergeExerciseDiary(exerciseDiary, parsedData.exerciseDiary, replaceDuplicateExercises);
 
-        if (!isRoutineCountAllowed(routinesMerge.merged.length, isPremiumActive)) {
+        if (!isRoutineCountAllowed(routinesMerge.merged.length, isSyncEnabled)) {
           setParseError(ROUTINE_LIMIT_ERROR_MESSAGE);
           return;
         }

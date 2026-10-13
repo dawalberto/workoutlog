@@ -2,8 +2,10 @@ import React, { isValidElement, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { IDBFactory } from 'fake-indexeddb';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { AppHeader } from '../src/components/AppHeader';
 import { SyncStatus } from '../src/components/SyncStatus';
 import type { UseSyncOptions } from '../src/hooks/useSync';
+import { AppTab } from '../src/types';
 
 type HookHarness = ReturnType<typeof createHookHarness>;
 
@@ -332,7 +334,7 @@ describe('sync wiring', () => {
         isOpen: true,
         onClose: vi.fn(),
         ...appStorage,
-        isPremiumActive: true,
+        isSyncEnabled: true,
         onImportComplete: (
           catalog: typeof appStorage.catalog,
           routines: typeof appStorage.routines,
@@ -495,8 +497,7 @@ describe('sync wiring', () => {
     const renderStatus = (props: React.ComponentProps<typeof SyncStatus>) =>
       renderToStaticMarkup(<SyncStatus {...props} />);
     const base = {
-      isAuthenticated: true,
-      isPremiumActive: true,
+      isSyncEnabled: true,
       pendingChanges: 0,
       onRetry: vi.fn(),
     };
@@ -515,10 +516,9 @@ describe('sync wiring', () => {
       isOnline: true,
       status: { state: 'error', error: 'Network unavailable', lastSyncedAt: null },
     });
-    const free = renderStatus({
+    const localOnly = renderStatus({
       ...base,
-      isAuthenticated: false,
-      isPremiumActive: false,
+      isSyncEnabled: false,
       isOnline: true,
       status: { state: 'idle', error: null, lastSyncedAt: null },
     });
@@ -533,16 +533,19 @@ describe('sync wiring', () => {
       isOnline: true,
       status: { state: 'syncing', error: null, lastSyncedAt: null },
     });
-    const entitlementLoading = renderStatus({
-      ...base,
-      isPremiumActive: false,
-      isEntitlementLoading: true,
-      isOnline: true,
-      status: { state: 'idle', error: null, lastSyncedAt: null },
-    });
-
-    expect(free).toContain('Solo en este dispositivo');
-    expect(entitlementLoading).toContain('comprobando tu plan');
+    expect(localOnly).toContain('Solo en este dispositivo');
+    expect(localOnly).toContain('Tus datos se guardan solo en este dispositivo.');
+    expect(localOnly).not.toContain(['Pre', 'mium'].join(''));
+    const header = renderToStaticMarkup(
+      <AppHeader
+        activeTab={AppTab.ROUTINES}
+        onSelectTab={vi.fn()}
+        routinesCount={0}
+        catalogCount={0}
+        onOpenMenu={vi.fn()}
+      />,
+    );
+    expect(header).not.toContain(['Pre', 'mium'].join(''));
     expect(offline).toContain('Sin conexión');
     expect(offline).toContain('Tus datos locales están a salvo');
     expect(pending).toContain('Cambios pendientes');
@@ -556,8 +559,7 @@ describe('sync wiring', () => {
   it('runs the retry action from a recoverable sync error', async () => {
     const onRetry = vi.fn();
     const errorStatus = await SyncStatus({
-      isAuthenticated: true,
-      isPremiumActive: true,
+      isSyncEnabled: true,
       isOnline: true,
       pendingChanges: 1,
       status: { state: 'error', error: 'Network unavailable', lastSyncedAt: null },
@@ -650,7 +652,7 @@ describe('sync wiring', () => {
     const renderSync = (collections: SyncCollections = defaultCollections) =>
       hookHarness.render(() => useSync({
         ownerId: 'owner-1',
-        premiumActive: true,
+        syncEnabled: true,
         isStorageLoaded: true,
         isOwnerHydrationComplete: true,
         onSynced: vi.fn(async () => undefined),
@@ -741,7 +743,7 @@ describe('sync wiring', () => {
     Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
     const { useSync } = await import('../src/hooks/useSync');
     const options: UseSyncOptions = {
-      ownerId: 'owner-1', premiumActive: true, isStorageLoaded: true, isOwnerHydrationComplete: true,
+      ownerId: 'owner-1', syncEnabled: true, isStorageLoaded: true, isOwnerHydrationComplete: true,
       onSynced: vi.fn(async () => undefined), routines: [], catalog: [], activeSessions: {},
       rmLogs: [], workoutHistory: [], exerciseDiary: [],
     };

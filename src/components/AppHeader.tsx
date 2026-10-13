@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Flame, Gem, Menu } from 'lucide-react';
+import { Flame, Menu } from 'lucide-react';
 import { AppTab } from '../types';
 
 export interface AppHeaderProps {
@@ -12,7 +12,6 @@ export interface AppHeaderProps {
   onSelectTab: (tab: AppTab) => void;
   routinesCount: number;
   catalogCount: number;
-  isPremiumActive: boolean;
   onOpenMenu: () => void;
 }
 
@@ -24,7 +23,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onSelectTab,
   routinesCount,
   catalogCount,
-  isPremiumActive,
   onOpenMenu,
 }) => {
   return (
@@ -98,22 +96,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
           {/* Right: Hamburger Menu Trigger */}
           <div className="flex items-center gap-2 shrink-0">
-            <span
-              className={`hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                isPremiumActive
-                  ? 'bg-emerald-500/15 text-emerald-300'
-                  : 'bg-zinc-800 text-zinc-400'
-              }`}
-            >
-              {isPremiumActive ? (
-                <>
-                  <Gem aria-hidden="true" className="mr-1 inline h-3 w-3" />
-                  Premium
-                </>
-              ) : (
-                'Free'
-              )}
-            </span>
             <button
               id="btn-open-sidebar-menu"
               type="button"

@@ -91,7 +91,7 @@ export default function App() {
 
   const sync = useSync({
     ownerId: account.user?.id ?? null,
-    premiumActive: account.isSyncEnabled,
+    syncEnabled: account.isSyncEnabled,
     isStorageLoaded,
     isOwnerHydrationComplete: isGuestTransferComplete,
     onSynced: refreshSyncedStorage,
@@ -123,7 +123,7 @@ export default function App() {
     catalog,
     setCatalog,
     onNotify: setFeedbackMessage,
-    isPremiumActive: account.isSyncEnabled,
+    isSyncEnabled: account.isSyncEnabled,
   });
 
   // Workout Session Lifecycle Hook
@@ -302,7 +302,6 @@ export default function App() {
             onSelectTab={setActiveTab}
             routinesCount={routines.length}
             catalogCount={catalog.length}
-            isPremiumActive={account.isSyncEnabled}
             onOpenMenu={() => setIsMenuOpen(true)}
           />
 
@@ -433,7 +432,7 @@ export default function App() {
         rmLogs={rmLogs}
         workoutHistory={workoutHistory}
         exerciseDiary={exerciseDiary}
-        isPremiumActive={account.isSyncEnabled}
+        isSyncEnabled={account.isSyncEnabled}
         onImportComplete={handleImportComplete}
       />
 

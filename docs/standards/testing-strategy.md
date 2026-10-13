@@ -33,7 +33,7 @@ CI ([`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)) runs `pnpm tes
 | Hook/state harness + element-tree walking | [`tests/exercise-card.test.tsx`](../../tests/exercise-card.test.tsx), [`tests/routine-view.test.tsx`](../../tests/routine-view.test.tsx) | `vi.doMock('react', …)` replaces `useState`/`useRef` with a manual harness; the component is called as a function; elements are found with `isValidElement` and their handlers (e.g. `onBlur`) invoked directly |
 | Static markup rendering | [`tests/sync-wiring.test.tsx`](../../tests/sync-wiring.test.tsx) | `renderToStaticMarkup` from `react-dom/server` for `SyncStatus` output; `vi.doMock` for `db`/`cloud-sync` modules |
 | Fake Supabase client | [`tests/auth.test.ts`](../../tests/auth.test.ts), [`cloud-sync.test.ts`](../../tests/services/cloud-sync.test.ts) | Objects with `vi.fn()` for `rpc`, `auth.signInWithOAuth`, and chained `from().select().gt().order().limit()` |
-| Pure function tests | [`sync-queue.test.ts`](../../tests/services/sync-queue.test.ts), [`backup.test.ts`](../../tests/utils/backup.test.ts), [`free-tier.test.ts`](../../tests/free-tier.test.ts) | Direct input/output assertions |
+| Pure function tests | [`sync-queue.test.ts`](../../tests/services/sync-queue.test.ts), [`backup.test.ts`](../../tests/utils/backup.test.ts), [`routine-limit.test.ts`](../../tests/routine-limit.test.ts) | Direct input/output assertions |
 
 Fixtures are synthetic (e.g. exercise `'Sentadilla'`, `set-1`). Never use real user data or exports.
 

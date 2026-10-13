@@ -98,10 +98,6 @@ This touches IndexedDB, the outbox, Supabase, and backups. Follow the ordered ch
 |---|---|
 | Very large components (700–1000 lines): `RmLogsView`, `DataBackupModal`, `ExerciseDiaryView`, `ExerciseCatalog`, `RoutineView` | `src/components/` |
 | Heavy orchestration and prop drilling in App | [`src/App.tsx`](../../src/App.tsx) |
-| "Premium"/"Free" naming after billing removal: `account.isSyncEnabled` passed as `premiumActive`/`isPremiumActive` (App.tsx ~94, 126, 305, 436); `SyncStatus` copy still says "Plan Free" / "Premium no está activo". T3 removes it in this branch. | [`src/components/SyncStatus.tsx`](../../src/components/SyncStatus.tsx) |
-| `ROUTINE_LIMIT_ERROR_MESSAGE` is English and mentions "upgrade to Premium" in a Spanish UI. T3 removes it in this branch. | [`src/utils/backup.ts`](../../src/utils/backup.ts) lines 3–18 |
-| `SyncStatus` uses light `zinc`/`emerald` tones, not Neon Bento tokens | [`src/components/SyncStatus.tsx`](../../src/components/SyncStatus.tsx) |
-| `index.html` body has light classes (`bg-zinc-50 text-zinc-900`) and `theme-color` `#FFE600` vs manifest `#09090b` | [`index.html`](../../index.html), [`vite.config.ts`](../../vite.config.ts) |
 | No background timer notifications | see Timers above |
 
 `metadata.json` and the `DISABLE_HMR` check in [`vite.config.ts`](../../vite.config.ts) are intentionally retained so the repository can be reopened in Google AI Studio; do not remove them.

@@ -15,7 +15,7 @@ These files implement half of a non-versioned contract whose other half is SQL i
 - `orderSyncOperations` (`src/services/sync-queue.ts`): parent upserts before children, child deletes before parents. A new table needs its FK order here and its position in `SYNC_TABLES` (`src/services/cloud-sync.ts`, parent before child).
 - `syncCloudData` pulls before pushing; unacknowledged changes stay in the outbox on every error path.
 - Scopes: `guest` and `owner:<encodeURIComponent(userId)>`; guest data transfers to the owner once on sign-in. Guests never sync.
-- Sync eligibility comes from `get_sync_entitlement` (`src/services/auth.ts`); every signed-in user is eligible. "Premium" identifiers are legacy naming.
+- Sync eligibility comes from `get_sync_entitlement` (`src/services/auth.ts`); every signed-in user is eligible and can sync.
 - Retry policy: hard rejection for SQLSTATE classes `22`, `23`, `28`, `42`, `P0001`; FK `23503` goes through optional-reference repair with a fresh operation UUID.
 - Backup import (`src/utils/backup.ts`) must keep accepting older shapes; `version` stays `1`.
 

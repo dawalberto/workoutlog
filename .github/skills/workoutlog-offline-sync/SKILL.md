@@ -13,7 +13,7 @@ Load for WorkoutLog storage, offline, import/export, or cloud-sync changes.
 
 ## Hard Rules
 
-- Keep IndexedDB as the offline store for everyone. Guests are local-only (scope `guest`, 3-routine limit via `FREE_ROUTINE_LIMIT`); signed-in users sync all persisted collections because `get_sync_entitlement` returns `{ eligible: true }`. "Premium"/"free tier" identifiers are legacy naming; do not extend them.
+- Keep IndexedDB as the offline store for everyone. Guests are local-only (scope `guest`, limited to `GUEST_ROUTINE_LIMIT` routines); signed-in users sync all persisted collections because `get_sync_entitlement` returns `{ eligible: true }`.
 - Preserve string IDs, snapshots, and nested routine exercises and sets.
 - Hydrate before reactive writes; preserve localStorage migration and never overwrite unloaded data with defaults.
 - Keep first-use exercises and routines private, editable user records; never add a shared seed catalog.

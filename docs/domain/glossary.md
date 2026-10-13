@@ -37,8 +37,8 @@ UI labels were checked in `src/components/` (file noted when not obvious). "—"
 | Owner | Signed-in user; data synced | scope `owner:<userId>` | — |
 | Sign in / out | Google OAuth via Supabase | `useAuth().signInWithGoogle` / `signOut` | "Continuar con Google" / "Cerrar sesión" ([`SidebarMenu.tsx`](../../src/components/SidebarMenu.tsx)) |
 | Entitlement | Server answer on sync eligibility (always eligible when signed in) | `get_sync_entitlement()`, `account.isSyncEnabled` | — |
-| Guest routine limit | Max routines for guests | `FREE_ROUTINE_LIMIT = 3` ([`src/utils/backup.ts`](../../src/utils/backup.ts)) | — |
-| Premium / Free (legacy) | Former billing tiers; now means signed-in vs guest. T3 removes this naming in this branch. | `premiumActive`, `isPremiumActive` | "Plan Free", "Premium" (legacy copy) |
+| Guest routine limit | Maximum routines for guests | `GUEST_ROUTINE_LIMIT = 3` ([`src/utils/backup.ts`](../../src/utils/backup.ts)) | — |
+| Sync eligibility | Signed-in users can sync; guests stay local-only | `account.isSyncEnabled`, `syncEnabled`, `isSyncEnabled` | "Solo en este dispositivo" ([`SyncStatus.tsx`](../../src/components/SyncStatus.tsx)) |
 | Backup | JSON export/import of app data | `src/utils/backup.ts`, `DataBackupModal` | "Copia de seguridad (Importar / Exportar JSON)" |
 | Merge import | Combine backup with current data | backup import mode | "Combinar con los datos actuales" ([`DataBackupModal.tsx`](../../src/components/DataBackupModal.tsx)) |
 | Overwrite import | Replace current data with backup | backup import mode | "Sobrescribir toda la información actual de la app" |

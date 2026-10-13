@@ -24,7 +24,7 @@ Last verified: 2026-10-13
 | Hook | `useThing` in `src/hooks/useThing.ts`, with `UseThingProps` / `UseThingReturn` | [`useRmTracker.ts`](../../src/hooks/useRmTracker.ts) |
 | Service | kebab-case or short lowercase file names | `sync-queue.ts`, `cloud-sync.ts`, `db.ts` |
 | Utility | camelCase file, pure functions | [`rmCalculations.ts`](../../src/utils/rmCalculations.ts) |
-| Constants | `UPPER_SNAKE_CASE` | `PULL_LIMIT`, `FREE_ROUTINE_LIMIT` |
+| Constants | `UPPER_SNAKE_CASE` | `PULL_LIMIT`, `GUEST_ROUTINE_LIMIT` |
 | DB objects | `snake_case` tables/columns; migrations `YYYYMMDDHHMMSS_snake_description.sql` | `exercise_diary_entries` |
 | Tests | `tests/<area>/<name>.test.ts(x)` | `tests/services/sync-queue.test.ts` |
 
@@ -63,8 +63,6 @@ Last verified: 2026-10-13
 | Identifiers, comments, commit messages, docs | English | `// Admit an entire queue snapshot…` (cloud-sync.ts) |
 | Errors thrown in services | English (internal); show Spanish text to users | `CloudSyncError` messages |
 
-Known inconsistency: `ROUTINE_LIMIT_ERROR_MESSAGE` ([`src/utils/backup.ts`](../../src/utils/backup.ts) 3–18) is English and mentions Premium — T3 removes it in this branch.
-
 ## Data and IDs
 
 - String IDs; preserve nested routine → exercises → sets and snapshots.
@@ -79,11 +77,8 @@ Known inconsistency: `ROUTINE_LIMIT_ERROR_MESSAGE` ([`src/utils/backup.ts`](../.
 
 | Pattern | Where |
 |---|---|
-| "Premium"/"Free plan" naming for sync (`premiumActive`, `isPremiumActive`, "Plan Free"); T3 removes it in this branch | App.tsx, `SyncStatus.tsx`, `AppHeader.tsx`, `DataBackupModal.tsx`, `useRoutines.ts`, `useSync.ts`, `cloud-sync.ts`, `backup.ts` |
 | Default export + Apache SPDX header from AI Studio scaffold | [`src/App.tsx`](../../src/App.tsx) |
 | `{StrictMode}` import style without spaces and `.tsx` extension in import | [`src/main.tsx`](../../src/main.tsx) |
-| Light `bg-zinc-50` body / `#FFE600` theme-color | [`index.html`](../../index.html) |
-| Light zinc/emerald tones in `SyncStatus` | [`SyncStatus.tsx`](../../src/components/SyncStatus.tsx) |
 | 700–1000-line components | `RmLogsView`, `DataBackupModal`, `ExerciseDiaryView`, `ExerciseCatalog`, `RoutineView` — split when touching heavily |
 
 `metadata.json` and the `DISABLE_HMR` check in [`vite.config.ts`](../../vite.config.ts) are intentionally retained so the repository can be reopened in Google AI Studio; do not remove them.

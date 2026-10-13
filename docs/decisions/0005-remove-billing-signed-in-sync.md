@@ -17,13 +17,13 @@ Accepted. Supersedes the earlier Premium/Stripe billing design (now historical).
 
 - No billing: no Stripe client, plan UI, payment config, or billing DB surface.
 - `20261010110000_remove_stripe_billing_add_sync_entitlement.sql` drops all billing objects and `public.user_entitlements`, and adds `public.get_sync_entitlement()` returning `{ eligible: true }` for any authenticated user.
-- Signed in = sync enabled = unlimited routines. Guests keep a 3-routine limit (`FREE_ROUTINE_LIMIT`).
+- Signed in = sync enabled = unlimited routines. Guests keep a three-routine limit (`GUEST_ROUTINE_LIMIT`).
 
 ## Consequences
 
 | Positive | Negative / cost |
 |---|---|
-| Much smaller surface (no webhooks, secrets, server) | Legacy "Premium"/"Free" naming remains in code and Spanish UI copy (legacy – do not replicate) |
+| Much smaller surface (no webhooks, secrets, server) | — |
 | Simpler onboarding: sign in to sync | `supabase/seed.sql` broke (references dropped table); seed disabled |
 | | Old ODD docs (`odd/tasks/workoutlog-billing.md`, `workoutlog-account-premium.md`) describe removed behavior |
 

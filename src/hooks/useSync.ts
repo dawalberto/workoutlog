@@ -20,7 +20,7 @@ import { getSupabaseBrowserClient } from '../services/supabase';
 
 export interface UseSyncOptions {
   ownerId: string | null;
-  premiumActive: boolean;
+  syncEnabled: boolean;
   isStorageLoaded: boolean;
   isOwnerHydrationComplete: boolean;
   onSynced: () => Promise<void>;
@@ -153,7 +153,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
     pullRequestedRef.current = true;
     failedPendingSignatureRef.current = null;
   }, [
-    options.ownerId, options.premiumActive,
+    options.ownerId, options.syncEnabled,
     options.isStorageLoaded, options.isOwnerHydrationComplete,
   ]);
 
@@ -174,7 +174,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
     const current = optionsRef.current;
     if (
       !current.ownerId ||
-      !current.premiumActive ||
+      !current.syncEnabled ||
       !current.isStorageLoaded ||
       !current.isOwnerHydrationComplete
     ) {
@@ -196,7 +196,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
         if (latest.ownerId !== syncOwnerId) return;
         if (
           !latest.ownerId ||
-          !latest.premiumActive ||
+          !latest.syncEnabled ||
           !latest.isStorageLoaded ||
           !latest.isOwnerHydrationComplete ||
           !isBrowserOnline()
@@ -233,7 +233,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
             return (
               mountedRef.current &&
               current.ownerId === syncOwnerId &&
-              current.premiumActive &&
+              current.syncEnabled &&
               current.isStorageLoaded &&
               current.isOwnerHydrationComplete &&
               isBrowserOnline()
@@ -243,7 +243,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
           pullRequestedRef.current = false;
           const result = await syncCloudData({
             ownerId: latest.ownerId,
-            premiumActive: latest.premiumActive,
+            syncEnabled: latest.syncEnabled,
             online: isBrowserOnline(),
             client,
             canSync: isCurrentSync,
@@ -273,7 +273,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
             if (
               current.ownerId !== syncOwnerId ||
               !current.ownerId ||
-              !current.premiumActive ||
+              !current.syncEnabled ||
               !current.isStorageLoaded ||
               !current.isOwnerHydrationComplete ||
               !isBrowserOnline()
@@ -328,7 +328,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
       if (
         mountedRef.current &&
         current.ownerId === syncOwnerId &&
-        current.premiumActive &&
+        current.syncEnabled &&
         current.isStorageLoaded &&
         current.isOwnerHydrationComplete
       ) {
@@ -341,7 +341,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
     });
   }, [
     options.ownerId,
-    options.premiumActive,
+    options.syncEnabled,
     options.isStorageLoaded,
     options.isOwnerHydrationComplete,
     collectionContentsSignature,
@@ -349,7 +349,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
   ]);
 
   useEffect(() => {
-    if (!options.ownerId || !options.premiumActive ||
+    if (!options.ownerId || !options.syncEnabled ||
       !options.isStorageLoaded || !options.isOwnerHydrationComplete) return;
     const timer = setInterval(() => {
       if (!isBrowserOnline() || failedPendingSignatureRef.current !== null) return;
@@ -358,7 +358,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
     }, 30_000);
     return () => clearInterval(timer);
   }, [
-    options.ownerId, options.premiumActive,
+    options.ownerId, options.syncEnabled,
     options.isStorageLoaded, options.isOwnerHydrationComplete,
   ]);
 

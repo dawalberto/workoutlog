@@ -42,7 +42,7 @@ const MAX_PUSH_DRAIN_ROUNDS = 3;
 
 export interface CloudSyncOptions {
   ownerId: string | null;
-  premiumActive: boolean;
+  syncEnabled: boolean;
   online: boolean;
   client: SupabaseBrowserClient | null;
   maxRequestAttempts?: number;
@@ -73,14 +73,14 @@ export async function syncCloudData(
 ): Promise<CloudSyncResult> {
   const {
     ownerId,
-    premiumActive,
+    syncEnabled,
     online,
     client,
     maxRequestAttempts = MAX_REQUEST_ATTEMPTS,
   } = options;
   if (
     !ownerId ||
-    !premiumActive ||
+    !syncEnabled ||
     !online ||
     !client ||
     options.canSync?.() === false
