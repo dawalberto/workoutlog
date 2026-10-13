@@ -2,6 +2,7 @@ import React, { isValidElement, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ExerciseDefinition, ExerciseRmLog, RmRecord } from '../src/types';
+import type { AppState } from '../src/store/appStore';
 
 const exercise: ExerciseDefinition = {
   id: 'press-definition',
@@ -61,15 +62,7 @@ const stateNames = [
 
 type StateName = typeof stateNames[number];
 type StateOverrides = Partial<Record<StateName, unknown>>;
-type RmLogsProps = React.ComponentProps<(typeof import('../src/components/RmLogsView'))['RmLogsView']>;
 type ElementProps = { children?: ReactNode; [key: string]: unknown };
-
-const baseProps: RmLogsProps = {
-  catalog: [exercise, secondExercise],
-  rmLogs: [rmLog],
-  onSaveRmLogs: vi.fn(),
-  onGoToCatalog: vi.fn(),
-};
 
 function findElement(node: ReactNode, predicate: (props: ElementProps) => boolean): React.ReactElement<ElementProps> | undefined {
   if (Array.isArray(node)) {
@@ -90,6 +83,17 @@ function findElement(node: ReactNode, predicate: (props: ElementProps) => boolea
 async function setup(overrides: StateOverrides = {}) {
   vi.doUnmock('react');
   vi.resetModules();
+  const storeTestUtils = await import('./store-test-utils');
+  storeTestUtils.seedPersistedAppStore({
+    catalog: [exercise, secondExercise],
+    rmLogs: [rmLog],
+    exerciseDiary: [],
+  });
+  storeTestUtils.useCurrentStateAsServerSnapshot();
+  const { appStore } = await import('../src/store/appStore');
+  const setRmLogs = vi.fn();
+  appStore.setState({ setRmLogs });
+
   let stateIndex = 0;
   vi.doMock('react', async (importOriginal) => {
     const actual = await importOriginal<typeof import('react')>();
@@ -107,18 +111,32 @@ async function setup(overrides: StateOverrides = {}) {
       useMemo: (calculate: () => unknown) => calculate(),
     };
   });
+  vi.doMock('zustand/react/shallow', () => ({
+    useShallow: (selector: unknown) => selector,
+  }));
+  vi.doMock('../src/store/appStore', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../src/store/appStore')>();
+    return {
+      ...actual,
+      useAppStore: (selector: (state: AppState) => unknown) =>
+        selector(actual.appStore.getState()),
+    };
+  });
   const { RmLogsView } = await import('../src/components/RmLogsView');
-  const props = { ...baseProps, onSaveRmLogs: vi.fn() };
   const render = (): React.ReactElement => {
     stateIndex = 0;
-    return RmLogsView(props) as React.ReactElement;
+    return RmLogsView({}) as React.ReactElement;
   };
-  return { props, render };
+  return { setRmLogs, render };
 }
 
-afterEach(() => {
+afterEach(async () => {
   vi.doUnmock('react');
+  vi.doUnmock('../src/store/appStore');
+  vi.doUnmock('zustand/react/shallow');
   vi.resetModules();
+  const { resetAppStore } = await import('./store-test-utils');
+  resetAppStore();
   vi.restoreAllMocks();
   vi.useRealTimers();
   vi.unstubAllGlobals();
@@ -156,7 +174,7 @@ describe('RmLogsView characterization', () => {
   it('preserves quick-record creation values and reset behavior', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-07-01T12:00:00.000Z'));
-    const { props, render } = await setup({
+    const { setRmLogs, render } = await setup({
       quickLogTarget: rmLog,
       quickWeight: '90',
       quickDate: '2026-06-30',
@@ -165,7 +183,7 @@ describe('RmLogsView characterization', () => {
     const submit = findElement(render(), (elementProps) => elementProps.id === 'btn-submit-quick-rm');
     (submit?.props.onClick as () => void)();
 
-    expect(props.onSaveRmLogs).toHaveBeenCalledWith([
+    expect(setRmLogs).toHaveBeenCalledWith([
       expect.objectContaining({
         ...rmLog,
         records: [
@@ -185,7 +203,7 @@ describe('RmLogsView characterization', () => {
   it('preserves edited record values and sorting', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-07-01T12:00:00.000Z'));
-    const { props, render } = await setup({
+    const { setRmLogs, render } = await setup({
       expandedExerciseId: rmLog.id,
       editingRecordId: previousRecord.id,
       editWeight: '75',
@@ -199,7 +217,7 @@ describe('RmLogsView characterization', () => {
     );
     (save?.props.onClick as () => void)();
 
-    expect(props.onSaveRmLogs).toHaveBeenCalledWith([
+    expect(setRmLogs).toHaveBeenCalledWith([
       expect.objectContaining({
         ...rmLog,
         records: [
@@ -221,7 +239,7 @@ describe('RmLogsView characterization', () => {
     vi.setSystemTime(new Date('2026-07-01T12:00:00.000Z'));
     const confirm = vi.fn().mockReturnValue(true);
     vi.stubGlobal('window', { confirm });
-    const { props, render } = await setup({ expandedExerciseId: rmLog.id });
+    const { setRmLogs, render } = await setup({ expandedExerciseId: rmLog.id });
     const deleteButton = findElement(
       render(),
       (elementProps) => elementProps['aria-label'] === 'Eliminar registro',
@@ -229,7 +247,7 @@ describe('RmLogsView characterization', () => {
     (deleteButton?.props.onClick as () => void)();
 
     expect(confirm).toHaveBeenCalledExactlyOnceWith('¿Seguro que deseas eliminar este registro de RM?');
-    expect(props.onSaveRmLogs).toHaveBeenCalledWith([
+    expect(setRmLogs).toHaveBeenCalledWith([
       expect.objectContaining({
         ...rmLog,
         records: [previousRecord],

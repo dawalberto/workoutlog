@@ -1,30 +1,20 @@
 import React from 'react';
 import { Plus, Trophy, X } from 'lucide-react';
 import type { ExerciseRmLog } from '../../types';
+import type { useQuickRmRecordForm } from '../../hooks/rm-logs/useQuickRmRecordForm';
 
 interface QuickRmRecordModalProps {
   target: ExerciseRmLog;
-  weight: string;
-  setWeight: (value: string) => void;
-  date: string;
-  setDate: (value: string) => void;
-  notes: string;
-  setNotes: (value: string) => void;
   onClose: () => void;
-  onSubmit: () => void;
+  form: ReturnType<typeof useQuickRmRecordForm>;
 }
 
 export const QuickRmRecordModal: React.FC<QuickRmRecordModalProps> = ({
   target,
-  weight,
-  setWeight,
-  date,
-  setDate,
-  notes,
-  setNotes,
   onClose,
-  onSubmit,
-}) => (
+  form,
+}) => {
+  return (
   <div
     id="modal-quick-add-rm"
     className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
@@ -65,8 +55,8 @@ export const QuickRmRecordModal: React.FC<QuickRmRecordModalProps> = ({
             step="0.5"
             min="0"
             placeholder="Ej: 100"
-            value={weight}
-            onChange={(e) => setWeight(e.target.value)}
+            value={form.weight}
+            onChange={(e) => form.setWeight(e.target.value)}
             autoFocus
             className="w-full min-h-[48px] px-3.5 py-2.5 text-base font-bold rounded-xl border border-white/10 bg-zinc-900 text-white focus:outline-none focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/20"
           />
@@ -78,8 +68,8 @@ export const QuickRmRecordModal: React.FC<QuickRmRecordModalProps> = ({
           </label>
           <input
             type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
+            value={form.date}
+            onChange={(e) => form.setDate(e.target.value)}
             className="w-full min-h-[48px] px-3.5 py-2 text-xs font-semibold rounded-xl border border-white/10 bg-zinc-900 text-white focus:outline-none focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/20"
           />
         </div>
@@ -91,8 +81,8 @@ export const QuickRmRecordModal: React.FC<QuickRmRecordModalProps> = ({
           <input
             type="text"
             placeholder="Ej: Nueva barra, RPE 10, técnica perfecta..."
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
+            value={form.notes}
+            onChange={(e) => form.setNotes(e.target.value)}
             className="w-full min-h-[48px] px-3.5 py-2 text-xs rounded-xl border border-white/10 bg-zinc-900 text-white focus:outline-none focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/20"
           />
         </div>
@@ -109,7 +99,7 @@ export const QuickRmRecordModal: React.FC<QuickRmRecordModalProps> = ({
         <button
           id="btn-submit-quick-rm"
           type="button"
-          onClick={onSubmit}
+          onClick={form.handleSubmit}
           className="px-5 min-h-[48px] text-xs sm:text-sm font-extrabold text-black bg-[#00FF87] hover:bg-[#00e57a] rounded-xl shadow-[0_0_20px_rgba(0,255,135,0.35)] transition-all active:scale-[0.97] flex items-center gap-1.5"
         >
           <Plus className="w-4 h-4 stroke-[3]" /> Guardar RM
@@ -117,4 +107,5 @@ export const QuickRmRecordModal: React.FC<QuickRmRecordModalProps> = ({
       </div>
     </div>
   </div>
-);
+  );
+};

@@ -1,6 +1,18 @@
 import type { ExerciseDefinition, Routine } from '../types';
 import { normalizeExerciseTitle } from './backup';
 
+export interface ExerciseCatalogFormValues {
+  name: string;
+  category: string;
+  imageUrl: string;
+  videoUrl: string;
+  notes: string;
+  defaultSets: number | string;
+  defaultReps: number | string;
+  defaultWeight: number | string;
+  defaultRest: number | string;
+}
+
 export const filterExerciseCatalog = (
   exercises: ExerciseDefinition[],
   searchTerm: string,
@@ -11,6 +23,28 @@ export const filterExerciseCatalog = (
   const matchesCat = selectedCategory === 'Todos' || ex.category === selectedCategory;
   return matchesSearch && matchesCat;
 });
+
+export function buildCatalogExercise(
+  form: ExerciseCatalogFormValues,
+  existing: ExerciseDefinition | null,
+  id: string,
+  createdAt: string,
+): ExerciseDefinition {
+  return {
+    ...(existing ?? {}),
+    id: existing?.id ?? id,
+    name: form.name.trim(),
+    category: form.category,
+    imageUrl: form.imageUrl.trim(),
+    videoUrl: form.videoUrl.trim(),
+    notes: form.notes.trim(),
+    defaultSetsCount: Number(form.defaultSets) || 3,
+    defaultReps: Number(form.defaultReps) || 10,
+    defaultWeight: Number(form.defaultWeight) || 0,
+    defaultRestSeconds: Number(form.defaultRest) || 60,
+    ...(!existing ? { createdAt } : {}),
+  };
+}
 
 export function updateRoutinesForCatalogExercise(
   routines: Routine[],

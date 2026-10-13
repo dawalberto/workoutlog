@@ -1,14 +1,12 @@
 import React from 'react';
 import { Clock, Dumbbell, Edit3, Eye, Layers, Trash2, Video } from 'lucide-react';
-import type { ExerciseDefinition, ExerciseDiary, ExerciseRmLog } from '../../types';
+import type { ExerciseDefinition } from '../../types';
 import { DiaryButton } from '../DiaryButton';
 import { RmBadge } from '../RmBadge';
+import { useExerciseCatalogCard } from '../../hooks/exercise-catalog/useExerciseCatalogCard';
 
 interface ExerciseCatalogCardProps {
   exercise: ExerciseDefinition;
-  rmLogs: ExerciseRmLog[];
-  exerciseDiary: ExerciseDiary[];
-  onOpenDiary?: (exerciseName: string, exerciseId?: string) => void;
   onPreview: (exercise: ExerciseDefinition) => void;
   onEdit: (exercise: ExerciseDefinition) => void;
   onDelete: (id: string, name: string) => void;
@@ -16,13 +14,12 @@ interface ExerciseCatalogCardProps {
 
 export const ExerciseCatalogCard: React.FC<ExerciseCatalogCardProps> = ({
   exercise: ex,
-  rmLogs,
-  exerciseDiary,
-  onOpenDiary,
   onPreview,
   onEdit,
   onDelete,
-}) => (
+}) => {
+  const { rmLogs, exerciseDiary, openExerciseDiary } = useExerciseCatalogCard();
+  return (
   <div
     id={`catalog-card-${ex.id}`}
     onClick={() => onPreview(ex)}
@@ -94,12 +91,12 @@ export const ExerciseCatalogCard: React.FC<ExerciseCatalogCardProps> = ({
       </span>
 
       <div className="flex items-center gap-1.5">
-        {onOpenDiary && (
+        {openExerciseDiary && (
           <DiaryButton
             exerciseName={ex.name}
             exerciseId={ex.id}
             diaries={exerciseDiary}
-            onOpenDiary={onOpenDiary}
+            onOpenDiary={openExerciseDiary}
             variant="compact"
           />
         )}
@@ -133,4 +130,5 @@ export const ExerciseCatalogCard: React.FC<ExerciseCatalogCardProps> = ({
       </div>
     </div>
   </div>
-);
+  );
+};

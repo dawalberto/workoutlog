@@ -11,7 +11,6 @@ import {
   Trophy,
   X,
 } from 'lucide-react';
-import type { ExerciseDefinition, ExerciseRmLog, RmRecord } from '../../types';
 import {
   getHighestRmRecord,
   getLatestRmRecord,
@@ -19,60 +18,22 @@ import {
 } from '../../utils/rmCalculations';
 import { normalizeExerciseTitle } from '../../utils/backup';
 import { RmRecordHistory } from './RmRecordHistory';
+import type { useRmLogActions } from '../../hooks/useRmLogActions';
+import { useRmExerciseList } from '../../hooks/rm-logs/useRmExerciseList';
+import { AddExerciseToRmModal } from './AddExerciseToRmModal';
+import { QuickRmRecordModal } from './QuickRmRecordModal';
 
 interface RmExerciseListProps {
-  catalog: ExerciseDefinition[];
-  rmLogs: ExerciseRmLog[];
-  filteredRmLogs: ExerciseRmLog[];
-  searchTerm: string;
-  setSearchTerm: (value: string) => void;
-  onGoToCatalog: () => void;
-  onOpenAddModal: () => void;
-  onOpenEmptyAddModal: () => void;
-  expandedExerciseId: string | null;
-  setExpandedExerciseId: (value: string | null) => void;
-  catalogImageMap: Map<string, string>;
-  editingRecordId: string | null;
-  editWeight: string;
-  setEditWeight: (value: string) => void;
-  editDate: string;
-  setEditDate: (value: string) => void;
-  editNotes: string;
-  setEditNotes: (value: string) => void;
-  onOpenQuickLog: (log: ExerciseRmLog, latestRecord: RmRecord | null) => void;
-  onDeleteExercise: (logId: string, name: string) => void;
-  onCancelEdit: () => void;
-  onStartEditRecord: (record: RmRecord) => void;
-  onSaveEditRecord: (logId: string, recordId: string) => void;
-  onDeleteRecord: (logId: string, recordId: string) => void;
+  actions: ReturnType<typeof useRmLogActions>;
 }
 
 export const RmExerciseList: React.FC<RmExerciseListProps> = ({
-  catalog,
-  rmLogs,
-  filteredRmLogs,
-  searchTerm,
-  setSearchTerm,
-  onGoToCatalog,
-  onOpenAddModal,
-  onOpenEmptyAddModal,
-  expandedExerciseId,
-  setExpandedExerciseId,
-  catalogImageMap,
-  editingRecordId,
-  editWeight,
-  setEditWeight,
-  editDate,
-  setEditDate,
-  editNotes,
-  setEditNotes,
-  onOpenQuickLog,
-  onDeleteExercise,
-  onCancelEdit,
-  onStartEditRecord,
-  onSaveEditRecord,
-  onDeleteRecord,
-}) => (
+  actions,
+}) => {
+  const { catalog, rmLogs, filteredRmLogs, catalogImageMap } =
+    useRmExerciseList(actions.searchTerm);
+  const { searchTerm, setSearchTerm, expandedExerciseId, setExpandedExerciseId } = actions;
+  return (
   <>
     <div className="bg-[#1C1C1E] rounded-2xl border border-white/[0.08] p-5 sm:p-6 shadow-xl mb-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -98,7 +59,7 @@ export const RmExerciseList: React.FC<RmExerciseListProps> = ({
         <button
           id="btn-open-add-rm-exercise"
           type="button"
-          onClick={onOpenAddModal}
+          onClick={actions.handleOpenAddModal}
           className="inline-flex items-center justify-center gap-2 px-5 min-h-[48px] rounded-2xl bg-[#00FF87] hover:bg-[#00e57a] text-black font-extrabold text-sm shadow-[0_0_20px_rgba(0,255,135,0.35)] transition-all active:scale-[0.97] shrink-0"
         >
           <Plus className="w-4 h-4 stroke-[3]" />
@@ -149,7 +110,7 @@ export const RmExerciseList: React.FC<RmExerciseListProps> = ({
           <button
             id="btn-empty-add-rm"
             type="button"
-            onClick={onOpenEmptyAddModal}
+            onClick={actions.handleOpenEmptyAddModal}
             className="inline-flex items-center gap-2 px-6 min-h-[48px] rounded-2xl bg-[#00FF87] hover:bg-[#00e57a] text-black font-extrabold text-sm shadow-[0_0_20px_rgba(0,255,135,0.35)] transition-all active:scale-[0.97]"
           >
             <Plus className="w-4 h-4 stroke-[3]" />
@@ -162,7 +123,7 @@ export const RmExerciseList: React.FC<RmExerciseListProps> = ({
             </p>
             <button
               type="button"
-              onClick={onGoToCatalog}
+              onClick={actions.onGoToCatalog}
               className="inline-flex items-center gap-2 px-5 min-h-[44px] rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs border border-white/10 transition-all active:scale-95"
             >
               <span>Ir a la Biblioteca</span>
@@ -193,7 +154,7 @@ export const RmExerciseList: React.FC<RmExerciseListProps> = ({
           const highestRecord = getHighestRmRecord(log);
           const normName = normalizeExerciseTitle(log.exerciseName);
           const imageUrl = catalogImageMap.get(normName);
-          const openQuickLog = () => onOpenQuickLog(log, latestRecord);
+          const openQuickLog = () => actions.handleOpenQuickLog(log);
 
           return (
             <div
@@ -297,7 +258,7 @@ export const RmExerciseList: React.FC<RmExerciseListProps> = ({
                       <button
                         id={`btn-delete-rm-exercise-${log.id}`}
                         type="button"
-                        onClick={() => onDeleteExercise(log.id, log.exerciseName)}
+                        onClick={() => actions.handleDeleteExercise(log.id, log.exerciseName)}
                         className="min-h-[44px] min-w-[44px] p-2.5 rounded-xl border border-red-500/20 bg-zinc-900 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all active:scale-95 flex items-center justify-center"
                         title="Eliminar ejercicio de RMs"
                         aria-label="Eliminar ejercicio de RMs"
@@ -312,18 +273,8 @@ export const RmExerciseList: React.FC<RmExerciseListProps> = ({
               {isExpanded && (
                 <RmRecordHistory
                   log={log}
-                  editingRecordId={editingRecordId}
-                  editWeight={editWeight}
-                  setEditWeight={setEditWeight}
-                  editDate={editDate}
-                  setEditDate={setEditDate}
-                  editNotes={editNotes}
-                  setEditNotes={setEditNotes}
+                  recordForm={actions.recordForm}
                   onOpenQuickLog={openQuickLog}
-                  onCancelEdit={() => onCancelEdit()}
-                  onStartEditRecord={onStartEditRecord}
-                  onSaveEditRecord={onSaveEditRecord}
-                  onDeleteRecord={onDeleteRecord}
                 />
               )}
             </div>
@@ -331,5 +282,18 @@ export const RmExerciseList: React.FC<RmExerciseListProps> = ({
         })}
       </div>
     )}
+    {actions.quickLogTarget && (
+      <QuickRmRecordModal
+        target={actions.quickLogTarget}
+        onClose={() => actions.setQuickLogTarget(null)}
+        form={actions.quickForm}
+      />
+    )}
+    <AddExerciseToRmModal
+      isOpen={actions.isAddModalOpen}
+      onClose={() => actions.setIsAddModalOpen(false)}
+      form={actions.addForm}
+    />
   </>
-);
+  );
+};

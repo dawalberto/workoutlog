@@ -1,28 +1,24 @@
 import React from 'react';
 import { Clock, Edit3, FileText, Layers, X } from 'lucide-react';
-import type { ExerciseDefinition, ExerciseDiary, ExerciseRmLog } from '../../types';
+import type { ExerciseDefinition } from '../../types';
 import { formatSecondsToTime } from '../../utils/timeCalculations';
 import { DiaryButton } from '../DiaryButton';
 import { RmBadge } from '../RmBadge';
 import { VideoPreview } from '../VideoPreview';
+import { useExercisePreviewModal } from '../../hooks/exercise-catalog/useExercisePreviewModal';
 
 interface ExercisePreviewModalProps {
   exercise: ExerciseDefinition | null;
-  rmLogs: ExerciseRmLog[];
-  exerciseDiary: ExerciseDiary[];
-  onOpenDiary?: (exerciseName: string, exerciseId?: string) => void;
   onClose: () => void;
   onEdit: (exercise: ExerciseDefinition) => void;
 }
 
 export const ExercisePreviewModal: React.FC<ExercisePreviewModalProps> = ({
   exercise: previewExercise,
-  rmLogs,
-  exerciseDiary,
-  onOpenDiary,
   onClose,
   onEdit,
 }) => {
+  const { rmLogs, exerciseDiary, openExerciseDiary } = useExercisePreviewModal();
   if (!previewExercise) return null;
 
   return (
@@ -50,14 +46,14 @@ export const ExercisePreviewModal: React.FC<ExercisePreviewModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {onOpenDiary && (
+            {openExerciseDiary && (
               <DiaryButton
                 exerciseName={previewExercise.name}
                 exerciseId={previewExercise.id}
                 diaries={exerciseDiary}
                 onOpenDiary={(name, id) => {
                   onClose();
-                  onOpenDiary(name, id);
+                  openExerciseDiary(name, id);
                 }}
                 variant="compact"
               />

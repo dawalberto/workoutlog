@@ -9,6 +9,20 @@ export function seedAppStore(state: Partial<AppState>): void {
   appStore.setState(state);
 }
 
+export function seedPersistedAppStore(
+  state: Partial<Pick<
+    AppState,
+    'routines' | 'catalog' | 'activeSessions' | 'rmLogs' | 'workoutHistory' | 'exerciseDiary'
+  >>,
+): void {
+  appStore.setState({
+    isStorageLoaded: true,
+    activeScopeKey: 'guest',
+    hydratedScopeKey: 'guest',
+    ...state,
+  });
+}
+
 export function resetAppStore(): void {
   appStore.setState(initialState, true);
   vi.restoreAllMocks();

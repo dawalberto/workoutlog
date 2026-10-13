@@ -12,49 +12,24 @@ export const TabContent: React.FC = () => {
     activeTab,
     routines,
     catalog,
-    activeSessions,
     rmLogs,
     workoutHistory,
-    exerciseDiary,
-    setRmLogs,
     setExerciseDiary,
-    createRoutine,
-    selectRoutine,
-    duplicateRoutine,
-    deleteRoutine,
-    createCatalogExercise,
-    updateCatalogExercise,
-    deleteCatalogExercise,
-    checkRmWeight,
-    openDiary,
     deleteHistoryLog,
     diaryTargetExerciseName,
     diaryAutoOpenCreate,
     clearDiaryNavigationState,
-    onGoToCatalog,
     onGoToRoutines,
+    onGoToCatalog,
+    exerciseDiary,
   } = useTabContent();
 
   return activeTab === AppTab.ROUTINES ? (
     <RoutineList />
   ) : activeTab === AppTab.EXERCISES ? (
-    <ExerciseCatalog
-      exercises={catalog}
-      rmLogs={rmLogs}
-      exerciseDiary={exerciseDiary}
-      onCreateExercise={createCatalogExercise}
-      onUpdateExercise={updateCatalogExercise}
-      onDeleteExercise={deleteCatalogExercise}
-      onCheckRmWeight={checkRmWeight}
-      onOpenDiary={openDiary}
-    />
+    <ExerciseCatalog />
   ) : activeTab === AppTab.RMS ? (
-    <RmLogsView
-      catalog={catalog}
-      rmLogs={rmLogs}
-      onSaveRmLogs={setRmLogs}
-      onGoToCatalog={onGoToCatalog}
-    />
+    <RmLogsView />
   ) : activeTab === AppTab.HISTORY ? (
     <WorkoutHistoryView
       historyLogs={workoutHistory}

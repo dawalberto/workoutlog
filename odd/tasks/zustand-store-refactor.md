@@ -61,7 +61,7 @@ Replace App-owned state and prop drilling with one Zustand store that every comp
 | T2 | `uiSlice`, `restTimerSlice`, `diaryNavigationSlice`, `accountSlice`, `syncSlice`; `useAppBootstrap`; sign-out flow as store action | delegated writer (gpt-6-luna) | high | test, lint, build, independent verifier | done `b297edb` |
 | T3 | `routineSlice`, `workoutSlice`, `rmSlice`; import action + `buildImportSummaryMessage`; delete replaced hooks | delegated writer (gpt-6-luna) | medium | test, lint, build | done `531380a` |
 | T4 | Shell de-prop and thin `App.tsx`: header, tab bar, sidebar, banner, overlays, cleanup screen, tab content | delegated writer (gpt-6-luna) | medium | test, lint, build | done `1a8b9cc` |
-| T5 | Routine feature de-prop: `RoutineView`, `routine/*`, `ExerciseCard`, `AddExerciseModal`, `ReorderExercisesModal`, `WorkoutFinishConfirmModal` | delegated writer (gpt-6-luna) | medium | test, lint, build, snapshots unchanged | |
+| T5 | Routine feature de-prop: `RoutineView`, `routine/*`, `ExerciseCard`, `AddExerciseModal`, `ReorderExercisesModal`, `WorkoutFinishConfirmModal` | delegated writer (gpt-6-luna) | medium | test, lint, build, snapshots unchanged | done `d99ea3a` |
 | T6 | Catalog and RM logs de-prop: `ExerciseCatalog` + `exercise-catalog/*`, `RmLogsView` + `rm-logs/*` | delegated writer (gpt-6-luna) | medium | test, lint, build, snapshots unchanged | |
 | T7 | History, diary, backup de-prop: `WorkoutHistoryView`, `WorkoutDetailModal`, `WorkoutSummaryModal`, `ExerciseDiaryView` + `exercise-diary/*`, `DataBackupModal` + `data-backup/*` | delegated writer (gpt-6-luna) | medium | test, lint, build, snapshots unchanged | |
 | T8 | Docs and agent files sweep; final review | docs-keeper then reviewer (gpt-6-luna) | passive + review | readback, full checks | |
@@ -90,7 +90,8 @@ Replace App-owned state and prop drilling with one Zustand store that every comp
 - T3 (medium): writer `pnpm test` 164 pass, lint, build pass; `useRoutines`, `useWorkoutSession`, `useRmTracker` replaced by slices; `buildImportSummaryMessage` pure with tests. Parent spot check: `pnpm test` 164 pass, `pnpm lint` pass, no `// T3:` bridges left.
 - T4 (medium): writer `pnpm test` 169 pass, lint, build pass; `App.tsx` 538 → 32 lines; shell props removed (SidebarMenu 20→0, RestTimerBar 7→0, BottomTabBar 7→0, AppHeader 5→0, RmRecordAlertModal 7→0); App-level assertions reassigned from T2 re-added as shell tests. Parent spot check: `pnpm test` 169 pass, `pnpm lint` pass, `pnpm build` pass, RestTimerBar remount `key` preserved.
 - T5 (medium): writer `pnpm test` 169 pass, lint, build pass, snapshots unchanged; props RoutineView 18→0, RoutineExerciseList 28→1, ExerciseCard 15→4, RoutineList 6→0; eight hooks in `src/hooks/routine/`. Parent spot check: `pnpm test` 169 pass, lint, build pass; no unshallowed object selectors; no service imports in components.
+- T6 (medium): writer `pnpm test` 173 pass, lint, build pass, snapshots unchanged; props ExerciseFormModal 24→5, RmExerciseList 24→1, AddExerciseToRmModal 16→3, ExerciseCatalog 8→0, RmLogsView 4→0. Parent spot check: `pnpm test` 173 pass, lint, build pass; no unshallowed object selectors; no service imports.
 
 ## Next step
 
-T6.
+T7.
