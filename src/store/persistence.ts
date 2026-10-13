@@ -1,5 +1,4 @@
 import type { StoreApi } from 'zustand/vanilla';
-import type { ExerciseDefinition, ExerciseDiary, ExerciseRmLog, Routine, WorkoutHistoryLog } from '../types';
 import {
   DB_KEYS,
   GUEST_STORAGE_SCOPE,
@@ -179,22 +178,5 @@ export async function refreshFromStorage(
       data.exerciseDiary,
       'exerciseDiary',
     ),
-  });
-}
-
-export function applyImportData(
-  store: StoreApi<AppState>,
-  newCatalog: ExerciseDefinition[],
-  newRoutines: Routine[],
-  newRmLogs: ExerciseRmLog[],
-  newHistory: WorkoutHistoryLog[],
-  newDiary: ExerciseDiary[],
-): void {
-  store.setState({
-    catalog: newCatalog,
-    routines: newRoutines,
-    rmLogs: newRmLogs,
-    workoutHistory: newHistory,
-    exerciseDiary: newDiary,
   });
 }

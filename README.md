@@ -1,10 +1,13 @@
 # WorkoutLog
 
+Last verified: 2026-10-13
+
 WorkoutLog is a browser-first workout tracker. Routines, sessions, records, history, and diary entries remain available in IndexedDB offline. Signed-in users synchronize their private data directly with Supabase through row-level security and database RPCs.
 
 ## Architecture
 
 - **Frontend:** Vite and React, deployed to GitHub Pages.
+- **App state:** one Zustand store with domain slices; persistence, auth, and sync are lifecycle adapters. [Frontend architecture](docs/architecture/frontend.md) · [ADR 0009](docs/decisions/0009-zustand-app-store.md).
 - **Data and authentication:** Supabase Auth, Postgres, RLS, migrations, and database tests in `supabase/`.
 - **No dedicated backend:** there is no Fastify service, VPS runtime, Docker deployment, or server-side billing integration.
 - **No billing:** WorkoutLog has no Stripe client, plan UI, payment configuration, or billing database surface.

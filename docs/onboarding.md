@@ -68,7 +68,7 @@ Google sign-in locally needs `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` and `SUPA
 
 | Command | What it checks | Notes |
 |---|---|---|
-| `pnpm test` | Vitest suite (9 files, 71 tests at last verification) | ~0.5 s |
+| `pnpm test` | All Vitest tests | See latest test run for current totals |
 | `pnpm test tests/utils/backup.test.ts` | One test file | |
 | `pnpm test -t "<name>"` | Tests matching a name | Standard Vitest flag |
 | `pnpm lint` | `tsc --noEmit` typecheck | No ESLint/Prettier exist |

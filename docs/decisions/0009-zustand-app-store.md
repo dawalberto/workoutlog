@@ -21,19 +21,19 @@ Accepted — 2026-10-13; supersedes [ADR 0006](0006-app-state-in-hooks-no-router
 - Keep persistence, auth, and sync as lifecycle adapters mounted once; components and domain hooks do not access `src/services/*` directly.
 - Keep IndexedDB as the source of persisted data. The persistence adapter owns scope hydration, guest transfer, reactive writes, sync refresh merges, and backup import application.
 - Test domain logic with vanilla store instances. For server-rendered selector tests, update the singleton's `getInitialState()` snapshot to the seeded state because Zustand 5 uses it for `useStore` server snapshots.
-- Migrate incrementally under [`odd/tasks/zustand-store-refactor.md`](../../odd/tasks/zustand-store-refactor.md); the migration is in progress.
+- The store boundary is implemented. Keep the completed implementation record in [`odd/tasks/zustand-store-refactor.md`](../../odd/tasks/zustand-store-refactor.md); future state changes should follow this decision.
 
 ## Consequences
 
 | Positive | Negative / cost |
 |---|---|
 | State ownership is independent from the component tree, reducing pass-through props and keeping selectors focused. | The store introduces a shared state API that requires deliberate slice boundaries and selector discipline. |
-| Lifecycle adapters keep IndexedDB and Supabase boundaries outside components while preserving local-first behavior. | The incremental migration temporarily spans store-backed and hook-backed state. |
+| Lifecycle adapters keep IndexedDB and Supabase boundaries outside components while preserving local-first behavior. | Lifecycle commands must be registered and mounted through the app bootstrap. |
 | Vanilla stores make state logic testable without a browser or React harness. | Static server-render tests must account for Zustand 5's `getInitialState()` behavior. |
 
 ## Evidence
 
-- Files: `src/store/appStore.ts`, `src/store/slices/dataSlice.ts`, `src/store/persistence.ts`, `src/hooks/useStorageLifecycle.ts`
+- Files: `src/store/appStore.ts`, `src/store/slices/`, `src/store/selectors.ts`, `src/store/persistence.ts`, `src/hooks/useAppBootstrap.ts`, `src/hooks/useStorageLifecycle.ts`, `src/hooks/useAuth.ts`, `src/hooks/useSync.ts`
 - Migration plan: [`odd/tasks/zustand-store-refactor.md`](../../odd/tasks/zustand-store-refactor.md)
 
 ## Related

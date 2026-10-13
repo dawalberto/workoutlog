@@ -13,6 +13,7 @@ Read this file first, then load the matching skill and scoped instructions. Deep
 | UI | React ^19.0.1, Tailwind CSS ^4.3.3 (`@tailwindcss/vite`), lucide-react |
 | Build | Vite ^8.3.0, vite-plugin-pwa ^1.3.0 (`autoUpdate`), base `/workoutlog/` |
 | Language | TypeScript ^7.0.2 (`tsc --noEmit` is the lint gate) |
+| State | Zustand ^5.0.15; one app store composed from slices |
 | Tests | Vitest ^5.0.3 (node env), fake-indexeddb ^6.2.5, pgTAP |
 | Backend | Supabase (Postgres 17, Auth, RLS, RPCs), @supabase/supabase-js ^2.57.0, Supabase CLI 2.120.0 (CI) |
 | Tooling | Node 24, pnpm 10.25.0, Docker (local Supabase) |
@@ -22,10 +23,10 @@ Read this file first, then load the matching skill and scoped instructions. Deep
 
 | Path | Contents |
 |---|---|
-| `src/App.tsx` | Composition root: view selection, overlays, persisted state, auth/storage/sync wiring |
-| `src/components/` | Entry components plus props-driven parts in `exercise-catalog/`, `exercise-diary/`, `routine/`, `rm-logs/`, and `data-backup/` |
-| `src/hooks/` | Domain and lifecycle hooks: `useStorageLifecycle`, `useAuth`, `useSync`, `useRoutines`, `useExerciseCatalog`, `useExerciseDiary`, `useRoutineViewState`, `useRmLogActions`, `useAppViewState`, `useActiveRestTimer`, … |
-| `src/store/` | Zustand app store, domain slices, and persistence adapter. |
+| `src/App.tsx` | Thin composition root: bootstrap, readiness gates, `AppShell`, and global overlays |
+| `src/components/` | Shell, tab, modal, and feature components; reusable leaves receive focused props |
+| `src/hooks/` | Lifecycle adapters and per-component hooks grouped by feature |
+| `src/store/` | Zustand app store, domain slices, selectors, and persistence adapter |
 | `src/services/` | `db.ts` (IndexedDB + outbox), `sync-queue.ts`, `cloud-sync.ts`, `auth.ts`, `supabase.ts` |
 | `src/utils/`, `src/data/` | Pure helpers (`exerciseCatalog`, `rmLogs`, `routineView`, `restTimer`), backup format, starter data |
 | `src/types.ts`, `src/types/database.types.ts` | Domain types; generated Supabase types |
@@ -59,9 +60,9 @@ CI (`.github/workflows/ci.yml`) runs `pnpm test`, `pnpm lint`, `pnpm build` and 
 ## Architecture
 
 - State lives in the Zustand store (`src/store/`); components read it through `useAppStore` selectors and per-component hooks. Persistence and sync are lifecycle adapters. Do not add React context or another global state mechanism ([ADR 0009](docs/decisions/0009-zustand-app-store.md)).
-- Entry components compose; feature subfolders hold props-driven parts; per-component hooks own local domain interactions; pure logic stays in `src/utils`.
+- `App.tsx` mounts `useAppBootstrap`; shared state lives in the Zustand store. Feature hooks select state and actions; pure logic stays in `src/utils`.
 - Persistence: `useStorageLifecycle` → `src/store/persistence.ts` → `src/services/db.ts` (IndexedDB `WorkoutLogDB` v2, scopes `guest` / `owner:<id>`). Each write diffs state and appends outbox entries in the same transaction.
-- The Zustand migration is in progress; see [`odd/tasks/zustand-store-refactor.md`](odd/tasks/zustand-store-refactor.md).
+- Persistence, auth, and sync are lifecycle adapters; components and feature hooks do not access `src/services/*` directly. See [frontend architecture](docs/architecture/frontend.md) and [ADR 0009](docs/decisions/0009-zustand-app-store.md).
 - Sync: `useSync` → `cloud-sync.ts` pulls by `server_revision`, then pushes one queued outbox operation per `sync_push` call. Server revision order wins over device clocks.
 - Guests are local-only and limited to `GUEST_ROUTINE_LIMIT` routines; every signed-in user syncs (`get_sync_entitlement` returns `{ eligible: true }`).
 

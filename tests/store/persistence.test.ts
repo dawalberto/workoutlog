@@ -310,19 +310,29 @@ describe('app store persistence', () => {
     cancelOwnerYHydration();
   });
 
-  it('applies backup collections through the scoped persistence subscription', async () => {
+  it('persists backup collections imported through the store action', async () => {
     const cancelHydration = persistence.hydrateStorage(store, 'import-owner');
     await waitForHydration();
     const importedRoutine = createRoutine('import-routine', 'Imported routine');
 
-    persistence.applyImportData(
-      store,
-      [{ id: 'import-definition', name: 'Imported exercise' }],
-      [importedRoutine],
-      [{ id: 'import-rm', exerciseName: 'Imported exercise', records: [], createdAt: '2026-10-13', updatedAt: '2026-10-13' }],
-      [],
-      [],
-    );
+    store.getState().importBackup({
+      catalog: [{ id: 'import-definition', name: 'Imported exercise' }],
+      routines: [importedRoutine],
+      rmLogs: [{
+        id: 'import-rm',
+        exerciseName: 'Imported exercise',
+        records: [],
+        createdAt: '2026-10-13',
+        updatedAt: '2026-10-13',
+      }],
+      workoutHistory: [],
+      exerciseDiary: [],
+    }, {
+      exercisesAdded: 1,
+      exercisesReplaced: 0,
+      routinesAdded: 1,
+      mode: 'merge',
+    });
     await storage.flushScopedStorageWrites({ ownerId: 'import-owner' });
 
     const imported = await storage.loadScopedAppStorageData({ ownerId: 'import-owner' });

@@ -8,9 +8,8 @@ Replace App-owned state and prop drilling with one Zustand store that every comp
 
 ## Problem
 
-- `src/App.tsx` (538 lines) owns persisted collections, sign-out orchestration, import messaging, an inline cleanup screen, and wires 15+ hooks into components.
-- Containers receive many pass-through props (`RoutineExerciseList` 28, `RmExerciseList` 24, `ExerciseFormModal` 24, `SidebarMenu` 20, `RoutineView` 18).
-- Components know whether data comes from IndexedDB or Supabase only indirectly, but the wiring lives in App.
+- Before this refactor, App owned persisted collections and wired lifecycle/domain hooks into deeply prop-driven components.
+- The completed design moves state ownership to a Zustand store and leaves bootstrap, readiness gates, and shell composition in App.
 
 ## Constraints
 
@@ -43,7 +42,7 @@ Replace App-owned state and prop drilling with one Zustand store that every comp
 
 ### Components and hooks
 
-- Container components (feature entries and modals that need domain data) call one `use<Component>()` hook that selects state and actions. Hooks live in `src/hooks/` (feature subfolders mirror `src/components/` subfolders).
+- Container components (feature entries and modals that need domain data) call a focused hook that selects state and actions. Hooks live in `src/hooks/`, with feature subfolders for shell, routine, catalog, RM logs, workout history, and backup.
 - Presentational leaves keep narrow props (target ≤ 7), no pass-through props, no store access when they are reused generically (`ConfirmDialog`, `RmBadge`, `TimePickerField`, `InfiniteWheelColumn`, `VideoPreview`).
 - `App.tsx` keeps only bootstrap, gating screens, and layout composition (target < 80 lines). Inline UI moves to components (`LocalCleanupPendingScreen`, `AppShell`/`MainLayout`, `TabContent`, `GlobalOverlays`, `SignOutConfirmDialog`).
 
@@ -63,7 +62,7 @@ Replace App-owned state and prop drilling with one Zustand store that every comp
 | T4 | Shell de-prop and thin `App.tsx`: header, tab bar, sidebar, banner, overlays, cleanup screen, tab content | delegated writer (gpt-6-luna) | medium | test, lint, build | done `1a8b9cc` |
 | T5 | Routine feature de-prop: `RoutineView`, `routine/*`, `ExerciseCard`, `AddExerciseModal`, `ReorderExercisesModal`, `WorkoutFinishConfirmModal` | delegated writer (gpt-6-luna) | medium | test, lint, build, snapshots unchanged | done `d99ea3a` |
 | T6 | Catalog and RM logs de-prop: `ExerciseCatalog` + `exercise-catalog/*`, `RmLogsView` + `rm-logs/*` | delegated writer (gpt-6-luna) | medium | test, lint, build, snapshots unchanged | done `14506af` |
-| T7 | History, diary, backup de-prop: `WorkoutHistoryView`, `WorkoutDetailModal`, `WorkoutSummaryModal`, `ExerciseDiaryView` + `exercise-diary/*`, `DataBackupModal` + `data-backup/*` | delegated writer (gpt-6-luna) | medium | test, lint, build, snapshots unchanged | |
+| T7 | History, diary, backup de-prop: `WorkoutHistoryView`, `WorkoutDetailModal`, `WorkoutSummaryModal`, `ExerciseDiaryView` + `exercise-diary/*`, `DataBackupModal` + `data-backup/*` | delegated writer (gpt-6-luna) | medium | test, lint, build, snapshots unchanged | done `49a717b` |
 | T8 | Docs and agent files sweep; final review | docs-keeper then reviewer (gpt-6-luna) | passive + review | readback, full checks | |
 
 ## Acceptance criteria
@@ -80,7 +79,7 @@ Replace App-owned state and prop drilling with one Zustand store that every comp
 
 ## Progress
 
-- [x] T1 · [ ] T2 · [ ] T3 · [ ] T4 · [ ] T5 · [ ] T6 · [ ] T7 · [ ] T8
+- [x] T1 · [x] T2 · [x] T3 · [x] T4 · [x] T5 · [x] T6 · [x] T7 · [x] T8
 
 ## Evidence
 
@@ -92,7 +91,8 @@ Replace App-owned state and prop drilling with one Zustand store that every comp
 - T5 (medium): writer `pnpm test` 169 pass, lint, build pass, snapshots unchanged; props RoutineView 18→0, RoutineExerciseList 28→1, ExerciseCard 15→4, RoutineList 6→0; eight hooks in `src/hooks/routine/`. Parent spot check: `pnpm test` 169 pass, lint, build pass; no unshallowed object selectors; no service imports in components.
 - T6 (medium): writer `pnpm test` 173 pass, lint, build pass, snapshots unchanged; props ExerciseFormModal 24→5, RmExerciseList 24→1, AddExerciseToRmModal 16→3, ExerciseCatalog 8→0, RmLogsView 4→0. Parent spot check: `pnpm test` 173 pass, lint, build pass; no unshallowed object selectors; no service imports.
 - T7 (medium): writer `pnpm test` 176 pass, lint, build pass, snapshots unchanged; props WorkoutHistoryView 8→0 (548 → 364 lines, logic in `src/utils/workoutHistory.ts` with tests), DataBackupModal 9→0, BackupExportPanel 12→2, DiaryEntryModal 14→6, WorkoutSummaryModal 7→0, ExerciseDiaryView 7→0. Remaining >7 props: `TimePickerField` (generic leaf, accepted). Parent spot check: `pnpm test` 176 pass, lint, build pass; no service imports outside adapters.
+- T8 (passive docs + small code cleanup): docs-keeper swept 21 docs/agent files; parent grep for deleted hooks found only ADR 0006/0009 history plus one broken ADR 0001 link (fixed); automated link check of changed .md files: 0 broken. Independent final review (gpt-6-luna): PASS-with-notes — test 176, lint, build pass; snapshots/services/supabase/sync/types diff vs develop empty; App 32 lines; no pass-through offenders; selectors shallow-safe. Note fixed: dead `applyImportData` removed, test now uses `importBackup`.
 
 ## Next step
 
-T8.
+Done. Push and PR (suggested slices T1–T3, T4–T5, T6–T7, T8) are human decisions.

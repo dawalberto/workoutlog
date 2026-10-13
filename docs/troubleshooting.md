@@ -2,7 +2,7 @@
 
 Symptom → cause → fix for common WorkoutLog development and runtime problems.
 
-Last verified: 2026-10-11
+Last verified: 2026-10-13
 
 ## Quick index
 

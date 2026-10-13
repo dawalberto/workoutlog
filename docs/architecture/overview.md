@@ -42,9 +42,10 @@ flowchart LR
 
 | Component | Responsibility | Code |
 |---|---|---|
-| Composition root | Owns app state, tab navigation, overlays; wires hooks | [`src/App.tsx`](../../src/App.tsx) |
-| Domain hooks | Storage, auth, sync, routines, sessions, RMs, timers | [`src/hooks/`](../../src/hooks/useSync.ts) |
-| UI components | Presentational + feature components (Spanish copy) | [`src/components/`](../../src/components/RoutineView.tsx) |
+| Composition root and shell | Boots lifecycle adapters, applies readiness gates, composes tabs and overlays | [`src/App.tsx`](../../src/App.tsx), [`src/components/AppShell.tsx`](../../src/components/AppShell.tsx) |
+| App state | Zustand store composed from domain slices; narrow selectors and component hooks | [`src/store/`](../../src/store/appStore.ts) |
+| Lifecycle adapters | Hydration/persistence, auth, sync; mounted once by app bootstrap | [`src/hooks/useAppBootstrap.ts`](../../src/hooks/useAppBootstrap.ts), [`src/store/persistence.ts`](../../src/store/persistence.ts) |
+| UI components | Feature containers and reusable presentation components (Spanish copy) | [`src/components/`](../../src/components/RoutineView.tsx) |
 | Local DB service | IndexedDB stores, scopes, outbox, cursors, metadata | [`src/services/db.ts`](../../src/services/db.ts) |
 | Sync queue | Diff collections → outbox changes, ordering, apply remote | [`src/services/sync-queue.ts`](../../src/services/sync-queue.ts) |
 | Cloud sync | Push/pull against Supabase, retries, conflict handling | [`src/services/cloud-sync.ts`](../../src/services/cloud-sync.ts) |
@@ -60,8 +61,8 @@ sequenceDiagram
   autonumber
   actor U as User
   participant C as Component (e.g. ExerciseCard)
-  participant A as App state (useState)
-  participant S as useAppStorage
+  participant A as Zustand app store
+  participant S as persistence adapter
   participant D as IndexedDB (db.ts)
   participant Q as Outbox (sync-queue.ts)
   participant Y as useSync / cloud-sync.ts
@@ -69,7 +70,7 @@ sequenceDiagram
 
   U->>C: edits a field, then blurs
   C->>A: onUpdate... (commit on blur)
-  A->>S: state change observed
+  A->>S: changed collection observed after scope hydration
   S->>D: setScopedStoredItem(collection, scope)
   D->>Q: diffSyncCollection(previous, next)
   Q-->>D: changes
@@ -81,7 +82,7 @@ sequenceDiagram
   Y->>P: select rows where server_revision > cursor (per table, 500 per page)
   P-->>Y: remote rows, including tombstones
   Y->>D: apply remote changes, advance cursors
-  D-->>A: merged collections refresh UI state
+  D-->>A: merged collections refresh store state
 ```
 
 The state write, record metadata, and outbox entries are written in one IndexedDB transaction (`writeStoredItems`, [`src/services/db.ts`](../../src/services/db.ts) around lines 281–350). Guests stop there: the `guest` scope keeps its outbox but nothing is pushed; on first sign-in guest data and outbox move to the owner scope once (`transferGuestDataToOwnerOnce`). The exact algorithm, limits, and error handling are specified in the [frontend–backend strategy](frontend-backend-strategy.md).

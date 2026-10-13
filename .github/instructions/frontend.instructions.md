@@ -10,8 +10,8 @@ Load the [UI style skill](../skills/workoutlog-ui-style/SKILL.md) for any visual
 ## Patterns
 
 - Components: one per file, named export `export const RmBadge: React.FC<RmBadgeProps>` (see `src/components/RmBadge.tsx`). Export a component's props interface only when another module imports it; otherwise keep it module-private.
-- State: shared state lives in the Zustand store (`src/store/`); components read it through `useAppStore` selectors and per-component hooks. Persistence and sync are lifecycle adapters. Do not add React context or another global state mechanism. The migration is in progress; see [`odd/tasks/zustand-store-refactor.md`](../../odd/tasks/zustand-store-refactor.md).
-- Navigation: add tabs through the `AppTab` enum in `src/types.ts` and the `activeTab` switch in `App.tsx`; there is no router.
+- State: shared state lives in the Zustand store (`src/store/`); components and feature hooks select only what they need. Persistence, auth, and sync are lifecycle adapters. Do not add React context or another global state mechanism; see [ADR 0009](../../docs/decisions/0009-zustand-app-store.md).
+- Navigation: add tabs through the `AppTab` enum in `src/types.ts`, `BottomTabBar`, and the `TabContent` switch; there is no router.
 - Persistence: go through the store lifecycle adapter → `src/services/db.ts`. Wait for hydration before reactive writes.
 - Inputs: commit text/number fields on blur, as `src/components/ExerciseCard.tsx` does; covered by `tests/exercise-card.test.tsx`.
 - Styling: Tailwind utilities plus the custom classes in `src/index.css` (`.glass-panel`, `.neon-glow`, …); inline `style` only for computed values (progress widths).
