@@ -7,63 +7,32 @@ import React from 'react';
 import { Flame, Dumbbell, Trophy, Calendar, BookOpen, ArrowDownUp, X, ChevronRight } from 'lucide-react';
 import { AppTab } from '../types';
 import { PWAInstallButton } from './PWAInstallButton';
+import { useSidebarMenu } from '../hooks/shell/useSidebarMenu';
 
-interface SidebarMenuProps {
-  isOpen: boolean;
-  onClose: () => void;
-  activeTab: AppTab;
-  onSelectTab: (tab: AppTab) => void;
-  routinesCount: number;
-  catalogCount: number;
-  rmCount: number;
-  historyCount: number;
-  diaryCount?: number;
-  onOpenBackup: () => void;
-  isAuthenticated: boolean;
-  userEmail: string | null;
-  isSyncEnabled: boolean;
-  isSyncEligibilityLoading: boolean;
-  isOnline: boolean;
-  isSigningIn: boolean;
-  isSigningOut: boolean;
-  error: string | null;
-  onSignIn: () => Promise<void>;
-  onSignOut: () => Promise<void>;
-}
-
-export const SidebarMenu: React.FC<SidebarMenuProps> = ({
-  isOpen,
-  onClose,
-  activeTab,
-  onSelectTab,
-  routinesCount,
-  catalogCount,
-  rmCount,
-  historyCount,
-  diaryCount = 0,
-  onOpenBackup,
-  isAuthenticated,
-  userEmail,
-  isSyncEnabled,
-  isSyncEligibilityLoading,
-  isOnline,
-  isSigningIn,
-  isSigningOut,
-  error,
-  onSignIn,
-  onSignOut,
-}) => {
+export const SidebarMenu: React.FC = () => {
+  const {
+    isOpen,
+    onClose,
+    activeTab,
+    routinesCount,
+    catalogCount,
+    rmCount,
+    historyCount,
+    diaryCount,
+    isAuthenticated,
+    userEmail,
+    isSyncEnabled,
+    isSyncEligibilityLoading,
+    isOnline,
+    isSigningIn,
+    isSigningOut,
+    error,
+    onSignIn,
+    onSignOut,
+    handleNav,
+    handleBackup,
+  } = useSidebarMenu();
   if (!isOpen) return null;
-
-  const handleNav = (tab: AppTab) => {
-    onSelectTab(tab);
-    onClose();
-  };
-
-  const handleBackup = () => {
-    onOpenBackup();
-    onClose();
-  };
 
   return (
     <div

@@ -5,7 +5,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppHeader } from '../src/components/AppHeader';
 import { SyncStatus } from '../src/components/SyncStatus';
 import type { UseSyncOptions } from '../src/hooks/useSync';
-import { AppTab } from '../src/types';
 
 type HookHarness = ReturnType<typeof createHookHarness>;
 
@@ -562,15 +561,7 @@ describe('sync wiring', () => {
     expect(localOnly).toContain('Solo en este dispositivo');
     expect(localOnly).toContain('Tus datos se guardan solo en este dispositivo.');
     expect(localOnly).not.toContain(['Pre', 'mium'].join(''));
-    const header = renderToStaticMarkup(
-      <AppHeader
-        activeTab={AppTab.ROUTINES}
-        onSelectTab={vi.fn()}
-        routinesCount={0}
-        catalogCount={0}
-        onOpenMenu={vi.fn()}
-      />,
-    );
+    const header = renderToStaticMarkup(<AppHeader />);
     expect(header).not.toContain(['Pre', 'mium'].join(''));
     expect(offline).toContain('Sin conexión');
     expect(offline).toContain('Tus datos locales están a salvo');
