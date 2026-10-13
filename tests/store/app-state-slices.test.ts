@@ -156,23 +156,32 @@ describe('app store UI and lifecycle slices', () => {
     expect(store.getState().activeRestTimer).toBeNull();
   });
 
-  it('opens exercise diary and routes to its tab with temporary React-owned callbacks', () => {
+  it('opens exercise diary and closes related routine and summary state', () => {
     const store = createAppStore();
-    const closeRoutine = vi.fn();
-    const dismissWorkoutSummary = vi.fn();
     store.getState().setExerciseDiary([createDiary()]);
-
-    store.getState().openExerciseDiary('Sentadilla', 'exercise-1', {
-      closeRoutine,
-      dismissWorkoutSummary,
+    store.setState({
+      activeRoutineId: 'routine-1',
+      workoutSummary: {
+        routineId: 'routine-1',
+        routineName: 'Rutina',
+        startTime: 1,
+        endTime: 2,
+        durationSeconds: 1,
+        completedSetsCount: 0,
+        totalSetsCount: 0,
+        completionPercentage: 0,
+        exercisesSummary: [],
+      },
     });
+
+    store.getState().openExerciseDiary('Sentadilla', 'exercise-1');
     expect(store.getState()).toMatchObject({
       activeTab: AppTab.DIARY,
       diaryTargetExerciseName: 'Sentadilla',
       diaryAutoOpenCreate: false,
+      activeRoutineId: null,
+      workoutSummary: null,
     });
-    expect(closeRoutine).toHaveBeenCalledOnce();
-    expect(dismissWorkoutSummary).toHaveBeenCalledOnce();
 
     store.getState().openExerciseDiary('Press banca');
     expect(store.getState()).toMatchObject({
@@ -216,9 +225,6 @@ describe('app store UI and lifecycle slices', () => {
   it('orchestrates sign-out, syncing only when enabled and online, then resets UI state', async () => {
     const store = createAppStore();
     const syncNow = vi.fn(async () => undefined);
-    const closeRoutine = vi.fn();
-    const dismissWorkoutSummary = vi.fn();
-    const dismissRmAlert = vi.fn();
     const signOut = vi.fn(async (options: {
       syncBeforeSignOut: () => Promise<void>;
       confirmPendingChanges: (count: number) => Promise<boolean>;
@@ -252,13 +258,27 @@ describe('app store UI and lifecycle slices', () => {
       activeRestTimer: createRestTimer(),
       diaryTargetExerciseName: 'Sentadilla',
       diaryAutoOpenCreate: true,
+      activeRoutineId: 'routine-1',
+      workoutSummary: {
+        routineId: 'routine-1',
+        routineName: 'Rutina',
+        startTime: 1,
+        endTime: 2,
+        durationSeconds: 1,
+        completedSetsCount: 0,
+        totalSetsCount: 0,
+        completionPercentage: 0,
+        exercisesSummary: [],
+      },
+      pendingRmAlert: {
+        logId: 'rm-1',
+        exerciseName: 'Sentadilla',
+        newWeight: 90,
+        previousRmWeight: 80,
+      },
     });
 
-    const signOutPromise = store.getState().signOut({
-      closeRoutine,
-      dismissWorkoutSummary,
-      dismissRmAlert,
-    });
+    const signOutPromise = store.getState().signOut();
     await vi.waitFor(() => expect(store.getState().isSignOutConfirmOpen).toBe(true));
     store.getState().resolveSignOutConfirmation(true);
     await expect(signOutPromise).resolves.toBe(true);
@@ -271,10 +291,10 @@ describe('app store UI and lifecycle slices', () => {
       activeRestTimer: null,
       diaryTargetExerciseName: undefined,
       diaryAutoOpenCreate: false,
+      activeRoutineId: null,
+      workoutSummary: null,
+      pendingRmAlert: null,
     });
-    expect(closeRoutine).toHaveBeenCalledOnce();
-    expect(dismissWorkoutSummary).toHaveBeenCalledOnce();
-    expect(dismissRmAlert).toHaveBeenCalledOnce();
   });
 
   it('keeps UI state when sign-out confirmation is declined', async () => {
@@ -311,9 +331,6 @@ describe('app store UI and lifecycle slices', () => {
 
   it('resets UI state after local cleanup is retried successfully', async () => {
     const store = createAppStore();
-    const closeRoutine = vi.fn();
-    const dismissWorkoutSummary = vi.fn();
-    const dismissRmAlert = vi.fn();
     store.getState().registerAccountControls({
       signInWithGoogle: vi.fn(async () => undefined),
       signOut: vi.fn(async () => false),
@@ -327,13 +344,27 @@ describe('app store UI and lifecycle slices', () => {
       activeRestTimer: createRestTimer(),
       diaryTargetExerciseName: 'Sentadilla',
       diaryAutoOpenCreate: true,
+      activeRoutineId: 'routine-1',
+      workoutSummary: {
+        routineId: 'routine-1',
+        routineName: 'Rutina',
+        startTime: 1,
+        endTime: 2,
+        durationSeconds: 1,
+        completedSetsCount: 0,
+        totalSetsCount: 0,
+        completionPercentage: 0,
+        exercisesSummary: [],
+      },
+      pendingRmAlert: {
+        logId: 'rm-1',
+        exerciseName: 'Sentadilla',
+        newWeight: 90,
+        previousRmWeight: 80,
+      },
     });
 
-    await expect(store.getState().retryLocalCleanup({
-      closeRoutine,
-      dismissWorkoutSummary,
-      dismissRmAlert,
-    })).resolves.toBe(true);
+    await expect(store.getState().retryLocalCleanup()).resolves.toBe(true);
 
     expect(store.getState()).toMatchObject({
       activeTab: AppTab.ROUTINES,
@@ -342,10 +373,10 @@ describe('app store UI and lifecycle slices', () => {
       activeRestTimer: null,
       diaryTargetExerciseName: undefined,
       diaryAutoOpenCreate: false,
+      activeRoutineId: null,
+      workoutSummary: null,
+      pendingRmAlert: null,
     });
-    expect(closeRoutine).toHaveBeenCalledOnce();
-    expect(dismissWorkoutSummary).toHaveBeenCalledOnce();
-    expect(dismissRmAlert).toHaveBeenCalledOnce();
   });
 
   it('keeps account and sync commands inert until lifecycle controls register', async () => {

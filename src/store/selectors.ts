@@ -40,3 +40,20 @@ export function selectPersistedData(state: AppState) {
     storageError: isStorageLoaded ? state.storageError : null,
   };
 }
+
+export function selectActiveRoutine(state: AppState) {
+  return state.routines.find((routine) => routine.id === state.activeRoutineId);
+}
+
+export function selectInProgressSessionEntry(state: AppState) {
+  return Object.values(state.activeSessions).find(
+    (session) => session.startTime && session.routineId !== state.activeRoutineId,
+  );
+}
+
+export function selectInProgressRoutine(state: AppState) {
+  const session = selectInProgressSessionEntry(state);
+  return session
+    ? state.routines.find((routine) => routine.id === session.routineId) || null
+    : null;
+}

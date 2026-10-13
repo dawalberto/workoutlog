@@ -6,6 +6,9 @@ import { createDiaryNavigationSlice, type DiaryNavigationSlice } from './slices/
 import { createRestTimerSlice, type RestTimerSlice } from './slices/restTimerSlice';
 import { createSyncSlice, type SyncSlice } from './slices/syncSlice';
 import { createUiSlice, type UiSlice } from './slices/uiSlice';
+import { createRoutineSlice, type RoutineSlice } from './slices/routineSlice';
+import { createWorkoutSlice, type WorkoutSlice } from './slices/workoutSlice';
+import { createRmSlice, type RmSlice } from './slices/rmSlice';
 
 export type AppState =
   & DataSlice
@@ -13,7 +16,10 @@ export type AppState =
   & RestTimerSlice
   & DiaryNavigationSlice
   & AccountSlice
-  & SyncSlice;
+  & SyncSlice
+  & RoutineSlice
+  & WorkoutSlice
+  & RmSlice;
 
 export const createAppStore = (initial?: Partial<AppState>) =>
   createStore<AppState>()((...args) => ({
@@ -23,6 +29,9 @@ export const createAppStore = (initial?: Partial<AppState>) =>
     ...createDiaryNavigationSlice(...args),
     ...createAccountSlice(...args),
     ...createSyncSlice(...args),
+    ...createRoutineSlice(...args),
+    ...createWorkoutSlice(...args),
+    ...createRmSlice(...args),
     ...initial,
   }));
 

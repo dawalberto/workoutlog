@@ -19,12 +19,6 @@ export interface AccountSnapshot {
   error: string | null;
 }
 
-export interface SignOutResetBridges {
-  closeRoutine?: () => void;
-  dismissWorkoutSummary?: () => void;
-  dismissRmAlert?: () => void;
-}
-
 export interface AccountControls {
   signInWithGoogle: () => Promise<void>;
   signOut: (options: Pick<
@@ -39,14 +33,13 @@ export interface AccountSlice extends AccountSnapshot {
   publishAccountState: (snapshot: AccountSnapshot) => void;
   registerAccountControls: (controls: AccountControls | null) => void;
   signInWithGoogle: () => Promise<void>;
-  signOut: (bridges?: SignOutResetBridges) => Promise<boolean>;
-  retryLocalCleanup: (bridges?: SignOutResetBridges) => Promise<boolean>;
+  signOut: () => Promise<boolean>;
+  retryLocalCleanup: () => Promise<boolean>;
   refreshSyncEligibility: () => Promise<boolean>;
 }
 
 function resetAfterSignOut(
   get: Parameters<StateCreator<AppState, [], [], AccountSlice>>[1],
-  bridges?: SignOutResetBridges,
 ): void {
   const state = get();
   state.setActiveTab(AppTab.ROUTINES);
@@ -54,9 +47,9 @@ function resetAfterSignOut(
   state.closeBackupModal();
   state.closeRestTimer();
   state.clearDiaryNavigationState();
-  bridges?.dismissRmAlert?.();
-  bridges?.closeRoutine?.();
-  bridges?.dismissWorkoutSummary?.();
+  state.closeRoutine();
+  state.dismissWorkoutSummary();
+  state.dismissRmAlert();
 }
 
 export const createAccountSlice: StateCreator<AppState, [], [], AccountSlice> =
@@ -79,7 +72,7 @@ export const createAccountSlice: StateCreator<AppState, [], [], AccountSlice> =
       signInWithGoogle: async () => {
         await controls?.signInWithGoogle();
       },
-      signOut: async (bridges) => {
+      signOut: async () => {
         if (!controls) return false;
         const signedOut = await controls.signOut({
           syncBeforeSignOut: async () => {
@@ -90,12 +83,12 @@ export const createAccountSlice: StateCreator<AppState, [], [], AccountSlice> =
           stopSync: () => get().stopSync(),
           resumeSync: () => get().resumeSync(),
         });
-        if (signedOut) resetAfterSignOut(get, bridges);
+        if (signedOut) resetAfterSignOut(get);
         return signedOut;
       },
-      retryLocalCleanup: async (bridges) => {
+      retryLocalCleanup: async () => {
         const cleaned = await controls?.retryLocalCleanup();
-        if (cleaned) resetAfterSignOut(get, bridges);
+        if (cleaned) resetAfterSignOut(get);
         return cleaned ?? false;
       },
       refreshSyncEligibility: async () => {

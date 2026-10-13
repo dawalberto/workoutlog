@@ -43,6 +43,63 @@ export interface ParsedBackupData {
   hasDiary: boolean;
 }
 
+export type BackupImportData = Pick<
+  ParsedBackupData,
+  'catalog' | 'routines' | 'rmLogs' | 'workoutHistory' | 'exerciseDiary'
+>;
+
+export interface BackupImportSummary {
+  exercisesAdded: number;
+  exercisesReplaced: number;
+  routinesAdded: number;
+  exercisesInRoutinesUpdated?: number;
+  rmLogsAdded?: number;
+  rmLogsUpdated?: number;
+  historyAdded?: number;
+  diaryAdded?: number;
+  diaryUpdated?: number;
+  mode: 'merge' | 'overwrite';
+}
+
+export function buildImportSummaryMessage(
+  summary: BackupImportSummary,
+  data: BackupImportData,
+): string {
+  if (summary.mode === 'overwrite') {
+    const totalNotes = data.exerciseDiary.reduce(
+      (sum, diary) => sum + (diary.entries?.length || 0),
+      0,
+    );
+    return `Copia restaurada: ${data.catalog.length} ejercicios, ${data.routines.length} rutinas, ${data.rmLogs.length} RMs, ${data.workoutHistory.length} sesiones y ${totalNotes} notas de diario.`;
+  }
+
+  const parts: string[] = [];
+  if (summary.exercisesAdded > 0) parts.push(`${summary.exercisesAdded} ejerc. añadidos`);
+  if (summary.exercisesReplaced > 0) parts.push(`${summary.exercisesReplaced} ejerc. actualizados`);
+  if (summary.exercisesInRoutinesUpdated && summary.exercisesInRoutinesUpdated > 0) {
+    parts.push(`${summary.exercisesInRoutinesUpdated} en rutinas`);
+  }
+  if (summary.routinesAdded > 0) parts.push(`${summary.routinesAdded} rutinas añadidas`);
+  if (summary.rmLogsAdded && summary.rmLogsAdded > 0) {
+    parts.push(`${summary.rmLogsAdded} RMs añadidos`);
+  }
+  if (summary.rmLogsUpdated && summary.rmLogsUpdated > 0) {
+    parts.push(`${summary.rmLogsUpdated} RMs actualizados`);
+  }
+  if (summary.historyAdded && summary.historyAdded > 0) {
+    parts.push(`${summary.historyAdded} sesiones añadidas`);
+  }
+  if (summary.diaryAdded && summary.diaryAdded > 0) {
+    parts.push(`${summary.diaryAdded} entradas diario añadidas`);
+  }
+  if (summary.diaryUpdated && summary.diaryUpdated > 0) {
+    parts.push(`${summary.diaryUpdated} entradas diario actualizadas`);
+  }
+  return parts.length > 0
+    ? `Importación completada: ${parts.join(', ')}.`
+    : 'Datos combinados con éxito.';
+}
+
 /**
  * Normalizes an exercise title removing accents, extra spaces, and lowercase.
  * e.g., "Press de Banca Plana" -> "press de banca plana"

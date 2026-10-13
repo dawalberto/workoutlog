@@ -8,6 +8,14 @@ import type {
   Routine,
   WorkoutHistoryLog,
 } from '../../types';
+import {
+  buildImportSummaryMessage,
+  isRoutineCountAllowed,
+  ROUTINE_LIMIT_ERROR_MESSAGE,
+  type BackupImportData,
+  type BackupImportSummary,
+} from '../../utils/backup';
+import type { AppState } from '../appStore';
 
 export interface DataSlice {
   routines: Routine[];
@@ -27,9 +35,10 @@ export interface DataSlice {
   storageError: string | null;
   activeScopeKey: string | null;
   hydratedScopeKey: string | null;
+  importBackup: (data: BackupImportData, summary: BackupImportSummary) => void;
 }
 
-export const createDataSlice: StateCreator<DataSlice, [], [], DataSlice> = (set) => ({
+export const createDataSlice: StateCreator<AppState, [], [], DataSlice> = (set, get) => ({
   routines: [],
   setRoutines: (value) => set((state) => ({
     routines: typeof value === 'function' ? value(state.routines) : value,
@@ -59,4 +68,18 @@ export const createDataSlice: StateCreator<DataSlice, [], [], DataSlice> = (set)
   storageError: null,
   activeScopeKey: null,
   hydratedScopeKey: null,
+  importBackup: (data, summary) => {
+    if (!isRoutineCountAllowed(data.routines.length, get().isSyncEnabled)) {
+      get().notify(ROUTINE_LIMIT_ERROR_MESSAGE);
+      return;
+    }
+    set({
+      catalog: data.catalog,
+      routines: data.routines,
+      rmLogs: data.rmLogs,
+      workoutHistory: data.workoutHistory,
+      exerciseDiary: data.exerciseDiary,
+    });
+    get().notify(buildImportSummaryMessage(summary, data));
+  },
 });

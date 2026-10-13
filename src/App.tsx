@@ -3,14 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-  Routine,
-  ExerciseDefinition,
-  AppTab,
-  ExerciseRmLog,
-  WorkoutHistoryLog,
-  ExerciseDiary,
-} from './types';
+import { AppTab } from './types';
 import { RoutineList } from './components/RoutineList';
 import { RoutineView } from './components/RoutineView';
 import { RestTimerBar } from './components/RestTimerBar';
@@ -30,18 +23,15 @@ import { ToastNotification } from './components/ToastNotification';
 import { BottomTabBar } from './components/BottomTabBar';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { getTotalDiaryEntriesCount } from './utils/diaryCalculations';
-import {
-  isRoutineCountAllowed,
-  ROUTINE_LIMIT_ERROR_MESSAGE,
-} from './utils/backup';
 import { useAppBootstrap } from './hooks/useAppBootstrap';
-import { useRoutines } from './hooks/useRoutines';
-import { useWorkoutSession } from './hooks/useWorkoutSession';
-import { useRmTracker } from './hooks/useRmTracker';
-import { useAppStore, appStore } from './store/appStore';
+import { useAppStore } from './store/appStore';
 import { useShallow } from 'zustand/react/shallow';
-import { applyImportData } from './store/persistence';
-import { selectPersistedData } from './store/selectors';
+import {
+  selectActiveRoutine,
+  selectInProgressRoutine,
+  selectInProgressSessionEntry,
+  selectPersistedData,
+} from './store/selectors';
 
 export default function App() {
   useAppBootstrap();
@@ -50,15 +40,11 @@ export default function App() {
     isStorageLoaded,
     storageError,
     routines,
-    setRoutines,
     catalog,
-    setCatalog,
     activeSessions,
-    setActiveSessions,
     rmLogs,
     setRmLogs,
     workoutHistory,
-    setWorkoutHistory,
     exerciseDiary,
     setExerciseDiary,
   } = persistedData;
@@ -71,7 +57,6 @@ export default function App() {
   const openBackupModal = useAppStore((state) => state.openBackupModal);
   const closeBackupModal = useAppStore((state) => state.closeBackupModal);
   const feedbackMessage = useAppStore((state) => state.feedbackMessage);
-  const notify = useAppStore((state) => state.notify);
   const clearFeedback = useAppStore((state) => state.clearFeedback);
   const activeRestTimer = useAppStore((state) => state.activeRestTimer);
   const startRestTimer = useAppStore((state) => state.startRestTimer);
@@ -95,140 +80,32 @@ export default function App() {
   const retryLocalCleanup = useAppStore((state) => state.retryLocalCleanup);
   const isOnline = useAppStore((state) => state.isOnline);
 
-  // Routines & Catalog Domain Hook
-  const {
-    activeRoutineId,
-    routineSubMode,
-    activeRoutine,
-    createRoutine,
-    selectRoutine,
-    closeRoutine,
-    saveRoutine,
-    duplicateRoutine,
-    deleteRoutine,
-    createCatalogExercise,
-    updateCatalogExercise,
-    deleteCatalogExercise,
-  } = useRoutines({
-    routines,
-    setRoutines,
-    catalog,
-    setCatalog,
-    onNotify: notify,
-    isSyncEnabled,
-  });
-
-  // Workout Session Lifecycle Hook
-  const {
-    workoutSummary,
-    startSession,
-    toggleSetComplete,
-    resetSession,
-    finishSession,
-    dismissWorkoutSummary,
-    deleteHistoryLog,
-    inProgressSessionEntry,
-    inProgressRoutine,
-  } = useWorkoutSession({
-    routines,
-    activeSessions,
-    setActiveSessions,
-    setWorkoutHistory,
-    activeRoutineId,
-  });
-
-  const handleResetSession = (routineId: string) => {
-    resetSession(routineId);
-    closeRestTimer();
-  };
-
-  const handleFinishSession = (summary: Parameters<typeof finishSession>[0]) => {
-    finishSession(summary);
-    closeRestTimer();
-  };
-
-  // RM (Repetition Maximum) Tracker Hook
-  const {
-    pendingRmAlert,
-    checkRmWeight,
-    confirmRmAlert,
-    dismissRmAlert,
-  } = useRmTracker({
-    rmLogs,
-    setRmLogs,
-    onNotify: notify,
-  });
-
-  const handleOpenExerciseDiary = (exerciseName: string, exerciseId?: string) =>
-    openDiary(exerciseName, exerciseId, {
-      // T3: move routine closing into the routine slice.
-      closeRoutine,
-      // T3: move summary dismissal into the workout slice.
-      dismissWorkoutSummary,
-    });
-
-  const resetBridges = {
-    // T3: move routine closing into the routine slice.
-    closeRoutine,
-    // T3: move summary dismissal into the workout slice.
-    dismissWorkoutSummary,
-    // T3: move RM alert dismissal into the RM slice.
-    dismissRmAlert,
-  };
-  const handleSignOut = () => signOut(resetBridges);
-  const handleRetryLocalCleanup = () => retryLocalCleanup(resetBridges);
-
-  // Handle data import from JSON backup
-  const handleImportComplete = (
-    newCatalog: ExerciseDefinition[],
-    newRoutines: Routine[],
-    newRmLogs: ExerciseRmLog[],
-    newWorkoutHistory: WorkoutHistoryLog[],
-    newExerciseDiary: ExerciseDiary[],
-    summary: {
-      exercisesAdded: number;
-      exercisesReplaced: number;
-      routinesAdded: number;
-      exercisesInRoutinesUpdated?: number;
-      rmLogsAdded?: number;
-      rmLogsUpdated?: number;
-      historyAdded?: number;
-      diaryAdded?: number;
-      diaryUpdated?: number;
-      mode: 'merge' | 'overwrite';
-    }
-  ) => {
-    if (!isRoutineCountAllowed(newRoutines.length, isSyncEnabled)) {
-      notify(ROUTINE_LIMIT_ERROR_MESSAGE);
-      return;
-    }
-
-    applyImportData(appStore, newCatalog, newRoutines, newRmLogs, newWorkoutHistory, newExerciseDiary);
-
-    let msg = '';
-    if (summary.mode === 'overwrite') {
-      const totalNotes = newExerciseDiary.reduce((sum, d) => sum + (d.entries?.length || 0), 0);
-      msg = `Copia restaurada: ${newCatalog.length} ejercicios, ${newRoutines.length} rutinas, ${newRmLogs.length} RMs, ${newWorkoutHistory.length} sesiones y ${totalNotes} notas de diario.`;
-    } else {
-      const parts: string[] = [];
-      if (summary.exercisesAdded > 0) parts.push(`${summary.exercisesAdded} ejerc. añadidos`);
-      if (summary.exercisesReplaced > 0) parts.push(`${summary.exercisesReplaced} ejerc. actualizados`);
-      if (summary.exercisesInRoutinesUpdated && summary.exercisesInRoutinesUpdated > 0) {
-        parts.push(`${summary.exercisesInRoutinesUpdated} en rutinas`);
-      }
-      if (summary.routinesAdded > 0) parts.push(`${summary.routinesAdded} rutinas añadidas`);
-      if (summary.rmLogsAdded && summary.rmLogsAdded > 0) parts.push(`${summary.rmLogsAdded} RMs añadidos`);
-      if (summary.rmLogsUpdated && summary.rmLogsUpdated > 0) parts.push(`${summary.rmLogsUpdated} RMs actualizados`);
-      if (summary.historyAdded && summary.historyAdded > 0) parts.push(`${summary.historyAdded} sesiones añadidas`);
-      if (summary.diaryAdded && summary.diaryAdded > 0) parts.push(`${summary.diaryAdded} entradas diario añadidas`);
-      if (summary.diaryUpdated && summary.diaryUpdated > 0) parts.push(`${summary.diaryUpdated} entradas diario actualizadas`);
-      msg = parts.length > 0
-        ? `Importación completada: ${parts.join(', ')}.`
-        : 'Datos combinados con éxito.';
-    }
-    notify(msg);
-  };
-
+  const activeRoutineId = useAppStore((state) => state.activeRoutineId);
+  const routineSubMode = useAppStore((state) => state.routineSubMode);
+  const activeRoutine = useAppStore(selectActiveRoutine);
+  const createRoutine = useAppStore((state) => state.createRoutine);
+  const selectRoutine = useAppStore((state) => state.selectRoutine);
+  const closeRoutine = useAppStore((state) => state.closeRoutine);
+  const saveRoutine = useAppStore((state) => state.saveRoutine);
+  const duplicateRoutine = useAppStore((state) => state.duplicateRoutine);
+  const deleteRoutine = useAppStore((state) => state.deleteRoutine);
+  const createCatalogExercise = useAppStore((state) => state.createCatalogExercise);
+  const updateCatalogExercise = useAppStore((state) => state.updateCatalogExercise);
+  const deleteCatalogExercise = useAppStore((state) => state.deleteCatalogExercise);
+  const workoutSummary = useAppStore((state) => state.workoutSummary);
+  const startSession = useAppStore((state) => state.startSession);
+  const toggleSetComplete = useAppStore((state) => state.toggleSetComplete);
+  const resetSession = useAppStore((state) => state.resetSession);
+  const finishSession = useAppStore((state) => state.finishSession);
+  const dismissWorkoutSummary = useAppStore((state) => state.dismissWorkoutSummary);
+  const deleteHistoryLog = useAppStore((state) => state.deleteHistoryLog);
+  const inProgressSessionEntry = useAppStore(selectInProgressSessionEntry);
+  const inProgressRoutine = useAppStore(selectInProgressRoutine);
+  const pendingRmAlert = useAppStore((state) => state.pendingRmAlert);
+  const checkRmWeight = useAppStore((state) => state.checkRmWeight);
+  const confirmRmAlert = useAppStore((state) => state.confirmRmAlert);
+  const dismissRmAlert = useAppStore((state) => state.dismissRmAlert);
+  const importBackup = useAppStore((state) => state.importBackup);
   // Wait for IndexedDB hydration before rendering the view to avoid state flash
   if (cleanupPending) {
     return (
@@ -253,7 +130,7 @@ export default function App() {
           )}
           <button
             type="button"
-            onClick={() => void handleRetryLocalCleanup()}
+            onClick={() => void retryLocalCleanup()}
             disabled={isSigningOut}
             className="mt-6 min-h-[48px] w-full rounded-2xl bg-[#00FF87] px-5 py-3 font-extrabold text-black shadow-[0_0_20px_rgba(0,255,135,0.35)] transition-all active:scale-[0.97] disabled:cursor-wait disabled:opacity-60"
           >
@@ -291,10 +168,10 @@ export default function App() {
           }}
           onStartSession={startSession}
           onToggleSetComplete={toggleSetComplete}
-          onResetSession={handleResetSession}
-          onFinishSession={handleFinishSession}
+          onResetSession={resetSession}
+          onFinishSession={finishSession}
           onCheckRmWeight={checkRmWeight}
-          onOpenDiary={handleOpenExerciseDiary}
+          onOpenDiary={openDiary}
           onStartRestTimer={startRestTimer}
           onCloseRestTimer={closeRestTimer}
         />
@@ -326,7 +203,7 @@ export default function App() {
                 onCreateRoutine={createRoutine}
                 onSelectRoutine={selectRoutine}
                 onDuplicateRoutine={duplicateRoutine}
-                onDeleteRoutine={(id) => deleteRoutine(id, handleResetSession)}
+                onDeleteRoutine={deleteRoutine}
               />
             ) : activeTab === AppTab.EXERCISES ? (
               <ExerciseCatalog
@@ -337,7 +214,7 @@ export default function App() {
                 onUpdateExercise={updateCatalogExercise}
                 onDeleteExercise={deleteCatalogExercise}
                 onCheckRmWeight={checkRmWeight}
-                onOpenDiary={handleOpenExerciseDiary}
+                onOpenDiary={openDiary}
               />
             ) : activeTab === AppTab.RMS ? (
               <RmLogsView
@@ -402,7 +279,7 @@ export default function App() {
         isSigningOut={isSigningOut}
         error={accountError ?? storageError}
         onSignIn={signInWithGoogle}
-        onSignOut={async () => { await handleSignOut(); }}
+        onSignOut={async () => { await signOut(); }}
       />
 
       <ConfirmDialog
@@ -432,7 +309,7 @@ export default function App() {
         exerciseDiary={exerciseDiary}
         routines={routines}
         catalog={catalog}
-        onOpenDiary={handleOpenExerciseDiary}
+        onOpenDiary={openDiary}
         onClose={dismissWorkoutSummary}
       />
 
@@ -446,7 +323,20 @@ export default function App() {
         workoutHistory={workoutHistory}
         exerciseDiary={exerciseDiary}
         isSyncEnabled={isSyncEnabled}
-        onImportComplete={handleImportComplete}
+        onImportComplete={(
+          newCatalog,
+          newRoutines,
+          newRmLogs,
+          newWorkoutHistory,
+          newExerciseDiary,
+          summary,
+        ) => importBackup({
+          catalog: newCatalog,
+          routines: newRoutines,
+          rmLogs: newRmLogs,
+          workoutHistory: newWorkoutHistory,
+          exerciseDiary: newExerciseDiary,
+        }, summary)}
       />
 
       {/* Floating Rest Timer Bar across entire app (RoutineView, Diary, History, etc.) */}

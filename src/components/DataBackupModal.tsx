@@ -19,6 +19,7 @@ import {
   parseImportedData,
   ROUTINE_LIMIT_ERROR_MESSAGE,
   syncRoutinesWithCatalog,
+  type BackupImportSummary,
   type ParsedBackupData,
 } from '../utils/backup';
 import { BackupExportPanel } from './data-backup/BackupExportPanel';
@@ -39,18 +40,7 @@ interface DataBackupModalProps {
     newRmLogs: ExerciseRmLog[],
     newWorkoutHistory: WorkoutHistoryLog[],
     newExerciseDiary: ExerciseDiary[],
-    summary: {
-      exercisesAdded: number;
-      exercisesReplaced: number;
-      routinesAdded: number;
-      exercisesInRoutinesUpdated?: number;
-      rmLogsAdded?: number;
-      rmLogsUpdated?: number;
-      historyAdded?: number;
-      diaryAdded?: number;
-      diaryUpdated?: number;
-      mode: 'merge' | 'overwrite';
-    }
+    summary: BackupImportSummary
   ) => void;
 }
 
