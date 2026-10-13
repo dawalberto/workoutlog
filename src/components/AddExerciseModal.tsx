@@ -14,6 +14,7 @@ import { Exercise, ExerciseDefinition, WorkoutSet, ExerciseRmLog, ExerciseDiary 
 import { RmBadge } from './RmBadge';
 import { DiaryButton } from './DiaryButton';
 import { TimePickerField } from './TimePickerField';
+import { filterExerciseCatalog } from '../utils/exerciseCatalog';
 
 interface AddExerciseModalProps {
   isOpen: boolean;
@@ -69,12 +70,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
 
   const categories = ['Todos', 'Pecho', 'Espalda', 'Pierna', 'Hombro', 'Brazos', 'Core'];
 
-  const filteredCatalog = catalog.filter((ex) => {
-    const matchesSearch = ex.name.toLowerCase().includes(search.toLowerCase()) ||
-      (ex.notes && ex.notes.toLowerCase().includes(search.toLowerCase()));
-    const matchesCat = selectedCategory === 'Todos' || ex.category === selectedCategory;
-    return matchesSearch && matchesCat;
-  });
+  const filteredCatalog = filterExerciseCatalog(catalog, search, selectedCategory);
 
   // Add from preconfigured catalog
   const handleSelectFromCatalog = (item: ExerciseDefinition) => {
