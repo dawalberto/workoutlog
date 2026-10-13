@@ -42,19 +42,25 @@ Authenticated clients retain `SELECT` on the 12 synced tables for pull reads, bu
 
 ## SECURITY DEFINER guidelines
 
-Pattern used by `public.sync_push` ([`20261010111000_…`](../../supabase/migrations/20261010111000_preserve_history_metrics_in_sync_push.sql) lines 1–5, 415–416) and `private.*` helpers:
+Pattern used by `public.sync_push` ([`20261013183000_…`](../../supabase/migrations/20261013183000_sync_contract_metadata_and_version.sql) lines 48–51, 416–417) and `private.*` helpers:
 
 ```sql
-CREATE OR REPLACE FUNCTION public.sync_push(p_operation_id uuid, p_changes jsonb)
+CREATE OR REPLACE FUNCTION public.sync_push(
+  p_operation_id uuid,
+  p_changes jsonb,
+  p_contract_version integer DEFAULT NULL
+)
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = pg_catalog, private
 AS $$ ... $$;
 
-REVOKE ALL ON FUNCTION public.sync_push(uuid, jsonb) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.sync_push(uuid, jsonb) TO authenticated;
+REVOKE ALL ON FUNCTION public.sync_push(uuid, jsonb, integer) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.sync_push(uuid, jsonb, integer) TO authenticated;
 ```
+
+`sync_push`'s current three-argument signature has `EXECUTE` granted to `authenticated`; the migration revokes `PUBLIC` and `anon`. The default `service_role` grant remains. This is a known, accepted item: `service_role` is privileged and bypasses RLS by design.
 
 | Do | Don't |
 |---|---|
@@ -71,7 +77,7 @@ GRANT EXECUTE ON FUNCTION public.sync_push(uuid, jsonb) TO authenticated;
 `sync_push` re-validates everything the client sends:
 
 - Operation UUID present; 1–100 changes; operation is `upsert` or `delete`.
-- Table and column whitelist; identity fields required.
+- Contract version, table and column whitelist, and required identity fields. The server whitelist comes from private metadata and rejects unsupported versions before recording receipts.
 - `user_id` is forced to `auth.uid()`; `server_revision`, `deleted_at` are server-controlled (line ~308–319).
 - Base revision checks prevent stale overwrites and tombstone resurrection.
 - FKs are enforced by Postgres; idempotency by `(user_id, operation_id)` + SHA-256 payload hash.

@@ -6,9 +6,9 @@ Last verified: 2026-10-13
 
 ## Read this first
 
-- The contract is **not versioned** and is **duplicated** between SQL and TypeScript. Changing one side without the other breaks sync for every device.
+- The sync contract is versioned. Use the typed [`src/sync/contract.ts`](../../src/sync/contract.ts) manifest as the client source of truth; private SQL metadata drives the server whitelist, and CI checks parity.
 - Deployed PWAs can run an old bundle. Migrate the database **before** deploying the frontend, and only make additive changes.
-- Use the [checklist](#checklist-add-a-synced-field-or-table) for any new synced field or table. Ship migration, types, client, and tests in **one PR**.
+- Use the [checklist](#checklist-add-a-synced-field-or-table) for any new synced field or table. Ship the migration, client, tests, and docs together.
 
 ## Communication
 
@@ -124,10 +124,11 @@ Pull pages are 500 rows (below the 1000 `max_rows` cap). A page with fewer than 
 
 ## Versioning
 
-None. There is no contract version field, no RPC versioning (`sync_push` is replaced with `CREATE OR REPLACE`), and the backup format `version` is always `1` ([`src/utils/backup.ts`](../../src/utils/backup.ts) 21–30). Implications:
+The client declares `SYNC_CONTRACT_VERSION` in [`src/sync/contract.ts`](../../src/sync/contract.ts) and sends it as `p_contract_version` to `sync_push`. The server checks `private.sync_contract_versions`; `NULL` is temporarily treated as legacy version 1. An unsupported version raises `sync_contract_version_unsupported` (`P0001`) before an idempotency receipt is written, so rejected work remains in the local outbox. The client shows the Spanish notice “Actualiza la app para continuar sincronizando.” and keeps queued changes.
 
-- Old clients and new servers must interoperate during rollout.
-- Breaking changes require a new RPC name or a coordinated, documented migration. Planned: a single source-of-truth contract manifest with an explicit contract version (tracked in `odd/tasks/repo-followups.md`, task T8).
+To retire the legacy window, use a forward migration to stop mapping `NULL` to version 1 and mark version 1 unaccepted. Bump the client version and update accepted-version metadata when the wire shape changes. Apply the database migration before deploying the frontend; stale bundles can remain open after deployment.
+
+The backup format version in [`src/utils/backup.ts`](../../src/utils/backup.ts) is independent and remains `1`; do not bump it solely for a sync contract change. See [ADR 0008](../decisions/0008-sync-contract-source-and-version.md).
 
 ## Environments
 
@@ -138,42 +139,32 @@ None. There is no contract version field, no RPC versioning (`sync_push` is repl
 | CI | `supabase start` inside the `database` job; frontend job builds without vars | — |
 | Production | Supabase Cloud project (Free tier; may pause) | GitHub repo variables `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` |
 
-## Where the contract is duplicated
+## Contract sources
 
-| File | What to keep in sync |
+| Source | Responsibility |
 |---|---|
-| Latest `sync_push` migration ([`20261010111000_…`](../../supabase/migrations/20261010111000_preserve_history_metrics_in_sync_push.sql)) | Table/column whitelist, identity keys, FK checks |
-| Table migrations | Columns, PK, FKs, sync metadata trigger, RLS, grants |
-| [`src/types/database.types.ts`](../../src/types/database.types.ts) | Generated row types |
-| [`src/services/sync-queue.ts`](../../src/services/sync-queue.ts) | `SyncTable`, collections, diff, record identity, FK order, optional references, `applyRemoteSyncChange` |
-| [`src/services/cloud-sync.ts`](../../src/services/cloud-sync.ts) | `SYNC_TABLES` order, remote row validation |
-| [`src/services/db.ts`](../../src/services/db.ts) | Collection keys, hydration, metadata, remote apply/merge |
-| [`src/types.ts`](../../src/types.ts) | Domain types |
-| [`src/utils/backup.ts`](../../src/utils/backup.ts) | Export/import sanitization |
-| `supabase/tests/*.test.sql`, `tests/services/*.test.ts` | Both sides' tests |
+| [`src/sync/contract.ts`](../../src/sync/contract.ts) | Client source of truth: version, tables, writable columns, identities, FK edges, and local-store mappings. |
+| `private.sync_contract_tables` and `private.sync_contract_versions` | Server metadata for allowed tables/columns and accepted contract versions; inaccessible to client roles. |
+| `pnpm sync:contract:check` | Compares the typed client snapshot with SQL metadata; runs in the CI database job. |
+| `src/types/database.types.ts` | Generated database row types; regenerate from the local schema. |
+| Sync services and tests | Implement table mapping, conversion, validation, and pull/push behavior; derive shared contract lists from the manifest. |
 
 ## Checklist: add a synced field or table
 
-1. **Migration** (new file `YYYYMMDDHHMMSS_snake_description.sql`): add the column (nullable or defaulted) or the table with `user_id` FK `ON DELETE CASCADE`, composite PK, `server_revision`, `server_updated_at`, `deleted_at`, `created_at`, the `set_workout_sync_metadata` trigger, RLS owner select/insert/update policies, grants.
-2. **Migration**: `CREATE OR REPLACE FUNCTION public.sync_push` copied from the latest definition (`20261010111000`), extending whitelist/columns/FK checks. Keep `SECURITY DEFINER`, `search_path`, revoke/grant.
-3. **pgTAP** in `supabase/tests/` (`BEGIN; SELECT plan(N); … ROLLBACK;`) for RLS and `sync_push` behavior.
-4. **Types**: regenerate `src/types/database.types.ts` (see [backend](backend.md#type-generation)).
-5. **sync-queue.ts**: `SyncTable`/collection, diff, record id, FK dependency order, `applyRemoteSyncChange`.
-6. **cloud-sync.ts**: `SYNC_TABLES` (parent before child) and remote validation.
-7. **db.ts**: collection mapping, hydration, metadata.
-8. **Domain**: `src/types.ts`, hooks, App state.
-9. **Backup**: `src/utils/backup.ts` import/export sanitization (accept old backups without the field).
-10. **Vitest**: `tests/services/*` (sync-queue, cloud-sync, db) and `tests/utils/backup.test.ts`.
-11. **Docs**: this file, [backend](backend.md), [glossary](../domain/glossary.md), README if user-visible.
-12. Run `pnpm test`, `pnpm lint`, `pnpm build`, `pnpm db:reset`, `pnpm db:test`, `pnpm db:lint` (DB commands require `supabase start`, Docker).
+1. Edit `src/sync/contract.ts` for the client contract; keep table/column lists derived from the manifest rather than hard-coded elsewhere.
+2. Add a forward migration for schema changes and update private contract metadata. Change `sync_push` only when its validation or behavior must change.
+3. Start local Supabase, then run `pnpm db:reset && pnpm db:test && pnpm db:types && pnpm sync:contract:check`.
+4. If the wire shape changes, bump `SYNC_CONTRACT_VERSION` and update the server's accepted versions in the migration metadata. Re-run the parity check.
+5. Add or update pgTAP and Vitest coverage; run `pnpm test`, `pnpm lint`, and `pnpm build`.
+6. Deploy the database migration before deploying the frontend. Keep old clients and their outboxes safe during the accepted-version grace window.
 
 ## Evolving without breaking clients
 
 | Rule | Why |
 |---|---|
 | Add columns as nullable/defaulted first | Old clients do not send them |
-| Never remove or rename a column a deployed client sends | `sync_push` would reject unknown fields (`sync_change_field_not_allowed`) or lose data |
-| Keep old `sync_push` behavior for existing fields | Old bundles keep pushing the old shape |
+| Keep fields and behavior compatible while a client version is accepted | An accepted old bundle must still be able to push its shape |
+| Before an incompatible change, stop accepting the old version | Stale clients receive an update-required error and retain their outbox |
 | Apply the migration to production **before** deploying the frontend | New clients must never push fields the server does not accept |
 | Remember service worker `autoUpdate` | Users get the new bundle only after the SW updates; old tabs may run for a while |
 | Keep backup import tolerant of older shapes | Users restore old exports |
@@ -189,6 +180,7 @@ None. There is no contract version field, no RPC versioning (`sync_push` is repl
 - [Frontend architecture](frontend.md)
 - [Architecture overview](overview.md)
 - [Testing strategy](../standards/testing-strategy.md)
+- [ADR 0008 – Sync contract source and version](../decisions/0008-sync-contract-source-and-version.md)
 - [ADR 0004 – Revision-based outbox sync](../decisions/0004-revision-based-outbox-sync.md)
 - [Offline sync skill](../../.github/skills/workoutlog-offline-sync/SKILL.md)
 - [Root README](../../README.md)

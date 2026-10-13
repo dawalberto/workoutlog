@@ -55,7 +55,7 @@ Substantial work (two or more meaningful steps, or progress worth recovering) ge
 - [ ] Behavior implemented with tests ([testing strategy](testing-strategy.md)).
 - [ ] `pnpm test`, `pnpm lint`, `pnpm build` pass.
 - [ ] If `supabase/` changed: new forward-only migration, `pnpm db:reset && pnpm db:test && pnpm db:lint` pass (requires `supabase start`, Docker), `database.types.ts` regenerated.
-- [ ] If the sync contract changed: every row of the [duplication table](../architecture/frontend-backend-strategy.md#where-the-contract-is-duplicated) checked.
+- [ ] If the sync contract changed: review the [contract sources and checklist](../architecture/frontend-backend-strategy.md#contract-sources).
 - [ ] UI follows the [UI skill](../../.github/skills/workoutlog-ui-style/SKILL.md); Spanish copy; 48 px targets.
 - [ ] Docs updated (this folder, README if user-visible, agent files per [agents guide](../agents-guide.md#how-to-keep-this-up-to-date)).
 - [ ] No secrets, no real user data in fixtures.

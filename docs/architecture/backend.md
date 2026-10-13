@@ -8,7 +8,7 @@ Last verified: 2026-10-13
 
 - **Supabase only**: Auth + Postgres 17 + RLS + two RPCs. No custom server or Edge Functions today; no cron or Storage buckets are in use. Future server-side logic (for example, rest-timer push notifications) will use Supabase Edge Functions, its managed serverless runtime, so no custom server is needed. Push notifications are deferred.
 - 12 owner-scoped tables in `public`, all with sync metadata maintained by a trigger.
-- Clients write through `public.sync_push` and read with table selects. Contract details: [frontend–backend strategy](frontend-backend-strategy.md).
+- Clients write through versioned `public.sync_push` and read with table selects. Private contract metadata drives its whitelist. Contract details: [frontend–backend strategy](frontend-backend-strategy.md).
 - Migrations in [`supabase/migrations/`](../../supabase/migrations/20261007135400_create_private_workout_data.sql) are forward-only; never edit an applied one.
 
 ## Schema
@@ -40,7 +40,12 @@ All tables: `user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE`,
 
 ### Private schema
 
-`private` is revoked from `PUBLIC, anon, authenticated`. It holds `sync_revision`, `sync_push_receipts` (idempotency receipts, from `20261007150000_add_sync_push.sql`), and the trigger functions.
+`private` is revoked from `PUBLIC, anon, authenticated`. It holds `sync_revision`, `sync_push_receipts` (idempotency receipts, from `20261007150000_add_sync_push.sql`), the trigger functions, and sync contract metadata:
+
+- `private.sync_contract_tables` stores the ordered table names and writable columns used by `sync_push`.
+- `private.sync_contract_versions` stores client contract versions and whether each is accepted. Version 1 is accepted; a missing RPC version is currently treated as legacy version 1.
+
+The TypeScript manifest at [`src/sync/contract.ts`](../../src/sync/contract.ts) is the client source of truth. `pnpm sync:contract:check` compares its snapshot with the private SQL metadata and runs in the CI database job.
 
 ## RLS
 
@@ -57,10 +62,10 @@ Grants: the initial migration grants `SELECT, INSERT, UPDATE` to `authenticated`
 
 | Function | Security | Access | Purpose |
 |---|---|---|---|
-| `public.sync_push(p_operation_id uuid, p_changes jsonb) returns jsonb` | `SECURITY DEFINER`, `search_path = pg_catalog, private` | `authenticated` only | Validated, idempotent batch of 1–100 upserts/deletes; returns `{ operationId, changes[] }` with new revisions |
+| `public.sync_push(p_operation_id uuid, p_changes jsonb, p_contract_version integer DEFAULT NULL) returns jsonb` | `SECURITY DEFINER`, `search_path = pg_catalog, private` | `authenticated` | Validated, idempotent batch of 1–100 upserts/deletes; checks the contract version and returns `{ operationId, changes[] }` with new revisions |
 | `public.get_sync_entitlement() returns jsonb` | `SECURITY INVOKER`, `search_path = pg_catalog` | `authenticated` only | Returns `{ eligible: true }`; raises `28000` if unauthenticated |
 
-- Latest `sync_push`: [`20261010111000_preserve_history_metrics_in_sync_push.sql`](../../supabase/migrations/20261010111000_preserve_history_metrics_in_sync_push.sql) (grant/revoke at lines 415–416). Prior: `20261010100000_allow_authenticated_account_sync.sql`, `20261007150000_add_sync_push.sql`.
+- Latest `sync_push`: [`20261013183000_sync_contract_metadata_and_version.sql`](../../supabase/migrations/20261013183000_sync_contract_metadata_and_version.sql) (metadata, version gate, grant/revoke). Prior: `20261010111000_preserve_history_metrics_in_sync_push.sql`, `20261010100000_allow_authenticated_account_sync.sql`, `20261007150000_add_sync_push.sql`.
 - `get_sync_entitlement`: [`20261010110000_remove_stripe_billing_add_sync_entitlement.sql`](../../supabase/migrations/20261010110000_remove_stripe_billing_add_sync_entitlement.sql) lines 59–78.
 - Idempotency: receipts keyed by `(user_id, operation_id)` with a SHA-256 payload hash (pgcrypto in `extensions`). Same ID + same payload → stored response; same ID + different payload → `sync_operation_conflict`.
 
@@ -83,6 +88,7 @@ All raised with `ERRCODE = 'P0001'` except authentication (`28000`). Constraint 
 | `sync_change_identity_required` | Record identity fields missing |
 | `sync_stale_revision_conflict` | Row missing and `baseRevision` ≠ 0; or `baseRevision` > server `server_revision`; or an `upsert` targets a tombstoned row with an older `baseRevision` (prevents resurrection). An older base on a live row is **accepted** (server acceptance order wins). Lines ~250–268. |
 | `sync_record_not_found` | Delete/update target missing |
+| `sync_contract_version_unsupported` | The client version is not accepted; raised before an idempotency receipt is written. |
 
 Client handling of each class: [error model](frontend-backend-strategy.md#error-model).
 
@@ -114,8 +120,9 @@ Production redirect URLs are configured in the Supabase dashboard (Auth > URL co
 | `20261009191000_add_billing_plan_metadata_and_frontend_base` | Plan metadata, `get_account_entitlement` | Historical – dropped |
 | `20261010100000_allow_authenticated_account_sync` | `sync_push` for all authenticated users | Superseded function |
 | `20261010110000_remove_stripe_billing_add_sync_entitlement` | Drops all billing objects; adds `get_sync_entitlement` | Active |
-| `20261010111000_preserve_history_metrics_in_sync_push` | Current `sync_push` definition | **Active (latest)** |
+| `20261010111000_preserve_history_metrics_in_sync_push` | Previous `sync_push` definition | Superseded |
 | `20261013155500_revoke_direct_sync_table_writes` | Restricts synced-table client writes to `sync_push`; keeps pull reads | Active |
+| `20261013183000_sync_contract_metadata_and_version` | Private contract metadata, version gate, and `sync_push` whitelist driven by metadata | **Active (latest)** |
 
 Billing context: [ADR 0005](../decisions/0005-remove-billing-signed-in-sync.md).
 
@@ -161,5 +168,6 @@ Future server-side logic (for example, rest-timer push notifications) will run a
 - [Architecture overview](overview.md)
 - [Security](../standards/security.md)
 - [Testing strategy](../standards/testing-strategy.md)
+- [ADR 0008 – Sync contract source and version](../decisions/0008-sync-contract-source-and-version.md)
 - [ADR 0002 – Supabase-only backend](../decisions/0002-supabase-only-backend.md)
 - [ADR 0005 – Remove billing](../decisions/0005-remove-billing-signed-in-sync.md)
