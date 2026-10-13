@@ -43,6 +43,9 @@ export interface UseSyncResult {
   isOnline: boolean;
   pendingChanges: number;
   retry: () => void;
+  syncNow: () => Promise<void>;
+  stopSync: () => Promise<void>;
+  resumeSync: () => void;
 }
 
 const initialStatus: UseSyncStatus = {
@@ -70,6 +73,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
   optionsRef.current = options;
   const coordinatorRef = useRef<SyncCoordinator | null>(null);
   const failedPendingSignatureRef = useRef<string | null>(null);
+  const blockedOwnerIdRef = useRef<string | null>(null);
   const pullRequestedRef = useRef(true);
   const mountedRef = useRef(true);
   const [status, setStatus] = useState<UseSyncStatus>(initialStatus);
@@ -148,6 +152,9 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
   }, []);
 
   useEffect(() => {
+    if (blockedOwnerIdRef.current && blockedOwnerIdRef.current !== options.ownerId) {
+      blockedOwnerIdRef.current = null;
+    }
     coordinatorRef.current?.dispose();
     coordinatorRef.current = null;
     pullRequestedRef.current = true;
@@ -196,6 +203,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
         if (latest.ownerId !== syncOwnerId) return;
         if (
           !latest.ownerId ||
+          blockedOwnerIdRef.current === syncOwnerId ||
           !latest.syncEnabled ||
           !latest.isStorageLoaded ||
           !latest.isOwnerHydrationComplete ||
@@ -233,6 +241,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
             return (
               mountedRef.current &&
               current.ownerId === syncOwnerId &&
+              blockedOwnerIdRef.current !== syncOwnerId &&
               current.syncEnabled &&
               current.isStorageLoaded &&
               current.isOwnerHydrationComplete &&
@@ -308,6 +317,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
     }
     const startReactiveSync = async () => {
       const failedPendingSignature = failedPendingSignatureRef.current;
+      if (blockedOwnerIdRef.current === syncOwnerId) return;
       await flushScopedStorageWrites({ ownerId: syncOwnerId });
       const operations = await getPendingSyncOperations({ ownerId: syncOwnerId });
       if (!pullRequestedRef.current && operations.length === 0) return;
@@ -352,7 +362,11 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
     if (!options.ownerId || !options.syncEnabled ||
       !options.isStorageLoaded || !options.isOwnerHydrationComplete) return;
     const timer = setInterval(() => {
-      if (!isBrowserOnline() || failedPendingSignatureRef.current !== null) return;
+      if (
+        !isBrowserOnline() ||
+        failedPendingSignatureRef.current !== null ||
+        blockedOwnerIdRef.current === options.ownerId
+      ) return;
       pullRequestedRef.current = true;
       void coordinatorRef.current?.run();
     }, 30_000);
@@ -363,12 +377,49 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
   ]);
 
   const retry = () => {
-    if (isOnline) {
+    if (isOnline && blockedOwnerIdRef.current !== optionsRef.current.ownerId) {
       failedPendingSignatureRef.current = null;
       pullRequestedRef.current = true;
       void coordinatorRef.current?.run();
     }
   };
 
-  return { status, isOnline, pendingChanges, retry };
+  const syncNow = useCallback(async () => {
+    const current = optionsRef.current;
+    if (
+      !current.ownerId ||
+      blockedOwnerIdRef.current === current.ownerId ||
+      !current.syncEnabled ||
+      !current.isStorageLoaded ||
+      !current.isOwnerHydrationComplete ||
+      !isBrowserOnline()
+    ) {
+      return;
+    }
+    await flushScopedStorageWrites({ ownerId: current.ownerId });
+    pullRequestedRef.current = true;
+    await coordinatorRef.current?.run();
+  }, []);
+
+  const stopSync = useCallback(async () => {
+    const ownerId = optionsRef.current.ownerId;
+    if (!ownerId) return;
+    blockedOwnerIdRef.current = ownerId;
+    try {
+      await coordinatorRef.current?.run();
+    } catch {
+      // The blocked pass retains pending changes; the sign-out flow checks the durable outbox.
+    }
+  }, []);
+
+  const resumeSync = useCallback(() => {
+    const ownerId = optionsRef.current.ownerId;
+    if (ownerId && blockedOwnerIdRef.current === ownerId) {
+      blockedOwnerIdRef.current = null;
+      pullRequestedRef.current = true;
+      void coordinatorRef.current?.run();
+    }
+  }, []);
+
+  return { status, isOnline, pendingChanges, retry, syncNow, stopSync, resumeSync };
 }

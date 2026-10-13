@@ -40,8 +40,8 @@ Hooks receive state and setters from App and return actions. Persisted collectio
 | Hook | Responsibility |
 |---|---|
 | [`useAppStorage`](../../src/hooks/useAppStorage.ts) | Hydrates and persists the 6 collections (routines, catalog, active sessions, RM logs, history, diary) per scope; migrates legacy `localStorage`; transfers guest data on sign-in. Writes are blocked until hydration completes. |
-| [`useAuth`](../../src/hooks/useAuth.ts) | Supabase session, Google sign-in/out, `{ id, email }`, sync eligibility via `get_sync_entitlement()`. OAuth redirect is `new URL(import.meta.env.BASE_URL, window.location.origin)` (lines 25–27). |
-| [`useSync`](../../src/hooks/useSync.ts) | Online status; triggers push/pull on local change, login, reconnect, Retry, and 30 s polling; exposes `idle \| syncing \| synced \| error`, error, `lastSyncedAt` (lines 22–37, 279–290). Suppresses automatic retries for the same failed pending signature until the queue changes or the user presses Retry (lines 215–244). |
+| [`useAuth`](../../src/hooks/useAuth.ts) | Supabase session, Google sign-in/out, `{ id, email }`, sync eligibility via `get_sync_entitlement()`. Sign-out attempts a final online sync, confirms any remaining outbox changes, then clears account and guest local data after Supabase sign-out succeeds. OAuth redirect is `new URL(import.meta.env.BASE_URL, window.location.origin)` (lines 25–27). |
+| [`useSync`](../../src/hooks/useSync.ts) | Online status; triggers push/pull on local change, login, reconnect, Retry, and 30 s polling; exposes `idle \| syncing \| synced \| error`, error, `lastSyncedAt` (lines 22–37, 279–290). Also exposes an awaited final sync entry point for sign-out. Suppresses automatic retries for the same failed pending signature until the queue changes or the user presses Retry (lines 215–244). |
 | [`useRoutines`](../../src/hooks/useRoutines.ts) | Routine and catalog CRUD, edit/execute mode, guest routine limit. |
 | [`useWorkoutSession`](../../src/hooks/useWorkoutSession.ts) | Active session start/finish, completed sets, history log creation. |
 | [`useRmTracker`](../../src/hooks/useRmTracker.ts) | RM logs and new-record alerts. |
@@ -54,6 +54,8 @@ Hooks receive state and setters from App and return actions. Persisted collectio
 - `export const Name: React.FC<NameProps> = (...) => { ... }` with `interface NameProps` in the same file. Export the props interface only when another module imports it; otherwise keep it module-private.
 - Field edits commit on **blur**, not per keystroke (e.g. [`ExerciseCard`](../../src/components/ExerciseCard.tsx); covered by [`tests/exercise-card.test.tsx`](../../tests/exercise-card.test.tsx)). This keeps the outbox from filling with intermediate values.
 - Full rules and examples: [coding standards](../standards/coding-standards.md).
+
+Signing out removes all local state for the signed-in owner, including queued changes and sync metadata. Guest data is transferred into the owner scope at sign-in, so sign-out also clears the guest scope and legacy collection keys; guest hydration then restores first-run starter data.
 
 ## Styling and design system
 

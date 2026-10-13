@@ -18,9 +18,9 @@ Load for WorkoutLog storage, offline, import/export, or cloud-sync changes.
 - Hydrate before reactive writes; preserve localStorage migration and never overwrite unloaded data with defaults.
 - Keep first-use exercises and routines private, editable user records; never add a shared seed catalog.
 - See the [backend seed guide](../../../docs/architecture/backend.md#seed-and-first-run-starter-data) for how first-run data differs from the local database fixture.
-- Append outbox entries in the same IndexedDB transaction as the state write (`writeStoredItems` in `db.ts`); one entry holds exactly one change. Never drop unacknowledged entries.
+- Append outbox entries in the same IndexedDB transaction as the state write (`writeStoredItems` in `db.ts`); one entry holds exactly one change. Never drop unacknowledged entries during ordinary operation; only confirmed sign-out may discard the owner's local outbox.
 - Resolve conflicts by server acceptance/revision order, not device clocks: `sync_push` rejects stale bases (missing row with base ≠ 0, base newer than server, upsert over a tombstone); the client pulls and retries. Sync tombstones to prevent stale-device resurrection.
-- Losing sync (sign-out, offline, paused Supabase project) must never delete cloud or local data. Preserve import merge/overwrite behavior and media URLs.
+- Offline or failed sync alone must never delete cloud or local data. Explicit sign-out is different: after Supabase sign-out succeeds, the app clears the signed-in owner's local IndexedDB scope and guest data so a shared device contains no previous-account records. If changes remain in the outbox, the user must confirm their loss before sign-out proceeds; cloud data is not deleted.
 - Any new synced field or table is a contract change: load `workoutlog-sync-contract-change`.
 
 ## Decision Gates
@@ -29,6 +29,7 @@ Load for WorkoutLog storage, offline, import/export, or cloud-sync changes.
 | --- | --- |
 | Guest/offline | Read and write locally without network access |
 | Signed in | Sync every persisted collection; keep IndexedDB usable offline |
+| Sign-out | Attempt a final online sync; confirm remaining outbox loss; after auth sign-out, clear owner and guest local scopes and restore first-run guest data |
 | Conflict/deletion | Apply server revisions and retain tombstones |
 | Storage change | Migrate without losing IDs or nested records |
 
@@ -38,6 +39,7 @@ Load for WorkoutLog storage, offline, import/export, or cloud-sync changes.
 2. Include routines, catalog, active sessions, RM logs, workout history, and exercise diary in sync or migration.
 3. Preserve offline edits; reconcile on reconnect with server revisions and tombstones.
 4. Verify reload, migration, import, and relevant conflict/deletion behavior.
+5. On sign-out, never touch Supabase auth storage directly; use the auth SDK, then clear account-scoped local records, outbox, metadata, cursors, flags, and guest data.
 
 ## Output Contract
 

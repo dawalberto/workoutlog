@@ -121,6 +121,9 @@ export async function syncCloudData(
     if (operation.request.changes.length > 100) {
       throw new CloudSyncError('Sync push exceeded the server batch limit.');
     }
+    if (!canSync()) {
+      throw new CloudSyncError('Sync eligibility changed before the request.');
+    }
 
     const push = await pushWithRetry(
       client,
@@ -171,6 +174,9 @@ export async function syncCloudData(
     }
 
     validateAcknowledgement(push.acknowledgement, operation);
+    if (!canSync()) {
+      throw new CloudSyncError('Sync eligibility changed before acknowledging the request.');
+    }
     for (let index = 0; index < operation.request.changes.length; index += 1) {
       const requestedChange = operation.request.changes[index]!;
       const result = push.acknowledgement.changes[index]!;
@@ -240,6 +246,9 @@ async function pullChanges(options: PullOptions): Promise<number> {
 
   changes.sort((left, right) => compareRevisions(left.revision, right.revision));
   const nextCursor = changes.at(-1)?.revision ?? cursor;
+  if (!options.canSync()) {
+    throw new CloudSyncError('Sync eligibility changed before applying pulled changes.');
+  }
   await applyRemoteSyncChanges(changes, nextCursor, options.scope, tableCursors, pendingAtPullStart);
   return changes.length;
 }

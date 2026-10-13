@@ -278,6 +278,69 @@ describe('cloud sync', () => {
     expect(await storage.getPendingSyncOperations(scope)).toHaveLength(0);
   });
 
+  it('does not apply pulled account data after sign-out stops sync', async () => {
+    const scope = { ownerId: 'owner-cleanup-race' };
+    const guestCatalog = [{ id: 'guest-exercise', name: 'Sentadilla' }];
+    await storage.setScopedStoredItem(storage.DB_KEYS.CATALOG, guestCatalog);
+
+    let releasePull!: (result: {
+      data: Array<Record<string, unknown>>;
+      error: null;
+    }) => void;
+    let pullStarted!: () => void;
+    const started = new Promise<void>((resolve) => {
+      pullStarted = resolve;
+    });
+    const pullResult = new Promise<{
+      data: Array<Record<string, unknown>>;
+      error: null;
+    }>((resolve) => {
+      releasePull = resolve;
+    });
+    const client = createClient();
+    client.from.mockImplementation((table: string) => ({
+      select: () => ({
+        gt: () => ({
+          order: () => ({
+            limit: async () => {
+              if (table !== 'exercise_diary_entries') {
+                return table === 'exercise_definitions'
+                  ? {
+                    data: [{
+                      id: 'remote-exercise',
+                      name: 'Remote exercise',
+                      server_revision: 1,
+                      deleted_at: null,
+                    }],
+                    error: null,
+                  }
+                  : { data: [], error: null };
+              }
+              pullStarted();
+              return pullResult;
+            },
+          }),
+        }),
+      }),
+    }) as never);
+    let canSync = true;
+    const syncPass = cloudSync.syncCloudData({
+      ownerId: scope.ownerId,
+      syncEnabled: true,
+      online: true,
+      client: client as never,
+      canSync: () => canSync,
+    });
+
+    await started;
+    canSync = false;
+    releasePull({ data: [], error: null });
+
+    await expect(syncPass).rejects.toThrow('eligibility changed');
+    expect(await storage.getScopedStoredItem(storage.DB_KEYS.CATALOG, [], scope)).toEqual([]);
+    expect(await storage.getScopedStoredItem(storage.DB_KEYS.CATALOG, [])).toEqual(guestCatalog);
+  });
+
   it.each(['routine_exercises', 'rm_logs', 'exercise_diaries'] as const)(
     'recovers an absent optional catalog reference in %s without dropping snapshots',
     async (table) => {

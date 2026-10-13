@@ -81,8 +81,10 @@ Client-side validation in [`src/services/cloud-sync.ts`](../../src/services/clou
 ## Local data privacy
 
 - IndexedDB `WorkoutLogDB` is per browser profile. Guest data lives under `guest`; signed-in data under `owner:<userId>` ([`src/services/db.ts`](../../src/services/db.ts) 48, 88–95).
-- Signing out must leave the app clean, with no previous user's data visible on the device. T6 in [`odd/tasks/repo-followups.md`](../../odd/tasks/repo-followups.md) is implementing this behavior.
-- Rest-timer state is kept in `sessionStorage`.
+- Guest data is transferred into the owner scope on first sign-in and removed from the guest scope. Signing out first attempts a final online sync; if owner-scoped outbox operations remain, the user must confirm their loss before proceeding.
+- After Supabase sign-out succeeds, the app deletes that owner's IndexedDB state, outbox, metadata, cursors, and flags, then clears guest state and legacy collection keys. Clearing guest state is necessary because its original data was adopted into the account during sign-in; the next guest hydration seeds fresh starter data.
+- The app also clears its rest timer and in-memory account data. Supabase's auth SDK owns its auth storage; the app does not manually edit Supabase auth keys.
+- Rest-timer state is kept in `sessionStorage` and removed after successful sign-out.
 
 ## Backups and fixtures
 

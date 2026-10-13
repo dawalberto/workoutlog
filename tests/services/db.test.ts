@@ -644,4 +644,74 @@ describe('IndexedDB storage', () => {
     expect(await storage.getServerCursor(accountScope)).toBe('12');
     expect(await storage.getServerCursor()).toBe('0');
   });
+
+  it('clears every local record for one owner without affecting other scopes', async () => {
+    const firstOwner = { ownerId: 'signout-owner' };
+    const secondOwner = { ownerId: 'other-owner' };
+    const guestRoutine: Routine = {
+      id: 'guest-routine',
+      name: 'Guest routine',
+      createdAt: '2026-01-01',
+      updatedAt: '2026-01-01',
+      exercises: [],
+    };
+    const firstCatalog = [{ id: 'first-exercise', name: 'Sentadilla' }];
+    const secondCatalog = [{ id: 'second-exercise', name: 'Press banca' }];
+
+    await storage.setScopedStoredItem(storage.DB_KEYS.CATALOG, firstCatalog, firstOwner);
+    await storage.setScopedStoredItem(storage.DB_KEYS.STARTER_DATA_FLAG, true, firstOwner);
+    await storage.setServerCursor('10', firstOwner);
+    await storage.setScopedStoredItem(storage.DB_KEYS.CATALOG, secondCatalog, secondOwner);
+    await storage.setServerCursor('20', secondOwner);
+    await storage.setScopedStoredItem(storage.DB_KEYS.ROUTINES, [guestRoutine]);
+
+    await storage.clearOwnerLocalData(firstOwner.ownerId);
+
+    expect(await storage.getScopedStoredItem(storage.DB_KEYS.CATALOG, [], firstOwner)).toEqual([]);
+    expect(await storage.getScopedStoredItem(storage.DB_KEYS.STARTER_DATA_FLAG, false, firstOwner))
+      .toBe(false);
+    expect(await storage.getPendingSyncOperations(firstOwner)).toEqual([]);
+    expect(await storage.getServerCursor(firstOwner)).toBe('0');
+    expect(await storage.getRecordMetadata('exercise_definitions', 'first-exercise', firstOwner))
+      .toBeUndefined();
+    expect(await storage.getScopedStoredItem(storage.DB_KEYS.CATALOG, [], secondOwner))
+      .toEqual(secondCatalog);
+    expect(await storage.getPendingSyncOperations(secondOwner)).toHaveLength(1);
+    expect(await storage.getServerCursor(secondOwner)).toBe('20');
+    expect(await storage.getScopedStoredItem(storage.DB_KEYS.ROUTINES, [])).toEqual([guestRoutine]);
+  });
+
+  it('clears the guest scope so fresh starter data is restored on hydration', async () => {
+    await storage.setScopedStoredItem(storage.DB_KEYS.CATALOG, [
+      { id: 'previous-account-exercise', name: 'Private exercise' },
+    ]);
+    await storage.setScopedStoredItem(storage.DB_KEYS.STARTER_DATA_FLAG, true);
+
+    await storage.clearGuestLocalData();
+    const freshGuestData = await storage.initAndMigrateStorage();
+
+    expect(freshGuestData.catalog.some((item) => item.id === 'previous-account-exercise'))
+      .toBe(false);
+    expect(freshGuestData.catalog.length).toBeGreaterThan(0);
+    expect(freshGuestData.routines.length).toBeGreaterThan(0);
+  });
+
+  it('surfaces localStorage removal errors during guest cleanup', async () => {
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: {
+        removeItem: () => {
+          throw new Error('Storage access denied');
+        },
+      },
+    });
+
+    await expect(storage.clearGuestLocalData()).rejects.toThrow('Storage access denied');
+  });
+
+  it('surfaces IndexedDB failures during owner cleanup', async () => {
+    (await storage.getDatabase()).close();
+
+    await expect(storage.clearOwnerLocalData('cleanup-owner')).rejects.toThrow();
+  });
 });
