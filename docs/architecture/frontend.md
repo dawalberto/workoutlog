@@ -102,7 +102,6 @@ This touches IndexedDB, the outbox, Supabase, and backups. Follow the ordered ch
 | `ROUTINE_LIMIT_ERROR_MESSAGE` is English and mentions "upgrade to Premium" in a Spanish UI. T3 removes it in this branch. | [`src/utils/backup.ts`](../../src/utils/backup.ts) lines 3–18 |
 | `SyncStatus` uses light `zinc`/`emerald` tones, not Neon Bento tokens | [`src/components/SyncStatus.tsx`](../../src/components/SyncStatus.tsx) |
 | `index.html` body has light classes (`bg-zinc-50 text-zinc-900`) and `theme-color` `#FFE600` vs manifest `#09090b` | [`index.html`](../../index.html), [`vite.config.ts`](../../vite.config.ts) |
-| `motion` dependency declared but unused; `@/*` alias configured but unused | [`package.json`](../../package.json), [`tsconfig.json`](../../tsconfig.json) |
 | No background timer notifications | see Timers above |
 
 `metadata.json` and the `DISABLE_HMR` check in [`vite.config.ts`](../../vite.config.ts) are intentionally retained so the repository can be reopened in Google AI Studio; do not remove them.

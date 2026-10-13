@@ -22,7 +22,7 @@ Load the [UI style skill](../skills/workoutlog-ui-style/SKILL.md) for any visual
 
 ## Anti-patterns
 
-- Default exports for components; the `@/` import alias; module-level mutable state; React context or a global store.
+- Default exports for components; module-level mutable state; React context or a global store.
 - Calling Supabase, IndexedDB, or `localStorage` from a component.
 - Firing update handlers on every keystroke (floods the sync outbox).
 - New "Premium"/"Free plan" naming; T3 removes the existing legacy naming in this branch. Guests are limited by `FREE_ROUTINE_LIMIT` in `src/utils/backup.ts`.

@@ -23,7 +23,6 @@ Last verified: 2026-10-11
 | No sign-in option works; status "Solo en este dispositivo" | `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` missing or invalid → client is `null` → local-only mode ([`src/services/supabase.ts`](../src/services/supabase.ts)) | Fill `.env.local` from `supabase status`; restart `pnpm dev`. |
 | UI does not reflect code changes / old assets | PWA service worker active in dev (`devOptions.enabled: true`, [`vite.config.ts`](../vite.config.ts)) | DevTools → Application → Service Workers → Unregister; hard reload. |
 | `supabase start` fails | Docker not running | Start Docker and retry. |
-| `pnpm-workspace.yaml` lists `allowBuilds` entries with "set this to true or false" | Leftover placeholders (legacy), including packages not in dependencies | Do not copy them. `TODO(human): clean up pnpm-workspace.yaml placeholders.` |
 
 ## Auth
 

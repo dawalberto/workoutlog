@@ -52,7 +52,7 @@ Last verified: 2026-10-13
 
 | Do | Don't |
 |---|---|
-| `import { useSync } from '../hooks/useSync';` | `import … from '@/hooks/useSync'` (alias configured but unused – do not introduce) |
+| `import { useSync } from '../hooks/useSync';` | Add path aliases |
 | `import type { Routine } from '../types';` for type-only imports | |
 
 ## Language
@@ -73,7 +73,7 @@ Known inconsistency: `ROUTINE_LIMIT_ERROR_MESSAGE` ([`src/utils/backup.ts`](../.
 
 ## Dependencies
 
-- Add none without the maintainer's approval. Use `pnpm add`; commit `pnpm-lock.yaml` only (never `bun.lock` / `package-lock.json`).
+- Add none without the maintainer's approval. Use `pnpm add`; commit only the canonical pnpm lockfile.
 
 ## Legacy – do not replicate
 
@@ -85,7 +85,6 @@ Known inconsistency: `ROUTINE_LIMIT_ERROR_MESSAGE` ([`src/utils/backup.ts`](../.
 | Light `bg-zinc-50` body / `#FFE600` theme-color | [`index.html`](../../index.html) |
 | Light zinc/emerald tones in `SyncStatus` | [`SyncStatus.tsx`](../../src/components/SyncStatus.tsx) |
 | 700–1000-line components | `RmLogsView`, `DataBackupModal`, `ExerciseDiaryView`, `ExerciseCatalog`, `RoutineView` — split when touching heavily |
-| `bun.lock`, `pnpm-workspace.yaml` placeholders | repo root |
 
 `metadata.json` and the `DISABLE_HMR` check in [`vite.config.ts`](../../vite.config.ts) are intentionally retained so the repository can be reopened in Google AI Studio; do not remove them.
 

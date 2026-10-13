@@ -68,7 +68,7 @@ Full rules: [coding standards](docs/standards/coding-standards.md).
 | Do | Don't |
 |---|---|
 | `export const SyncStatus: React.FC<SyncStatusProps> = …`; export its props interface only when another module imports it, otherwise keep it module-private | Default-export components (only legacy `App.tsx` does) |
-| Relative imports: `import { useSync } from '../hooks/useSync';` | Introduce the unused `@/` alias |
+| Relative imports: `import { useSync } from '../hooks/useSync';` | Add path aliases |
 | Single quotes, semicolons, 2-space indent | Reformat untouched code |
 | Commit text inputs on blur (`ExerciseCard.tsx`) | Call update handlers per keystroke (floods the outbox) |
 | Persist via `useAppStorage` / `db.ts` | Read IndexedDB or call Supabase from components; write `localStorage` |

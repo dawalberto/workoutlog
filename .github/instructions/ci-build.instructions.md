@@ -20,11 +20,11 @@ Depth: [git workflow](../../docs/standards/git-workflow.md), [deployment topolog
 
 ## Anti-patterns
 
-- Adding bun, npm, or yarn lockfiles or commands (`bun.lock` is legacy).
+- Adding alternate package-manager lockfiles or commands.
 - Adding dependencies without approval.
 - Deploying migrations from CI or running `db:reset` against a remote project.
 - Removing the strict port (`--strictPort` on 5173): Supabase Auth `site_url` expects it.
-- Copying `pnpm-workspace.yaml` placeholder `allowBuilds` values or AI Studio leftovers (`DISABLE_HMR`, `metadata.json`) into new config.
+- Copying placeholder build-script approvals or AI Studio leftovers (`DISABLE_HMR`, `metadata.json`) into new config.
 
 ## Verify
 

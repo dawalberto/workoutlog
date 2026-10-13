@@ -23,7 +23,7 @@ Without Supabase env vars the app runs fully offline ("local-only mode"). Add a 
 | Supabase CLI | 2.120.0 | Local Supabase stack, migrations, pgTAP tests | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) |
 | Docker | any recent | Required by `supabase start` | [`supabase/config.toml`](../supabase/config.toml) |
 
-There is no `.nvmrc` / `engines` field. Use pnpm only; `bun.lock` is legacy (see [ADR 0007](decisions/0007-pnpm-package-manager.md)).
+There is no `.nvmrc` / `engines` field. Use pnpm only (see [ADR 0007](decisions/0007-pnpm-package-manager.md)).
 
 ## Setup
 
