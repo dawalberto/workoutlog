@@ -15,22 +15,25 @@ Last verified: 2026-10-13
 | Path | Contents |
 |---|---|
 | [`src/main.tsx`](../../src/main.tsx) | Entry: `registerSW({ immediate: true })`, renders `<App />` in `StrictMode`. |
-| [`src/App.tsx`](../../src/App.tsx) | Composition root (~465 lines): state, tab switching, overlays, hook wiring. |
+| [`src/App.tsx`](../../src/App.tsx) | Composition root (538 lines): view selection, overlays, and auth/storage/sync wiring. |
 | [`src/types.ts`](../../src/types.ts) | Domain types (`Routine`, `Exercise`, `WorkoutSet`, `ExerciseDefinition`, `AppTab`, …). |
 | [`src/types/database.types.ts`](../../src/types/database.types.ts) | Supabase-generated DB types (regenerated with `pnpm db:types`; see [backend](backend.md#type-generation)). |
-| `src/components/` | 31 components, one per file, named exports. |
-| `src/hooks/` | Domain hooks (table below). |
+| `src/components/` | Entry components plus props-driven feature parts in `exercise-catalog/`, `exercise-diary/`, `routine/`, `rm-logs/`, and `data-backup/`. |
+| `src/hooks/` | Domain and view-state hooks (table below). |
 | `src/services/` | `db.ts` (IndexedDB), `sync-queue.ts`, `cloud-sync.ts`, `supabase.ts`, `auth.ts`. |
-| `src/utils/` | Pure helpers: `backup.ts`, `rmCalculations.ts`, `timeCalculations.ts`, `diaryCalculations.ts`, `audioBeep.ts`, `videoHelper.ts`. |
+| `src/utils/` | Pure helpers including `exerciseCatalog.ts`, `rmLogs.ts`, `routineView.ts`, and `restTimer.ts`. |
 | [`src/data/initialData.ts`](../../src/data/initialData.ts) | Starter routines/exercises created as private, editable user records. |
 | [`src/index.css`](../../src/index.css) | Tailwind import, CSS variables, custom utility classes. |
 
+Entry components compose; feature subfolders hold props-driven parts; state/handlers live in hooks; pure logic in `src/utils`; this prepares the planned Zustand store.
+
 ## App composition and navigation
 
-- Navigation is `activeTab` state of type `AppTab` ([`src/App.tsx`](../../src/App.tsx) lines 48–50; enum in [`src/types.ts`](../../src/types.ts) lines 44–50): `ROUTINES`, `EXERCISES`, `RMS`, `HISTORY`, `DIARY`.
+- Navigation is `activeTab` state of type `AppTab` in [`useAppViewState`](../../src/hooks/useAppViewState.ts); the enum in [`src/types.ts`](../../src/types.ts) defines `ROUTINES`, `EXERCISES`, `RMS`, `HISTORY`, and `DIARY`.
 - [`BottomTabBar`](../../src/components/BottomTabBar.tsx) renders the tabs ("Rutinas", "Ejercicios", "RMs", "Historial", "Diario").
-- Selecting a routine replaces the tab content with [`RoutineView`](../../src/components/RoutineView.tsx) (App.tsx ~288–369), in edit ("Editar") or execute ("Entrenar") mode.
-- Global overlays rendered by App (App.tsx ~380–463): `SidebarMenu`, `RmRecordAlertModal`, `WorkoutSummaryModal`, `DataBackupModal`, `RestTimerBar`, `ToastNotification`.
+- Selecting a routine replaces the tab content with [`RoutineView`](../../src/components/RoutineView.tsx), in edit ("Editar") or execute ("Entrenar") mode.
+- App keeps the discriminated view selection and global overlay composition; it has no router. Sign-out sequencing stays explicit in App.
+- Global overlays rendered by App include `SidebarMenu`, `RmRecordAlertModal`, `WorkoutSummaryModal`, `DataBackupModal`, `RestTimerBar`, and `ToastNotification`.
 - There are no URLs per screen; browser back/forward does not navigate tabs.
 
 ## Hooks
@@ -45,6 +48,12 @@ Hooks receive state and setters from App and return actions. Persisted collectio
 | [`useRoutines`](../../src/hooks/useRoutines.ts) | Routine and catalog CRUD, edit/execute mode, guest routine limit. |
 | [`useWorkoutSession`](../../src/hooks/useWorkoutSession.ts) | Active session start/finish, completed sets, history log creation. |
 | [`useRmTracker`](../../src/hooks/useRmTracker.ts) | RM logs and new-record alerts. |
+| [`useExerciseCatalog`](../../src/hooks/useExerciseCatalog.ts) | Exercise catalog filters, selection, form state, and actions. |
+| [`useExerciseDiary`](../../src/hooks/useExerciseDiary.ts) | Diary navigation, filtering, entry editing, and actions. |
+| [`useRoutineViewState`](../../src/hooks/useRoutineViewState.ts) | Routine view mode, draft, exercise selection, collapse, and scroll state. |
+| [`useRmLogActions`](../../src/hooks/useRmLogActions.ts) | RM log selection, record actions, and related modal state. |
+| [`useAppViewState`](../../src/hooks/useAppViewState.ts) | Active tab, sidebar visibility, backup-modal visibility, and simple navigation actions. |
+| [`useActiveRestTimer`](../../src/hooks/useActiveRestTimer.ts) | Active rest-timer state and start/close actions; persistence helpers live in `src/utils/restTimer.ts`. |
 | [`useExerciseDiaryNavigation`](../../src/hooks/useExerciseDiaryNavigation.ts) | Opening the diary for a given exercise. |
 | [`useWorkoutTimer`](../../src/hooks/useWorkoutTimer.ts) | Elapsed time since a session start. |
 | [`usePWAInstall`](../../src/hooks/usePWAInstall.ts) | Install prompt handling for the PWA banner/button. |
@@ -70,7 +79,7 @@ Signing out removes all local state for the signed-in owner, including queued ch
 
 ## Timers and audio
 
-- Rest timer state lives in App and is persisted to `sessionStorage` (App.tsx ~142–171); [`RestTimerBar`](../../src/components/RestTimerBar.tsx) shows the countdown.
+- Rest-timer state and lifecycle live in [`useActiveRestTimer`](../../src/hooks/useActiveRestTimer.ts); [`src/utils/restTimer.ts`](../../src/utils/restTimer.ts) hydrates, expires, saves, and clears its `sessionStorage` value. [`RestTimerBar`](../../src/components/RestTimerBar.tsx) shows the countdown.
 - On completion: `playTimerFinishBeep()` (Web Audio with HTML5 audio fallback) and `triggerTimerVibration()` (`navigator.vibrate`) in [`src/utils/audioBeep.ts`](../../src/utils/audioBeep.ts).
 - **Limitation:** no Notification API, no push, no wake lock, no SW notification handling. When the phone is locked or the tab is backgrounded, the alert may not fire. Background notifications would need server-side push — see [backend: adding server-side logic](backend.md#adding-server-side-logic-edge-functions-scheduled-jobs-push).
 
@@ -98,8 +107,7 @@ This touches IndexedDB, the outbox, Supabase, and backups. Follow the ordered ch
 
 | Item | Evidence |
 |---|---|
-| Very large components (700–1000 lines): `RmLogsView`, `DataBackupModal`, `ExerciseDiaryView`, `ExerciseCatalog`, `RoutineView` | `src/components/` |
-| Heavy orchestration and prop drilling in App | [`src/App.tsx`](../../src/App.tsx) |
+| App remains the composition root for conditional view selection and sign-out coordination | [`src/App.tsx`](../../src/App.tsx) |
 | No background timer notifications | see Timers above |
 
 `metadata.json` and the `DISABLE_HMR` check in [`vite.config.ts`](../../vite.config.ts) are intentionally retained so the repository can be reopened in Google AI Studio; do not remove them.

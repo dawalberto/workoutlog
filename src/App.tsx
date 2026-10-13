@@ -11,7 +11,6 @@ import {
   ExerciseRmLog,
   WorkoutHistoryLog,
   ExerciseDiary,
-  ActiveRestTimer,
 } from './types';
 import { RoutineList } from './components/RoutineList';
 import { RoutineView } from './components/RoutineView';
@@ -43,13 +42,23 @@ import { useRoutines } from './hooks/useRoutines';
 import { useWorkoutSession } from './hooks/useWorkoutSession';
 import { useRmTracker } from './hooks/useRmTracker';
 import { useExerciseDiaryNavigation } from './hooks/useExerciseDiaryNavigation';
+import { useAppViewState } from './hooks/useAppViewState';
+import { useActiveRestTimer } from './hooks/useActiveRestTimer';
 import { flushScopedStorageWrites, loadScopedAppStorageData, mergeSyncRefresh } from './services/db';
 
 export default function App() {
-  // Navigation & Modal Visibility
-  const [activeTab, setActiveTab] = useState<AppTab>(AppTab.ROUTINES);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
+  const {
+    activeTab,
+    closeMenu,
+    closeBackupModal,
+    isBackupModalOpen,
+    isMenuOpen,
+    openBackupModal,
+    openMenu,
+    setActiveTab,
+    setIsBackupModalOpen,
+    setIsMenuOpen,
+  } = useAppViewState();
   const [isUnsyncedSignOutDialogOpen, setIsUnsyncedSignOutDialogOpen] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const resolveSignOutConfirmationRef = useRef<((confirmed: boolean) => void) | null>(null);
@@ -148,33 +157,7 @@ export default function App() {
     activeRoutineId,
   });
 
-  // Global Rest Timer state across routine training, diary, history & all tabs
-  const [activeRestTimer, setActiveRestTimer] = useState<ActiveRestTimer | null>(() => {
-    try {
-      const saved = sessionStorage.getItem('current_rest_timer');
-      if (saved) {
-        const parsed: ActiveRestTimer = JSON.parse(saved);
-        if (parsed.targetEndTime && parsed.targetEndTime > Date.now() - 60000) {
-          return parsed;
-        }
-      }
-    } catch {}
-    return null;
-  });
-
-  const handleStartRestTimer = (timer: ActiveRestTimer) => {
-    setActiveRestTimer(timer);
-    try {
-      sessionStorage.setItem('current_rest_timer', JSON.stringify(timer));
-    } catch {}
-  };
-
-  const handleCloseRestTimer = () => {
-    setActiveRestTimer(null);
-    try {
-      sessionStorage.removeItem('current_rest_timer');
-    } catch {}
-  };
+  const { activeRestTimer, handleCloseRestTimer, handleStartRestTimer } = useActiveRestTimer();
 
   const handleConfirmUnsyncedSignOut = (confirmed: boolean) => {
     setIsUnsyncedSignOutDialogOpen(false);
@@ -383,7 +366,7 @@ export default function App() {
             onSelectTab={setActiveTab}
             routinesCount={routines.length}
             catalogCount={catalog.length}
-            onOpenMenu={() => setIsMenuOpen(true)}
+            onOpenMenu={openMenu}
           />
 
           {inProgressSessionEntry && inProgressRoutine && (
@@ -462,7 +445,7 @@ export default function App() {
       {/* Sidebar Navigation Drawer */}
       <SidebarMenu
         isOpen={isMenuOpen}
-        onClose={() => setIsMenuOpen(false)}
+        onClose={closeMenu}
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         routinesCount={routines.length}
@@ -470,7 +453,7 @@ export default function App() {
         rmCount={rmLogs.length}
         historyCount={workoutHistory.length}
         diaryCount={getTotalDiaryEntriesCount(exerciseDiary)}
-        onOpenBackup={() => setIsBackupModalOpen(true)}
+        onOpenBackup={openBackupModal}
         isAuthenticated={Boolean(account.user)}
         userEmail={account.user?.email ?? null}
         isSyncEnabled={account.isSyncEnabled}
@@ -517,7 +500,7 @@ export default function App() {
       {/* Import / Export JSON Backup Modal */}
       <DataBackupModal
         isOpen={isBackupModalOpen}
-        onClose={() => setIsBackupModalOpen(false)}
+        onClose={closeBackupModal}
         catalog={catalog}
         routines={routines}
         rmLogs={rmLogs}

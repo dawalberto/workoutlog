@@ -22,11 +22,11 @@ Read this file first, then load the matching skill and scoped instructions. Deep
 
 | Path | Contents |
 |---|---|
-| `src/App.tsx` | Composition root: tab state, overlays, all persisted state |
-| `src/components/` | 31 presentational components (named exports) |
-| `src/hooks/` | Domain hooks: `useAppStorage`, `useAuth`, `useSync`, `useRoutines`, … |
+| `src/App.tsx` | Composition root: view selection, overlays, persisted state, auth/storage/sync wiring |
+| `src/components/` | Entry components plus props-driven parts in `exercise-catalog/`, `exercise-diary/`, `routine/`, `rm-logs/`, and `data-backup/` |
+| `src/hooks/` | Domain and view-state hooks: `useAppStorage`, `useAuth`, `useSync`, `useRoutines`, `useExerciseCatalog`, `useExerciseDiary`, `useRoutineViewState`, `useRmLogActions`, `useAppViewState`, `useActiveRestTimer`, … |
 | `src/services/` | `db.ts` (IndexedDB + outbox), `sync-queue.ts`, `cloud-sync.ts`, `auth.ts`, `supabase.ts` |
-| `src/utils/`, `src/data/` | Pure helpers, backup format, starter data |
+| `src/utils/`, `src/data/` | Pure helpers (`exerciseCatalog`, `rmLogs`, `routineView`, `restTimer`), backup format, starter data |
 | `src/types.ts`, `src/types/database.types.ts` | Domain types; generated Supabase types |
 | `tests/` | Vitest tests (mirrors `src/`) |
 | `supabase/` | `config.toml`, forward-only `migrations/`, pgTAP `tests/`, local development `seed.sql` (see [backend seed guide](docs/architecture/backend.md#seed-and-first-run-starter-data)) |
@@ -58,6 +58,7 @@ CI (`.github/workflows/ci.yml`) runs `pnpm test`, `pnpm lint`, `pnpm build` and 
 ## Architecture
 
 - State lives in `App.tsx` and hooks; there is no router or global store. A future refactor to one Zustand store is planned; do not add Zustand patterns or ad-hoc global state now ([ADR 0006](docs/decisions/0006-app-state-in-hooks-no-router.md)).
+- Entry components compose; feature subfolders hold props-driven parts; state/handlers live in hooks; pure logic in `src/utils`; this prepares the planned Zustand store.
 - Persistence: `useAppStorage` → `src/services/db.ts` (IndexedDB `WorkoutLogDB` v2, scopes `guest` / `owner:<id>`). Each write diffs state and appends outbox entries in the same transaction.
 - Sync: `useSync` → `cloud-sync.ts` pulls by `server_revision`, then pushes one queued outbox operation per `sync_push` call. Server revision order wins over device clocks.
 - Guests are local-only and limited to `GUEST_ROUTINE_LIMIT` routines; every signed-in user syncs (`get_sync_entitlement` returns `{ eligible: true }`).
