@@ -18,7 +18,7 @@ Load for any change under `supabase/migrations/` or `supabase/tests/`. If the ch
 - Additive only: new columns nullable or defaulted; never drop/rename columns deployed clients send.
 - Synced tables copy `20261007135400_create_private_workout_data.sql`: `user_id` FK `ON DELETE CASCADE`, PK `(user_id, id)`, `server_revision`, `server_updated_at`, `deleted_at`, `set_workout_sync_metadata` trigger, RLS enabled, owner select/insert/update policies with `(select auth.uid())`, no DELETE policy.
 - Functions: `SECURITY DEFINER` only when needed, with `SET search_path = pg_catalog, private`, schema-qualified names, `auth.uid()` identity, `format('%I')` + `USING`; then `REVOKE ALL … FROM PUBLIC, anon` and `GRANT EXECUTE … TO authenticated` (pattern: `20261010111000_…` lines 1–5, 415–416). Prefer `SECURITY INVOKER` when RLS suffices.
-- Never reintroduce billing objects, enable `seed.sql`, or put secrets in `config.toml`.
+- Keep `seed.sql` aligned with the active schema as a local-development fixture; never reintroduce billing objects or put secrets in `config.toml`. See the [seed guide](../../../docs/architecture/backend.md#seed-and-first-run-starter-data).
 
 ## Execution Steps
 

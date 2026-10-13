@@ -128,9 +128,13 @@ pnpm db:types
 
 The command requires `supabase start` (Docker). CI regenerates the file after resetting the local database and fails if that produces a diff, enforcing generated-type freshness.
 
-## Seed
+## Seed and first-run starter data
 
-[`supabase/seed.sql`](../../supabase/seed.sql) is **legacy – do not replicate**: it inserts into the dropped `public.user_entitlements` (line 24), so `[db.seed] enabled = false` in `config.toml` (~67–72).
+These are separate datasets with different purposes. [`supabase/seed.sql`](../../supabase/seed.sql) is a small local-development database fixture for a private test account; Supabase loads it during local database resets and it is never run in production. It does not define the app's first-run experience.
+
+First-run starter exercises and routines are client-side in [`src/data/initialData.ts`](../../src/data/initialData.ts), which `src/services/db.ts` uses when a user first opens the app. They become private, editable user records; do not move them into a shared/global seed catalog table.
+
+TODO(human): define the final starter exercises and routines in `src/data/initialData.ts`
 
 ## What does NOT exist
 

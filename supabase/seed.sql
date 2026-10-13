@@ -21,40 +21,55 @@ VALUES (
 )
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO public.user_entitlements (user_id, tier, valid_until)
-VALUES ('00000000-0000-4000-8000-000000000001', 'premium', NULL)
-ON CONFLICT (user_id) DO NOTHING;
-
 INSERT INTO public.exercise_definitions (
   user_id,
   id,
   name,
   category,
-  notes,
   default_sets,
   default_reps,
   default_weight,
   default_rest_seconds
 )
-VALUES (
-  '00000000-0000-4000-8000-000000000001',
-  'local-squat',
-  'Squat',
-  'strength',
-  'Local private fixture',
-  '3'::jsonb,
-  '10'::jsonb,
-  '"bodyweight"'::jsonb,
-  '90'::jsonb
-)
+VALUES
+  (
+    '00000000-0000-4000-8000-000000000001',
+    'starter-push-up',
+    'Push-up',
+    'Chest',
+    '3'::jsonb,
+    '8'::jsonb,
+    '0'::jsonb,
+    '60'::jsonb
+  ),
+  (
+    '00000000-0000-4000-8000-000000000001',
+    'starter-squat',
+    'Bodyweight Squat',
+    'Legs',
+    '3'::jsonb,
+    '10'::jsonb,
+    '0'::jsonb,
+    '60'::jsonb
+  ),
+  (
+    '00000000-0000-4000-8000-000000000001',
+    'starter-dumbbell-row',
+    'Dumbbell Row',
+    'Back',
+    '3'::jsonb,
+    '10'::jsonb,
+    '10'::jsonb,
+    '60'::jsonb
+  )
 ON CONFLICT (user_id, id) DO NOTHING;
 
 INSERT INTO public.routines (user_id, id, name, notes)
 VALUES (
   '00000000-0000-4000-8000-000000000001',
-  'local-full-body',
-  'Local full body',
-  'Editable local development fixture'
+  'starter-routine-full-body-a',
+  'Starter Full Body A',
+  'An editable, equipment-light full-body routine.'
 )
 ON CONFLICT (user_id, id) DO NOTHING;
 
@@ -67,15 +82,25 @@ INSERT INTO public.routine_exercises (
   category,
   position
 )
-VALUES (
-  '00000000-0000-4000-8000-000000000001',
-  'local-squat-in-routine',
-  'local-full-body',
-  'local-squat',
-  'Squat',
-  'strength',
-  0
-)
+VALUES
+  (
+    '00000000-0000-4000-8000-000000000001',
+    'starter-routine-a-push-up',
+    'starter-routine-full-body-a',
+    'starter-push-up',
+    'Push-up',
+    'Chest',
+    0
+  ),
+  (
+    '00000000-0000-4000-8000-000000000001',
+    'starter-routine-a-squat',
+    'starter-routine-full-body-a',
+    'starter-squat',
+    'Bodyweight Squat',
+    'Legs',
+    1
+  )
 ON CONFLICT (user_id, id) DO NOTHING;
 
 INSERT INTO public.workout_sets (
@@ -88,140 +113,25 @@ INSERT INTO public.workout_sets (
   weight,
   rest_seconds
 )
-VALUES (
-  '00000000-0000-4000-8000-000000000001',
-  'local-squat-set-1',
-  'local-full-body',
-  'local-squat-in-routine',
-  0,
-  '10'::jsonb,
-  '45'::jsonb,
-  '90'::jsonb
-)
-ON CONFLICT (user_id, id) DO NOTHING;
-
-INSERT INTO public.active_workout_sessions (user_id, routine_id, started_at)
-VALUES (
-  '00000000-0000-4000-8000-000000000001',
-  'local-full-body',
-  '2026-10-01T12:00:00Z'
-)
-ON CONFLICT (user_id, routine_id) DO NOTHING;
-
-INSERT INTO public.active_session_completed_sets (user_id, routine_id, set_id)
-VALUES (
-  '00000000-0000-4000-8000-000000000001',
-  'local-full-body',
-  'local-squat-set-1'
-)
-ON CONFLICT (user_id, routine_id, set_id) DO NOTHING;
-
-INSERT INTO public.rm_logs (
-  user_id,
-  id,
-  definition_id,
-  exercise_name,
-  category
-)
-VALUES (
-  '00000000-0000-4000-8000-000000000001',
-  'local-squat-rm-log',
-  'local-squat',
-  'Squat',
-  'strength'
-)
-ON CONFLICT (user_id, id) DO NOTHING;
-
-INSERT INTO public.rm_records (
-  user_id,
-  id,
-  log_id,
-  weight,
-  recorded_on,
-  notes
-)
-VALUES (
-  '00000000-0000-4000-8000-000000000001',
-  'local-squat-rm-record',
-  'local-squat-rm-log',
-  '100'::jsonb,
-  '2026-10-01',
-  'Local fixture record'
-)
-ON CONFLICT (user_id, id) DO NOTHING;
-
-INSERT INTO public.workout_history (
-  user_id,
-  id,
-  routine_id,
-  routine_name,
-  started_at,
-  completed_at,
-  duration_seconds,
-  exercises_completed,
-  sets_completed
-)
-VALUES (
-  '00000000-0000-4000-8000-000000000001',
-  'local-history-1',
-  'local-full-body',
-  'Local full body snapshot',
-  '2026-10-01T12:00:00Z',
-  '2026-10-01T12:30:00Z',
-  1800,
-  1,
-  1
-)
-ON CONFLICT (user_id, id) DO NOTHING;
-
-INSERT INTO public.workout_history_exercises (
-  user_id,
-  history_id,
-  position,
-  exercise_name,
-  exercises_completed,
-  sets_completed
-)
-VALUES (
-  '00000000-0000-4000-8000-000000000001',
-  'local-history-1',
-  0,
-  'Squat snapshot',
-  1,
-  1
-)
-ON CONFLICT (user_id, history_id, position) DO NOTHING;
-
-INSERT INTO public.exercise_diaries (
-  user_id,
-  id,
-  definition_id,
-  exercise_name,
-  category
-)
-VALUES (
-  '00000000-0000-4000-8000-000000000001',
-  'local-squat-diary',
-  'local-squat',
-  'Squat',
-  'strength'
-)
-ON CONFLICT (user_id, id) DO NOTHING;
-
-INSERT INTO public.exercise_diary_entries (
-  user_id,
-  id,
-  diary_id,
-  recorded_on,
-  note,
-  feeling
-)
-VALUES (
-  '00000000-0000-4000-8000-000000000001',
-  'local-squat-diary-entry-1',
-  'local-squat-diary',
-  '2026-10-01',
-  'Local development fixture entry',
-  'strong'
-)
+VALUES
+  (
+    '00000000-0000-4000-8000-000000000001',
+    'starter-routine-a-push-up-set-1',
+    'starter-routine-full-body-a',
+    'starter-routine-a-push-up',
+    0,
+    '8'::jsonb,
+    '0'::jsonb,
+    '60'::jsonb
+  ),
+  (
+    '00000000-0000-4000-8000-000000000001',
+    'starter-routine-a-squat-set-1',
+    'starter-routine-full-body-a',
+    'starter-routine-a-squat',
+    0,
+    '10'::jsonb,
+    '0'::jsonb,
+    '60'::jsonb
+  )
 ON CONFLICT (user_id, id) DO NOTHING;

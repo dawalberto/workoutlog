@@ -27,7 +27,7 @@ Read this file first, then load the matching skill and scoped instructions. Deep
 | `src/utils/`, `src/data/` | Pure helpers, backup format, starter data |
 | `src/types.ts`, `src/types/database.types.ts` | Domain types; generated Supabase types |
 | `tests/` | Vitest tests (mirrors `src/`) |
-| `supabase/` | `config.toml`, forward-only `migrations/`, pgTAP `tests/`, legacy disabled `seed.sql` |
+| `supabase/` | `config.toml`, forward-only `migrations/`, pgTAP `tests/`, local development `seed.sql` (see [backend seed guide](docs/architecture/backend.md#seed-and-first-run-starter-data)) |
 | `docs/` | Human docs (single source of truth) |
 | `odd/tasks/` | ODD feature task documents |
 | `.github/` | CI workflows, skills, instructions, agents, prompts |

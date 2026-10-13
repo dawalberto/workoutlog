@@ -1,3 +1,4 @@
+// First-run starter exercises and routines live here as private per-user records; the final catalogue awaits maintainer definition.
 import { ExerciseDefinition, Routine } from '../types';
 
 export const INITIAL_EXERCISE_DEFINITIONS: ExerciseDefinition[] = [

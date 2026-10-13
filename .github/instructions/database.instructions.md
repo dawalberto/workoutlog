@@ -20,7 +20,7 @@ Load the [Supabase migration skill](../skills/workoutlog-supabase-migration/SKIL
 ## Anti-patterns
 
 - Reintroducing billing objects or `user_entitlements` (dropped in `20261010110000_…`).
-- Enabling `supabase/seed.sql` (legacy; references dropped tables).
+- Seeds that reference dropped tables or reintroduce billing; keep the local fixture aligned with the active schema ([seed guide](../../docs/architecture/backend.md#seed-and-first-run-starter-data)).
 - Unqualified object names or string-concatenated dynamic SQL in definer functions; use `format('%I')` and `USING`.
 - Secrets in `supabase/config.toml`; use `env(...)` references only.
 

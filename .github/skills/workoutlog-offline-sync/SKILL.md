@@ -17,6 +17,7 @@ Load for WorkoutLog storage, offline, import/export, or cloud-sync changes.
 - Preserve string IDs, snapshots, and nested routine exercises and sets.
 - Hydrate before reactive writes; preserve localStorage migration and never overwrite unloaded data with defaults.
 - Keep first-use exercises and routines private, editable user records; never add a shared seed catalog.
+- See the [backend seed guide](../../../docs/architecture/backend.md#seed-and-first-run-starter-data) for how first-run data differs from the local database fixture.
 - Append outbox entries in the same IndexedDB transaction as the state write (`writeStoredItems` in `db.ts`); one entry holds exactly one change. Never drop unacknowledged entries.
 - Resolve conflicts by server acceptance/revision order, not device clocks: `sync_push` rejects stale bases (missing row with base ≠ 0, base newer than server, upsert over a tombstone); the client pulls and retries. Sync tombstones to prevent stale-device resurrection.
 - Losing sync (sign-out, offline, paused Supabase project) must never delete cloud or local data. Preserve import merge/overwrite behavior and media URLs.
