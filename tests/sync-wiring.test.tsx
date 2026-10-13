@@ -304,7 +304,8 @@ describe('sync wiring', () => {
 
       storage = await import('../src/services/db');
       const backup = await import('../src/utils/backup');
-      const { useAppStorage } = await import('../src/hooks/useAppStorage');
+      const { createAppStore } = await import('../src/store/appStore');
+      const persistence = await import('../src/store/persistence');
       const { DataBackupModal } = await import('../src/components/DataBackupModal');
       const ownerScope = { ownerId: 'import-owner' };
       const baseline = createBaseline();
@@ -318,15 +319,27 @@ describe('sync wiring', () => {
         storage.setScopedStoredItem(storage.DB_KEYS.EXERCISE_DIARY, baseline.exerciseDiary, ownerScope),
       ]);
 
-      const renderStorage = () => hookHarness.render(() => useAppStorage('import-owner', false));
-      let appStorage = renderStorage();
-      await hookHarness.runEffects();
-      for (let attempt = 0; attempt < 20 && !appStorage.isStorageLoaded; attempt += 1) {
-        await new Promise((resolve) => setTimeout(resolve, 0));
-        appStorage = renderStorage();
-        await hookHarness.runEffects();
-      }
-      expect(appStorage.isStorageLoaded).toBe(true);
+      const appStore = createAppStore();
+      const stopPersistence = persistence.startPersistence(appStore);
+      const stopHydration = persistence.hydrateStorage(appStore, 'import-owner', false);
+      await vi.waitFor(() => expect(appStore.getState().isStorageLoaded).toBe(true));
+      const appStorage = {
+        ...appStore.getState(),
+        applyImportData: (
+          catalog: ReturnType<typeof appStore.getState>['catalog'],
+          routines: ReturnType<typeof appStore.getState>['routines'],
+          rmLogs: ReturnType<typeof appStore.getState>['rmLogs'],
+          workoutHistory: ReturnType<typeof appStore.getState>['workoutHistory'],
+          exerciseDiary: ReturnType<typeof appStore.getState>['exerciseDiary'],
+        ) => persistence.applyImportData(
+          appStore,
+          catalog,
+          routines,
+          rmLogs,
+          workoutHistory,
+          exerciseDiary,
+        ),
+      };
       await storage.flushScopedStorageWrites(ownerScope);
 
       const modalHarness = createHookHarness();
@@ -363,9 +376,9 @@ describe('sync wiring', () => {
       findElement(modal, (element) => element.props.id === 'btn-confirm-import')
         ?.props.onClick?.();
 
-      appStorage = renderStorage();
-      await hookHarness.runEffects();
       await storage.flushScopedStorageWrites(ownerScope);
+      stopHydration();
+      stopPersistence();
 
       const operations = await storage.getPendingSyncOperations(ownerScope);
       const changes = operations.flatMap((operation) => operation.request.changes);

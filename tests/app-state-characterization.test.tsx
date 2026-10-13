@@ -142,12 +142,17 @@ describe('App state characterization', () => {
         user: null,
       }),
     }));
-    vi.doMock('../src/hooks/useAppStorage', () => ({
-      useAppStorage: () => ({
+    vi.doMock('../src/hooks/useStorageLifecycle', () => ({
+      useStorageLifecycle: vi.fn(),
+    }));
+    vi.doMock('../src/store/appStore', () => ({
+      appStore: {},
+      useAppStore: (selector: (state: Record<string, unknown>) => unknown) => selector({
         activeSessions: {},
-        applyImportData: vi.fn(),
         catalog: [],
         exerciseDiary: [],
+        activeScopeKey: 'guest',
+        hydratedScopeKey: 'guest',
         isGuestTransferComplete: true,
         isStorageLoaded: true,
         rmLogs: [],
@@ -161,6 +166,13 @@ describe('App state characterization', () => {
         storageError: null,
         workoutHistory: [],
       }),
+    }));
+    vi.doMock('../src/store/persistence', () => ({
+      applyImportData: vi.fn(),
+      refreshFromStorage: vi.fn(),
+    }));
+    vi.doMock('zustand/react/shallow', () => ({
+      useShallow: (selector: (state: Record<string, unknown>) => unknown) => selector,
     }));
     vi.doMock('../src/hooks/useSync', () => ({
       useSync: () => ({
@@ -227,7 +239,10 @@ describe('App state characterization', () => {
     Reflect.deleteProperty(globalThis, 'sessionStorage');
     vi.doUnmock('react');
     vi.doUnmock('../src/hooks/useAuth');
-    vi.doUnmock('../src/hooks/useAppStorage');
+    vi.doUnmock('../src/hooks/useStorageLifecycle');
+    vi.doUnmock('../src/store/appStore');
+    vi.doUnmock('../src/store/persistence');
+    vi.doUnmock('zustand/react/shallow');
     vi.doUnmock('../src/hooks/useSync');
     vi.doUnmock('../src/hooks/useRoutines');
     vi.doUnmock('../src/hooks/useWorkoutSession');

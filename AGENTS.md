@@ -24,7 +24,8 @@ Read this file first, then load the matching skill and scoped instructions. Deep
 |---|---|
 | `src/App.tsx` | Composition root: view selection, overlays, persisted state, auth/storage/sync wiring |
 | `src/components/` | Entry components plus props-driven parts in `exercise-catalog/`, `exercise-diary/`, `routine/`, `rm-logs/`, and `data-backup/` |
-| `src/hooks/` | Domain and view-state hooks: `useAppStorage`, `useAuth`, `useSync`, `useRoutines`, `useExerciseCatalog`, `useExerciseDiary`, `useRoutineViewState`, `useRmLogActions`, `useAppViewState`, `useActiveRestTimer`, … |
+| `src/hooks/` | Domain and lifecycle hooks: `useStorageLifecycle`, `useAuth`, `useSync`, `useRoutines`, `useExerciseCatalog`, `useExerciseDiary`, `useRoutineViewState`, `useRmLogActions`, `useAppViewState`, `useActiveRestTimer`, … |
+| `src/store/` | Zustand app store, domain slices, and persistence adapter. |
 | `src/services/` | `db.ts` (IndexedDB + outbox), `sync-queue.ts`, `cloud-sync.ts`, `auth.ts`, `supabase.ts` |
 | `src/utils/`, `src/data/` | Pure helpers (`exerciseCatalog`, `rmLogs`, `routineView`, `restTimer`), backup format, starter data |
 | `src/types.ts`, `src/types/database.types.ts` | Domain types; generated Supabase types |
@@ -57,9 +58,10 @@ CI (`.github/workflows/ci.yml`) runs `pnpm test`, `pnpm lint`, `pnpm build` and 
 
 ## Architecture
 
-- State lives in `App.tsx` and hooks; there is no router or global store. A future refactor to one Zustand store is planned; do not add Zustand patterns or ad-hoc global state now ([ADR 0006](docs/decisions/0006-app-state-in-hooks-no-router.md)).
-- Entry components compose; feature subfolders hold props-driven parts; state/handlers live in hooks; pure logic in `src/utils`; this prepares the planned Zustand store.
-- Persistence: `useAppStorage` → `src/services/db.ts` (IndexedDB `WorkoutLogDB` v2, scopes `guest` / `owner:<id>`). Each write diffs state and appends outbox entries in the same transaction.
+- State lives in the Zustand store (`src/store/`); components read it through `useAppStore` selectors and per-component hooks. Persistence and sync are lifecycle adapters. Do not add React context or another global state mechanism ([ADR 0009](docs/decisions/0009-zustand-app-store.md)).
+- Entry components compose; feature subfolders hold props-driven parts; per-component hooks own local domain interactions; pure logic stays in `src/utils`.
+- Persistence: `useStorageLifecycle` → `src/store/persistence.ts` → `src/services/db.ts` (IndexedDB `WorkoutLogDB` v2, scopes `guest` / `owner:<id>`). Each write diffs state and appends outbox entries in the same transaction.
+- The Zustand migration is in progress; see [`odd/tasks/zustand-store-refactor.md`](odd/tasks/zustand-store-refactor.md).
 - Sync: `useSync` → `cloud-sync.ts` pulls by `server_revision`, then pushes one queued outbox operation per `sync_push` call. Server revision order wins over device clocks.
 - Guests are local-only and limited to `GUEST_ROUTINE_LIMIT` routines; every signed-in user syncs (`get_sync_entitlement` returns `{ eligible: true }`).
 
@@ -75,7 +77,7 @@ Full rules: [coding standards](docs/standards/coding-standards.md).
 | Relative imports: `import { useSync } from '../hooks/useSync';` | Add path aliases |
 | Single quotes, semicolons, 2-space indent | Reformat untouched code |
 | Commit text inputs on blur (`ExerciseCard.tsx`) | Call update handlers per keystroke (floods the outbox) |
-| Persist via `useAppStorage` / `db.ts` | Read IndexedDB or call Supabase from components; write `localStorage` |
+| Persist through store lifecycle adapters / `db.ts` | Read IndexedDB or call Supabase from components; write `localStorage` |
 | Spanish UI copy and `aria-label`s (`"Navegación principal"`) | English user-facing text |
 | English identifiers, comments, commits, docs | Plan labels or billing-tier terminology in application code or UI |
 | Tailwind + Neon Bento tokens from the UI skill | New CSS frameworks, icon libraries, or one-off global CSS |

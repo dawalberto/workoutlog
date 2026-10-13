@@ -9,7 +9,7 @@ Last verified: 2026-10-13
 - TypeScript everywhere; `pnpm lint` (`tsc --noEmit`) is the only linter. No ESLint/Prettier — match the surrounding style.
 - Single quotes, semicolons, 2-space indentation, **relative imports**.
 - Components: `export const Name: React.FC<NameProps>` + `interface NameProps` in the same file. Export a component's props interface only when another module imports it; otherwise keep it module-private.
-- State lives in `App.tsx` and hooks; persist through `useAppStorage` / `src/services/db.ts`. A future refactor to one Zustand store is planned; do not introduce Zustand patterns or ad-hoc global state now.
+- Shared state lives in the Zustand store (`src/store/`); components read it through `useAppStore` selectors and per-component hooks. Persistence and sync are lifecycle adapters; do not add React context or another global state mechanism. The migration is in progress; see [`odd/tasks/zustand-store-refactor.md`](../../odd/tasks/zustand-store-refactor.md).
 - Code, identifiers, comments: **English**. UI copy: **Spanish**.
 - Text inputs commit on **blur**.
 - Style with Tailwind classes following the [UI skill](../../.github/skills/workoutlog-ui-style/SKILL.md).
@@ -43,8 +43,8 @@ Last verified: 2026-10-13
 
 | Do | Don't |
 |---|---|
-| Keep persisted collections in App state; pass setters into hooks; return actions | Add ad-hoc global state mechanisms; do not introduce Zustand patterns before the planned single-store refactor |
-| Persist through `useAppStorage` → `setScopedStoredItem` | Write `localStorage` directly (legacy; migrated away) |
+| Keep shared state and actions in the Zustand store; select only what components need | Add React context or another global state mechanism |
+| Persist through the store adapter → `setScopedStoredItem` | Write `localStorage` directly (legacy; migrated away) |
 | Wait for hydration before reactive writes | Overwrite unloaded data with defaults |
 | Keep sync logic in `src/services/*` and `useSync` | Push to Supabase from feature hooks |
 

@@ -2,11 +2,11 @@
 
 Records the frontend state and navigation model.
 
-Last verified: 2026-10-11
+Last verified: 2026-10-13
 
 ## Status
 
-Accepted (describes the current architecture).
+Superseded by ADR 0009.
 
 ## Context
 

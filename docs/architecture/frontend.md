@@ -7,7 +7,8 @@ Last verified: 2026-10-13
 ## At a glance
 
 - React 19 + Vite 8 + Tailwind CSS v4, TypeScript, PWA via `vite-plugin-pwa`.
-- **No router or global store today.** State lives in [`src/App.tsx`](../../src/App.tsx) and hooks; domain hooks own the logic. A future refactor to one Zustand store is planned; do not introduce Zustand patterns or ad-hoc global state now ([ADR 0006](../decisions/0006-app-state-in-hooks-no-router.md)).
+- **No router.** State lives in the Zustand store ([`src/store/`](../../src/store/)); components read it through `useAppStore` selectors and per-component hooks. Persistence and sync are lifecycle adapters; do not add React context or another global state mechanism ([ADR 0009](../decisions/0009-zustand-app-store.md)).
+- The store migration is in progress; see [`odd/tasks/zustand-store-refactor.md`](../../odd/tasks/zustand-store-refactor.md).
 - UI copy is hardcoded Spanish; code and comments are English. No i18n library.
 
 ## Folder structure
@@ -20,12 +21,13 @@ Last verified: 2026-10-13
 | [`src/types/database.types.ts`](../../src/types/database.types.ts) | Supabase-generated DB types (regenerated with `pnpm db:types`; see [backend](backend.md#type-generation)). |
 | `src/components/` | Entry components plus props-driven feature parts in `exercise-catalog/`, `exercise-diary/`, `routine/`, `rm-logs/`, and `data-backup/`. |
 | `src/hooks/` | Domain and view-state hooks (table below). |
+| [`src/store/`](../../src/store/) | Zustand app store, state slices, and persistence adapter. |
 | `src/services/` | `db.ts` (IndexedDB), `sync-queue.ts`, `cloud-sync.ts`, `supabase.ts`, `auth.ts`. |
 | `src/utils/` | Pure helpers including `exerciseCatalog.ts`, `rmLogs.ts`, `routineView.ts`, and `restTimer.ts`. |
 | [`src/data/initialData.ts`](../../src/data/initialData.ts) | Starter routines/exercises created as private, editable user records. |
 | [`src/index.css`](../../src/index.css) | Tailwind import, CSS variables, custom utility classes. |
 
-Entry components compose; feature subfolders hold props-driven parts; state/handlers live in hooks; pure logic in `src/utils`; this prepares the planned Zustand store.
+Entry components compose; feature subfolders hold props-driven parts; shared state lives in the store, component interactions live in hooks, and pure logic stays in `src/utils`.
 
 ## App composition and navigation
 
@@ -38,11 +40,11 @@ Entry components compose; feature subfolders hold props-driven parts; state/hand
 
 ## Hooks
 
-Hooks receive state and setters from App and return actions. Persisted collections are owned by App; hooks may keep only transient UI state (e.g. `pendingRmAlert` in `useRmTracker`).
+The store owns shared state and actions. Components and per-component hooks use selectors; lifecycle adapters own persistence, auth, and sync service interactions.
 
 | Hook | Responsibility |
 |---|---|
-| [`useAppStorage`](../../src/hooks/useAppStorage.ts) | Hydrates and persists the 6 collections (routines, catalog, active sessions, RM logs, history, diary) per scope; migrates legacy `localStorage`; transfers guest data on sign-in. Writes are blocked until hydration completes. |
+| [`useStorageLifecycle`](../../src/hooks/useStorageLifecycle.ts) | Mounts the persistence adapter, which hydrates and persists the 6 collections per scope, migrates legacy `localStorage`, and transfers guest data on sign-in. Writes are blocked until hydration completes. |
 | [`useAuth`](../../src/hooks/useAuth.ts) | Supabase session, Google sign-in/out, `{ id, email }`, sync eligibility via `get_sync_entitlement()`. Sign-out attempts a final online sync, confirms any remaining outbox changes, then clears account and guest local data after Supabase sign-out succeeds. OAuth redirect is `new URL(import.meta.env.BASE_URL, window.location.origin)` (lines 25–27). |
 | [`useSync`](../../src/hooks/useSync.ts) | Online status; triggers push/pull on local change, login, reconnect, Retry, and 30 s polling; exposes `idle \| syncing \| synced \| error`, error, `lastSyncedAt` (lines 22–37, 279–290). Also exposes an awaited final sync entry point for sign-out. Suppresses automatic retries for the same failed pending signature until the queue changes or the user presses Retry (lines 215–244). |
 | [`useRoutines`](../../src/hooks/useRoutines.ts) | Routine and catalog CRUD, edit/execute mode, guest routine limit. |
@@ -95,7 +97,7 @@ Signing out removes all local state for the signed-in owner, including queued ch
 ### Adding a hook
 
 1. Create `src/hooks/useThing.ts` exporting `useThing(props: UseThingProps): UseThingReturn` (pattern: [`useRmTracker`](../../src/hooks/useRmTracker.ts)).
-2. Take state and setters as inputs; return actions. Keep persistence in `useAppStorage`.
+2. Read shared state through `useAppStore` selectors and keep persistence in the store lifecycle adapter.
 3. Call it from App and pass results down as props.
 4. Add Vitest tests for its logic where feasible ([testing strategy](../standards/testing-strategy.md)).
 

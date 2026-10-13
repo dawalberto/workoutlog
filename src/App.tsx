@@ -7,6 +7,7 @@ import React, { useRef, useState } from 'react';
 import {
   Routine,
   ExerciseDefinition,
+  ActiveWorkoutSession,
   AppTab,
   ExerciseRmLog,
   WorkoutHistoryLog,
@@ -36,7 +37,7 @@ import {
   ROUTINE_LIMIT_ERROR_MESSAGE,
 } from './utils/backup';
 import { useAuth } from './hooks/useAuth';
-import { useAppStorage } from './hooks/useAppStorage';
+import { useStorageLifecycle } from './hooks/useStorageLifecycle';
 import { useSync } from './hooks/useSync';
 import { useRoutines } from './hooks/useRoutines';
 import { useWorkoutSession } from './hooks/useWorkoutSession';
@@ -44,7 +45,18 @@ import { useRmTracker } from './hooks/useRmTracker';
 import { useExerciseDiaryNavigation } from './hooks/useExerciseDiaryNavigation';
 import { useAppViewState } from './hooks/useAppViewState';
 import { useActiveRestTimer } from './hooks/useActiveRestTimer';
-import { flushScopedStorageWrites, loadScopedAppStorageData, mergeSyncRefresh } from './services/db';
+import { useAppStore, appStore } from './store/appStore';
+import { useShallow } from 'zustand/react/shallow';
+import { applyImportData, refreshFromStorage } from './store/persistence';
+
+const EMPTY_PERSISTED_DATA = {
+  routines: [] as Routine[],
+  catalog: [] as ExerciseDefinition[],
+  activeSessions: {} as Record<string, ActiveWorkoutSession>,
+  rmLogs: [] as ExerciseRmLog[],
+  workoutHistory: [] as WorkoutHistoryLog[],
+  exerciseDiary: [] as ExerciseDiary[],
+};
 
 export default function App() {
   const {
@@ -64,7 +76,11 @@ export default function App() {
   const resolveSignOutConfirmationRef = useRef<((confirmed: boolean) => void) | null>(null);
   const account = useAuth();
 
-  // Storage Layer (IndexedDB with automatic legacy localStorage migration)
+  useStorageLifecycle(account.user?.id, account.isSyncEnabled);
+  const currentScopeKey = account.user?.id
+    ? `owner:${encodeURIComponent(account.user.id)}`
+    : 'guest';
+
   const {
     isStorageLoaded,
     isGuestTransferComplete,
@@ -81,25 +97,28 @@ export default function App() {
     setWorkoutHistory,
     exerciseDiary,
     setExerciseDiary,
-    applyImportData,
-  } = useAppStorage(account.user?.id, account.isSyncEnabled);
+  } = useAppStore(useShallow((state) => {
+    const isCurrentScope = state.hydratedScopeKey === currentScopeKey;
+    return {
+      isStorageLoaded: isCurrentScope && state.isStorageLoaded,
+      isGuestTransferComplete: state.isGuestTransferComplete,
+      storageError: isCurrentScope ? state.storageError : null,
+      routines: isCurrentScope ? state.routines : EMPTY_PERSISTED_DATA.routines,
+      setRoutines: state.setRoutines,
+      catalog: isCurrentScope ? state.catalog : EMPTY_PERSISTED_DATA.catalog,
+      setCatalog: state.setCatalog,
+      activeSessions: isCurrentScope ? state.activeSessions : EMPTY_PERSISTED_DATA.activeSessions,
+      setActiveSessions: state.setActiveSessions,
+      rmLogs: isCurrentScope ? state.rmLogs : EMPTY_PERSISTED_DATA.rmLogs,
+      setRmLogs: state.setRmLogs,
+      workoutHistory: isCurrentScope ? state.workoutHistory : EMPTY_PERSISTED_DATA.workoutHistory,
+      setWorkoutHistory: state.setWorkoutHistory,
+      exerciseDiary: isCurrentScope ? state.exerciseDiary : EMPTY_PERSISTED_DATA.exerciseDiary,
+      setExerciseDiary: state.setExerciseDiary,
+    };
+  }));
 
-  const syncOwnerRef = useRef(account.user?.id);
-  syncOwnerRef.current = account.user?.id;
-  const refreshSyncedStorage = async () => {
-    const ownerId = account.user?.id;
-    if (!ownerId || !isStorageLoaded) return;
-    await flushScopedStorageWrites({ ownerId });
-    const data = await loadScopedAppStorageData({ ownerId });
-    if (syncOwnerRef.current !== ownerId) return;
-    // A refresh must not replace edits made while its IndexedDB reads were pending.
-    setRoutines((current) => mergeSyncRefresh(routines, current, data.routines, 'routines'));
-    setCatalog((current) => mergeSyncRefresh(catalog, current, data.catalog, 'catalog'));
-    setActiveSessions((current) => mergeSyncRefresh(activeSessions, current, data.activeSessions, 'activeSessions'));
-    setRmLogs((current) => mergeSyncRefresh(rmLogs, current, data.rmLogs, 'rmLogs'));
-    setWorkoutHistory((current) => mergeSyncRefresh(workoutHistory, current, data.workoutHistory, 'workoutHistory'));
-    setExerciseDiary((current) => mergeSyncRefresh(exerciseDiary, current, data.exerciseDiary, 'exerciseDiary'));
-  };
+  const refreshSyncedStorage = () => refreshFromStorage(appStore, account.user?.id);
 
   const sync = useSync({
     ownerId: account.user?.id ?? null,
@@ -259,7 +278,7 @@ export default function App() {
       return;
     }
 
-    applyImportData(newCatalog, newRoutines, newRmLogs, newWorkoutHistory, newExerciseDiary);
+    applyImportData(appStore, newCatalog, newRoutines, newRmLogs, newWorkoutHistory, newExerciseDiary);
 
     let msg = '';
     if (summary.mode === 'overwrite') {
