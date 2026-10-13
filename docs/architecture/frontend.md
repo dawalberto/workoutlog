@@ -2,12 +2,12 @@
 
 Structure and conventions of the React PWA in `src/`, and where to extend it.
 
-Last verified: 2026-10-11
+Last verified: 2026-10-13
 
 ## At a glance
 
 - React 19 + Vite 8 + Tailwind CSS v4, TypeScript, PWA via `vite-plugin-pwa`.
-- **No router, no React context, no global store.** State lives in [`src/App.tsx`](../../src/App.tsx) and flows down as props; domain hooks own the logic ([ADR 0006](../decisions/0006-app-state-in-hooks-no-router.md)).
+- **No router or global store today.** State lives in [`src/App.tsx`](../../src/App.tsx) and hooks; domain hooks own the logic. A future refactor to one Zustand store is planned; do not introduce Zustand patterns or ad-hoc global state now ([ADR 0006](../decisions/0006-app-state-in-hooks-no-router.md)).
 - UI copy is hardcoded Spanish; code and comments are English. No i18n library.
 
 ## Folder structure
@@ -51,7 +51,7 @@ Hooks receive state and setters from App and return actions. Persisted collectio
 
 ## Component conventions
 
-- `export const Name: React.FC<NameProps> = (...) => { ... }` with `interface NameProps` in the same file.
+- `export const Name: React.FC<NameProps> = (...) => { ... }` with `interface NameProps` in the same file. Export the props interface only when another module imports it; otherwise keep it module-private.
 - Field edits commit on **blur**, not per keystroke (e.g. [`ExerciseCard`](../../src/components/ExerciseCard.tsx); covered by [`tests/exercise-card.test.tsx`](../../tests/exercise-card.test.tsx)). This keeps the outbox from filling with intermediate values.
 - Full rules and examples: [coding standards](../standards/coding-standards.md).
 
@@ -98,13 +98,14 @@ This touches IndexedDB, the outbox, Supabase, and backups. Follow the ordered ch
 |---|---|
 | Very large components (700–1000 lines): `RmLogsView`, `DataBackupModal`, `ExerciseDiaryView`, `ExerciseCatalog`, `RoutineView` | `src/components/` |
 | Heavy orchestration and prop drilling in App | [`src/App.tsx`](../../src/App.tsx) |
-| "Premium"/"Free" naming after billing removal: `account.isSyncEnabled` passed as `premiumActive`/`isPremiumActive` (App.tsx ~94, 126, 305, 436); `SyncStatus` copy still says "Plan Free" / "Premium no está activo" | [`src/components/SyncStatus.tsx`](../../src/components/SyncStatus.tsx) |
-| `ROUTINE_LIMIT_ERROR_MESSAGE` is English and mentions "upgrade to Premium" in a Spanish UI | [`src/utils/backup.ts`](../../src/utils/backup.ts) lines 3–18 |
+| "Premium"/"Free" naming after billing removal: `account.isSyncEnabled` passed as `premiumActive`/`isPremiumActive` (App.tsx ~94, 126, 305, 436); `SyncStatus` copy still says "Plan Free" / "Premium no está activo". T3 removes it in this branch. | [`src/components/SyncStatus.tsx`](../../src/components/SyncStatus.tsx) |
+| `ROUTINE_LIMIT_ERROR_MESSAGE` is English and mentions "upgrade to Premium" in a Spanish UI. T3 removes it in this branch. | [`src/utils/backup.ts`](../../src/utils/backup.ts) lines 3–18 |
 | `SyncStatus` uses light `zinc`/`emerald` tones, not Neon Bento tokens | [`src/components/SyncStatus.tsx`](../../src/components/SyncStatus.tsx) |
 | `index.html` body has light classes (`bg-zinc-50 text-zinc-900`) and `theme-color` `#FFE600` vs manifest `#09090b` | [`index.html`](../../index.html), [`vite.config.ts`](../../vite.config.ts) |
 | `motion` dependency declared but unused; `@/*` alias configured but unused | [`package.json`](../../package.json), [`tsconfig.json`](../../tsconfig.json) |
-| AI Studio leftovers: `DISABLE_HMR` in `vite.config.ts`, `metadata.json`, Apache header in App.tsx | legacy – do not replicate |
 | No background timer notifications | see Timers above |
+
+`metadata.json` and the `DISABLE_HMR` check in [`vite.config.ts`](../../vite.config.ts) are intentionally retained so the repository can be reopened in Google AI Studio; do not remove them.
 
 ## Related
 

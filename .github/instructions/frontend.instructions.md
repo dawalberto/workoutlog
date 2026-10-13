@@ -9,7 +9,7 @@ Load the [UI style skill](../skills/workoutlog-ui-style/SKILL.md) for any visual
 
 ## Patterns
 
-- Components: one per file, named export `export const RmBadge: React.FC<RmBadgeProps>` with `export interface RmBadgeProps` (see `src/components/RmBadge.tsx`). Some older components keep the props interface unexported; export it in new code.
+- Components: one per file, named export `export const RmBadge: React.FC<RmBadgeProps>` (see `src/components/RmBadge.tsx`). Export a component's props interface only when another module imports it; otherwise keep it module-private.
 - State: persisted collections live in `src/App.tsx`; hooks take setters and return actions (`src/hooks/useRmTracker.ts` → `UseRmTrackerProps` / `UseRmTrackerReturn`).
 - Navigation: add tabs through the `AppTab` enum in `src/types.ts` and the `activeTab` switch in `App.tsx`; there is no router.
 - Persistence: go through `useAppStorage` → `src/services/db.ts`. Wait for hydration before reactive writes.
@@ -25,7 +25,7 @@ Load the [UI style skill](../skills/workoutlog-ui-style/SKILL.md) for any visual
 - Default exports for components; the `@/` import alias; module-level mutable state; React context or a global store.
 - Calling Supabase, IndexedDB, or `localStorage` from a component.
 - Firing update handlers on every keystroke (floods the sync outbox).
-- New "Premium"/"Free plan" naming; the existing `premiumActive` props are legacy. Guests are limited by `FREE_ROUTINE_LIMIT` in `src/utils/backup.ts`.
+- New "Premium"/"Free plan" naming; T3 removes the existing legacy naming in this branch. Guests are limited by `FREE_ROUTINE_LIMIT` in `src/utils/backup.ts`.
 - Light zinc backgrounds or generic grays (legacy in `SyncStatus.tsx`, `index.html`); use the Neon Bento tokens.
 - Growing the 700–1000-line components (`RmLogsView`, `DataBackupModal`, …); extract subcomponents when touching them heavily.
 

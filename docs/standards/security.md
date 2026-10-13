@@ -2,7 +2,7 @@
 
 How WorkoutLog handles secrets, data ownership, privileged SQL, and personal data.
 
-Last verified: 2026-10-11
+Last verified: 2026-10-13
 
 ## Rules in one screen
 
@@ -22,11 +22,12 @@ Last verified: 2026-10-11
 | `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET` | **Secret** | Shell env / Supabase dashboard (prod) | Never in `.env.local` or git |
 | `OPENAI_API_KEY` | Optional secret | Shell env | Supabase Studio AI only |
 | `SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN` | Secret | Shell env | SMS auth is disabled |
-| `DISABLE_HMR` | Dev flag | Shell env | AI Studio leftover |
+| `DISABLE_HMR` | Dev flag | Shell env | Intentionally retained for reopening the repo in Google AI Studio |
 
 - [`.env.example`](../../.env.example) documents the two public names. `.env.local` is personal; do not commit or paste its contents.
 - The deploy workflow uses `vars.*` (repository variables), not `secrets.*` — correct, because both values are public.
 - Never use a Supabase service-role/secret key in the client or the repo.
+- Future Edge Function secrets belong in Supabase secrets (CLI: `supabase secrets set`, or the dashboard), are read with `Deno.env.get`, and must never be committed. Deploy functions with `supabase functions deploy`; none exist yet.
 
 ## Ownership model (RLS)
 
@@ -80,7 +81,7 @@ Client-side validation in [`src/services/cloud-sync.ts`](../../src/services/clou
 ## Local data privacy
 
 - IndexedDB `WorkoutLogDB` is per browser profile. Guest data lives under `guest`; signed-in data under `owner:<userId>` ([`src/services/db.ts`](../../src/services/db.ts) 48, 88–95).
-- Signing out does not delete local data. `TODO(human): confirm intended behavior for local owner-scoped data on sign-out on shared devices.`
+- Signing out must leave the app clean, with no previous user's data visible on the device. T6 in [`odd/tasks/repo-followups.md`](../../odd/tasks/repo-followups.md) is implementing this behavior.
 - Rest-timer state is kept in `sessionStorage`.
 
 ## Backups and fixtures

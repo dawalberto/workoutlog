@@ -2,7 +2,7 @@
 
 Domain and sync terms with their code identifiers and Spanish UI labels.
 
-Last verified: 2026-10-11
+Last verified: 2026-10-13
 
 UI labels were checked in `src/components/` (file noted when not obvious). "—" means the term has no user-facing label.
 
@@ -38,7 +38,7 @@ UI labels were checked in `src/components/` (file noted when not obvious). "—"
 | Sign in / out | Google OAuth via Supabase | `useAuth().signInWithGoogle` / `signOut` | "Continuar con Google" / "Cerrar sesión" ([`SidebarMenu.tsx`](../../src/components/SidebarMenu.tsx)) |
 | Entitlement | Server answer on sync eligibility (always eligible when signed in) | `get_sync_entitlement()`, `account.isSyncEnabled` | — |
 | Guest routine limit | Max routines for guests | `FREE_ROUTINE_LIMIT = 3` ([`src/utils/backup.ts`](../../src/utils/backup.ts)) | — |
-| Premium / Free (legacy) | Former billing tiers; now means signed-in vs guest | `premiumActive`, `isPremiumActive` | "Plan Free", "Premium" (legacy copy) |
+| Premium / Free (legacy) | Former billing tiers; now means signed-in vs guest. T3 removes this naming in this branch. | `premiumActive`, `isPremiumActive` | "Plan Free", "Premium" (legacy copy) |
 | Backup | JSON export/import of app data | `src/utils/backup.ts`, `DataBackupModal` | "Copia de seguridad (Importar / Exportar JSON)" |
 | Merge import | Combine backup with current data | backup import mode | "Combinar con los datos actuales" ([`DataBackupModal.tsx`](../../src/components/DataBackupModal.tsx)) |
 | Overwrite import | Replace current data with backup | backup import mode | "Sobrescribir toda la información actual de la app" |

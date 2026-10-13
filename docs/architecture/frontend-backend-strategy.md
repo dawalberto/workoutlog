@@ -2,7 +2,7 @@
 
 The authoritative description of how the WorkoutLog client and Supabase communicate, and the checklist for changing that contract safely.
 
-Last verified: 2026-10-11
+Last verified: 2026-10-13
 
 ## Read this first
 
@@ -127,7 +127,7 @@ Pull pages are 500 rows (below the 1000 `max_rows` cap). A page with fewer than 
 None. There is no contract version field, no RPC versioning (`sync_push` is replaced with `CREATE OR REPLACE`), and the backup format `version` is always `1` ([`src/utils/backup.ts`](../../src/utils/backup.ts) 21–30). Implications:
 
 - Old clients and new servers must interoperate during rollout.
-- Breaking changes require a new RPC name or a coordinated, documented migration. `TODO(human): decide a versioning strategy if a breaking contract change becomes necessary.`
+- Breaking changes require a new RPC name or a coordinated, documented migration. Planned: a single source-of-truth contract manifest with an explicit contract version (tracked in `odd/tasks/repo-followups.md`, task T8).
 
 ## Environments
 

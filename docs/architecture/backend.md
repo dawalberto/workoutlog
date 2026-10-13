@@ -2,11 +2,11 @@
 
 What the Supabase backend contains — schema, RLS, RPCs, auth, migrations — and what it deliberately does not contain.
 
-Last verified: 2026-10-11
+Last verified: 2026-10-13
 
 ## At a glance
 
-- **Supabase only**: Auth + Postgres 17 + RLS + two RPCs. No custom server, no Edge Functions, no cron, no Storage buckets in use ([ADR 0002](../decisions/0002-supabase-only-backend.md)).
+- **Supabase only**: Auth + Postgres 17 + RLS + two RPCs. No custom server or Edge Functions today; no cron or Storage buckets are in use. Future server-side logic (for example, rest-timer push notifications) will use Supabase Edge Functions, its managed serverless runtime, so no custom server is needed. Push notifications are deferred.
 - 12 owner-scoped tables in `public`, all with sync metadata maintained by a trigger.
 - Clients write through `public.sync_push` and read with table selects. Contract details: [frontend–backend strategy](frontend-backend-strategy.md).
 - Migrations in [`supabase/migrations/`](../../supabase/migrations/20261007135400_create_private_workout_data.sql) are forward-only; never edit an applied one.
@@ -98,7 +98,7 @@ Client handling of each class: [error model](frontend-backend-strategy.md#error-
 | API `max_rows` | 1000 | ~18 |
 | Ports | API 54321, DB 54322, Studio 54323, Inbucket 54324 | — |
 
-Production redirect URLs and Google OAuth settings are configured in the Supabase dashboard, not in the repo (README). `TODO(human): list the production site URL and redirect URLs configured in the dashboard (expected to include https://dawalberto.github.io/workoutlog/).`
+Production redirect URLs are configured in the Supabase dashboard (Auth > URL configuration); local redirect URLs are in [`supabase/config.toml`](../../supabase/config.toml) under `[auth].additional_redirect_urls`.
 
 ## Migration history
 
@@ -137,7 +137,7 @@ supabase gen types typescript --local > src/types/database.types.ts
 | Not present | Implication |
 |---|---|
 | Custom server (a former Fastify backend lived outside this repo; consolidated away in `b624129`) | All logic is SQL (RPCs, triggers, RLS) or client-side |
-| Edge Functions (`supabase/functions/` absent) | No server-side HTTP handlers or webhooks |
+| Edge Functions (`supabase/functions/` absent today) | No server-side HTTP handlers or webhooks yet; future server-side logic will use Supabase Edge Functions |
 | Scheduled jobs (pg_cron) | No background maintenance (e.g. tombstone cleanup) |
 | Storage buckets | Media URLs are stored as strings only |
 | Billing | Removed; see ADR 0005 |
@@ -145,16 +145,10 @@ supabase gen types typescript --local > src/types/database.types.ts
 
 ## Adding server-side logic (Edge Functions, scheduled jobs, push)
 
-None exists today. A feature such as background rest-timer push notifications would need:
+Future server-side logic (for example, rest-timer push notifications) will run as Supabase Edge Functions, Supabase's managed serverless runtime; no custom server is needed. Push notifications are deferred and not implemented, and no `supabase/functions/` directory exists today.
 
-1. A `supabase/functions/<name>/` Edge Function and matching `config.toml` entries.
-2. Storage for push subscriptions (new owner-scoped table + RLS; decide whether it syncs).
-3. Secrets (e.g. VAPID keys) managed outside the repo.
-4. Client changes: Notification permission, push subscription, service worker `push` handler.
-5. CI/deploy changes to deploy functions (no workflow does this today).
-6. Tests: pgTAP for new tables; Vitest for client logic.
-
-`TODO(human): no precedent in repo — decide deployment and secret management for Edge Functions and scheduled jobs.`
+- Set secrets with `supabase secrets set` or in the Supabase dashboard, read them with `Deno.env.get`, and never commit them.
+- Deploy functions with `supabase functions deploy`.
 
 ## Related
 

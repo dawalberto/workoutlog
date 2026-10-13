@@ -28,7 +28,7 @@ Load for any change under `supabase/migrations/` or `supabase/tests/`. If the ch
 4. Run verification locally.
 5. Regenerate `src/types/database.types.ts` (never hand-edit).
 6. Update [backend](../../../docs/architecture/backend.md) migration history/schema and, if the procedure changed, this skill.
-7. Production: apply the migration **before** deploying the frontend. `TODO(human): document the production migration command (linked project / db push).`
+7. Production: apply the migration **before** deploying the frontend.
 
 ## Verification
 

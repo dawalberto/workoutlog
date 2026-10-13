@@ -1,6 +1,6 @@
 # WorkoutLog — agent instructions
 
-WorkoutLog is a local-first gym workout tracker shipped as a React PWA with a Spanish UI. All data (routines, catalog, active sessions, RM logs, history, diary) lives in IndexedDB and works offline. Signed-in users (Google OAuth) sync their private data directly with Supabase through RLS and the `sync_push` RPC. There is no custom server, no billing, and no Edge Function.
+WorkoutLog is a local-first gym workout tracker shipped as a React PWA with a Spanish UI. All data (routines, catalog, active sessions, RM logs, history, diary) lives in IndexedDB and works offline. Signed-in users (Google OAuth) sync their private data directly with Supabase through RLS and the `sync_push` RPC. There is no custom server or Edge Function today; future server-side logic will use Supabase Edge Functions.
 
 Read this file first, then load the matching skill and scoped instructions. Deep content lives in [`docs/`](docs/README.md); this file links instead of repeating it.
 
@@ -50,14 +50,14 @@ Read this file first, then load the matching skill and scoped instructions. Deep
 | PWA assets | `pnpm generate:assets` | `scripts/generate-assets.js` (sharp) |
 | DB types | `supabase gen types typescript --local > src/types/database.types.ts` | `TODO(human): confirm; no script exists` |
 
-CI (`.github/workflows/ci.yml`) runs `pnpm test`, `pnpm lint`, `pnpm build` and the three DB commands on every push and PR.
+CI (`.github/workflows/ci.yml`) runs `pnpm test`, `pnpm lint`, `pnpm build` and the three DB commands on every push and pull request; it has no branch filters.
 
 ## Architecture
 
-- State lives in `App.tsx`; hooks receive setters and return actions; no router, context, or store ([ADR 0006](docs/decisions/0006-app-state-in-hooks-no-router.md)).
+- State lives in `App.tsx` and hooks; there is no router or global store. A future refactor to one Zustand store is planned; do not add Zustand patterns or ad-hoc global state now ([ADR 0006](docs/decisions/0006-app-state-in-hooks-no-router.md)).
 - Persistence: `useAppStorage` → `src/services/db.ts` (IndexedDB `WorkoutLogDB` v2, scopes `guest` / `owner:<id>`). Each write diffs state and appends outbox entries in the same transaction.
 - Sync: `useSync` → `cloud-sync.ts` pulls by `server_revision`, then pushes one queued outbox operation per `sync_push` call. Server revision order wins over device clocks.
-- Guests are local-only and limited to 3 routines; every signed-in user syncs (`get_sync_entitlement` returns `{ eligible: true }`). "Premium" identifiers are legacy naming.
+- Guests are local-only and limited to 3 routines; every signed-in user syncs (`get_sync_entitlement` returns `{ eligible: true }`). T3 removes the legacy "Premium" naming in this branch.
 
 Depth: [overview](docs/architecture/overview.md) · [frontend](docs/architecture/frontend.md) · [backend](docs/architecture/backend.md) · [sync contract](docs/architecture/frontend-backend-strategy.md) · [glossary](docs/domain/glossary.md) · [ADRs](docs/README.md#decisions-adrs).
 
@@ -67,7 +67,7 @@ Full rules: [coding standards](docs/standards/coding-standards.md).
 
 | Do | Don't |
 |---|---|
-| `export const SyncStatus: React.FC<SyncStatusProps> = …` with `export interface SyncStatusProps` | Default-export components (only legacy `App.tsx` does) |
+| `export const SyncStatus: React.FC<SyncStatusProps> = …`; export its props interface only when another module imports it, otherwise keep it module-private | Default-export components (only legacy `App.tsx` does) |
 | Relative imports: `import { useSync } from '../hooks/useSync';` | Introduce the unused `@/` alias |
 | Single quotes, semicolons, 2-space indent | Reformat untouched code |
 | Commit text inputs on blur (`ExerciseCard.tsx`) | Call update handlers per keystroke (floods the outbox) |
@@ -98,6 +98,7 @@ Details: [testing strategy](docs/standards/testing-strategy.md).
 
 Details: [git workflow](docs/standards/git-workflow.md).
 
+- Day-to-day development happens on `develop`; branch feature and fix work from `develop` and merge it back there. Merge `develop` into `main` for releases; a push to `main` triggers GitHub Pages deployment.
 - Conventional Commits with scopes, English, imperative: `feat(sync): …`, `fix(ui): …`, `docs(odd): …`, `ci(pages): …`.
 - No AI attribution and no `Co-authored-by` trailers (maintainer preference).
 - Substantial work (2+ meaningful steps) gets an ODD task doc in `odd/tasks/<feature>.md` before the first source write; one work-unit commit per task with its tests and docs ([ODD workflow](docs/agents-guide.md#odd-workflow)).

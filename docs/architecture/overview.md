@@ -2,11 +2,13 @@
 
 How WorkoutLog's parts fit together: a static React PWA that stores data locally in IndexedDB and, for signed-in users, syncs directly with Supabase.
 
-Last verified: 2026-10-11
+Last verified: 2026-10-13
 
 ## In one paragraph
 
 WorkoutLog is a single-page React 19 + Vite app served as static files from GitHub Pages. All user data (routines, exercise catalog, active sessions, RM logs, workout history, exercise diary) lives first in the browser's IndexedDB. Guests never touch the network. Signed-in users (Google OAuth via Supabase Auth) get every local change queued in an IndexedDB outbox and pushed to Postgres through one RPC (`sync_push`); remote changes are pulled per table by server revision. There is **no custom server**: Supabase (Auth, Postgres, RLS, RPCs) is the whole backend.
+
+Future server-side logic will use Supabase Edge Functions, its managed serverless runtime; no custom server is needed. Push notifications are deferred, and no `supabase/functions/` directory exists today.
 
 ## System context
 
@@ -101,7 +103,7 @@ flowchart LR
 | Frontend | [`deploy.yml`](../../.github/workflows/deploy.yml) builds on push to `main`, PRs to `main`, and manual dispatch; deploys only when the event is not a PR. |
 | Base path | Vite `base: '/workoutlog/'` ([`vite.config.ts`](../../vite.config.ts)). |
 | Build config | `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` from GitHub repository **variables** (public values). |
-| Database | Migrations are **not** applied by CI. `TODO(human): document the exact production migration procedure (e.g. supabase link + supabase db push).` |
+| Database | Migrations are **not** applied by CI; apply production migrations before deploying frontend changes that depend on them. |
 | Client updates | Service worker `registerType: 'autoUpdate'`; deployed clients may run an older bundle until the SW updates — see [evolving the contract](frontend-backend-strategy.md#evolving-without-breaking-clients). |
 
 ## Related

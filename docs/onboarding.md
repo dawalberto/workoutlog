@@ -2,7 +2,7 @@
 
 Get WorkoutLog running locally, verify it, and land your first change.
 
-Last verified: 2026-10-11
+Last verified: 2026-10-13
 
 ## Quick path
 
@@ -82,12 +82,12 @@ These match CI exactly; see [testing strategy](standards/testing-strategy.md).
 
 ## First PR walkthrough
 
-1. Branch from `main`: `feature/<name>`, `fix/<name>` or `docs/<name>` ([git workflow](standards/git-workflow.md)).
+1. Branch from `develop`: `feature/<name>`, `fix/<name>` or `docs/<name>` ([git workflow](standards/git-workflow.md)).
 2. For substantial work, create an ODD task doc in `odd/tasks/<feature>.md` (see [agents guide](agents-guide.md#odd-workflow)).
 3. Make the change with tests alongside it ([testing strategy](standards/testing-strategy.md)).
 4. Commit with a Conventional Commit, e.g. `feat(sync): ...`, `fix(ui): ...`. No AI attribution trailers.
 5. Run the same checks as CI: `pnpm test`, `pnpm lint`, `pnpm build`; plus `pnpm db:reset && pnpm db:test && pnpm db:lint` if you touched `supabase/`.
-6. Open a PR to `main` and fill in [`.github/pull_request_template.md`](../.github/pull_request_template.md). CI runs on the PR; deployment happens only after merge to `main`.
+6. Open a PR back to `develop` and fill in [`.github/pull_request_template.md`](../.github/pull_request_template.md). CI runs on every PR; merge `develop` into `main` for a release and GitHub Pages deployment.
 
 ## Who to ask
 
