@@ -1,29 +1,20 @@
 import React from 'react';
 import { Trophy, Clock, CheckCircle2, Dumbbell, X, Sparkles } from 'lucide-react';
-import { WorkoutCompletionSummary, ExerciseRmLog, ExerciseDiary, Routine, ExerciseDefinition } from '../types';
 import { formatDetailedDuration, formatExerciseSummary } from '../utils/timeCalculations';
 import { RmBadge } from './RmBadge';
 import { DiaryButton } from './DiaryButton';
+import { useWorkoutSummaryModal } from '../hooks/workout-history/useWorkoutSummaryModal';
 
-interface WorkoutSummaryModalProps {
-  summary: WorkoutCompletionSummary | null;
-  rmLogs?: ExerciseRmLog[];
-  exerciseDiary?: ExerciseDiary[];
-  routines?: Routine[];
-  catalog?: ExerciseDefinition[];
-  onOpenDiary?: (exerciseName: string, exerciseId?: string) => void;
-  onClose: () => void;
-}
-
-export const WorkoutSummaryModal: React.FC<WorkoutSummaryModalProps> = ({
-  summary,
-  rmLogs = [],
-  exerciseDiary = [],
-  routines = [],
-  catalog = [],
-  onOpenDiary,
-  onClose,
-}) => {
+export const WorkoutSummaryModal: React.FC = () => {
+  const {
+    summary,
+    rmLogs,
+    exerciseDiary,
+    routines,
+    catalog,
+    onOpenDiary,
+    onClose,
+  } = useWorkoutSummaryModal();
   if (!summary) return null;
 
   const getExerciseBadge = (name: string, totalSets: number | null, summaryText?: string, sets?: any[]) => {

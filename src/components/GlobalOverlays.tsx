@@ -10,19 +10,7 @@ import { useGlobalOverlays } from '../hooks/shell/useGlobalOverlays';
 
 export const GlobalOverlays: React.FC = () => {
   const {
-    catalog,
-    routines,
-    rmLogs,
-    workoutHistory,
-    exerciseDiary,
-    isBackupModalOpen,
-    closeBackupModal,
-    isSyncEnabled,
     activeRestTimer,
-    workoutSummary,
-    dismissWorkoutSummary,
-    openDiary,
-    onImportComplete,
   } = useGlobalOverlays();
 
   return (
@@ -36,28 +24,10 @@ export const GlobalOverlays: React.FC = () => {
       <RmRecordAlertModal />
 
       {/* Workout Completion Summary Modal */}
-      <WorkoutSummaryModal
-        summary={workoutSummary}
-        rmLogs={rmLogs}
-        exerciseDiary={exerciseDiary}
-        routines={routines}
-        catalog={catalog}
-        onOpenDiary={openDiary}
-        onClose={dismissWorkoutSummary}
-      />
+      <WorkoutSummaryModal />
 
       {/* Import / Export JSON Backup Modal */}
-      <DataBackupModal
-        isOpen={isBackupModalOpen}
-        onClose={closeBackupModal}
-        catalog={catalog}
-        routines={routines}
-        rmLogs={rmLogs}
-        workoutHistory={workoutHistory}
-        exerciseDiary={exerciseDiary}
-        isSyncEnabled={isSyncEnabled}
-        onImportComplete={onImportComplete}
-      />
+      <DataBackupModal />
 
       {/* Floating Rest Timer Bar across entire app (RoutineView, Diary, History, etc.) */}
       {activeRestTimer && (

@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { ExerciseDefinition, ExerciseDiary, ExerciseDiaryEntry, DiaryFeeling } from '../types';
+import type {
+  DiaryFeeling,
+  ExerciseDefinition,
+  ExerciseDiary,
+  ExerciseDiaryEntry,
+} from '../types';
+import { AppTab } from '../types';
+import { useAppStore } from '../store/appStore';
+import { selectPersistedData } from '../store/selectors';
+import { useShallow } from 'zustand/react/shallow';
 import {
   findDiaryForExercise,
   getAllFlattenedDiaryEntries,
@@ -9,23 +18,34 @@ import {
 } from '../utils/diaryCalculations';
 import { normalizeExerciseTitle } from '../utils/backup';
 
-interface UseExerciseDiaryProps {
-  catalog: ExerciseDefinition[];
-  diaries: ExerciseDiary[];
-  initialExerciseName?: string;
-  autoOpenCreate?: boolean;
-  onSaveDiaries: (updated: ExerciseDiary[]) => void;
-  onClearInitialState?: () => void;
+export interface DiaryFiltersState {
+  searchQuery: string;
+  selectedFeelingFilter: 'ALL' | DiaryFeeling;
+  selectedExerciseName: string;
+  setSearchQuery: (value: string) => void;
+  setSelectedFeelingFilter: (value: 'ALL' | DiaryFeeling) => void;
+  setSelectedExerciseName: (value: string) => void;
 }
 
-export function useExerciseDiary({
-  catalog,
-  diaries,
-  initialExerciseName,
-  autoOpenCreate = false,
-  onSaveDiaries,
-  onClearInitialState,
-}: UseExerciseDiaryProps) {
+export interface DiaryEntryFormState {
+  formExerciseName: string;
+  formDate: string;
+  formNote: string;
+  formFeeling: DiaryFeeling | undefined;
+  formError: string | null;
+  setFormExerciseName: (value: string) => void;
+  setFormDate: (value: string) => void;
+  setFormNote: (value: string) => void;
+  setFormFeeling: (value: DiaryFeeling | undefined) => void;
+}
+
+export function useExerciseDiary() {
+  const { catalog, exerciseDiary: diaries, setExerciseDiary: onSaveDiaries } =
+    useAppStore(useShallow(selectPersistedData));
+  const initialExerciseName = useAppStore((state) => state.diaryTargetExerciseName);
+  const autoOpenCreate = useAppStore((state) => state.diaryAutoOpenCreate);
+  const clearInitialState = useAppStore((state) => state.clearDiaryNavigationState);
+  const setActiveTab = useAppStore((state) => state.setActiveTab);
   const [selectedExerciseName, setSelectedExerciseName] = useState<string>(() => {
     return initialExerciseName || 'ALL';
   });
@@ -112,7 +132,7 @@ export function useExerciseDiary({
       if (autoOpenCreate) {
         openCreateModal(initialExerciseName);
       }
-      onClearInitialState?.();
+      clearInitialState();
     }
   }, [initialExerciseName, autoOpenCreate]);
 
@@ -252,31 +272,41 @@ export function useExerciseDiary({
 
   return {
     allEntries,
+    catalog,
     closeModal,
     editingEntry,
     exercisesWithDiary,
     filteredEntries,
-    formDate,
-    formError,
-    formExerciseName,
-    formFeeling,
-    formNote,
+    form: {
+      formDate,
+      formError,
+      formExerciseName,
+      formFeeling,
+      formNote,
+      setFormDate,
+      setFormExerciseName,
+      setFormFeeling,
+      setFormNote,
+    } satisfies DiaryEntryFormState,
     handleDeleteEntry,
     handleSaveEntry,
+    hasActiveFilters: Boolean(
+      searchQuery ||
+      selectedFeelingFilter !== 'ALL' ||
+      selectedExerciseName !== 'ALL'
+    ),
     isModalOpen,
+    onGoToCatalog: () => setActiveTab(AppTab.EXERCISES),
     openCreateModal,
     openEditModal,
-    searchQuery,
-    selectedExerciseName,
-    selectedFeelingFilter,
-    setFormDate,
-    setFormError,
-    setFormExerciseName,
-    setFormFeeling,
-    setFormNote,
-    setSearchQuery,
-    setSelectedExerciseName,
-    setSelectedFeelingFilter,
+    filters: {
+      searchQuery,
+      selectedExerciseName,
+      selectedFeelingFilter,
+      setSearchQuery,
+      setSelectedExerciseName,
+      setSelectedFeelingFilter,
+    } satisfies DiaryFiltersState,
     totalEntriesCount: getTotalDiaryEntriesCount(diaries),
   };
 }

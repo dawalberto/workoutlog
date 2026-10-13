@@ -1,338 +1,26 @@
-import React, { useRef, useState } from 'react';
+import React from 'react';
 import { Download, FileJson, Upload, X } from 'lucide-react';
-import type {
-  ExerciseDefinition,
-  ExerciseDiary,
-  ExerciseRmLog,
-  Routine,
-  WorkoutHistoryLog,
-} from '../types';
-import {
-  downloadJsonFile,
-  isRoutineCountAllowed,
-  mergeCatalogs,
-  mergeExerciseDiary,
-  mergeRmLogs,
-  mergeRoutines,
-  mergeWorkoutHistory,
-  normalizeExerciseTitle,
-  parseImportedData,
-  ROUTINE_LIMIT_ERROR_MESSAGE,
-  syncRoutinesWithCatalog,
-  type BackupImportSummary,
-  type ParsedBackupData,
-} from '../utils/backup';
 import { BackupExportPanel } from './data-backup/BackupExportPanel';
 import { BackupImportPanel } from './data-backup/BackupImportPanel';
+import { useDataBackup } from '../hooks/data-backup/useDataBackup';
 
-interface DataBackupModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  catalog: ExerciseDefinition[];
-  routines: Routine[];
-  rmLogs: ExerciseRmLog[];
-  workoutHistory: WorkoutHistoryLog[];
-  exerciseDiary: ExerciseDiary[];
-  isSyncEnabled: boolean;
-  onImportComplete: (
-    newCatalog: ExerciseDefinition[],
-    newRoutines: Routine[],
-    newRmLogs: ExerciseRmLog[],
-    newWorkoutHistory: WorkoutHistoryLog[],
-    newExerciseDiary: ExerciseDiary[],
-    summary: BackupImportSummary
-  ) => void;
-}
-
-type TabType = 'export' | 'import';
-type ImportMode = 'merge' | 'overwrite';
-
-export const DataBackupModal: React.FC<DataBackupModalProps> = ({
-  isOpen,
-  onClose,
-  catalog,
-  routines,
-  rmLogs,
-  workoutHistory,
-  exerciseDiary,
-  isSyncEnabled,
-  onImportComplete,
-}) => {
-  const [activeTab, setActiveTab] = useState<TabType>('export');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [parsedData, setParsedData] = useState<ParsedBackupData | null>(null);
-  const [parseError, setParseError] = useState<string | null>(null);
-  const [importMode, setImportMode] = useState<ImportMode>('merge');
-  const [replaceDuplicateExercises, setReplaceDuplicateExercises] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [exportSuccessMessage, setExportSuccessMessage] = useState<string | null>(null);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
+export const DataBackupModal: React.FC = () => {
+  const {
+    isOpen,
+    onClose,
+    activeTab,
+    setActiveTab,
+    isProcessing,
+    parsedData,
+    fileInputRef,
+    handleExecuteImport,
+    exportData,
+    exportActions,
+    importState,
+    importActions,
+  } = useDataBackup();
 
   if (!isOpen) return null;
-
-  const handleExportRoutines = () => {
-    const filename = `workoutlog-rutinas-${new Date().toISOString().split('T')[0]}.json`;
-
-    const routineExerciseNames = new Set<string>();
-    routines.forEach((routine) => {
-      routine.exercises.forEach((exercise) => {
-        if (exercise.name) {
-          routineExerciseNames.add(normalizeExerciseTitle(exercise.name));
-        }
-      });
-    });
-
-    const associatedCatalog = catalog.filter((exercise) =>
-      routineExerciseNames.has(normalizeExerciseTitle(exercise.name))
-    );
-
-    const existingNames = new Set(associatedCatalog.map((exercise) => normalizeExerciseTitle(exercise.name)));
-    routines.forEach((routine) => {
-      routine.exercises.forEach((exercise) => {
-        const normalizedName = normalizeExerciseTitle(exercise.name);
-        if (normalizedName && !existingNames.has(normalizedName)) {
-          existingNames.add(normalizedName);
-          associatedCatalog.push({
-            id: 'def-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
-            name: exercise.name.trim(),
-            category: exercise.category || 'Otros',
-            imageUrl: exercise.imageUrl || '',
-            videoUrl: exercise.videoUrl || '',
-            notes: exercise.notes || '',
-            defaultSetsCount: exercise.sets?.length || 3,
-            defaultReps: Number(exercise.sets?.[0]?.reps) || 10,
-            defaultWeight: Number(exercise.sets?.[0]?.weight) || 0,
-            defaultRestSeconds: Number(exercise.sets?.[0]?.restSeconds) || 60,
-            createdAt: new Date().toISOString(),
-          });
-        }
-      });
-    });
-
-    const exportPayload = {
-      app: 'WorkoutLog',
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      type: 'routines',
-      routines,
-      catalog: associatedCatalog,
-    };
-
-    downloadJsonFile(filename, exportPayload);
-    setExportSuccessMessage(
-      `Se han exportado ${routines.length} rutinas y ${associatedCatalog.length} ejercicios asociados.`
-    );
-    setTimeout(() => setExportSuccessMessage(null), 4000);
-  };
-
-  const handleExportExercises = () => {
-    const filename = `workoutlog-ejercicios-${new Date().toISOString().split('T')[0]}.json`;
-    const exportPayload = {
-      app: 'WorkoutLog',
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      type: 'exercises',
-      catalog,
-    };
-    downloadJsonFile(filename, exportPayload);
-    setExportSuccessMessage(`Se han exportado ${catalog.length} ejercicios.`);
-    setTimeout(() => setExportSuccessMessage(null), 4000);
-  };
-
-  const handleExportRmLogs = () => {
-    const filename = `workoutlog-rms-${new Date().toISOString().split('T')[0]}.json`;
-    const exportPayload = {
-      app: 'WorkoutLog',
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      type: 'rms',
-      rmLogs,
-    };
-    downloadJsonFile(filename, exportPayload);
-    setExportSuccessMessage(`Se han exportado ${rmLogs.length} ejercicios de RMs.`);
-    setTimeout(() => setExportSuccessMessage(null), 4000);
-  };
-
-  const handleExportHistory = () => {
-    const filename = `workoutlog-historial-${new Date().toISOString().split('T')[0]}.json`;
-    const exportPayload = {
-      app: 'WorkoutLog',
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      type: 'history',
-      workoutHistory,
-    };
-    downloadJsonFile(filename, exportPayload);
-    setExportSuccessMessage(`Se han exportado ${workoutHistory.length} sesiones del historial.`);
-    setTimeout(() => setExportSuccessMessage(null), 4000);
-  };
-
-  const handleExportDiary = () => {
-    const filename = `workoutlog-diario-${new Date().toISOString().split('T')[0]}.json`;
-    const exportPayload = {
-      app: 'WorkoutLog',
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      type: 'diary',
-      exerciseDiary,
-    };
-    downloadJsonFile(filename, exportPayload);
-    const totalEntries = exerciseDiary.reduce((accumulator, diary) => accumulator + (diary.entries?.length || 0), 0);
-    setExportSuccessMessage(`Se han exportado ${totalEntries} registros del diario (${exerciseDiary.length} ejercicios).`);
-    setTimeout(() => setExportSuccessMessage(null), 4000);
-  };
-
-  const handleExportAll = () => {
-    const filename = `workoutlog-backup-completo-${new Date().toISOString().split('T')[0]}.json`;
-    const exportPayload = {
-      app: 'WorkoutLog',
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      type: 'all',
-      catalog,
-      routines,
-      rmLogs,
-      workoutHistory,
-      exerciseDiary,
-    };
-    downloadJsonFile(filename, exportPayload);
-    const totalDiaryEntries = exerciseDiary.reduce((accumulator, diary) => accumulator + (diary.entries?.length || 0), 0);
-    setExportSuccessMessage(
-      `Se han exportado ${catalog.length} ejercicios, ${routines.length} rutinas, ${rmLogs.length} RMs, ${workoutHistory.length} sesiones y ${totalDiaryEntries} notas del diario.`
-    );
-    setTimeout(() => setExportSuccessMessage(null), 4000);
-  };
-
-  const processSelectedFile = (file: File) => {
-    setSelectedFile(file);
-    setParseError(null);
-    setParsedData(null);
-
-    if (!file.name.toLowerCase().endsWith('.json')) {
-      setParseError('El archivo debe tener formato .json');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const text = event.target?.result as string;
-        const result = parseImportedData(text);
-
-        if (!result.hasExercises && !result.hasRoutines && !result.hasRmLogs && !result.hasHistory && !result.hasDiary) {
-          setParseError('No se encontraron ejercicios, rutinas, registros de RM, historial ni diario válidos en el archivo.');
-          return;
-        }
-
-        setParsedData(result);
-      } catch (err) {
-        console.error('JSON parse error', err);
-        setParseError('Error al leer el archivo JSON. Verifica que el archivo no esté corrupto.');
-      }
-    };
-    reader.onerror = () => {
-      setParseError('Error de lectura al cargar el archivo.');
-    };
-    reader.readAsText(file);
-  };
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    processSelectedFile(file);
-  };
-
-  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    const file = event.dataTransfer.files?.[0];
-    if (!file) return;
-    processSelectedFile(file);
-  };
-
-  const handleExecuteImport = () => {
-    if (!parsedData) return;
-    setIsProcessing(true);
-
-    try {
-      if (importMode === 'overwrite') {
-        const newCatalog = parsedData.catalog;
-        const newRoutines = syncRoutinesWithCatalog(parsedData.routines, newCatalog);
-        const newRmLogs = parsedData.rmLogs;
-        const newWorkoutHistory = parsedData.workoutHistory;
-        const newExerciseDiary = parsedData.exerciseDiary;
-
-        if (!isRoutineCountAllowed(newRoutines.length, isSyncEnabled)) {
-          setParseError(ROUTINE_LIMIT_ERROR_MESSAGE);
-          return;
-        }
-
-        onImportComplete(newCatalog, newRoutines, newRmLogs, newWorkoutHistory, newExerciseDiary, {
-          exercisesAdded: newCatalog.length,
-          exercisesReplaced: 0,
-          routinesAdded: newRoutines.length,
-          exercisesInRoutinesUpdated: 0,
-          rmLogsAdded: newRmLogs.length,
-          rmLogsUpdated: 0,
-          historyAdded: newWorkoutHistory.length,
-          diaryAdded: newExerciseDiary.length,
-          diaryUpdated: 0,
-          mode: 'overwrite',
-        });
-        onClose();
-      } else {
-        const catalogMerge = mergeCatalogs(catalog, parsedData.catalog, replaceDuplicateExercises);
-        const routinesMerge = mergeRoutines(routines, parsedData.routines, {
-          importedCatalog: parsedData.catalog,
-          existingCatalog: catalog,
-          replaceDuplicates: replaceDuplicateExercises,
-        });
-        const rmMerge = mergeRmLogs(rmLogs, parsedData.rmLogs, replaceDuplicateExercises);
-        const historyMerge = mergeWorkoutHistory(workoutHistory, parsedData.workoutHistory);
-        const diaryMerge = mergeExerciseDiary(exerciseDiary, parsedData.exerciseDiary, replaceDuplicateExercises);
-
-        if (!isRoutineCountAllowed(routinesMerge.merged.length, isSyncEnabled)) {
-          setParseError(ROUTINE_LIMIT_ERROR_MESSAGE);
-          return;
-        }
-
-        onImportComplete(
-          catalogMerge.merged,
-          routinesMerge.merged,
-          rmMerge.merged,
-          historyMerge.merged,
-          diaryMerge.merged,
-          {
-            exercisesAdded: catalogMerge.addedCount,
-            exercisesReplaced: catalogMerge.replacedCount,
-            routinesAdded: routinesMerge.addedCount,
-            exercisesInRoutinesUpdated: routinesMerge.updatedExercisesCount,
-            rmLogsAdded: rmMerge.addedCount,
-            rmLogsUpdated: rmMerge.updatedCount,
-            historyAdded: historyMerge.addedCount,
-            diaryAdded: diaryMerge.addedCount,
-            diaryUpdated: diaryMerge.updatedCount,
-            mode: 'merge',
-          }
-        );
-        onClose();
-      }
-    } catch (error) {
-      console.error('Import processing error', error);
-      setParseError('Ocurrió un error inesperado al procesar los datos.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleResetFile = () => {
-    setSelectedFile(null);
-    setParsedData(null);
-    setParseError(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-hidden">
@@ -394,34 +82,13 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
 
         <div className="flex-1 overflow-y-auto p-4 sm:px-6 sm:py-5 space-y-4">
           {activeTab === 'export' && (
-            <BackupExportPanel
-              catalog={catalog}
-              routines={routines}
-              rmLogs={rmLogs}
-              workoutHistory={workoutHistory}
-              exerciseDiary={exerciseDiary}
-              exportSuccessMessage={exportSuccessMessage}
-              onExportRoutines={handleExportRoutines}
-              onExportExercises={handleExportExercises}
-              onExportRmLogs={handleExportRmLogs}
-              onExportHistory={handleExportHistory}
-              onExportDiary={handleExportDiary}
-              onExportAll={handleExportAll}
-            />
+            <BackupExportPanel data={exportData} actions={exportActions} />
           )}
           {activeTab === 'import' && (
             <BackupImportPanel
               fileInputRef={fileInputRef}
-              selectedFile={selectedFile}
-              parsedData={parsedData}
-              parseError={parseError}
-              importMode={importMode}
-              replaceDuplicateExercises={replaceDuplicateExercises}
-              onFileChange={handleFileChange}
-              onDrop={handleDrop}
-              onImportModeChange={setImportMode}
-              onReplaceDuplicateExercisesChange={setReplaceDuplicateExercises}
-              onResetFile={handleResetFile}
+              state={importState}
+              actions={importActions}
             />
           )}
         </div>

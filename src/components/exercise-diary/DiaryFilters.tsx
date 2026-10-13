@@ -7,20 +7,16 @@ import {
   Search,
   X,
 } from 'lucide-react';
-import type { ExerciseDefinition, DiaryFeeling } from '../../types';
+import type { ExerciseDefinition } from '../../types';
 import { normalizeExerciseTitle } from '../../utils/backup';
+import type { DiaryFiltersState } from '../../hooks/useExerciseDiary';
 
 interface DiaryFiltersProps {
   catalog: ExerciseDefinition[];
   totalEntriesCount: number;
   allEntriesCount: number;
   exercisesWithDiary: { def: ExerciseDefinition; count: number }[];
-  searchQuery: string;
-  selectedFeelingFilter: 'ALL' | DiaryFeeling;
-  selectedExerciseName: string;
-  onSearchQueryChange: (value: string) => void;
-  onFeelingFilterChange: (value: 'ALL' | DiaryFeeling) => void;
-  onExerciseFilterChange: (value: string) => void;
+  filters: DiaryFiltersState;
   onCreate: () => void;
   onGoToCatalog: () => void;
 }
@@ -30,12 +26,7 @@ export const DiaryFilters: React.FC<DiaryFiltersProps> = ({
   totalEntriesCount,
   allEntriesCount,
   exercisesWithDiary,
-  searchQuery,
-  selectedFeelingFilter,
-  selectedExerciseName,
-  onSearchQueryChange,
-  onFeelingFilterChange,
-  onExerciseFilterChange,
+  filters,
   onCreate,
   onGoToCatalog,
 }) => (
@@ -100,15 +91,15 @@ export const DiaryFilters: React.FC<DiaryFiltersProps> = ({
             <Search className="w-4 h-4 text-zinc-500 absolute left-4 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              value={searchQuery}
-              onChange={(e) => onSearchQueryChange(e.target.value)}
+              value={filters.searchQuery}
+              onChange={(e) => filters.setSearchQuery(e.target.value)}
               placeholder="Buscar en las notas, ejercicios o fechas..."
               className="w-full min-h-[48px] pl-11 pr-10 py-2.5 text-sm rounded-2xl border border-white/10 bg-zinc-900/90 text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/20 transition-all shadow-inner"
             />
-            {searchQuery && (
+            {filters.searchQuery && (
               <button
                 type="button"
-                onClick={() => onSearchQueryChange('')}
+                onClick={() => filters.setSearchQuery('')}
                 className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-zinc-400 hover:text-white rounded-md"
               >
                 <X className="w-3.5 h-3.5" />
@@ -120,9 +111,9 @@ export const DiaryFilters: React.FC<DiaryFiltersProps> = ({
           <div className="flex items-center gap-1 p-1 bg-zinc-900/80 rounded-2xl border border-white/10 shrink-0 overflow-x-auto min-h-[48px]">
             <button
               type="button"
-              onClick={() => onFeelingFilterChange('ALL')}
+              onClick={() => filters.setSelectedFeelingFilter('ALL')}
               className={`px-3 py-1.5 text-xs font-extrabold rounded-xl transition-all ${
-                selectedFeelingFilter === 'ALL'
+                filters.selectedFeelingFilter === 'ALL'
                   ? 'bg-[#00FF87] text-black shadow-[0_0_10px_rgba(0,255,135,0.4)]'
                   : 'text-zinc-400 hover:text-white'
               }`}
@@ -131,9 +122,9 @@ export const DiaryFilters: React.FC<DiaryFiltersProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => onFeelingFilterChange('good')}
+              onClick={() => filters.setSelectedFeelingFilter('good')}
               className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs font-extrabold rounded-xl transition-all ${
-                selectedFeelingFilter === 'good'
+                filters.selectedFeelingFilter === 'good'
                   ? 'bg-emerald-500 text-black shadow-[0_0_10px_rgba(16,185,129,0.4)]'
                   : 'text-zinc-400 hover:text-white'
               }`}
@@ -144,9 +135,9 @@ export const DiaryFilters: React.FC<DiaryFiltersProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => onFeelingFilterChange('neutral')}
+              onClick={() => filters.setSelectedFeelingFilter('neutral')}
               className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs font-extrabold rounded-xl transition-all ${
-                selectedFeelingFilter === 'neutral'
+                filters.selectedFeelingFilter === 'neutral'
                   ? 'bg-amber-400 text-black shadow-[0_0_10px_rgba(251,191,36,0.4)]'
                   : 'text-zinc-400 hover:text-white'
               }`}
@@ -157,9 +148,9 @@ export const DiaryFilters: React.FC<DiaryFiltersProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => onFeelingFilterChange('bad')}
+              onClick={() => filters.setSelectedFeelingFilter('bad')}
               className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs font-extrabold rounded-xl transition-all ${
-                selectedFeelingFilter === 'bad'
+                filters.selectedFeelingFilter === 'bad'
                   ? 'bg-rose-500 text-white shadow-[0_0_10px_rgba(244,63,94,0.4)]'
                   : 'text-zinc-400 hover:text-white'
               }`}
@@ -175,9 +166,9 @@ export const DiaryFilters: React.FC<DiaryFiltersProps> = ({
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs pt-1">
           <button
             type="button"
-            onClick={() => onExerciseFilterChange('ALL')}
+            onClick={() => filters.setSelectedExerciseName('ALL')}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all shrink-0 ${
-              selectedExerciseName === 'ALL'
+              filters.selectedExerciseName === 'ALL'
                 ? 'bg-[#00FF87] text-black shadow-[0_0_10px_rgba(0,255,135,0.4)]'
                 : 'bg-zinc-900 text-zinc-400 hover:text-white border border-white/10'
             }`}
@@ -185,7 +176,7 @@ export const DiaryFilters: React.FC<DiaryFiltersProps> = ({
             <span>Todos los ejercicios</span>
             <span
               className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
-                selectedExerciseName === 'ALL'
+                filters.selectedExerciseName === 'ALL'
                   ? 'bg-black/20 text-black'
                   : 'bg-zinc-800 text-zinc-400'
               }`}
@@ -196,12 +187,12 @@ export const DiaryFilters: React.FC<DiaryFiltersProps> = ({
 
           {exercisesWithDiary.map(({ def, count }) => {
             const isSelected =
-              normalizeExerciseTitle(selectedExerciseName) === normalizeExerciseTitle(def.name);
+              normalizeExerciseTitle(filters.selectedExerciseName) === normalizeExerciseTitle(def.name);
             return (
               <button
                 key={def.id}
                 type="button"
-                onClick={() => onExerciseFilterChange(def.name)}
+                onClick={() => filters.setSelectedExerciseName(def.name)}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all shrink-0 ${
                   isSelected
                     ? 'bg-[#00FF87] text-black shadow-[0_0_10px_rgba(0,255,135,0.4)]'

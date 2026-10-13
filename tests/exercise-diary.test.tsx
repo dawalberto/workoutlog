@@ -70,27 +70,29 @@ const diaries: ExerciseDiary[] = [
   },
 ];
 
-const diaryProps = {
-  catalog,
-  diaries,
-  onSaveDiaries: vi.fn(),
-  onGoToCatalog: vi.fn(),
-};
-
 beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(2026, 0, 15, 12));
 });
 
-afterEach(() => {
+afterEach(async () => {
   vi.useRealTimers();
   vi.doUnmock('react');
+  const { resetAppStore } = await import('./store-test-utils');
+  resetAppStore();
   vi.resetModules();
 });
 
 async function renderDiary(stateValues?: unknown[]) {
   vi.doUnmock('react');
   vi.resetModules();
+  const storeTestUtils = await import('./store-test-utils');
+  storeTestUtils.seedPersistedAppStore({ catalog, exerciseDiary: diaries });
+  storeTestUtils.seedAppStore({
+    diaryTargetExerciseName: undefined,
+    diaryAutoOpenCreate: false,
+  });
+  storeTestUtils.useCurrentStateAsServerSnapshot();
 
   if (stateValues) {
     let stateIndex = 0;
@@ -115,7 +117,7 @@ async function renderDiary(stateValues?: unknown[]) {
   }
 
   const { ExerciseDiaryView } = await import('../src/components/ExerciseDiaryView');
-  return renderToStaticMarkup(<ExerciseDiaryView {...diaryProps} />);
+  return renderToStaticMarkup(<ExerciseDiaryView />);
 }
 
 describe('ExerciseDiaryView characterization', () => {

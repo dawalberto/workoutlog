@@ -290,6 +290,7 @@ describe('sync wiring', () => {
     Reflect.deleteProperty(globalThis, 'window');
     vi.doUnmock('react');
     vi.doUnmock('../src/store/appStore');
+    vi.doUnmock('zustand/react/shallow');
     vi.restoreAllMocks();
   });
 
@@ -316,8 +317,17 @@ describe('sync wiring', () => {
 
       storage = await import('../src/services/db');
       const backup = await import('../src/utils/backup');
-      const { createAppStore } = await import('../src/store/appStore');
+      const storeModule = await import('../src/store/appStore');
+      const { appStore } = storeModule;
       const persistence = await import('../src/store/persistence');
+      vi.doMock('../src/store/appStore', () => ({
+        ...storeModule,
+        useAppStore: (selector: (state: ReturnType<typeof appStore.getState>) => unknown) =>
+          selector(appStore.getState()),
+      }));
+      vi.doMock('zustand/react/shallow', () => ({
+        useShallow: (selector: unknown) => selector,
+      }));
       const { DataBackupModal } = await import('../src/components/DataBackupModal');
       const ownerScope = { ownerId: 'import-owner' };
       const baseline = createBaseline();
@@ -331,43 +341,13 @@ describe('sync wiring', () => {
         storage.setScopedStoredItem(storage.DB_KEYS.EXERCISE_DIARY, baseline.exerciseDiary, ownerScope),
       ]);
 
-      const appStore = createAppStore();
       const stopPersistence = persistence.startPersistence(appStore);
       const stopHydration = persistence.hydrateStorage(appStore, 'import-owner', false);
       await vi.waitFor(() => expect(appStore.getState().isStorageLoaded).toBe(true));
-      const appStorage = {
-        ...appStore.getState(),
-        applyImportData: (
-          catalog: ReturnType<typeof appStore.getState>['catalog'],
-          routines: ReturnType<typeof appStore.getState>['routines'],
-          rmLogs: ReturnType<typeof appStore.getState>['rmLogs'],
-          workoutHistory: ReturnType<typeof appStore.getState>['workoutHistory'],
-          exerciseDiary: ReturnType<typeof appStore.getState>['exerciseDiary'],
-        ) => persistence.applyImportData(
-          appStore,
-          catalog,
-          routines,
-          rmLogs,
-          workoutHistory,
-          exerciseDiary,
-        ),
-      };
+      appStore.setState({ isBackupModalOpen: true, isSyncEnabled: true });
       await storage.flushScopedStorageWrites(ownerScope);
 
       const modalHarness = createHookHarness();
-      const modalProps = {
-        isOpen: true,
-        onClose: vi.fn(),
-        ...appStorage,
-        isSyncEnabled: true,
-        onImportComplete: (
-          catalog: typeof appStorage.catalog,
-          routines: typeof appStorage.routines,
-          rmLogs: typeof appStorage.rmLogs,
-          workoutHistory: typeof appStorage.workoutHistory,
-          exerciseDiary: typeof appStorage.exerciseDiary,
-        ) => appStorage.applyImportData(catalog, routines, rmLogs, workoutHistory, exerciseDiary),
-      };
       const parsedData = backup.parseImportedData(createBackupJson());
       modalHarness.slots[0] = { value: 'import', initialized: true };
       modalHarness.slots[1] = {
@@ -378,7 +358,7 @@ describe('sync wiring', () => {
       modalHarness.slots[4] = { value: mode, initialized: true };
 
       const renderModal = async () =>
-        await modalHarness.render(() => DataBackupModal(modalProps));
+        await modalHarness.render(() => DataBackupModal({}));
       let modal = await renderModal();
       if (mode === 'overwrite') {
         findElement(modal, (element) => element.props.id === 'radio-import-overwrite')
@@ -482,7 +462,7 @@ describe('sync wiring', () => {
         .toEqual(mode === 'overwrite' ? parsedData.catalog : expect.arrayContaining(parsedData.catalog));
       const storedRoutines = await storage.getScopedStoredItem(
         storage.DB_KEYS.ROUTINES,
-        appStorage.routines,
+        appStore.getState().routines,
         ownerScope,
       );
       expect(storedRoutines)

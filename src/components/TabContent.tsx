@@ -10,18 +10,6 @@ import { WorkoutHistoryView } from './WorkoutHistoryView';
 export const TabContent: React.FC = () => {
   const {
     activeTab,
-    routines,
-    catalog,
-    rmLogs,
-    workoutHistory,
-    setExerciseDiary,
-    deleteHistoryLog,
-    diaryTargetExerciseName,
-    diaryAutoOpenCreate,
-    clearDiaryNavigationState,
-    onGoToRoutines,
-    onGoToCatalog,
-    exerciseDiary,
   } = useTabContent();
 
   return activeTab === AppTab.ROUTINES ? (
@@ -31,23 +19,8 @@ export const TabContent: React.FC = () => {
   ) : activeTab === AppTab.RMS ? (
     <RmLogsView />
   ) : activeTab === AppTab.HISTORY ? (
-    <WorkoutHistoryView
-      historyLogs={workoutHistory}
-      rmLogs={rmLogs}
-      routines={routines}
-      catalog={catalog}
-      onDeleteLog={deleteHistoryLog}
-      onGoToRoutines={onGoToRoutines}
-    />
+    <WorkoutHistoryView />
   ) : (
-    <ExerciseDiaryView
-      catalog={catalog}
-      diaries={exerciseDiary}
-      onSaveDiaries={setExerciseDiary}
-      onGoToCatalog={onGoToCatalog}
-      initialExerciseName={diaryTargetExerciseName}
-      autoOpenCreate={diaryAutoOpenCreate}
-      onClearInitialState={clearDiaryNavigationState}
-    />
+    <ExerciseDiaryView />
   );
 };
