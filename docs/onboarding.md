@@ -74,6 +74,7 @@ Google sign-in locally needs `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` and `SUPA
 | `pnpm lint` | `tsc --noEmit` typecheck | No ESLint/Prettier exist |
 | `pnpm build` | Production build + service worker | A >500 kB chunk warning is expected |
 | `pnpm db:reset` | Replays all migrations on the **local** DB | Requires `supabase start` (Docker). **Destroys local data.** |
+| `pnpm db:types` | Regenerates `src/types/database.types.ts` from the local schema | Requires `supabase start` (Docker); CI checks generated-type freshness. |
 | `pnpm db:test` | pgTAP tests in `supabase/tests/` | Requires `supabase start` (Docker) |
 | `pnpm db:lint` | `supabase db lint --local` | Requires `supabase start` (Docker) |
 | `supabase stop --no-backup` | Stops the local stack | |

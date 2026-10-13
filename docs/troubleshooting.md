@@ -56,7 +56,7 @@ All commands require `supabase start` (Docker).
 |---|---|---|
 | Local data gone after `pnpm db:reset` | Reset drops and replays all migrations | Expected. Export a backup from the app first if needed. |
 | No sample data after reset | Seed disabled: [`supabase/seed.sql`](../supabase/seed.sql) inserts into dropped `public.user_entitlements` | Expected; create data through the app. Do not re-enable the seed. |
-| TypeScript errors on Supabase calls after a migration / runtime shape mismatch | [`src/types/database.types.ts`](../src/types/database.types.ts) drifted (no generation script) | `supabase gen types typescript --local > src/types/database.types.ts`. `TODO(human): confirm this is how database.types.ts is regenerated; no script exists.` |
+| TypeScript errors on Supabase calls after a migration / runtime shape mismatch | [`src/types/database.types.ts`](../src/types/database.types.ts) drifted | Run `pnpm db:types` with `supabase start` running. CI also checks generated-type freshness after resetting its local database. |
 | `pnpm db:test` plan mismatch | `SELECT plan(N)` ≠ number of assertions | Update `N`. |
 | Need to change an applied migration | Migrations are forward-only | Add a new migration; never edit applied ones. |
 

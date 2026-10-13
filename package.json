@@ -13,6 +13,7 @@
     "db:reset": "supabase db reset --local --yes",
     "db:test": "supabase test db --local",
     "db:lint": "supabase db lint --local",
+    "db:types": "node scripts/generate-db-types.mjs",
     "generate:assets": "node scripts/generate-assets.js"
   },
   "dependencies": {

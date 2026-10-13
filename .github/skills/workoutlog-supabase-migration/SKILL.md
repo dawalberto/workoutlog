@@ -34,12 +34,12 @@ Load for any change under `supabase/migrations/` or `supabase/tests/`. If the ch
 
 - `supabase start` (Docker)
 - `pnpm db:reset && pnpm db:test && pnpm db:lint` (`db:reset` wipes the local DB only)
-- `supabase gen types typescript --local > src/types/database.types.ts` — `TODO(human): confirm this command; no script exists.`
+- `pnpm db:types` (requires `supabase start`; CI enforces generated-type freshness)
 - `pnpm lint && pnpm test` after regenerating types
 
 ## Output Contract
 
-Report: migration filename, objects created/altered, RLS/grant summary, pgTAP plan count and result, types regenerated (yes/no), rollout order, `TODO(human)` items.
+Report: migration filename, objects created/altered, RLS/grant summary, pgTAP plan count and result, types regenerated (yes/no), rollout order, remaining follow-up items.
 
 ## References
 

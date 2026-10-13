@@ -26,4 +26,4 @@ Load the [Supabase migration skill](../skills/workoutlog-supabase-migration/SKIL
 
 ## Verify
 
-`supabase start` (Docker), then `pnpm db:reset && pnpm db:test && pnpm db:lint`. `db:reset` wipes the **local** DB only. Regenerate `src/types/database.types.ts` after schema changes.
+`supabase start` (Docker), then `pnpm db:reset && pnpm db:types && pnpm db:test && pnpm db:lint`. `db:reset` wipes the **local** DB only. Regenerate `src/types/database.types.ts` with `pnpm db:types` after schema changes; CI enforces that generated types are current.

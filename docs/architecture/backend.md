@@ -120,13 +120,13 @@ Billing context: [ADR 0005](../decisions/0005-remove-billing-signed-in-sync.md).
 
 ## Type generation
 
-[`src/types/database.types.ts`](../../src/types/database.types.ts) mirrors the schema. No script exists.
+[`src/types/database.types.ts`](../../src/types/database.types.ts) mirrors the schema. Regenerate it from the local database with:
 
 ```sh
-supabase gen types typescript --local > src/types/database.types.ts
+pnpm db:types
 ```
 
-`TODO(human): confirm this is how database.types.ts is regenerated; no script exists.` Requires `supabase start` (Docker).
+The command requires `supabase start` (Docker). CI regenerates the file after resetting the local database and fails if that produces a diff, enforcing generated-type freshness.
 
 ## Seed
 

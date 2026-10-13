@@ -47,10 +47,10 @@ Read this file first, then load the matching skill and scoped instructions. Deep
 | DB reset | `pnpm db:reset` | Requires `supabase start`; **wipes the local DB** |
 | DB tests | `pnpm db:test` | Requires `supabase start`; pgTAP |
 | DB lint | `pnpm db:lint` | Requires `supabase start` |
+| DB types | `pnpm db:types` | Requires `supabase start`; CI checks generated types are current |
 | PWA assets | `pnpm generate:assets` | `scripts/generate-assets.js` (sharp) |
-| DB types | `supabase gen types typescript --local > src/types/database.types.ts` | `TODO(human): confirm; no script exists` |
 
-CI (`.github/workflows/ci.yml`) runs `pnpm test`, `pnpm lint`, `pnpm build` and the three DB commands on every push and pull request; it has no branch filters.
+CI (`.github/workflows/ci.yml`) runs `pnpm test`, `pnpm lint`, `pnpm build` and the DB commands, including a generated-types freshness check, on every push and pull request; it has no branch filters.
 
 ## Architecture
 

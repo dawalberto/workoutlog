@@ -14,10 +14,11 @@ Last verified: 2026-10-11
 | `pnpm lint` | `tsc --noEmit` typecheck | Counts as the lint gate |
 | `pnpm build` | Production build | Catches build-only failures |
 | `pnpm db:reset` | Replay all migrations locally | Requires `supabase start` (Docker); **wipes local DB** |
+| `pnpm db:types` | Regenerate `src/types/database.types.ts` from the local schema | CI checks generated-type freshness after reset |
 | `pnpm db:test` | pgTAP (`supabase test db --local`) | Requires `supabase start` (Docker) |
 | `pnpm db:lint` | `supabase db lint --local` | Requires `supabase start` (Docker) |
 
-CI ([`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)) runs `pnpm test`, `pnpm lint`, `pnpm build` (job `frontend`) and `supabase start` → `db reset` → `test db` → `db lint` → `stop` (job `database`) on every push and PR.
+CI ([`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)) runs `pnpm test`, `pnpm lint`, `pnpm build` (job `frontend`) and `supabase start` → `db reset` → generated-type freshness check → `test db` → `db lint` → `stop` (job `database`) on every push and PR.
 
 ## Vitest setup
 
