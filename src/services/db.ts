@@ -11,6 +11,7 @@ import type {
   WorkoutHistoryLog,
   ExerciseDiary,
 } from '../types';
+import { SYNC_CONTRACT_TABLES, type SyncTable } from '../sync/contract';
 import { getStarterData } from '../data/initialData';
 import {
   applyRemoteSyncChange,
@@ -22,7 +23,6 @@ import {
   type SyncRemoteChange,
   type SyncQueueEntry,
   type SyncPushChange,
-  type SyncTable,
 } from './sync-queue';
 
 export const DB_NAME = 'WorkoutLogDB';
@@ -805,20 +805,9 @@ const syncCollectionKeys = [
   DB_KEYS.EXERCISE_DIARY,
 ] as const;
 
-const syncCollectionForTable: Record<SyncTable, (typeof syncCollectionKeys)[number]> = {
-  exercise_definitions: DB_KEYS.CATALOG,
-  routines: DB_KEYS.ROUTINES,
-  routine_exercises: DB_KEYS.ROUTINES,
-  workout_sets: DB_KEYS.ROUTINES,
-  active_workout_sessions: DB_KEYS.ACTIVE_SESSIONS,
-  active_session_completed_sets: DB_KEYS.ACTIVE_SESSIONS,
-  rm_logs: DB_KEYS.RM_LOGS,
-  rm_records: DB_KEYS.RM_LOGS,
-  workout_history: DB_KEYS.WORKOUT_HISTORY,
-  workout_history_exercises: DB_KEYS.WORKOUT_HISTORY,
-  exercise_diaries: DB_KEYS.EXERCISE_DIARY,
-  exercise_diary_entries: DB_KEYS.EXERCISE_DIARY,
-};
+const syncCollectionForTable = Object.fromEntries(
+  SYNC_CONTRACT_TABLES.map(({ name, storageKey }) => [name, storageKey]),
+) as Record<SyncTable, (typeof syncCollectionKeys)[number]>;
 
 function compareServerRevisions(left: string, right: string): number {
   const leftRevision = BigInt(left);

@@ -1,5 +1,6 @@
 import type { Json } from '../types/database.types';
 import type { SupabaseBrowserClient } from './supabase';
+import { SYNC_TABLES, type SyncTable } from '../sync/contract';
 import {
   acknowledgeSyncOperation,
   applyRemoteSyncChanges,
@@ -16,23 +17,7 @@ import {
   validateWorkoutHistoryRecord,
   type SyncQueueEntry,
   type SyncRemoteChange,
-  type SyncTable,
 } from './sync-queue';
-
-const SYNC_TABLES: readonly SyncTable[] = [
-  'exercise_definitions',
-  'routines',
-  'routine_exercises',
-  'workout_sets',
-  'active_workout_sessions',
-  'active_session_completed_sets',
-  'rm_logs',
-  'rm_records',
-  'workout_history',
-  'workout_history_exercises',
-  'exercise_diaries',
-  'exercise_diary_entries',
-];
 
 const PULL_LIMIT = 500;
 const MAX_PULL_PAGES = 100;

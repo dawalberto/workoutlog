@@ -11,28 +11,14 @@ import type {
   WorkoutSet,
   WorkoutHistoryLog,
 } from '../types';
+import {
+  SYNC_CONTRACT_TABLES,
+  SYNC_FOREIGN_KEYS,
+  type SyncCollection,
+  type SyncTable,
+} from '../sync/contract';
 
-export type SyncTable =
-  | 'exercise_definitions'
-  | 'routines'
-  | 'routine_exercises'
-  | 'workout_sets'
-  | 'active_workout_sessions'
-  | 'active_session_completed_sets'
-  | 'rm_logs'
-  | 'rm_records'
-  | 'workout_history'
-  | 'workout_history_exercises'
-  | 'exercise_diaries'
-  | 'exercise_diary_entries';
-
-export type SyncCollection =
-  | 'routines'
-  | 'catalog'
-  | 'activeSessions'
-  | 'rmLogs'
-  | 'workoutHistory'
-  | 'exerciseDiary';
+export type { SyncCollection, SyncTable } from '../sync/contract';
 
 export interface SyncChange {
   table: SyncTable;
@@ -76,108 +62,13 @@ interface SyncRecord {
   record: Record<string, unknown>;
 }
 
-interface SyncForeignKey {
-  parentTable: SyncTable;
-  childTable: SyncTable;
-  parentColumns: readonly string[];
-  childColumns: readonly string[];
-  deleteChildFirst: boolean;
-}
-
-const syncForeignKeys: readonly SyncForeignKey[] = [
-  {
-    parentTable: 'routines',
-    childTable: 'routine_exercises',
-    parentColumns: ['id'],
-    childColumns: ['routine_id'],
-    deleteChildFirst: true,
-  },
-  {
-    parentTable: 'exercise_definitions',
-    childTable: 'routine_exercises',
-    parentColumns: ['id'],
-    childColumns: ['definition_id'],
-    deleteChildFirst: false,
-  },
-  {
-    parentTable: 'routine_exercises',
-    childTable: 'workout_sets',
-    parentColumns: ['routine_id', 'id'],
-    childColumns: ['routine_id', 'routine_exercise_id'],
-    deleteChildFirst: true,
-  },
-  {
-    parentTable: 'routines',
-    childTable: 'active_workout_sessions',
-    parentColumns: ['id'],
-    childColumns: ['routine_id'],
-    deleteChildFirst: true,
-  },
-  {
-    parentTable: 'active_workout_sessions',
-    childTable: 'active_session_completed_sets',
-    parentColumns: ['routine_id'],
-    childColumns: ['routine_id'],
-    deleteChildFirst: true,
-  },
-  {
-    parentTable: 'workout_sets',
-    childTable: 'active_session_completed_sets',
-    parentColumns: ['routine_id', 'id'],
-    childColumns: ['routine_id', 'set_id'],
-    deleteChildFirst: true,
-  },
-  {
-    parentTable: 'exercise_definitions',
-    childTable: 'rm_logs',
-    parentColumns: ['id'],
-    childColumns: ['definition_id'],
-    deleteChildFirst: false,
-  },
-  {
-    parentTable: 'rm_logs',
-    childTable: 'rm_records',
-    parentColumns: ['id'],
-    childColumns: ['log_id'],
-    deleteChildFirst: true,
-  },
-  {
-    parentTable: 'routines',
-    childTable: 'workout_history',
-    parentColumns: ['id'],
-    childColumns: ['routine_id'],
-    deleteChildFirst: false,
-  },
-  {
-    parentTable: 'workout_history',
-    childTable: 'workout_history_exercises',
-    parentColumns: ['id'],
-    childColumns: ['history_id'],
-    deleteChildFirst: true,
-  },
-  {
-    parentTable: 'exercise_definitions',
-    childTable: 'exercise_diaries',
-    parentColumns: ['id'],
-    childColumns: ['definition_id'],
-    deleteChildFirst: false,
-  },
-  {
-    parentTable: 'exercise_diaries',
-    childTable: 'exercise_diary_entries',
-    parentColumns: ['id'],
-    childColumns: ['diary_id'],
-    deleteChildFirst: true,
-  },
-];
-
 export function optionalSyncReference(change: SyncPushChange): {
   column: string;
   parentTable: 'routines' | 'exercise_definitions';
   parentId: string;
 } | null {
   if (change.operation !== 'upsert') return null;
-  const foreignKey = syncForeignKeys.find(
+  const foreignKey = SYNC_FOREIGN_KEYS.find(
     (key) => key.childTable === change.table && !key.deleteChildFirst,
   );
   if (!foreignKey) return null;
@@ -188,20 +79,9 @@ export function optionalSyncReference(change: SyncPushChange): {
     : null;
 }
 
-const identityColumns: Record<SyncTable, string[]> = {
-  exercise_definitions: ['id'],
-  routines: ['id'],
-  routine_exercises: ['id'],
-  workout_sets: ['id'],
-  active_workout_sessions: ['routine_id'],
-  active_session_completed_sets: ['routine_id', 'set_id'],
-  rm_logs: ['id'],
-  rm_records: ['id'],
-  workout_history: ['id'],
-  workout_history_exercises: ['history_id', 'position'],
-  exercise_diaries: ['id'],
-  exercise_diary_entries: ['id'],
-};
+function getSyncIdentityColumns(table: SyncTable): readonly string[] {
+  return SYNC_CONTRACT_TABLES.find((definition) => definition.name === table)!.identity;
+}
 
 export function orderSyncOperations<T extends SyncOperationForOrdering>(
   operations: readonly T[],
@@ -241,7 +121,7 @@ export function orderSyncOperations<T extends SyncOperationForOrdering>(
     previousByRecord.set(recordKey, index);
   }
 
-  for (const foreignKey of syncForeignKeys) {
+  for (const foreignKey of SYNC_FOREIGN_KEYS) {
     const parentsByKey = new Map<string, number[]>();
     const parentDeletes: number[] = [];
     const childDeletes: number[] = [];
@@ -371,22 +251,7 @@ function foreignKeyKey(
 }
 
 export function getSyncCollection(key: string): SyncCollection | null {
-  switch (key) {
-    case 'workout_planner_catalog_v2':
-      return 'catalog';
-    case 'workout_planner_routines_v2':
-      return 'routines';
-    case 'workout_active_sessions_v1':
-      return 'activeSessions';
-    case 'workout_planner_rm_logs_v1':
-      return 'rmLogs';
-    case 'workout_planner_history_v1':
-      return 'workoutHistory';
-    case 'workout_planner_diary_v1':
-      return 'exerciseDiary';
-    default:
-      return null;
-  }
+  return SYNC_CONTRACT_TABLES.find(({ storageKey }) => storageKey === key)?.collection ?? null;
 }
 
 export function diffSyncCollection(
@@ -707,7 +572,9 @@ function asSyncRecord(
 }
 
 function identityRecord(table: SyncTable, record: Record<string, unknown>) {
-  return Object.fromEntries(identityColumns[table].map((column) => [column, record[column]]));
+  return Object.fromEntries(
+    getSyncIdentityColumns(table).map((column) => [column, record[column]]),
+  );
 }
 
 function arrayOf<T>(value: unknown): T[] {
@@ -747,7 +614,7 @@ export function syncRecordId(
   table: SyncTable,
   record: Record<string, unknown>,
 ): string {
-  const identity = identityColumns[table].map((column) => record[column]);
+  const identity = getSyncIdentityColumns(table).map((column) => record[column]);
   if (identity.some((value) => value === null || value === undefined)) {
     throw new Error('Sync record identity is incomplete.');
   }
