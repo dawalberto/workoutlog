@@ -31,7 +31,7 @@ Act on the maintainer's answers to the context-layer Final Report: clean up left
 | T6 | Sign-out leaves the app clean | delegated (gpt-6-luna) | high | test, lint, build, independent verifier | done `23171c9` |
 | T7 | Revoke direct INSERT/UPDATE grants on synced tables | delegated (gpt-6-luna) | high | db:reset, db:test, db:lint, test, independent verifier | done `8a0b827` |
 | T8 | Sync contract single source of truth + version | architect then writer (gpt-6-luna) | high | db + frontend checks, independent verifier | done `41fb71d`, `55b1e35`, `f581beb` |
-| T9 | Componentize large components and App.tsx | architect then writer slices (gpt-6-luna) | medium | test, lint, build per slice | done `e986bde`, `d780ac6`, `879e987`, `800d9b1`, `a209611`; App slice pending commit |
+| T9 | Componentize large components and App.tsx | architect then writer slices (gpt-6-luna) | medium | test, lint, build per slice | done `e986bde`, `d780ac6`, `879e987`, `800d9b1`, `a209611`; `08d9d0b` |
 
 ## Deferred (not in scope)
 
