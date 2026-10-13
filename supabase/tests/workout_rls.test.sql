@@ -147,10 +147,12 @@ SELECT set_config(
   true
 );
 
-SELECT lives_ok(
+SELECT throws_ok(
   $$INSERT INTO public.routines (user_id, id, name)
     VALUES ('10000000-0000-4000-8000-000000000001', 'rls-insert-a', 'Owner A inserted')$$,
-  'owner A can insert an owned routine'
+  '42501',
+  NULL,
+  'owner A cannot directly insert an owned routine'
 );
 SELECT throws_ok(
   $$INSERT INTO public.routines (user_id, id, name)
@@ -170,22 +172,26 @@ SELECT throws_ok(
       'Cross-owner reference',
       1
     )$$,
-  '23503',
+  '42501',
   NULL,
-  'owner A cannot reference owner B definition through a composite foreign key'
+  'direct insert is denied before a cross-owner reference can be attempted'
 );
-SELECT lives_ok(
+SELECT throws_ok(
   $$UPDATE public.routines
     SET name = 'Owner A hijacked routine'
     WHERE user_id = '10000000-0000-4000-8000-000000000002'
       AND id = 'rls-routine-b'$$,
-  'owner A update of owner B routine affects no rows'
+  '42501',
+  NULL,
+  'owner A cannot directly update another owner row'
 );
-SELECT lives_ok(
+SELECT throws_ok(
   $$UPDATE public.routines
     SET name = 'Owner A updated routine', server_revision = 0
     WHERE id = 'rls-routine-a'$$,
-  'owner A can update an owned routine without choosing its revision'
+  '42501',
+  NULL,
+  'owner A cannot directly update an owned routine'
 );
 SELECT throws_ok(
   $$UPDATE public.routines
@@ -197,30 +203,32 @@ SELECT throws_ok(
 );
 SELECT is(
   (SELECT name FROM public.routines WHERE id = 'rls-routine-a'),
-  'Owner A updated routine',
-  'owner A reads back its updated routine'
+  'Owner A routine',
+  'owner A row remains unchanged after denied direct writes'
 );
 SELECT ok(
   (
-    SELECT server_revision > current_setting('test.owner_a_initial_revision')::bigint
+    SELECT server_revision = current_setting('test.owner_a_initial_revision')::bigint
     FROM public.routines
     WHERE id = 'rls-routine-a'
   ),
-  'server assigns an increasing revision after an accepted update'
+  'denied direct writes do not change the server revision'
 );
-SELECT lives_ok(
+SELECT throws_ok(
   $$UPDATE public.routines
     SET deleted_at = clock_timestamp()
     WHERE id = 'rls-tombstone-a'$$,
-  'owner A can synchronize a deletion tombstone'
+  '42501',
+  NULL,
+  'owner A cannot directly write a deletion tombstone'
 );
 SELECT ok(
   (
-    SELECT deleted_at IS NOT NULL AND server_revision > 0
+    SELECT deleted_at IS NULL AND server_revision > 0
     FROM public.routines
     WHERE id = 'rls-tombstone-a'
   ),
-  'tombstone updates retain the row and receive server revisions'
+  'denied tombstone write leaves the row unchanged'
 );
 SELECT throws_ok(
   $$DELETE FROM public.routines
@@ -256,12 +264,14 @@ SELECT is(
   1,
   'owner B reads only owner B definitions'
 );
-SELECT lives_ok(
+SELECT throws_ok(
   $$UPDATE public.routines
     SET name = 'Owner B hijacked routine'
     WHERE user_id = '10000000-0000-4000-8000-000000000001'
       AND id = 'rls-routine-a'$$,
-  'owner B update of owner A routine affects no rows'
+  '42501',
+  NULL,
+  'owner B cannot directly update another owner row'
 );
 SELECT throws_ok(
   $$INSERT INTO public.routines (user_id, id, name)
@@ -296,8 +306,8 @@ SELECT set_config(
 );
 SELECT is(
   (SELECT name FROM public.routines WHERE id = 'rls-routine-a'),
-  'Owner A updated routine',
-  'owner A row remains unchanged after owner B update and delete attempts'
+  'Owner A routine',
+  'owner A row remains unchanged after direct write attempts'
 );
 
 SELECT * FROM finish();

@@ -25,6 +25,7 @@ interface SidebarMenuProps {
   isSyncEligibilityLoading: boolean;
   isOnline: boolean;
   isSigningIn: boolean;
+  isSigningOut: boolean;
   error: string | null;
   onSignIn: () => Promise<void>;
   onSignOut: () => Promise<void>;
@@ -47,6 +48,7 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
   isSyncEligibilityLoading,
   isOnline,
   isSigningIn,
+  isSigningOut,
   error,
   onSignIn,
   onSignOut,
@@ -364,10 +366,12 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
             <button
               type="button"
               onClick={() => void (isAuthenticated ? onSignOut() : onSignIn())}
-              disabled={isSigningIn}
-              className="mt-2 w-full rounded-xl bg-[#00FF87] px-3 py-2 text-xs font-black text-black transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
+              disabled={isSigningIn || isSigningOut}
+              className="mt-2 min-h-[48px] w-full rounded-xl bg-[#00FF87] px-3 py-2 text-xs font-black text-black transition-all hover:brightness-110 active:scale-[0.97] disabled:cursor-wait disabled:opacity-60"
             >
-              {isSigningIn
+              {isSigningOut
+                ? 'Cerrando sesión…'
+                : isSigningIn
                 ? 'Conectando…'
                 : isAuthenticated
                 ? 'Cerrar sesión'

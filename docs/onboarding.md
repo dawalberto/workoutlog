@@ -2,7 +2,7 @@
 
 Get WorkoutLog running locally, verify it, and land your first change.
 
-Last verified: 2026-10-11
+Last verified: 2026-10-13
 
 ## Quick path
 
@@ -23,7 +23,7 @@ Without Supabase env vars the app runs fully offline ("local-only mode"). Add a 
 | Supabase CLI | 2.120.0 | Local Supabase stack, migrations, pgTAP tests | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) |
 | Docker | any recent | Required by `supabase start` | [`supabase/config.toml`](../supabase/config.toml) |
 
-There is no `.nvmrc` / `engines` field. Use pnpm only; `bun.lock` is legacy (see [ADR 0007](decisions/0007-pnpm-package-manager.md)).
+There is no `.nvmrc` / `engines` field. Use pnpm only (see [ADR 0007](decisions/0007-pnpm-package-manager.md)).
 
 ## Setup
 
@@ -74,6 +74,7 @@ Google sign-in locally needs `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` and `SUPA
 | `pnpm lint` | `tsc --noEmit` typecheck | No ESLint/Prettier exist |
 | `pnpm build` | Production build + service worker | A >500 kB chunk warning is expected |
 | `pnpm db:reset` | Replays all migrations on the **local** DB | Requires `supabase start` (Docker). **Destroys local data.** |
+| `pnpm db:types` | Regenerates `src/types/database.types.ts` from the local schema | Requires `supabase start` (Docker); CI checks generated-type freshness. |
 | `pnpm db:test` | pgTAP tests in `supabase/tests/` | Requires `supabase start` (Docker) |
 | `pnpm db:lint` | `supabase db lint --local` | Requires `supabase start` (Docker) |
 | `supabase stop --no-backup` | Stops the local stack | |
@@ -82,12 +83,12 @@ These match CI exactly; see [testing strategy](standards/testing-strategy.md).
 
 ## First PR walkthrough
 
-1. Branch from `main`: `feature/<name>`, `fix/<name>` or `docs/<name>` ([git workflow](standards/git-workflow.md)).
+1. Branch from `develop`: `feature/<name>`, `fix/<name>` or `docs/<name>` ([git workflow](standards/git-workflow.md)).
 2. For substantial work, create an ODD task doc in `odd/tasks/<feature>.md` (see [agents guide](agents-guide.md#odd-workflow)).
 3. Make the change with tests alongside it ([testing strategy](standards/testing-strategy.md)).
 4. Commit with a Conventional Commit, e.g. `feat(sync): ...`, `fix(ui): ...`. No AI attribution trailers.
 5. Run the same checks as CI: `pnpm test`, `pnpm lint`, `pnpm build`; plus `pnpm db:reset && pnpm db:test && pnpm db:lint` if you touched `supabase/`.
-6. Open a PR to `main` and fill in [`.github/pull_request_template.md`](../.github/pull_request_template.md). CI runs on the PR; deployment happens only after merge to `main`.
+6. Open a PR back to `develop` and fill in [`.github/pull_request_template.md`](../.github/pull_request_template.md). CI runs on every PR; merge `develop` into `main` for a release and GitHub Pages deployment.
 
 ## Who to ask
 

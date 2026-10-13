@@ -1,5 +1,6 @@
 import { IDBFactory } from 'fake-indexeddb';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { SYNC_CONTRACT_VERSION } from '../../src/sync/contract';
 
 type DbModule = typeof import('../../src/services/db');
 type CloudSyncModule = typeof import('../../src/services/cloud-sync');
@@ -92,7 +93,7 @@ describe('cloud sync', () => {
     await storage.setScopedStoredItem(storage.DB_KEYS.CATALOG, [{ id: 'edit', name: 'Edited' }], scope);
     const client = createClient({}, acknowledgingRpc());
     await cloudSync.syncCloudData({
-      ownerId: scope.ownerId, premiumActive: true, online: true, client: client as never,
+      ownerId: scope.ownerId, syncEnabled: true, online: true, client: client as never,
       pull: false,
     });
     expect(client.from).not.toHaveBeenCalled();
@@ -116,7 +117,7 @@ describe('cloud sync', () => {
       })),
     }) as never);
     await cloudSync.syncCloudData({
-      ownerId: scope.ownerId, premiumActive: true, online: true, client: client as never, pull: false,
+      ownerId: scope.ownerId, syncEnabled: true, online: true, client: client as never, pull: false,
     });
     expect(rpc).toHaveBeenCalledTimes(3);
     const repaired = rpc.mock.calls[1]![1];
@@ -135,7 +136,7 @@ describe('cloud sync', () => {
     const rpc = acknowledgingRpc();
     const client = createClient({}, rpc);
     await cloudSync.syncCloudData({
-      ownerId: scope.ownerId, premiumActive: true, online: true, client: client as never, pull: false,
+      ownerId: scope.ownerId, syncEnabled: true, online: true, client: client as never, pull: false,
     });
     expect(client.from).not.toHaveBeenCalled();
     expect(rpc.mock.calls[0]![1].p_changes).toEqual([
@@ -157,7 +158,7 @@ describe('cloud sync', () => {
       }) }) }),
     }) as never);
     await expect(cloudSync.syncCloudData({
-      ownerId: scope.ownerId, premiumActive: true, online: true, client: client as never, pull: false,
+      ownerId: scope.ownerId, syncEnabled: true, online: true, client: client as never, pull: false,
     })).rejects.toThrow('unresolved foreign key');
     expect(rpc).toHaveBeenCalledTimes(1);
     expect(await storage.getPendingSyncOperations(scope)).toEqual(original);
@@ -171,7 +172,7 @@ describe('cloud sync', () => {
     const rpc = vi.fn(async () => ({ data: null, error: { code: '23503', message: 'foreign key violation' } }));
     const client = createClient({}, rpc);
     await expect(cloudSync.syncCloudData({
-      ownerId: scope.ownerId, premiumActive: true, online: true, client: client as never, pull: false,
+      ownerId: scope.ownerId, syncEnabled: true, online: true, client: client as never, pull: false,
     })).rejects.toThrow('foreign key');
     expect(rpc).toHaveBeenCalledTimes(1);
     expect(await storage.getPendingSyncOperations(scope)).toHaveLength(1);
@@ -190,7 +191,7 @@ describe('cloud sync', () => {
       }) }) }),
     }) as never);
     await expect(cloudSync.syncCloudData({
-      ownerId: scope.ownerId, premiumActive: true, online: true, client: client as never, pull: false,
+      ownerId: scope.ownerId, syncEnabled: true, online: true, client: client as never, pull: false,
     })).rejects.toThrow('Parent lookup unavailable');
     expect(await storage.getPendingSyncOperations(scope)).toEqual(original);
     expect(await storage.getScopedStoredItem(storage.DB_KEYS.WORKOUT_HISTORY, [], scope)).toEqual([history]);
@@ -208,7 +209,7 @@ describe('cloud sync', () => {
     });
     const client = createClient({}, rpc);
     await expect(cloudSync.syncCloudData({
-      ownerId: scope.ownerId, premiumActive: true, online: true, client: client as never, pull: false,
+      ownerId: scope.ownerId, syncEnabled: true, online: true, client: client as never, pull: false,
     })).rejects.toThrow('queue drain rounds');
     expect(rpc).toHaveBeenCalledTimes(3);
     const pending = await storage.getPendingSyncOperations(scope);
@@ -227,7 +228,7 @@ describe('cloud sync', () => {
     });
     const client = createClient({}, rpc);
     await cloudSync.syncCloudData({
-      ownerId: scope.ownerId, premiumActive: true, online: true, client: client as never, pull: false,
+      ownerId: scope.ownerId, syncEnabled: true, online: true, client: client as never, pull: false,
     });
     expect(rpc).toHaveBeenCalledTimes(2);
     expect(await storage.getPendingSyncOperations(scope)).toHaveLength(0);
@@ -241,10 +242,10 @@ describe('cloud sync', () => {
       routines: [{ id: 'remote', name: 'Other device', server_revision: 50, deleted_at: null }],
     }, acknowledgingRpc());
     await cloudSync.syncCloudData({
-      ownerId: scope.ownerId, premiumActive: true, online: true, client: client as never, pull: false,
+      ownerId: scope.ownerId, syncEnabled: true, online: true, client: client as never, pull: false,
     });
     await cloudSync.syncCloudData({
-      ownerId: scope.ownerId, premiumActive: true, online: true, client: client as never,
+      ownerId: scope.ownerId, syncEnabled: true, online: true, client: client as never,
     });
     expect(await storage.getScopedStoredItem(storage.DB_KEYS.ROUTINES, [], scope)).toEqual([
       expect.objectContaining({ id: 'remote', name: 'Other device' }),
@@ -269,13 +270,76 @@ describe('cloud sync', () => {
       } }) }) }) } as never;
     });
     await cloudSync.syncCloudData({
-      ownerId: scope.ownerId, premiumActive: true, online: true, client: client as never,
+      ownerId: scope.ownerId, syncEnabled: true, online: true, client: client as never,
     });
     expect(await storage.getScopedStoredItem(storage.DB_KEYS.CATALOG, [], scope)).toEqual([{ id: 'edit', name: 'During pull' }]);
     expect(client.rpc).toHaveBeenCalledWith('sync_push', expect.objectContaining({
       p_changes: [expect.objectContaining({ baseRevision: '2', record: expect.objectContaining({ name: 'During pull' }) })],
     }));
     expect(await storage.getPendingSyncOperations(scope)).toHaveLength(0);
+  });
+
+  it('does not apply pulled account data after sign-out stops sync', async () => {
+    const scope = { ownerId: 'owner-cleanup-race' };
+    const guestCatalog = [{ id: 'guest-exercise', name: 'Sentadilla' }];
+    await storage.setScopedStoredItem(storage.DB_KEYS.CATALOG, guestCatalog);
+
+    let releasePull!: (result: {
+      data: Array<Record<string, unknown>>;
+      error: null;
+    }) => void;
+    let pullStarted!: () => void;
+    const started = new Promise<void>((resolve) => {
+      pullStarted = resolve;
+    });
+    const pullResult = new Promise<{
+      data: Array<Record<string, unknown>>;
+      error: null;
+    }>((resolve) => {
+      releasePull = resolve;
+    });
+    const client = createClient();
+    client.from.mockImplementation((table: string) => ({
+      select: () => ({
+        gt: () => ({
+          order: () => ({
+            limit: async () => {
+              if (table !== 'exercise_diary_entries') {
+                return table === 'exercise_definitions'
+                  ? {
+                    data: [{
+                      id: 'remote-exercise',
+                      name: 'Remote exercise',
+                      server_revision: 1,
+                      deleted_at: null,
+                    }],
+                    error: null,
+                  }
+                  : { data: [], error: null };
+              }
+              pullStarted();
+              return pullResult;
+            },
+          }),
+        }),
+      }),
+    }) as never);
+    let canSync = true;
+    const syncPass = cloudSync.syncCloudData({
+      ownerId: scope.ownerId,
+      syncEnabled: true,
+      online: true,
+      client: client as never,
+      canSync: () => canSync,
+    });
+
+    await started;
+    canSync = false;
+    releasePull({ data: [], error: null });
+
+    await expect(syncPass).rejects.toThrow('eligibility changed');
+    expect(await storage.getScopedStoredItem(storage.DB_KEYS.CATALOG, [], scope)).toEqual([]);
+    expect(await storage.getScopedStoredItem(storage.DB_KEYS.CATALOG, [])).toEqual(guestCatalog);
   });
 
   it.each(['routine_exercises', 'rm_logs', 'exercise_diaries'] as const)(
@@ -305,7 +369,7 @@ describe('cloud sync', () => {
         select: () => ({ eq: () => ({ limit: async () => ({ data: [], error: null }) }) }),
       }) as never);
       await cloudSync.syncCloudData({
-        ownerId: scope.ownerId, premiumActive: true, online: true, client: client as never, pull: false,
+        ownerId: scope.ownerId, syncEnabled: true, online: true, client: client as never, pull: false,
       });
       expect(rpc).toHaveBeenCalledTimes(2);
       expect(rpc.mock.calls[1]![1].p_changes).toEqual([
@@ -330,7 +394,7 @@ describe('cloud sync', () => {
     await expect(
       cloudSync.syncCloudData({
         ownerId: 'owner-1',
-        premiumActive: true,
+        syncEnabled: true,
         online: true,
         client: client as never,
       }),
@@ -367,7 +431,7 @@ describe('cloud sync', () => {
 
     await cloudSync.syncCloudData({
       ownerId: scope.ownerId,
-      premiumActive: true,
+      syncEnabled: true,
       online: true,
       client: client as never,
     });
@@ -375,6 +439,7 @@ describe('cloud sync', () => {
     expect(rpc).toHaveBeenCalledWith('sync_push', {
       p_operation_id: queued!.request.operationId,
       p_changes: queued!.request.changes,
+      p_contract_version: SYNC_CONTRACT_VERSION,
     });
     expect(await storage.getPendingSyncOperations(scope)).toHaveLength(0);
     expect(
@@ -398,7 +463,7 @@ describe('cloud sync', () => {
     await expect(
       cloudSync.syncCloudData({
         ownerId: scope.ownerId,
-        premiumActive: true,
+        syncEnabled: true,
         online: true,
         client: client as never,
       }),
@@ -408,13 +473,43 @@ describe('cloud sync', () => {
     expect(await storage.getPendingSyncOperations(scope)).toHaveLength(1);
   });
 
+  it.each([
+    'sync_contract_version_unsupported',
+    'sync_contract_version_required',
+  ])('retains the outbox and marks contract version errors as update-required (%s)', async (message) => {
+    const scope = { ownerId: 'owner-1' };
+    await storage.setScopedStoredItem(
+      storage.DB_KEYS.CATALOG,
+      [{ id: 'definition-1', name: 'Bench press' }],
+      scope,
+    );
+    const [queued] = await storage.getPendingSyncOperations(scope);
+    const rpc = vi.fn(async () => ({
+      data: null,
+      error: { code: 'P0001', message },
+    }));
+    const client = createClient({}, rpc);
+
+    await expect(
+      cloudSync.syncCloudData({
+        ownerId: scope.ownerId,
+        syncEnabled: true,
+        online: true,
+        client: client as never,
+      }),
+    ).rejects.toMatchObject({ updateRequired: true });
+
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(await storage.getPendingSyncOperations(scope)).toEqual([queued]);
+  });
+
   it('preserves local-only behavior when signed out, offline, unentitled, or unconfigured', async () => {
     const client = createClient();
     for (const options of [
-      { ownerId: null, premiumActive: true, online: true, client },
-      { ownerId: 'owner-1', premiumActive: true, online: false, client },
-      { ownerId: 'owner-1', premiumActive: false, online: true, client },
-      { ownerId: 'owner-1', premiumActive: true, online: true, client: null },
+      { ownerId: null, syncEnabled: true, online: true, client },
+      { ownerId: 'owner-1', syncEnabled: true, online: false, client },
+      { ownerId: 'owner-1', syncEnabled: false, online: true, client },
+      { ownerId: 'owner-1', syncEnabled: true, online: true, client: null },
     ]) {
       await expect(cloudSync.syncCloudData(options as never)).resolves.toEqual({
         status: 'skipped',
@@ -470,7 +565,7 @@ describe('cloud sync', () => {
 
     await cloudSync.syncCloudData({
       ownerId: scope.ownerId,
-      premiumActive: true,
+      syncEnabled: true,
       online: true,
       client: client as never,
     });

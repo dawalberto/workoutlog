@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   loadSyncEligibility,
+  runSignOutFlow,
   signInWithGoogle,
   signOut,
 } from '../src/services/auth';
@@ -60,5 +61,78 @@ describe('Supabase authentication and sync eligibility', () => {
     await expect(signOut(client as never)).resolves.toEqual({
       error: 'Session could not be cleared',
     });
+  });
+
+  it('aborts sign-out and cleanup when pending changes are rejected', async () => {
+    const sync = vi.fn(async () => {
+      throw new Error('Network unavailable');
+    });
+    const pending = vi.fn(async () => 2);
+    const confirm = vi.fn(async () => false);
+    const endSession = vi.fn(async () => ({ error: null }));
+    const clearLocalData = vi.fn(async () => undefined);
+
+    await expect(runSignOutFlow({
+      syncBeforeSignOut: sync,
+      getPendingChanges: pending,
+      confirmPendingChanges: confirm,
+      endSession,
+      clearLocalData,
+    })).resolves.toEqual({
+      cancelled: true,
+      signedOut: false,
+      cleanupFailed: false,
+      error: null,
+    });
+
+    expect(sync).toHaveBeenCalledOnce();
+    expect(confirm).toHaveBeenCalledWith(2);
+    expect(endSession).not.toHaveBeenCalled();
+    expect(clearLocalData).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { pendingCount: 2, confirmed: true },
+    { pendingCount: 0, confirmed: false },
+  ])('signs out and clears local data when pending operations are $pendingCount', async ({
+    pendingCount,
+    confirmed,
+  }) => {
+    const endSession = vi.fn(async () => ({ error: null }));
+    const clearLocalData = vi.fn(async () => undefined);
+    const confirm = vi.fn(async () => confirmed);
+
+    await expect(runSignOutFlow({
+      syncBeforeSignOut: async () => undefined,
+      getPendingChanges: async () => pendingCount,
+      confirmPendingChanges: confirm,
+      endSession,
+      clearLocalData,
+    })).resolves.toEqual({
+      cancelled: false,
+      signedOut: true,
+      cleanupFailed: false,
+      error: null,
+    });
+
+    expect(endSession).toHaveBeenCalledOnce();
+    expect(clearLocalData).toHaveBeenCalledOnce();
+    expect(confirm).toHaveBeenCalledTimes(pendingCount > 0 ? 1 : 0);
+  });
+
+  it('reports incomplete local cleanup as a failed sign-out with a clear recovery message', async () => {
+    const result = await runSignOutFlow({
+      syncBeforeSignOut: async () => undefined,
+      getPendingChanges: async () => 0,
+      confirmPendingChanges: async () => true,
+      endSession: async () => ({ error: null }),
+      clearLocalData: async () => {
+        throw new Error('IndexedDB is unavailable');
+      },
+    });
+
+    expect(result.signedOut).toBe(false);
+    expect(result.cleanupFailed).toBe(true);
+    expect(result.error).toContain('No se pudieron eliminar por completo los datos locales');
   });
 });

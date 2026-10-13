@@ -2,14 +2,14 @@
 
 Conventions observed in the codebase, with examples to copy and legacy patterns to avoid.
 
-Last verified: 2026-10-11
+Last verified: 2026-10-13
 
 ## Rules in one screen
 
 - TypeScript everywhere; `pnpm lint` (`tsc --noEmit`) is the only linter. No ESLint/Prettier — match the surrounding style.
 - Single quotes, semicolons, 2-space indentation, **relative imports**.
-- Components: `export const Name: React.FC<NameProps>` + `interface NameProps` in the same file. In new code, export the props interface (as `SyncStatus.tsx` and `RmBadge.tsx` do); 23 of 31 components keep it unexported — do not churn them.
-- State in `App.tsx`, logic in hooks, persistence in `useAppStorage` / `src/services/db.ts`. No context, no store.
+- Components: `export const Name: React.FC<NameProps>` + `interface NameProps` in the same file. Export a component's props interface only when another module imports it; otherwise keep it module-private.
+- State lives in `App.tsx` and hooks; persist through `useAppStorage` / `src/services/db.ts`. A future refactor to one Zustand store is planned; do not introduce Zustand patterns or ad-hoc global state now.
 - Code, identifiers, comments: **English**. UI copy: **Spanish**.
 - Text inputs commit on **blur**.
 - Style with Tailwind classes following the [UI skill](../../.github/skills/workoutlog-ui-style/SKILL.md).
@@ -20,11 +20,11 @@ Last verified: 2026-10-11
 | Kind | Convention | Example |
 |---|---|---|
 | Component file + export | PascalCase, one component per file | [`src/components/RoutineList.tsx`](../../src/components/RoutineList.tsx) → `RoutineList` |
-| Props | `export interface <Component>Props` in new code (some older components leave it unexported) | `RmBadgeProps` in [`RmBadge.tsx`](../../src/components/RmBadge.tsx) |
+| Props | Export a component's props interface only when another module imports it; otherwise keep it module-private | `RmBadgeProps` in [`RmBadge.tsx`](../../src/components/RmBadge.tsx) |
 | Hook | `useThing` in `src/hooks/useThing.ts`, with `UseThingProps` / `UseThingReturn` | [`useRmTracker.ts`](../../src/hooks/useRmTracker.ts) |
 | Service | kebab-case or short lowercase file names | `sync-queue.ts`, `cloud-sync.ts`, `db.ts` |
 | Utility | camelCase file, pure functions | [`rmCalculations.ts`](../../src/utils/rmCalculations.ts) |
-| Constants | `UPPER_SNAKE_CASE` | `PULL_LIMIT`, `FREE_ROUTINE_LIMIT` |
+| Constants | `UPPER_SNAKE_CASE` | `PULL_LIMIT`, `GUEST_ROUTINE_LIMIT` |
 | DB objects | `snake_case` tables/columns; migrations `YYYYMMDDHHMMSS_snake_description.sql` | `exercise_diary_entries` |
 | Tests | `tests/<area>/<name>.test.ts(x)` | `tests/services/sync-queue.test.ts` |
 
@@ -43,7 +43,7 @@ Last verified: 2026-10-11
 
 | Do | Don't |
 |---|---|
-| Keep persisted collections in App state; pass setters into hooks; return actions | Add React context, Redux/Zustand, or module-level mutable state |
+| Keep persisted collections in App state; pass setters into hooks; return actions | Add ad-hoc global state mechanisms; do not introduce Zustand patterns before the planned single-store refactor |
 | Persist through `useAppStorage` → `setScopedStoredItem` | Write `localStorage` directly (legacy; migrated away) |
 | Wait for hydration before reactive writes | Overwrite unloaded data with defaults |
 | Keep sync logic in `src/services/*` and `useSync` | Push to Supabase from feature hooks |
@@ -52,7 +52,7 @@ Last verified: 2026-10-11
 
 | Do | Don't |
 |---|---|
-| `import { useSync } from '../hooks/useSync';` | `import … from '@/hooks/useSync'` (alias configured but unused – do not introduce) |
+| `import { useSync } from '../hooks/useSync';` | Add path aliases |
 | `import type { Routine } from '../types';` for type-only imports | |
 
 ## Language
@@ -63,8 +63,6 @@ Last verified: 2026-10-11
 | Identifiers, comments, commit messages, docs | English | `// Admit an entire queue snapshot…` (cloud-sync.ts) |
 | Errors thrown in services | English (internal); show Spanish text to users | `CloudSyncError` messages |
 
-Known inconsistency: `ROUTINE_LIMIT_ERROR_MESSAGE` ([`src/utils/backup.ts`](../../src/utils/backup.ts) 3–18) is English and mentions Premium — legacy – do not replicate.
-
 ## Data and IDs
 
 - String IDs; preserve nested routine → exercises → sets and snapshots.
@@ -73,20 +71,17 @@ Known inconsistency: `ROUTINE_LIMIT_ERROR_MESSAGE` ([`src/utils/backup.ts`](../.
 
 ## Dependencies
 
-- Add none without the maintainer's approval. Use `pnpm add`; commit `pnpm-lock.yaml` only (never `bun.lock` / `package-lock.json`).
+- Add none without the maintainer's approval. Use `pnpm add`; commit only the canonical pnpm lockfile.
 
 ## Legacy – do not replicate
 
 | Pattern | Where |
 |---|---|
-| "Premium"/"Free plan" naming for sync (`premiumActive`, `isPremiumActive`, "Plan Free") | App.tsx, `SyncStatus.tsx`, `AppHeader.tsx`, `DataBackupModal.tsx`, `useRoutines.ts`, `useSync.ts`, `cloud-sync.ts`, `backup.ts` |
 | Default export + Apache SPDX header from AI Studio scaffold | [`src/App.tsx`](../../src/App.tsx) |
-| `DISABLE_HMR` env check | [`vite.config.ts`](../../vite.config.ts) |
 | `{StrictMode}` import style without spaces and `.tsx` extension in import | [`src/main.tsx`](../../src/main.tsx) |
-| Light `bg-zinc-50` body / `#FFE600` theme-color | [`index.html`](../../index.html) |
-| Light zinc/emerald tones in `SyncStatus` | [`SyncStatus.tsx`](../../src/components/SyncStatus.tsx) |
 | 700–1000-line components | `RmLogsView`, `DataBackupModal`, `ExerciseDiaryView`, `ExerciseCatalog`, `RoutineView` — split when touching heavily |
-| `bun.lock`, `metadata.json`, `pnpm-workspace.yaml` placeholders | repo root |
+
+`metadata.json` and the `DISABLE_HMR` check in [`vite.config.ts`](../../vite.config.ts) are intentionally retained so the repository can be reopened in Google AI Studio; do not remove them.
 
 ## Related
 

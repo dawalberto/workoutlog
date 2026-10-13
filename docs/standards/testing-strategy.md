@@ -2,22 +2,23 @@
 
 How WorkoutLog is tested (Vitest for TypeScript, pgTAP for Postgres) and what each kind of change must cover.
 
-Last verified: 2026-10-11
+Last verified: 2026-10-13
 
 ## Commands
 
 | Command | Scope | Notes |
 |---|---|---|
-| `pnpm test` | All Vitest tests | 9 files / 71 tests at last verification |
+| `pnpm test` | All Vitest tests | 19 files / 129 tests at last verification |
 | `pnpm test tests/utils/backup.test.ts` | One file | Verified |
 | `pnpm test -t "<test name>"` | Tests matching a name | Standard Vitest |
 | `pnpm lint` | `tsc --noEmit` typecheck | Counts as the lint gate |
 | `pnpm build` | Production build | Catches build-only failures |
 | `pnpm db:reset` | Replay all migrations locally | Requires `supabase start` (Docker); **wipes local DB** |
+| `pnpm db:types` | Regenerate `src/types/database.types.ts` from the local schema | CI checks generated-type freshness after reset |
 | `pnpm db:test` | pgTAP (`supabase test db --local`) | Requires `supabase start` (Docker) |
 | `pnpm db:lint` | `supabase db lint --local` | Requires `supabase start` (Docker) |
 
-CI ([`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)) runs `pnpm test`, `pnpm lint`, `pnpm build` (job `frontend`) and `supabase start` → `db reset` → `test db` → `db lint` → `stop` (job `database`) on every push and PR.
+CI ([`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)) runs `pnpm test`, `pnpm lint`, `pnpm build` (job `frontend`) and `supabase start` → `db reset` → generated-type freshness check → `test db` → `db lint` → `stop` (job `database`) on every push and PR.
 
 ## Vitest setup
 
@@ -32,8 +33,9 @@ CI ([`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)) runs `pnpm tes
 | Fresh fake IndexedDB per test | [`tests/services/db.test.ts`](../../tests/services/db.test.ts), [`cloud-sync.test.ts`](../../tests/services/cloud-sync.test.ts), [`sync-wiring.test.tsx`](../../tests/sync-wiring.test.tsx) | `import { IDBFactory } from 'fake-indexeddb'`; `indexedDB = new IDBFactory()` in `beforeEach`, with `vi.resetModules()` and a stubbed `globalThis.window` |
 | Hook/state harness + element-tree walking | [`tests/exercise-card.test.tsx`](../../tests/exercise-card.test.tsx), [`tests/routine-view.test.tsx`](../../tests/routine-view.test.tsx) | `vi.doMock('react', …)` replaces `useState`/`useRef` with a manual harness; the component is called as a function; elements are found with `isValidElement` and their handlers (e.g. `onBlur`) invoked directly |
 | Static markup rendering | [`tests/sync-wiring.test.tsx`](../../tests/sync-wiring.test.tsx) | `renderToStaticMarkup` from `react-dom/server` for `SyncStatus` output; `vi.doMock` for `db`/`cloud-sync` modules |
+| Characterization snapshots | `tests/__snapshots__/` and matching tests | Capture established markup/behavior before refactoring, then keep the baseline unchanged while refactoring; never update snapshots with `-u` during a refactor |
 | Fake Supabase client | [`tests/auth.test.ts`](../../tests/auth.test.ts), [`cloud-sync.test.ts`](../../tests/services/cloud-sync.test.ts) | Objects with `vi.fn()` for `rpc`, `auth.signInWithOAuth`, and chained `from().select().gt().order().limit()` |
-| Pure function tests | [`sync-queue.test.ts`](../../tests/services/sync-queue.test.ts), [`backup.test.ts`](../../tests/utils/backup.test.ts), [`free-tier.test.ts`](../../tests/free-tier.test.ts) | Direct input/output assertions |
+| Pure function tests | [`sync-queue.test.ts`](../../tests/services/sync-queue.test.ts), [`backup.test.ts`](../../tests/utils/backup.test.ts), [`routine-limit.test.ts`](../../tests/routine-limit.test.ts) | Direct input/output assertions |
 
 Fixtures are synthetic (e.g. exercise `'Sentadilla'`, `set-1`). Never use real user data or exports.
 

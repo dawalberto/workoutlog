@@ -23,7 +23,6 @@ Last verified: 2026-10-11
 | No sign-in option works; status "Solo en este dispositivo" | `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` missing or invalid → client is `null` → local-only mode ([`src/services/supabase.ts`](../src/services/supabase.ts)) | Fill `.env.local` from `supabase status`; restart `pnpm dev`. |
 | UI does not reflect code changes / old assets | PWA service worker active in dev (`devOptions.enabled: true`, [`vite.config.ts`](../vite.config.ts)) | DevTools → Application → Service Workers → Unregister; hard reload. |
 | `supabase start` fails | Docker not running | Start Docker and retry. |
-| `pnpm-workspace.yaml` lists `allowBuilds` entries with "set this to true or false" | Leftover placeholders (legacy), including packages not in dependencies | Do not copy them. `TODO(human): clean up pnpm-workspace.yaml placeholders.` |
 
 ## Auth
 
@@ -56,8 +55,8 @@ All commands require `supabase start` (Docker).
 | Symptom | Cause | Fix |
 |---|---|---|
 | Local data gone after `pnpm db:reset` | Reset drops and replays all migrations | Expected. Export a backup from the app first if needed. |
-| No sample data after reset | Seed disabled: [`supabase/seed.sql`](../supabase/seed.sql) inserts into dropped `public.user_entitlements` | Expected; create data through the app. Do not re-enable the seed. |
-| TypeScript errors on Supabase calls after a migration / runtime shape mismatch | [`src/types/database.types.ts`](../src/types/database.types.ts) drifted (no generation script) | `supabase gen types typescript --local > src/types/database.types.ts`. `TODO(human): confirm this is how database.types.ts is regenerated; no script exists.` |
+| No sample data after reset | Local seed fixture or app first-run starter data is not present | Check the reset output and the [seed and first-run starter-data guide](architecture/backend.md#seed-and-first-run-starter-data). |
+| TypeScript errors on Supabase calls after a migration / runtime shape mismatch | [`src/types/database.types.ts`](../src/types/database.types.ts) drifted | Run `pnpm db:types` with `supabase start` running. CI also checks generated-type freshness after resetting its local database. |
 | `pnpm db:test` plan mismatch | `SELECT plan(N)` ≠ number of assertions | Update `N`. |
 | Need to change an applied migration | Migrations are forward-only | Add a new migration; never edit applied ones. |
 

@@ -16,6 +16,7 @@ Load when adding or changing tests in `tests/` or `supabase/tests/`, or when dec
 - Vitest runs in `node` (`vitest.config.ts`); no jsdom or Testing Library. Ask before adding test dependencies.
 - Synthetic fixtures only (`'Sentadilla'`, `set-1`, `@example.test`); never real user data or exports.
 - Isolate state: fresh IndexedDB per test; no reliance on test order.
+- For refactors, preserve characterization snapshots under `tests/__snapshots__/`; never update them with `-u` during a refactor.
 - pgTAP files always `BEGIN; … ROLLBACK;` with `plan(N)` equal to the assertion count.
 - Prefer a RED test before implementation when a deterministic test is possible.
 
@@ -26,6 +27,7 @@ Load when adding or changing tests in `tests/` or `supabase/tests/`, or when dec
 | Pure logic | Input/output test (`tests/services/sync-queue.test.ts`, `tests/utils/backup.test.ts`) |
 | Component behavior | React harness test (`tests/exercise-card.test.tsx`) |
 | Rendered status text | `renderToStaticMarkup` (`tests/sync-wiring.test.tsx`) |
+| Behavior before a refactor | Characterization test and snapshot in `tests/__snapshots__/`; keep it unchanged during the refactor |
 | Persistence | Fake IndexedDB (`tests/services/db.test.ts`) |
 | Push/pull/errors | Fake Supabase client (`tests/services/cloud-sync.test.ts`) |
 | Migration/RLS/RPC | pgTAP (`supabase/tests/workout_rls.test.sql`) |

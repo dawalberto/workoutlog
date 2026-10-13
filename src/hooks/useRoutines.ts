@@ -17,7 +17,7 @@ export interface UseRoutinesProps {
   catalog: ExerciseDefinition[];
   setCatalog: React.Dispatch<React.SetStateAction<ExerciseDefinition[]>>;
   onNotify?: (message: string) => void;
-  isPremiumActive?: boolean;
+  isSyncEnabled?: boolean;
 }
 
 export interface UseRoutinesReturn {
@@ -41,7 +41,7 @@ export function useRoutines({
   catalog,
   setCatalog,
   onNotify,
-  isPremiumActive = false,
+  isSyncEnabled = false,
 }: UseRoutinesProps): UseRoutinesReturn {
   const [activeRoutineId, setActiveRoutineId] = useState<string | null>(null);
   const [routineSubMode, setRoutineSubMode] = useState<RoutineSubMode>('edit');
@@ -49,7 +49,7 @@ export function useRoutines({
   const activeRoutine = routines.find((r) => r.id === activeRoutineId);
 
   const createRoutine = () => {
-    if (!canCreateRoutine(routines.length, isPremiumActive)) {
+    if (!canCreateRoutine(routines.length, isSyncEnabled)) {
       onNotify?.(ROUTINE_LIMIT_ERROR_MESSAGE);
       return;
     }
@@ -86,7 +86,7 @@ export function useRoutines({
   const duplicateRoutine = (routineId: string) => {
     const target = routines.find((r) => r.id === routineId);
     if (!target) return;
-    if (!canCreateRoutine(routines.length, isPremiumActive)) {
+    if (!canCreateRoutine(routines.length, isSyncEnabled)) {
       onNotify?.(ROUTINE_LIMIT_ERROR_MESSAGE);
       return;
     }

@@ -2,7 +2,7 @@
 
 Index of the human-facing documentation for WorkoutLog, a local-first workout tracker (React PWA + Supabase).
 
-Last verified: 2026-10-11
+Last verified: 2026-10-13
 
 ## Start here
 
@@ -10,7 +10,7 @@ Last verified: 2026-10-11
 |---|---|
 | **A new human contributor** | [Onboarding](onboarding.md) → [Architecture overview](architecture/overview.md) → [Coding standards](standards/coding-standards.md) → [Git workflow](standards/git-workflow.md) |
 | **An AI coding agent** | [`AGENTS.md`](../AGENTS.md) → [Agents guide](agents-guide.md) → the scoped instructions and skills it points to → the docs below for depth |
-| **Changing the sync contract** (new synced field/table, RPC change) | [Frontend–backend strategy](architecture/frontend-backend-strategy.md) (contract + checklist) → [Backend](architecture/backend.md) → [Testing strategy](standards/testing-strategy.md) → [ADR 0004](decisions/0004-revision-based-outbox-sync.md) |
+| **Changing the sync contract** (new synced field/table, RPC change) | [Frontend–backend strategy](architecture/frontend-backend-strategy.md) (contract + checklist) → [Backend](architecture/backend.md) → [Testing strategy](standards/testing-strategy.md) → [ADR 0008](decisions/0008-sync-contract-source-and-version.md) |
 
 The root [`README.md`](../README.md) is the short project summary; this folder holds the deep content.
 
@@ -60,6 +60,7 @@ The root [`README.md`](../README.md) is the short project summary; this folder h
 | [0005](decisions/0005-remove-billing-signed-in-sync.md) | Billing removed; every signed-in user syncs. |
 | [0006](decisions/0006-app-state-in-hooks-no-router.md) | App state in `App.tsx` + hooks, no router or global store. |
 | [0007](decisions/0007-pnpm-package-manager.md) | pnpm is the package manager. |
+| [0008](decisions/0008-sync-contract-source-and-version.md) | Typed sync contract manifest, private SQL metadata, parity check, and client version gate. |
 
 ### Work logs
 

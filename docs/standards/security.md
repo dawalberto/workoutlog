@@ -2,7 +2,7 @@
 
 How WorkoutLog handles secrets, data ownership, privileged SQL, and personal data.
 
-Last verified: 2026-10-11
+Last verified: 2026-10-13
 
 ## Rules in one screen
 
@@ -22,11 +22,12 @@ Last verified: 2026-10-11
 | `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET` | **Secret** | Shell env / Supabase dashboard (prod) | Never in `.env.local` or git |
 | `OPENAI_API_KEY` | Optional secret | Shell env | Supabase Studio AI only |
 | `SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN` | Secret | Shell env | SMS auth is disabled |
-| `DISABLE_HMR` | Dev flag | Shell env | AI Studio leftover |
+| `DISABLE_HMR` | Dev flag | Shell env | Intentionally retained for reopening the repo in Google AI Studio |
 
 - [`.env.example`](../../.env.example) documents the two public names. `.env.local` is personal; do not commit or paste its contents.
 - The deploy workflow uses `vars.*` (repository variables), not `secrets.*` — correct, because both values are public.
 - Never use a Supabase service-role/secret key in the client or the repo.
+- Future Edge Function secrets belong in Supabase secrets (CLI: `supabase secrets set`, or the dashboard), are read with `Deno.env.get`, and must never be committed. Deploy functions with `supabase functions deploy`; none exist yet.
 
 ## Ownership model (RLS)
 
@@ -35,25 +36,31 @@ Last verified: 2026-10-11
 - Composite FKs include `user_id`, so a child can only reference a parent of the same owner.
 - Deleting an auth user cascades to all their rows.
 
-### Observation: direct table writes
+### Synced table writes
 
-`authenticated` is granted `SELECT, INSERT, UPDATE` on the tables (same migration, ~361). The client only writes through `sync_push`, but RLS would also allow an owner to `INSERT`/`UPDATE` their own rows directly via the REST API, bypassing `sync_push` validation (whitelist, base revision, idempotency). The trigger still assigns revisions. Impact is limited to the user's own data. `TODO(human): decide whether to revoke direct INSERT/UPDATE grants so sync_push is the only write path.`
+Authenticated clients retain `SELECT` on the 12 synced tables for pull reads, but do not have direct `INSERT`, `UPDATE`, `DELETE`, or `TRUNCATE` privileges. All client writes go through `public.sync_push`, which enforces the column whitelist, base revisions, foreign keys, idempotency receipts, and server revision bumps. Owner `INSERT`/`UPDATE` RLS policies remain as defense in depth, but cannot be used without the corresponding table privileges. The private sync revision counter and push receipts remain inaccessible to client roles.
 
 ## SECURITY DEFINER guidelines
 
-Pattern used by `public.sync_push` ([`20261010111000_…`](../../supabase/migrations/20261010111000_preserve_history_metrics_in_sync_push.sql) lines 1–5, 415–416) and `private.*` helpers:
+Pattern used by `public.sync_push` ([`20261013183000_…`](../../supabase/migrations/20261013183000_sync_contract_metadata_and_version.sql) lines 48–51, 416–417) and `private.*` helpers:
 
 ```sql
-CREATE OR REPLACE FUNCTION public.sync_push(p_operation_id uuid, p_changes jsonb)
+CREATE OR REPLACE FUNCTION public.sync_push(
+  p_operation_id uuid,
+  p_changes jsonb,
+  p_contract_version integer DEFAULT NULL
+)
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = pg_catalog, private
 AS $$ ... $$;
 
-REVOKE ALL ON FUNCTION public.sync_push(uuid, jsonb) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.sync_push(uuid, jsonb) TO authenticated;
+REVOKE ALL ON FUNCTION public.sync_push(uuid, jsonb, integer) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.sync_push(uuid, jsonb, integer) TO authenticated;
 ```
+
+`sync_push`'s current three-argument signature has `EXECUTE` granted to `authenticated`; the migration revokes `PUBLIC` and `anon`. The default `service_role` grant remains. This is a known, accepted item: `service_role` is privileged and bypasses RLS by design.
 
 | Do | Don't |
 |---|---|
@@ -70,7 +77,7 @@ GRANT EXECUTE ON FUNCTION public.sync_push(uuid, jsonb) TO authenticated;
 `sync_push` re-validates everything the client sends:
 
 - Operation UUID present; 1–100 changes; operation is `upsert` or `delete`.
-- Table and column whitelist; identity fields required.
+- Contract version, table and column whitelist, and required identity fields. The server whitelist comes from private metadata and rejects unsupported versions before recording receipts.
 - `user_id` is forced to `auth.uid()`; `server_revision`, `deleted_at` are server-controlled (line ~308–319).
 - Base revision checks prevent stale overwrites and tombstone resurrection.
 - FKs are enforced by Postgres; idempotency by `(user_id, operation_id)` + SHA-256 payload hash.
@@ -80,8 +87,10 @@ Client-side validation in [`src/services/cloud-sync.ts`](../../src/services/clou
 ## Local data privacy
 
 - IndexedDB `WorkoutLogDB` is per browser profile. Guest data lives under `guest`; signed-in data under `owner:<userId>` ([`src/services/db.ts`](../../src/services/db.ts) 48, 88–95).
-- Signing out does not delete local data. `TODO(human): confirm intended behavior for local owner-scoped data on sign-out on shared devices.`
-- Rest-timer state is kept in `sessionStorage`.
+- Guest data is transferred into the owner scope on first sign-in and removed from the guest scope. Signing out first attempts a final online sync; if owner-scoped outbox operations remain, the user must confirm their loss before proceeding.
+- After Supabase sign-out succeeds, the app deletes that owner's IndexedDB state, outbox, metadata, cursors, and flags, then clears guest state and legacy collection keys. Clearing guest state is necessary because its original data was adopted into the account during sign-in; the next guest hydration seeds fresh starter data.
+- The app also clears its rest timer and in-memory account data. Supabase's auth SDK owns its auth storage; the app does not manually edit Supabase auth keys.
+- Rest-timer state is kept in `sessionStorage` and removed after successful sign-out.
 
 ## Backups and fixtures
 

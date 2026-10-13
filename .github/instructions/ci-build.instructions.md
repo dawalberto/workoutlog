@@ -10,7 +10,7 @@ Depth: [git workflow](../../docs/standards/git-workflow.md), [deployment topolog
 ## Rules
 
 - pnpm is canonical (`packageManager: pnpm@10.25.0`). Use `pnpm add`/`pnpm install`; commit only `pnpm-lock.yaml`. CI installs with `pnpm install --frozen-lockfile`.
-- `.github/workflows/ci.yml` must keep both jobs: `frontend` (`pnpm test`, `pnpm lint`, `pnpm build`) and `database` (`supabase start` → `supabase db reset` → `supabase test db` → `supabase db lint` → stop).
+- `.github/workflows/ci.yml` must keep both jobs: `frontend` (`pnpm test`, `pnpm lint`, `pnpm build`) and `database` (`supabase start` → `supabase db reset` → generated-type freshness check → `supabase test db` → `supabase db lint` → stop).
 - `.github/workflows/deploy.yml` builds on PRs to `main` but deploys only on push to `main` or manual dispatch. Frontend env comes from repo **variables** `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` (public values), never secrets in code.
 - Keep `base: '/workoutlog/'` in `vite.config.ts`; OAuth redirects and the PWA scope depend on it.
 - PWA: `registerType: 'autoUpdate'`, manifest `lang: 'es'`. Changing caching or scope affects every installed client — ask first.
@@ -20,11 +20,11 @@ Depth: [git workflow](../../docs/standards/git-workflow.md), [deployment topolog
 
 ## Anti-patterns
 
-- Adding bun, npm, or yarn lockfiles or commands (`bun.lock` is legacy).
+- Adding alternate package-manager lockfiles or commands.
 - Adding dependencies without approval.
 - Deploying migrations from CI or running `db:reset` against a remote project.
 - Removing the strict port (`--strictPort` on 5173): Supabase Auth `site_url` expects it.
-- Copying `pnpm-workspace.yaml` placeholder `allowBuilds` values or AI Studio leftovers (`DISABLE_HMR`, `metadata.json`) into new config.
+- Copying placeholder build-script approvals or AI Studio leftovers (`DISABLE_HMR`, `metadata.json`) into new config.
 
 ## Verify
 

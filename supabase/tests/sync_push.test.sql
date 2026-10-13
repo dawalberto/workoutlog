@@ -56,7 +56,7 @@ SELECT set_config(
 );
 
 SELECT ok(
-  has_function_privilege('anon', 'public.sync_push(uuid,jsonb)', 'EXECUTE')
+  has_function_privilege('anon', 'public.sync_push(uuid,jsonb,integer)', 'EXECUTE')
     IS FALSE,
   'anonymous users cannot execute sync push'
 );

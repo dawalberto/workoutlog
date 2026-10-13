@@ -20,7 +20,7 @@ import { getSupabaseBrowserClient } from '../services/supabase';
 
 export interface UseSyncOptions {
   ownerId: string | null;
-  premiumActive: boolean;
+  syncEnabled: boolean;
   isStorageLoaded: boolean;
   isOwnerHydrationComplete: boolean;
   onSynced: () => Promise<void>;
@@ -36,6 +36,7 @@ export interface UseSyncStatus {
   state: 'idle' | 'syncing' | 'synced' | 'error';
   error: string | null;
   lastSyncedAt: number | null;
+  updateRequired?: boolean;
 }
 
 export interface UseSyncResult {
@@ -43,12 +44,16 @@ export interface UseSyncResult {
   isOnline: boolean;
   pendingChanges: number;
   retry: () => void;
+  syncNow: () => Promise<void>;
+  stopSync: () => Promise<void>;
+  resumeSync: () => void;
 }
 
 const initialStatus: UseSyncStatus = {
   state: 'idle',
   error: null,
   lastSyncedAt: null,
+  updateRequired: false,
 };
 
 function isBrowserOnline(): boolean {
@@ -57,6 +62,12 @@ function isBrowserOnline(): boolean {
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Cloud sync failed.';
+}
+
+function isUpdateRequiredError(error: unknown): boolean {
+  return error instanceof Error &&
+    'updateRequired' in error &&
+    error.updateRequired === true;
 }
 
 function pendingOperationsSignature(
@@ -70,6 +81,8 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
   optionsRef.current = options;
   const coordinatorRef = useRef<SyncCoordinator | null>(null);
   const failedPendingSignatureRef = useRef<string | null>(null);
+  const blockedOwnerIdRef = useRef<string | null>(null);
+  const updateRequiredOwnerIdRef = useRef<string | null>(null);
   const pullRequestedRef = useRef(true);
   const mountedRef = useRef(true);
   const [status, setStatus] = useState<UseSyncStatus>(initialStatus);
@@ -148,12 +161,21 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
   }, []);
 
   useEffect(() => {
+    if (blockedOwnerIdRef.current && blockedOwnerIdRef.current !== options.ownerId) {
+      blockedOwnerIdRef.current = null;
+    }
+    if (
+      updateRequiredOwnerIdRef.current &&
+      updateRequiredOwnerIdRef.current !== options.ownerId
+    ) {
+      updateRequiredOwnerIdRef.current = null;
+    }
     coordinatorRef.current?.dispose();
     coordinatorRef.current = null;
     pullRequestedRef.current = true;
     failedPendingSignatureRef.current = null;
   }, [
-    options.ownerId, options.premiumActive,
+    options.ownerId, options.syncEnabled,
     options.isStorageLoaded, options.isOwnerHydrationComplete,
   ]);
 
@@ -174,7 +196,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
     const current = optionsRef.current;
     if (
       !current.ownerId ||
-      !current.premiumActive ||
+      !current.syncEnabled ||
       !current.isStorageLoaded ||
       !current.isOwnerHydrationComplete
     ) {
@@ -196,9 +218,11 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
         if (latest.ownerId !== syncOwnerId) return;
         if (
           !latest.ownerId ||
-          !latest.premiumActive ||
+          blockedOwnerIdRef.current === syncOwnerId ||
+          !latest.syncEnabled ||
           !latest.isStorageLoaded ||
           !latest.isOwnerHydrationComplete ||
+          updateRequiredOwnerIdRef.current === syncOwnerId ||
           !isBrowserOnline()
         ) {
           if (mountedRef.current) setStatus(initialStatus);
@@ -233,9 +257,11 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
             return (
               mountedRef.current &&
               current.ownerId === syncOwnerId &&
-              current.premiumActive &&
+              blockedOwnerIdRef.current !== syncOwnerId &&
+              current.syncEnabled &&
               current.isStorageLoaded &&
               current.isOwnerHydrationComplete &&
+              updateRequiredOwnerIdRef.current !== syncOwnerId &&
               isBrowserOnline()
             );
           };
@@ -243,7 +269,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
           pullRequestedRef.current = false;
           const result = await syncCloudData({
             ownerId: latest.ownerId,
-            premiumActive: latest.premiumActive,
+            syncEnabled: latest.syncEnabled,
             online: isBrowserOnline(),
             client,
             canSync: isCurrentSync,
@@ -265,6 +291,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
               state: 'synced',
               error: null,
               lastSyncedAt: Date.now(),
+              updateRequired: false,
             });
           }
         } catch (error) {
@@ -273,7 +300,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
             if (
               current.ownerId !== syncOwnerId ||
               !current.ownerId ||
-              !current.premiumActive ||
+              !current.syncEnabled ||
               !current.isStorageLoaded ||
               !current.isOwnerHydrationComplete ||
               !isBrowserOnline()
@@ -282,6 +309,10 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
               return;
             }
             await refreshPendingChanges(current.ownerId);
+            const updateRequired = isUpdateRequiredError(error);
+            if (updateRequired) {
+              updateRequiredOwnerIdRef.current = syncOwnerId;
+            }
             try {
               const operations = await getPendingSyncOperations({
                 ownerId: syncOwnerId,
@@ -295,6 +326,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
               ...previous,
               state: 'error',
               error: errorMessage(error),
+              updateRequired,
             }));
           }
         }
@@ -308,6 +340,10 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
     }
     const startReactiveSync = async () => {
       const failedPendingSignature = failedPendingSignatureRef.current;
+      if (
+        blockedOwnerIdRef.current === syncOwnerId ||
+        updateRequiredOwnerIdRef.current === syncOwnerId
+      ) return;
       await flushScopedStorageWrites({ ownerId: syncOwnerId });
       const operations = await getPendingSyncOperations({ ownerId: syncOwnerId });
       if (!pullRequestedRef.current && operations.length === 0) return;
@@ -328,7 +364,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
       if (
         mountedRef.current &&
         current.ownerId === syncOwnerId &&
-        current.premiumActive &&
+        current.syncEnabled &&
         current.isStorageLoaded &&
         current.isOwnerHydrationComplete
       ) {
@@ -341,7 +377,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
     });
   }, [
     options.ownerId,
-    options.premiumActive,
+    options.syncEnabled,
     options.isStorageLoaded,
     options.isOwnerHydrationComplete,
     collectionContentsSignature,
@@ -349,26 +385,73 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
   ]);
 
   useEffect(() => {
-    if (!options.ownerId || !options.premiumActive ||
+    if (!options.ownerId || !options.syncEnabled ||
       !options.isStorageLoaded || !options.isOwnerHydrationComplete) return;
     const timer = setInterval(() => {
-      if (!isBrowserOnline() || failedPendingSignatureRef.current !== null) return;
+      if (
+        !isBrowserOnline() ||
+        failedPendingSignatureRef.current !== null ||
+        blockedOwnerIdRef.current === options.ownerId ||
+        updateRequiredOwnerIdRef.current === options.ownerId
+      ) return;
       pullRequestedRef.current = true;
       void coordinatorRef.current?.run();
     }, 30_000);
     return () => clearInterval(timer);
   }, [
-    options.ownerId, options.premiumActive,
+    options.ownerId, options.syncEnabled,
     options.isStorageLoaded, options.isOwnerHydrationComplete,
   ]);
 
   const retry = () => {
-    if (isOnline) {
+    if (
+      isOnline &&
+      blockedOwnerIdRef.current !== optionsRef.current.ownerId &&
+      updateRequiredOwnerIdRef.current !== optionsRef.current.ownerId
+    ) {
       failedPendingSignatureRef.current = null;
       pullRequestedRef.current = true;
       void coordinatorRef.current?.run();
     }
   };
 
-  return { status, isOnline, pendingChanges, retry };
+  const syncNow = useCallback(async () => {
+    const current = optionsRef.current;
+    if (
+      !current.ownerId ||
+      blockedOwnerIdRef.current === current.ownerId ||
+      updateRequiredOwnerIdRef.current === current.ownerId ||
+      !current.syncEnabled ||
+      !current.isStorageLoaded ||
+      !current.isOwnerHydrationComplete ||
+      !isBrowserOnline()
+    ) {
+      return;
+    }
+    await flushScopedStorageWrites({ ownerId: current.ownerId });
+    pullRequestedRef.current = true;
+    await coordinatorRef.current?.run();
+  }, []);
+
+  const stopSync = useCallback(async () => {
+    const ownerId = optionsRef.current.ownerId;
+    if (!ownerId) return;
+    blockedOwnerIdRef.current = ownerId;
+    try {
+      await coordinatorRef.current?.run();
+    } catch {
+      // The blocked pass retains pending changes; the sign-out flow checks the durable outbox.
+    }
+  }, []);
+
+  const resumeSync = useCallback(() => {
+    const ownerId = optionsRef.current.ownerId;
+    if (ownerId && blockedOwnerIdRef.current === ownerId) {
+      blockedOwnerIdRef.current = null;
+      pullRequestedRef.current = true;
+      void coordinatorRef.current?.run();
+    }
+  }, []);
+
+  return { status, isOnline, pendingChanges, retry, syncNow, stopSync, resumeSync };
 }

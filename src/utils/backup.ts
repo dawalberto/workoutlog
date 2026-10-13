@@ -1,21 +1,21 @@
 import { ExerciseDefinition, Routine, ExerciseRmLog, RmRecord, WorkoutHistoryLog, ExerciseDiary, ExerciseDiaryEntry, DiaryFeeling } from '../types';
 
-export const FREE_ROUTINE_LIMIT = 3;
+export const GUEST_ROUTINE_LIMIT = 3;
 export const ROUTINE_LIMIT_ERROR_MESSAGE =
-  'Free accounts can have at most three routines. Remove a routine or upgrade to Premium to add or import more.';
+  'Sin sesión iniciada puedes tener como máximo tres rutinas. Elimina una rutina o inicia sesión para añadir o importar más.';
 
 export function isRoutineCountAllowed(
   routineCount: number,
-  isPremiumActive: boolean,
+  isSyncEnabled: boolean,
 ): boolean {
-  return isPremiumActive || routineCount <= FREE_ROUTINE_LIMIT;
+  return isSyncEnabled || routineCount <= GUEST_ROUTINE_LIMIT;
 }
 
 export function canCreateRoutine(
   currentRoutineCount: number,
-  isPremiumActive: boolean,
+  isSyncEnabled: boolean,
 ): boolean {
-  return isRoutineCountAllowed(currentRoutineCount + 1, isPremiumActive);
+  return isRoutineCountAllowed(currentRoutineCount + 1, isSyncEnabled);
 }
 
 export interface WorkoutLogBackupFile {

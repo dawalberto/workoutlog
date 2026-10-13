@@ -273,7 +273,7 @@ isOneToOne: false
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
 "sync_push":
-{ Args: { "p_changes": Json,"p_operation_id": string }; Returns: Json
+{ Args: { "p_changes": Json,"p_contract_version"?: number,"p_operation_id": string }; Returns: Json
                            }
           }
           Enums: {

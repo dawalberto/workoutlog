@@ -65,8 +65,7 @@ enabled = true
 schema_paths = []
 
 [db.seed]
-# The legacy seed depends on removed billing entitlements.
-enabled = false
+enabled = true
 # Specifies an ordered list of seed files to load during db reset.
 # Supports glob patterns relative to supabase directory: "./seeds/*.sql"
 sql_paths = ["./seed.sql"]

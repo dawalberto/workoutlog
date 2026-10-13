@@ -1,9 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   loadSyncEligibility,
+  runSignOutFlow,
   signInWithGoogle as startGoogleSignIn,
   signOut as endSupabaseSession,
+  type SignOutFlowOptions,
 } from '../services/auth';
+import {
+  clearGuestLocalData,
+  clearOwnerLocalData,
+  flushScopedStorageWrites,
+  getPendingSyncOperations,
+} from '../services/db';
 import {
   getSupabaseBrowserClient,
   type SupabaseBrowserClient,
@@ -20,10 +28,18 @@ export interface UseAuthReturn {
   isLoading: boolean;
   isSyncEligibilityLoading: boolean;
   isSigningIn: boolean;
+  isSigningOut: boolean;
+  cleanupPending: boolean;
   error: string | null;
   refreshSyncEligibility: () => Promise<boolean>;
   signInWithGoogle: () => Promise<void>;
-  signOut: () => Promise<void>;
+  signOut: (
+    options: Pick<
+      SignOutFlowOptions,
+      'syncBeforeSignOut' | 'confirmPendingChanges' | 'stopSync' | 'resumeSync'
+    >,
+  ) => Promise<boolean>;
+  retryLocalCleanup: () => Promise<boolean>;
 }
 
 function getErrorMessage(error: unknown): string {
@@ -41,8 +57,12 @@ export function useAuth(): UseAuthReturn {
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncEligibilityLoading, setIsSyncEligibilityLoading] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [cleanupOwnerId, setCleanupOwnerId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const resolutionRef = useRef(0);
+  const isSigningOutRef = useRef(false);
+  const cleanupOwnerIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const client = getSupabaseBrowserClient();
@@ -56,6 +76,7 @@ export function useAuth(): UseAuthReturn {
     let authEventReceived = false;
     let sessionKey: string | null | undefined;
     const handleSession = (session: Awaited<ReturnType<typeof client.auth.getSession>>['data']['session']) => {
+      if ((isSigningOutRef.current || cleanupOwnerIdRef.current) && !session) return;
       const nextSessionKey = session
         ? `${session.user.id}:${session.access_token}`
         : null;
@@ -174,16 +195,77 @@ export function useAuth(): UseAuthReturn {
     setIsSigningIn(false);
   };
 
-  const signOut = async () => {
-    const result = await endSupabaseSession(clientRef.current);
-    if (result.error) {
-      setError(result.error);
-      return;
-    }
-    setUser(null);
-    setIsSyncEnabled(false);
-    setIsSyncEligibilityLoading(false);
+  const signOut = async (
+    options: Pick<
+      SignOutFlowOptions,
+      'syncBeforeSignOut' | 'confirmPendingChanges' | 'stopSync' | 'resumeSync'
+    >,
+  ): Promise<boolean> => {
+    const ownerId = user?.id;
+    if (!ownerId || isSigningOutRef.current) return false;
+
+    isSigningOutRef.current = true;
+    setIsSigningOut(true);
     setError(null);
+    try {
+      const result = await runSignOutFlow({
+        ...options,
+        getPendingChanges: async () => {
+          const scope = { ownerId };
+          await flushScopedStorageWrites(scope);
+          return (await getPendingSyncOperations(scope)).length;
+        },
+        endSession: () => endSupabaseSession(clientRef.current),
+        clearLocalData: async () => {
+          await clearOwnerLocalData(ownerId);
+          await clearGuestLocalData();
+        },
+      });
+      if (result.error) setError(result.error);
+      if (result.cleanupFailed) {
+        cleanupOwnerIdRef.current = ownerId;
+        setCleanupOwnerId(ownerId);
+        setIsSyncEnabled(false);
+      }
+      if (result.signedOut) {
+        setUser(null);
+        setIsSyncEnabled(false);
+        setIsSyncEligibilityLoading(false);
+      }
+      return result.signedOut;
+    } catch (signOutError: unknown) {
+      setError(getErrorMessage(signOutError));
+      return false;
+    } finally {
+      isSigningOutRef.current = false;
+      setIsSigningOut(false);
+    }
+  };
+
+  const retryLocalCleanup = async (): Promise<boolean> => {
+    const ownerId = cleanupOwnerIdRef.current;
+    if (!ownerId || isSigningOutRef.current) return false;
+    isSigningOutRef.current = true;
+    setIsSigningOut(true);
+    setError(null);
+    try {
+      await clearOwnerLocalData(ownerId);
+      await clearGuestLocalData();
+      cleanupOwnerIdRef.current = null;
+      setCleanupOwnerId(null);
+      setUser(null);
+      setIsSyncEnabled(false);
+      setIsSyncEligibilityLoading(false);
+      return true;
+    } catch (cleanupError: unknown) {
+      setError(
+        `No se pudieron eliminar por completo los datos locales. Reintenta la limpieza antes de continuar. ${getErrorMessage(cleanupError)}`,
+      );
+      return false;
+    } finally {
+      isSigningOutRef.current = false;
+      setIsSigningOut(false);
+    }
   };
 
   return {
@@ -192,9 +274,12 @@ export function useAuth(): UseAuthReturn {
     isLoading,
     isSyncEligibilityLoading,
     isSigningIn,
+    isSigningOut,
+    cleanupPending: cleanupOwnerId !== null,
     error,
     refreshSyncEligibility,
     signInWithGoogle,
     signOut,
+    retryLocalCleanup,
   };
 }

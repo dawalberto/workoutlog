@@ -1,6 +1,8 @@
 # WorkoutLog — agent instructions
 
-WorkoutLog is a local-first gym workout tracker shipped as a React PWA with a Spanish UI. All data (routines, catalog, active sessions, RM logs, history, diary) lives in IndexedDB and works offline. Signed-in users (Google OAuth) sync their private data directly with Supabase through RLS and the `sync_push` RPC. There is no custom server, no billing, and no Edge Function.
+Last verified: 2026-10-13
+
+WorkoutLog is a local-first gym workout tracker shipped as a React PWA with a Spanish UI. All data (routines, catalog, active sessions, RM logs, history, diary) lives in IndexedDB and works offline. Signed-in users (Google OAuth) sync their private data directly with Supabase through RLS and the `sync_push` RPC. There is no custom server or Edge Function today; future server-side logic will use Supabase Edge Functions.
 
 Read this file first, then load the matching skill and scoped instructions. Deep content lives in [`docs/`](docs/README.md); this file links instead of repeating it.
 
@@ -20,14 +22,14 @@ Read this file first, then load the matching skill and scoped instructions. Deep
 
 | Path | Contents |
 |---|---|
-| `src/App.tsx` | Composition root: tab state, overlays, all persisted state |
-| `src/components/` | 31 presentational components (named exports) |
-| `src/hooks/` | Domain hooks: `useAppStorage`, `useAuth`, `useSync`, `useRoutines`, … |
+| `src/App.tsx` | Composition root: view selection, overlays, persisted state, auth/storage/sync wiring |
+| `src/components/` | Entry components plus props-driven parts in `exercise-catalog/`, `exercise-diary/`, `routine/`, `rm-logs/`, and `data-backup/` |
+| `src/hooks/` | Domain and view-state hooks: `useAppStorage`, `useAuth`, `useSync`, `useRoutines`, `useExerciseCatalog`, `useExerciseDiary`, `useRoutineViewState`, `useRmLogActions`, `useAppViewState`, `useActiveRestTimer`, … |
 | `src/services/` | `db.ts` (IndexedDB + outbox), `sync-queue.ts`, `cloud-sync.ts`, `auth.ts`, `supabase.ts` |
-| `src/utils/`, `src/data/` | Pure helpers, backup format, starter data |
+| `src/utils/`, `src/data/` | Pure helpers (`exerciseCatalog`, `rmLogs`, `routineView`, `restTimer`), backup format, starter data |
 | `src/types.ts`, `src/types/database.types.ts` | Domain types; generated Supabase types |
 | `tests/` | Vitest tests (mirrors `src/`) |
-| `supabase/` | `config.toml`, forward-only `migrations/`, pgTAP `tests/`, legacy disabled `seed.sql` |
+| `supabase/` | `config.toml`, forward-only `migrations/`, pgTAP `tests/`, local development `seed.sql` (see [backend seed guide](docs/architecture/backend.md#seed-and-first-run-starter-data)) |
 | `docs/` | Human docs (single source of truth) |
 | `odd/tasks/` | ODD feature task documents |
 | `.github/` | CI workflows, skills, instructions, agents, prompts |
@@ -47,17 +49,19 @@ Read this file first, then load the matching skill and scoped instructions. Deep
 | DB reset | `pnpm db:reset` | Requires `supabase start`; **wipes the local DB** |
 | DB tests | `pnpm db:test` | Requires `supabase start`; pgTAP |
 | DB lint | `pnpm db:lint` | Requires `supabase start` |
+| DB types | `pnpm db:types` | Requires `supabase start`; CI checks generated types are current |
+| Sync contract parity | `pnpm sync:contract:check` | Requires the local database; compares the client manifest with private SQL metadata |
 | PWA assets | `pnpm generate:assets` | `scripts/generate-assets.js` (sharp) |
-| DB types | `supabase gen types typescript --local > src/types/database.types.ts` | `TODO(human): confirm; no script exists` |
 
-CI (`.github/workflows/ci.yml`) runs `pnpm test`, `pnpm lint`, `pnpm build` and the three DB commands on every push and PR.
+CI (`.github/workflows/ci.yml`) runs `pnpm test`, `pnpm lint`, `pnpm build` and the DB commands, including a generated-types freshness check, on every push and pull request; it has no branch filters.
 
 ## Architecture
 
-- State lives in `App.tsx`; hooks receive setters and return actions; no router, context, or store ([ADR 0006](docs/decisions/0006-app-state-in-hooks-no-router.md)).
+- State lives in `App.tsx` and hooks; there is no router or global store. A future refactor to one Zustand store is planned; do not add Zustand patterns or ad-hoc global state now ([ADR 0006](docs/decisions/0006-app-state-in-hooks-no-router.md)).
+- Entry components compose; feature subfolders hold props-driven parts; state/handlers live in hooks; pure logic in `src/utils`; this prepares the planned Zustand store.
 - Persistence: `useAppStorage` → `src/services/db.ts` (IndexedDB `WorkoutLogDB` v2, scopes `guest` / `owner:<id>`). Each write diffs state and appends outbox entries in the same transaction.
 - Sync: `useSync` → `cloud-sync.ts` pulls by `server_revision`, then pushes one queued outbox operation per `sync_push` call. Server revision order wins over device clocks.
-- Guests are local-only and limited to 3 routines; every signed-in user syncs (`get_sync_entitlement` returns `{ eligible: true }`). "Premium" identifiers are legacy naming.
+- Guests are local-only and limited to `GUEST_ROUTINE_LIMIT` routines; every signed-in user syncs (`get_sync_entitlement` returns `{ eligible: true }`).
 
 Depth: [overview](docs/architecture/overview.md) · [frontend](docs/architecture/frontend.md) · [backend](docs/architecture/backend.md) · [sync contract](docs/architecture/frontend-backend-strategy.md) · [glossary](docs/domain/glossary.md) · [ADRs](docs/README.md#decisions-adrs).
 
@@ -67,21 +71,21 @@ Full rules: [coding standards](docs/standards/coding-standards.md).
 
 | Do | Don't |
 |---|---|
-| `export const SyncStatus: React.FC<SyncStatusProps> = …` with `export interface SyncStatusProps` | Default-export components (only legacy `App.tsx` does) |
-| Relative imports: `import { useSync } from '../hooks/useSync';` | Introduce the unused `@/` alias |
+| `export const SyncStatus: React.FC<SyncStatusProps> = …`; export its props interface only when another module imports it, otherwise keep it module-private | Default-export components (only legacy `App.tsx` does) |
+| Relative imports: `import { useSync } from '../hooks/useSync';` | Add path aliases |
 | Single quotes, semicolons, 2-space indent | Reformat untouched code |
 | Commit text inputs on blur (`ExerciseCard.tsx`) | Call update handlers per keystroke (floods the outbox) |
 | Persist via `useAppStorage` / `db.ts` | Read IndexedDB or call Supabase from components; write `localStorage` |
 | Spanish UI copy and `aria-label`s (`"Navegación principal"`) | English user-facing text |
-| English identifiers, comments, commits, docs | "Premium"/"Free plan" naming in new code |
+| English identifiers, comments, commits, docs | Plan labels or billing-tier terminology in application code or UI |
 | Tailwind + Neon Bento tokens from the UI skill | New CSS frameworks, icon libraries, or one-off global CSS |
 
 ## Frontend ↔ backend collaboration
 
-The sync contract is **not versioned** and is duplicated across SQL and TypeScript ([duplication table](docs/architecture/frontend-backend-strategy.md#where-the-contract-is-duplicated)).
-
-- Change both sides in the same work unit: migration + regenerated types + `sync-queue.ts` / `cloud-sync.ts` / `db.ts` + `backup.ts` + tests on both sides + docs.
-- Make additive changes only (nullable/defaulted columns); never remove or rename a field a deployed client sends.
+- The client source of truth is [`src/sync/contract.ts`](src/sync/contract.ts); private SQL metadata drives the server whitelist and `pnpm sync:contract:check` verifies parity ([ADR 0008](docs/decisions/0008-sync-contract-source-and-version.md)).
+- Never hard-code synced table/column lists; import from `src/sync/contract.ts`.
+- Update the manifest and private metadata in a forward migration; change `sync_push` only when its semantics need to change. Regenerate types and test both sides.
+- Version wire-shape changes with `SYNC_CONTRACT_VERSION` and the server's accepted-version metadata. Keep `src/utils/backup.ts`'s backup version independent.
 - Apply the migration to production **before** deploying the frontend that uses it; old PWA bundles keep running after deploys.
 - Follow the [checklist](docs/architecture/frontend-backend-strategy.md#checklist-add-a-synced-field-or-table) and the `workoutlog-sync-contract-change` skill.
 
@@ -98,6 +102,7 @@ Details: [testing strategy](docs/standards/testing-strategy.md).
 
 Details: [git workflow](docs/standards/git-workflow.md).
 
+- Day-to-day development happens on `develop`; branch feature and fix work from `develop` and merge it back there. Merge `develop` into `main` for releases; a push to `main` triggers GitHub Pages deployment.
 - Conventional Commits with scopes, English, imperative: `feat(sync): …`, `fix(ui): …`, `docs(odd): …`, `ci(pages): …`.
 - No AI attribution and no `Co-authored-by` trailers (maintainer preference).
 - Substantial work (2+ meaningful steps) gets an ODD task doc in `odd/tasks/<feature>.md` before the first source write; one work-unit commit per task with its tests and docs ([ODD workflow](docs/agents-guide.md#odd-workflow)).

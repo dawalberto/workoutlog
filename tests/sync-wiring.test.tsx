@@ -2,8 +2,10 @@ import React, { isValidElement, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { IDBFactory } from 'fake-indexeddb';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { AppHeader } from '../src/components/AppHeader';
 import { SyncStatus } from '../src/components/SyncStatus';
 import type { UseSyncOptions } from '../src/hooks/useSync';
+import { AppTab } from '../src/types';
 
 type HookHarness = ReturnType<typeof createHookHarness>;
 
@@ -332,7 +334,7 @@ describe('sync wiring', () => {
         isOpen: true,
         onClose: vi.fn(),
         ...appStorage,
-        isPremiumActive: true,
+        isSyncEnabled: true,
         onImportComplete: (
           catalog: typeof appStorage.catalog,
           routines: typeof appStorage.routines,
@@ -495,8 +497,7 @@ describe('sync wiring', () => {
     const renderStatus = (props: React.ComponentProps<typeof SyncStatus>) =>
       renderToStaticMarkup(<SyncStatus {...props} />);
     const base = {
-      isAuthenticated: true,
-      isPremiumActive: true,
+      isSyncEnabled: true,
       pendingChanges: 0,
       onRetry: vi.fn(),
     };
@@ -515,10 +516,9 @@ describe('sync wiring', () => {
       isOnline: true,
       status: { state: 'error', error: 'Network unavailable', lastSyncedAt: null },
     });
-    const free = renderStatus({
+    const localOnly = renderStatus({
       ...base,
-      isAuthenticated: false,
-      isPremiumActive: false,
+      isSyncEnabled: false,
       isOnline: true,
       status: { state: 'idle', error: null, lastSyncedAt: null },
     });
@@ -533,16 +533,19 @@ describe('sync wiring', () => {
       isOnline: true,
       status: { state: 'syncing', error: null, lastSyncedAt: null },
     });
-    const entitlementLoading = renderStatus({
-      ...base,
-      isPremiumActive: false,
-      isEntitlementLoading: true,
-      isOnline: true,
-      status: { state: 'idle', error: null, lastSyncedAt: null },
-    });
-
-    expect(free).toContain('Solo en este dispositivo');
-    expect(entitlementLoading).toContain('comprobando tu plan');
+    expect(localOnly).toContain('Solo en este dispositivo');
+    expect(localOnly).toContain('Tus datos se guardan solo en este dispositivo.');
+    expect(localOnly).not.toContain(['Pre', 'mium'].join(''));
+    const header = renderToStaticMarkup(
+      <AppHeader
+        activeTab={AppTab.ROUTINES}
+        onSelectTab={vi.fn()}
+        routinesCount={0}
+        catalogCount={0}
+        onOpenMenu={vi.fn()}
+      />,
+    );
+    expect(header).not.toContain(['Pre', 'mium'].join(''));
     expect(offline).toContain('Sin conexión');
     expect(offline).toContain('Tus datos locales están a salvo');
     expect(pending).toContain('Cambios pendientes');
@@ -556,8 +559,7 @@ describe('sync wiring', () => {
   it('runs the retry action from a recoverable sync error', async () => {
     const onRetry = vi.fn();
     const errorStatus = await SyncStatus({
-      isAuthenticated: true,
-      isPremiumActive: true,
+      isSyncEnabled: true,
       isOnline: true,
       pendingChanges: 1,
       status: { state: 'error', error: 'Network unavailable', lastSyncedAt: null },
@@ -567,6 +569,119 @@ describe('sync wiring', () => {
 
     retry?.props.onClick?.();
     expect(onRetry).toHaveBeenCalledOnce();
+  });
+
+  it('shows an update-required notice and runs the app update action', async () => {
+    const onUpdate = vi.fn();
+    const updateRequired = await SyncStatus({
+      isSyncEnabled: true,
+      isOnline: true,
+      pendingChanges: 1,
+      status: {
+        state: 'error',
+        error: 'sync_contract_version_unsupported',
+        lastSyncedAt: null,
+        updateRequired: true,
+      },
+      onRetry: vi.fn(),
+      onUpdate,
+    });
+    const markup = renderToStaticMarkup(updateRequired);
+    const updateButton = findElement(updateRequired, (element) => element.type === 'button');
+
+    expect(markup).toContain('Actualiza la app para continuar sincronizando.');
+    expect(markup).toContain('Actualizar');
+    expect(markup).toContain('min-h-[48px]');
+    updateButton?.props.onClick?.();
+    expect(onUpdate).toHaveBeenCalledOnce();
+  });
+
+  it('sets update-required status and does not retry the blocked owner', async () => {
+    const hookHarness = createHookHarness();
+    const queued = {
+      request: {
+        operationId: 'pending-operation',
+        changes: [{ table: 'exercise_definitions', operation: 'upsert' }],
+      },
+    };
+    const updateError = Object.assign(
+      new Error('sync_contract_version_unsupported'),
+      { updateRequired: true },
+    );
+    const syncCloudData = vi.fn(async () => {
+      throw updateError;
+    });
+    vi.doMock('react', async (importOriginal) => ({
+      ...await importOriginal<typeof import('react')>(),
+      useState: (initial: unknown) => activeHarness!.useState(initial),
+      useRef: (initial: unknown) => activeHarness!.useRef(initial),
+      useMemo: (factory: () => unknown, deps: readonly unknown[]) =>
+        activeHarness!.useMemo(factory, deps),
+      useCallback: (callback: (...args: never[]) => unknown, deps: readonly unknown[]) =>
+        activeHarness!.useMemo(() => callback, deps),
+      useEffect: (callback: () => void | (() => void), deps?: readonly unknown[]) =>
+        activeHarness!.useEffect(callback, deps),
+    }));
+    vi.doMock('../src/services/db', () => ({
+      flushScopedStorageWrites: vi.fn(async () => undefined),
+      getPendingSyncOperations: vi.fn(async () => [queued]),
+    }));
+    vi.doMock('../src/services/cloud-sync', () => ({
+      createSyncCoordinator: (run: () => Promise<void>) => ({
+        run,
+        dispose: vi.fn(),
+      }),
+      syncCloudData,
+    }));
+    vi.doMock('../src/services/supabase', () => ({
+      getSupabaseBrowserClient: () => ({
+        auth: {
+          getSession: async () => ({
+            data: { session: { user: { id: 'owner-1' } } },
+            error: null,
+          }),
+        },
+      }),
+    }));
+    Object.assign(window, {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    });
+    Object.defineProperty(navigator, 'onLine', {
+      configurable: true,
+      value: true,
+    });
+
+    const { useSync } = await import('../src/hooks/useSync');
+    const options: UseSyncOptions = {
+      ownerId: 'owner-1',
+      syncEnabled: true,
+      isStorageLoaded: true,
+      isOwnerHydrationComplete: true,
+      onSynced: vi.fn(async () => undefined),
+      routines: [],
+      catalog: [],
+      activeSessions: {},
+      rmLogs: [],
+      workoutHistory: [],
+      exerciseDiary: [],
+    };
+    const render = () => hookHarness.render(() => useSync(options));
+
+    render();
+    await hookHarness.runEffects();
+    for (let attempt = 0; attempt < 20; attempt += 1) await Promise.resolve();
+
+    expect(render().status).toMatchObject({
+      state: 'error',
+      updateRequired: true,
+      error: 'sync_contract_version_unsupported',
+    });
+    expect(render().pendingChanges).toBe(1);
+    render().retry();
+    for (let attempt = 0; attempt < 5; attempt += 1) await Promise.resolve();
+    expect(syncCloudData).toHaveBeenCalledOnce();
+    hookHarness.dispose();
   });
 
   it('does not restart a failed sync when storage refreshes collections', async () => {
@@ -650,7 +765,7 @@ describe('sync wiring', () => {
     const renderSync = (collections: SyncCollections = defaultCollections) =>
       hookHarness.render(() => useSync({
         ownerId: 'owner-1',
-        premiumActive: true,
+        syncEnabled: true,
         isStorageLoaded: true,
         isOwnerHydrationComplete: true,
         onSynced: vi.fn(async () => undefined),
@@ -741,7 +856,7 @@ describe('sync wiring', () => {
     Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
     const { useSync } = await import('../src/hooks/useSync');
     const options: UseSyncOptions = {
-      ownerId: 'owner-1', premiumActive: true, isStorageLoaded: true, isOwnerHydrationComplete: true,
+      ownerId: 'owner-1', syncEnabled: true, isStorageLoaded: true, isOwnerHydrationComplete: true,
       onSynced: vi.fn(async () => undefined), routines: [], catalog: [], activeSessions: {},
       rmLogs: [], workoutHistory: [], exerciseDiary: [],
     };

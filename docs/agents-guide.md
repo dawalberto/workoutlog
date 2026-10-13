@@ -2,7 +2,7 @@
 
 How the AI context layer is organized, how agents should use it, and how to keep it current.
 
-Last verified: 2026-10-11
+Last verified: 2026-10-13
 
 ## How agents should load context
 
@@ -103,7 +103,7 @@ When a trigger happens, update the listed files in the same PR.
 | New or renamed `package.json` script | `AGENTS.md`, [onboarding](onboarding.md), [testing strategy](standards/testing-strategy.md), `ci-build.instructions.md` |
 | Changed CI/deploy workflow | [git workflow](standards/git-workflow.md), [overview](architecture/overview.md#deployment-topology), `ci-build.instructions.md`, PR template |
 | New migration / RPC | [backend](architecture/backend.md) (schema, RPCs, migration history), `database.instructions.md`, `workoutlog-supabase-migration` skill if the procedure changed |
-| New synced table or field | [frontend–backend strategy](architecture/frontend-backend-strategy.md) (duplication table, checklist), [glossary](domain/glossary.md), `sync-contract.instructions.md`, `workoutlog-sync-contract-change` and `workoutlog-offline-sync` skills |
+| New synced table or field | [frontend–backend strategy](architecture/frontend-backend-strategy.md) (contract sources, checklist), [glossary](domain/glossary.md), `sync-contract.instructions.md`, `workoutlog-sync-contract-change` and `workoutlog-offline-sync` skills |
 | New skill / agent / prompt / workflow | The tables above (files, globs, skills), `AGENTS.md` skill list and pointers |
 | Renamed or moved paths | Every link to them: run a link check over `docs/**/*.md`, `AGENTS.md`, `.github/**/*.md`; fix `applyTo` globs |
 | New UI tokens or UX rule | `workoutlog-ui-style` skill (single source), not the docs |

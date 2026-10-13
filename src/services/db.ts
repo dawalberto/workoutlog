@@ -11,6 +11,7 @@ import type {
   WorkoutHistoryLog,
   ExerciseDiary,
 } from '../types';
+import { SYNC_CONTRACT_TABLES, type SyncTable } from '../sync/contract';
 import { getStarterData } from '../data/initialData';
 import {
   applyRemoteSyncChange,
@@ -22,7 +23,6 @@ import {
   type SyncRemoteChange,
   type SyncQueueEntry,
   type SyncPushChange,
-  type SyncTable,
 } from './sync-queue';
 
 export const DB_NAME = 'WorkoutLogDB';
@@ -443,6 +443,74 @@ export async function clearAllStoredData(
   await writeCollectionBatch(emptyCollections, scope);
 }
 
+async function clearLocalScopeData(scope: StorageScope): Promise<void> {
+  const owner = scopeKey(scope);
+  await flushScopedStorageWrites(scope);
+
+  const db = await getDatabase();
+  const transaction = db.transaction(
+    [STORE_NAME, RECORD_META_STORE, SYNC_OUTBOX_STORE, SYNC_CURSOR_STORE],
+    'readwrite',
+  );
+  const completed = transactionComplete(transaction);
+  const stateStore = transaction.objectStore(STORE_NAME);
+  const stateRequest = stateStore.openCursor();
+  stateRequest.onsuccess = () => {
+    const cursor = stateRequest.result;
+    if (!cursor) return;
+    if (
+      typeof cursor.key === 'string' &&
+      (owner === GUEST_STORAGE_SCOPE
+        ? !cursor.key.includes(':')
+        : cursor.key.startsWith(`${owner}:`))
+    ) {
+      cursor.delete();
+    }
+    cursor.continue();
+  };
+
+  const metadataStore = transaction.objectStore(RECORD_META_STORE);
+  const metadataRequest = metadataStore.openCursor();
+  metadataRequest.onsuccess = () => {
+    const cursor = metadataRequest.result;
+    if (!cursor) return;
+    if ((cursor.value as RecordMetadata).scope === owner) cursor.delete();
+    cursor.continue();
+  };
+
+  const outboxStore = transaction.objectStore(SYNC_OUTBOX_STORE);
+  const outboxRequest = outboxStore.index('scope').getAllKeys(owner);
+  outboxRequest.onsuccess = () => {
+    for (const key of outboxRequest.result) outboxStore.delete(key);
+  };
+
+  transaction.objectStore(SYNC_CURSOR_STORE).delete(owner);
+  await completed;
+}
+
+/**
+ * Removes all locally persisted state for one account without changing other scopes.
+ */
+export function clearOwnerLocalData(ownerId: string): Promise<void> {
+  return clearLocalScopeData({ ownerId });
+}
+
+/**
+ * Removes guest data and legacy localStorage collections so first-run data can be seeded again.
+ */
+export async function clearGuestLocalData(): Promise<void> {
+  await clearLocalScopeData(GUEST_STORAGE_SCOPE);
+  if (typeof window !== 'undefined' && window.localStorage) {
+    for (const key of [
+      ...legacyCollectionKeys,
+      'workout_planner_routines_v1',
+      'workout_planner_catalog_v1',
+    ]) {
+      window.localStorage.removeItem(key);
+    }
+  }
+}
+
 function mergeOwnerCollection(key: string, guestValue: unknown, ownerValue: unknown): unknown {
   if (key === DB_KEYS.ACTIVE_SESSIONS) {
     const guestSessions =
@@ -737,20 +805,9 @@ const syncCollectionKeys = [
   DB_KEYS.EXERCISE_DIARY,
 ] as const;
 
-const syncCollectionForTable: Record<SyncTable, (typeof syncCollectionKeys)[number]> = {
-  exercise_definitions: DB_KEYS.CATALOG,
-  routines: DB_KEYS.ROUTINES,
-  routine_exercises: DB_KEYS.ROUTINES,
-  workout_sets: DB_KEYS.ROUTINES,
-  active_workout_sessions: DB_KEYS.ACTIVE_SESSIONS,
-  active_session_completed_sets: DB_KEYS.ACTIVE_SESSIONS,
-  rm_logs: DB_KEYS.RM_LOGS,
-  rm_records: DB_KEYS.RM_LOGS,
-  workout_history: DB_KEYS.WORKOUT_HISTORY,
-  workout_history_exercises: DB_KEYS.WORKOUT_HISTORY,
-  exercise_diaries: DB_KEYS.EXERCISE_DIARY,
-  exercise_diary_entries: DB_KEYS.EXERCISE_DIARY,
-};
+const syncCollectionForTable = Object.fromEntries(
+  SYNC_CONTRACT_TABLES.map(({ name, storageKey }) => [name, storageKey]),
+) as Record<SyncTable, (typeof syncCollectionKeys)[number]>;
 
 function compareServerRevisions(left: string, right: string): number {
   const leftRevision = BigInt(left);

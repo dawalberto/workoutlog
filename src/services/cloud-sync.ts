@@ -1,6 +1,11 @@
 import type { Json } from '../types/database.types';
 import type { SupabaseBrowserClient } from './supabase';
 import {
+  SYNC_CONTRACT_VERSION,
+  SYNC_TABLES,
+  type SyncTable,
+} from '../sync/contract';
+import {
   acknowledgeSyncOperation,
   applyRemoteSyncChanges,
   flushScopedStorageWrites,
@@ -16,23 +21,7 @@ import {
   validateWorkoutHistoryRecord,
   type SyncQueueEntry,
   type SyncRemoteChange,
-  type SyncTable,
 } from './sync-queue';
-
-const SYNC_TABLES: readonly SyncTable[] = [
-  'exercise_definitions',
-  'routines',
-  'routine_exercises',
-  'workout_sets',
-  'active_workout_sessions',
-  'active_session_completed_sets',
-  'rm_logs',
-  'rm_records',
-  'workout_history',
-  'workout_history_exercises',
-  'exercise_diaries',
-  'exercise_diary_entries',
-];
 
 const PULL_LIMIT = 500;
 const MAX_PULL_PAGES = 100;
@@ -42,7 +31,7 @@ const MAX_PUSH_DRAIN_ROUNDS = 3;
 
 export interface CloudSyncOptions {
   ownerId: string | null;
-  premiumActive: boolean;
+  syncEnabled: boolean;
   online: boolean;
   client: SupabaseBrowserClient | null;
   maxRequestAttempts?: number;
@@ -57,7 +46,10 @@ export interface CloudSyncResult {
 }
 
 export class CloudSyncError extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    readonly updateRequired = false,
+  ) {
     super(message);
     this.name = 'CloudSyncError';
   }
@@ -73,14 +65,14 @@ export async function syncCloudData(
 ): Promise<CloudSyncResult> {
   const {
     ownerId,
-    premiumActive,
+    syncEnabled,
     online,
     client,
     maxRequestAttempts = MAX_REQUEST_ATTEMPTS,
   } = options;
   if (
     !ownerId ||
-    !premiumActive ||
+    !syncEnabled ||
     !online ||
     !client ||
     options.canSync?.() === false
@@ -120,6 +112,9 @@ export async function syncCloudData(
     attemptedOperationIds.add(operation.request.operationId);
     if (operation.request.changes.length > 100) {
       throw new CloudSyncError('Sync push exceeded the server batch limit.');
+    }
+    if (!canSync()) {
+      throw new CloudSyncError('Sync eligibility changed before the request.');
     }
 
     const push = await pushWithRetry(
@@ -171,6 +166,9 @@ export async function syncCloudData(
     }
 
     validateAcknowledgement(push.acknowledgement, operation);
+    if (!canSync()) {
+      throw new CloudSyncError('Sync eligibility changed before acknowledging the request.');
+    }
     for (let index = 0; index < operation.request.changes.length; index += 1) {
       const requestedChange = operation.request.changes[index]!;
       const result = push.acknowledgement.changes[index]!;
@@ -240,6 +238,9 @@ async function pullChanges(options: PullOptions): Promise<number> {
 
   changes.sort((left, right) => compareRevisions(left.revision, right.revision));
   const nextCursor = changes.at(-1)?.revision ?? cursor;
+  if (!options.canSync()) {
+    throw new CloudSyncError('Sync eligibility changed before applying pulled changes.');
+  }
   await applyRemoteSyncChanges(changes, nextCursor, options.scope, tableCursors, pendingAtPullStart);
   return changes.length;
 }
@@ -288,6 +289,7 @@ async function pushWithRetry(
     const { data, error } = await client.rpc('sync_push', {
       p_operation_id: operation.request.operationId,
       p_changes: operation.request.changes as unknown as Json,
+      p_contract_version: SYNC_CONTRACT_VERSION,
     });
     if (!error) {
       return {
@@ -297,6 +299,12 @@ async function pushWithRetry(
     }
 
     const message = error.message || 'unknown RPC error';
+    if (
+      message.includes('sync_contract_version_unsupported') ||
+      message.includes('sync_contract_version_required')
+    ) {
+      throw new CloudSyncError(message, true);
+    }
     if (message.includes('sync_stale_revision_conflict')) return { kind: 'stale' };
     if (message.includes('sync_operation_conflict')) {
       throw new CloudSyncError(
