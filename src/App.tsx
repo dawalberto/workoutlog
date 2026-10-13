@@ -3,11 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useRef, useState } from 'react';
 import {
   Routine,
   ExerciseDefinition,
-  ActiveWorkoutSession,
   AppTab,
   ExerciseRmLog,
   WorkoutHistoryLog,
@@ -36,54 +34,20 @@ import {
   isRoutineCountAllowed,
   ROUTINE_LIMIT_ERROR_MESSAGE,
 } from './utils/backup';
-import { useAuth } from './hooks/useAuth';
-import { useStorageLifecycle } from './hooks/useStorageLifecycle';
-import { useSync } from './hooks/useSync';
+import { useAppBootstrap } from './hooks/useAppBootstrap';
 import { useRoutines } from './hooks/useRoutines';
 import { useWorkoutSession } from './hooks/useWorkoutSession';
 import { useRmTracker } from './hooks/useRmTracker';
-import { useExerciseDiaryNavigation } from './hooks/useExerciseDiaryNavigation';
-import { useAppViewState } from './hooks/useAppViewState';
-import { useActiveRestTimer } from './hooks/useActiveRestTimer';
 import { useAppStore, appStore } from './store/appStore';
 import { useShallow } from 'zustand/react/shallow';
-import { applyImportData, refreshFromStorage } from './store/persistence';
-
-const EMPTY_PERSISTED_DATA = {
-  routines: [] as Routine[],
-  catalog: [] as ExerciseDefinition[],
-  activeSessions: {} as Record<string, ActiveWorkoutSession>,
-  rmLogs: [] as ExerciseRmLog[],
-  workoutHistory: [] as WorkoutHistoryLog[],
-  exerciseDiary: [] as ExerciseDiary[],
-};
+import { applyImportData } from './store/persistence';
+import { selectPersistedData } from './store/selectors';
 
 export default function App() {
-  const {
-    activeTab,
-    closeMenu,
-    closeBackupModal,
-    isBackupModalOpen,
-    isMenuOpen,
-    openBackupModal,
-    openMenu,
-    setActiveTab,
-    setIsBackupModalOpen,
-    setIsMenuOpen,
-  } = useAppViewState();
-  const [isUnsyncedSignOutDialogOpen, setIsUnsyncedSignOutDialogOpen] = useState(false);
-  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
-  const resolveSignOutConfirmationRef = useRef<((confirmed: boolean) => void) | null>(null);
-  const account = useAuth();
-
-  useStorageLifecycle(account.user?.id, account.isSyncEnabled);
-  const currentScopeKey = account.user?.id
-    ? `owner:${encodeURIComponent(account.user.id)}`
-    : 'guest';
-
+  useAppBootstrap();
+  const persistedData = useAppStore(useShallow(selectPersistedData));
   const {
     isStorageLoaded,
-    isGuestTransferComplete,
     storageError,
     routines,
     setRoutines,
@@ -97,42 +61,39 @@ export default function App() {
     setWorkoutHistory,
     exerciseDiary,
     setExerciseDiary,
-  } = useAppStore(useShallow((state) => {
-    const isCurrentScope = state.hydratedScopeKey === currentScopeKey;
-    return {
-      isStorageLoaded: isCurrentScope && state.isStorageLoaded,
-      isGuestTransferComplete: state.isGuestTransferComplete,
-      storageError: isCurrentScope ? state.storageError : null,
-      routines: isCurrentScope ? state.routines : EMPTY_PERSISTED_DATA.routines,
-      setRoutines: state.setRoutines,
-      catalog: isCurrentScope ? state.catalog : EMPTY_PERSISTED_DATA.catalog,
-      setCatalog: state.setCatalog,
-      activeSessions: isCurrentScope ? state.activeSessions : EMPTY_PERSISTED_DATA.activeSessions,
-      setActiveSessions: state.setActiveSessions,
-      rmLogs: isCurrentScope ? state.rmLogs : EMPTY_PERSISTED_DATA.rmLogs,
-      setRmLogs: state.setRmLogs,
-      workoutHistory: isCurrentScope ? state.workoutHistory : EMPTY_PERSISTED_DATA.workoutHistory,
-      setWorkoutHistory: state.setWorkoutHistory,
-      exerciseDiary: isCurrentScope ? state.exerciseDiary : EMPTY_PERSISTED_DATA.exerciseDiary,
-      setExerciseDiary: state.setExerciseDiary,
-    };
-  }));
-
-  const refreshSyncedStorage = () => refreshFromStorage(appStore, account.user?.id);
-
-  const sync = useSync({
-    ownerId: account.user?.id ?? null,
-    syncEnabled: account.isSyncEnabled,
-    isStorageLoaded,
-    isOwnerHydrationComplete: isGuestTransferComplete,
-    onSynced: refreshSyncedStorage,
-    routines,
-    catalog,
-    activeSessions,
-    rmLogs,
-    workoutHistory,
-    exerciseDiary,
-  });
+  } = persistedData;
+  const activeTab = useAppStore((state) => state.activeTab);
+  const setActiveTab = useAppStore((state) => state.setActiveTab);
+  const isMenuOpen = useAppStore((state) => state.isMenuOpen);
+  const openMenu = useAppStore((state) => state.openMenu);
+  const closeMenu = useAppStore((state) => state.closeMenu);
+  const isBackupModalOpen = useAppStore((state) => state.isBackupModalOpen);
+  const openBackupModal = useAppStore((state) => state.openBackupModal);
+  const closeBackupModal = useAppStore((state) => state.closeBackupModal);
+  const feedbackMessage = useAppStore((state) => state.feedbackMessage);
+  const notify = useAppStore((state) => state.notify);
+  const clearFeedback = useAppStore((state) => state.clearFeedback);
+  const activeRestTimer = useAppStore((state) => state.activeRestTimer);
+  const startRestTimer = useAppStore((state) => state.startRestTimer);
+  const closeRestTimer = useAppStore((state) => state.closeRestTimer);
+  const diaryTargetExerciseName = useAppStore((state) => state.diaryTargetExerciseName);
+  const diaryAutoOpenCreate = useAppStore((state) => state.diaryAutoOpenCreate);
+  const openDiary = useAppStore((state) => state.openExerciseDiary);
+  const clearDiaryNavigationState = useAppStore((state) => state.clearDiaryNavigationState);
+  const isSignOutConfirmOpen = useAppStore((state) => state.isSignOutConfirmOpen);
+  const resolveSignOutConfirmation = useAppStore((state) => state.resolveSignOutConfirmation);
+  const user = useAppStore((state) => state.user);
+  const isSyncEnabled = useAppStore((state) => state.isSyncEnabled);
+  const isLoading = useAppStore((state) => state.isLoading);
+  const isSyncEligibilityLoading = useAppStore((state) => state.isSyncEligibilityLoading);
+  const isSigningIn = useAppStore((state) => state.isSigningIn);
+  const isSigningOut = useAppStore((state) => state.isSigningOut);
+  const cleanupPending = useAppStore((state) => state.cleanupPending);
+  const accountError = useAppStore((state) => state.error);
+  const signInWithGoogle = useAppStore((state) => state.signInWithGoogle);
+  const signOut = useAppStore((state) => state.signOut);
+  const retryLocalCleanup = useAppStore((state) => state.retryLocalCleanup);
+  const isOnline = useAppStore((state) => state.isOnline);
 
   // Routines & Catalog Domain Hook
   const {
@@ -153,8 +114,8 @@ export default function App() {
     setRoutines,
     catalog,
     setCatalog,
-    onNotify: setFeedbackMessage,
-    isSyncEnabled: account.isSyncEnabled,
+    onNotify: notify,
+    isSyncEnabled,
   });
 
   // Workout Session Lifecycle Hook
@@ -176,56 +137,14 @@ export default function App() {
     activeRoutineId,
   });
 
-  const { activeRestTimer, handleCloseRestTimer, handleStartRestTimer } = useActiveRestTimer();
-
-  const handleConfirmUnsyncedSignOut = (confirmed: boolean) => {
-    setIsUnsyncedSignOutDialogOpen(false);
-    const resolve = resolveSignOutConfirmationRef.current;
-    resolveSignOutConfirmationRef.current = null;
-    resolve?.(confirmed);
-  };
-
-  const resetAfterSignOut = () => {
-    setActiveTab(AppTab.ROUTINES);
-    setIsMenuOpen(false);
-    setIsBackupModalOpen(false);
-    closeRoutine();
-    dismissWorkoutSummary();
-    dismissRmAlert();
-    clearDiaryNavigationState();
-    handleCloseRestTimer();
-  };
-
-  const handleSignOut = async () => {
-    const signedOut = await account.signOut({
-      syncBeforeSignOut: async () => {
-        if (account.isSyncEnabled && sync.isOnline) await sync.syncNow();
-      },
-      confirmPendingChanges: async () =>
-        new Promise<boolean>((resolve) => {
-          resolveSignOutConfirmationRef.current = resolve;
-          setIsUnsyncedSignOutDialogOpen(true);
-        }),
-      stopSync: sync.stopSync,
-      resumeSync: sync.resumeSync,
-    });
-    if (!signedOut) return;
-
-    resetAfterSignOut();
-  };
-
-  const handleRetryLocalCleanup = async () => {
-    if (await account.retryLocalCleanup()) resetAfterSignOut();
-  };
-
   const handleResetSession = (routineId: string) => {
     resetSession(routineId);
-    handleCloseRestTimer();
+    closeRestTimer();
   };
 
   const handleFinishSession = (summary: Parameters<typeof finishSession>[0]) => {
     finishSession(summary);
-    handleCloseRestTimer();
+    closeRestTimer();
   };
 
   // RM (Repetition Maximum) Tracker Hook
@@ -237,21 +156,27 @@ export default function App() {
   } = useRmTracker({
     rmLogs,
     setRmLogs,
-    onNotify: setFeedbackMessage,
+    onNotify: notify,
   });
 
-  // Exercise Diary Navigation Hook
-  const {
-    diaryTargetExerciseName,
-    diaryAutoOpenCreate,
-    openExerciseDiary,
-    clearDiaryNavigationState,
-  } = useExerciseDiaryNavigation({
-    exerciseDiary,
-    onNavigateToTab: setActiveTab,
-    onCloseActiveRoutine: closeRoutine,
-    onDismissWorkoutSummary: dismissWorkoutSummary,
-  });
+  const handleOpenExerciseDiary = (exerciseName: string, exerciseId?: string) =>
+    openDiary(exerciseName, exerciseId, {
+      // T3: move routine closing into the routine slice.
+      closeRoutine,
+      // T3: move summary dismissal into the workout slice.
+      dismissWorkoutSummary,
+    });
+
+  const resetBridges = {
+    // T3: move routine closing into the routine slice.
+    closeRoutine,
+    // T3: move summary dismissal into the workout slice.
+    dismissWorkoutSummary,
+    // T3: move RM alert dismissal into the RM slice.
+    dismissRmAlert,
+  };
+  const handleSignOut = () => signOut(resetBridges);
+  const handleRetryLocalCleanup = () => retryLocalCleanup(resetBridges);
 
   // Handle data import from JSON backup
   const handleImportComplete = (
@@ -273,8 +198,8 @@ export default function App() {
       mode: 'merge' | 'overwrite';
     }
   ) => {
-    if (!isRoutineCountAllowed(newRoutines.length, account.isSyncEnabled)) {
-      setFeedbackMessage(ROUTINE_LIMIT_ERROR_MESSAGE);
+    if (!isRoutineCountAllowed(newRoutines.length, isSyncEnabled)) {
+      notify(ROUTINE_LIMIT_ERROR_MESSAGE);
       return;
     }
 
@@ -301,21 +226,16 @@ export default function App() {
         ? `Importación completada: ${parts.join(', ')}.`
         : 'Datos combinados con éxito.';
     }
-    setFeedbackMessage(msg);
+    notify(msg);
   };
 
-  // Reset scroll to top when changing tabs
-  React.useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-  }, [activeTab]);
-
   // Wait for IndexedDB hydration before rendering the view to avoid state flash
-  if (account.cleanupPending) {
+  if (cleanupPending) {
     return (
       <div className="min-h-screen bg-[#0D0D0D] text-white flex items-center justify-center p-5">
         <section
           role="alert"
-          aria-busy={account.isSigningOut}
+          aria-busy={isSigningOut}
           className="w-full max-w-lg rounded-3xl border border-rose-500/40 bg-[#1C1C1E] p-6 shadow-2xl sm:p-8"
         >
           <p className="text-[11px] font-extrabold uppercase tracking-widest text-rose-300">
@@ -328,16 +248,16 @@ export default function App() {
             La sesión en línea ya se cerró. Reintenta la limpieza para quitar los datos de esta cuenta
             y del dispositivo antes de continuar.
           </p>
-          {account.error && (
-            <p className="mt-3 break-words text-sm text-rose-200">{account.error}</p>
+          {accountError && (
+            <p className="mt-3 break-words text-sm text-rose-200">{accountError}</p>
           )}
           <button
             type="button"
             onClick={() => void handleRetryLocalCleanup()}
-            disabled={account.isSigningOut}
+            disabled={isSigningOut}
             className="mt-6 min-h-[48px] w-full rounded-2xl bg-[#00FF87] px-5 py-3 font-extrabold text-black shadow-[0_0_20px_rgba(0,255,135,0.35)] transition-all active:scale-[0.97] disabled:cursor-wait disabled:opacity-60"
           >
-            {account.isSigningOut ? 'Limpiando datos…' : 'Reintentar limpieza'}
+            {isSigningOut ? 'Limpiando datos…' : 'Reintentar limpieza'}
           </button>
         </section>
       </div>
@@ -345,9 +265,9 @@ export default function App() {
   }
 
   if (
-    account.isLoading ||
+    isLoading ||
     !isStorageLoaded ||
-    (account.isSigningOut && !isUnsyncedSignOutDialogOpen)
+    (isSigningOut && !isSignOutConfirmOpen)
   ) {
     return <AppLoadingScreen />;
   }
@@ -374,9 +294,9 @@ export default function App() {
           onResetSession={handleResetSession}
           onFinishSession={handleFinishSession}
           onCheckRmWeight={checkRmWeight}
-          onOpenDiary={openExerciseDiary}
-          onStartRestTimer={handleStartRestTimer}
-          onCloseRestTimer={handleCloseRestTimer}
+          onOpenDiary={handleOpenExerciseDiary}
+          onStartRestTimer={startRestTimer}
+          onCloseRestTimer={closeRestTimer}
         />
       ) : (
         <div className="flex flex-col min-h-screen pb-16">
@@ -417,7 +337,7 @@ export default function App() {
                 onUpdateExercise={updateCatalogExercise}
                 onDeleteExercise={deleteCatalogExercise}
                 onCheckRmWeight={checkRmWeight}
-                onOpenDiary={openExerciseDiary}
+                onOpenDiary={handleOpenExerciseDiary}
               />
             ) : activeTab === AppTab.RMS ? (
               <RmLogsView
@@ -473,25 +393,25 @@ export default function App() {
         historyCount={workoutHistory.length}
         diaryCount={getTotalDiaryEntriesCount(exerciseDiary)}
         onOpenBackup={openBackupModal}
-        isAuthenticated={Boolean(account.user)}
-        userEmail={account.user?.email ?? null}
-        isSyncEnabled={account.isSyncEnabled}
-        isSyncEligibilityLoading={account.isSyncEligibilityLoading}
-        isOnline={sync.isOnline}
-        isSigningIn={account.isSigningIn}
-        isSigningOut={account.isSigningOut}
-        error={account.error ?? storageError}
-        onSignIn={account.signInWithGoogle}
-        onSignOut={handleSignOut}
+        isAuthenticated={Boolean(user)}
+        userEmail={user?.email ?? null}
+        isSyncEnabled={isSyncEnabled}
+        isSyncEligibilityLoading={isSyncEligibilityLoading}
+        isOnline={isOnline}
+        isSigningIn={isSigningIn}
+        isSigningOut={isSigningOut}
+        error={accountError ?? storageError}
+        onSignIn={signInWithGoogle}
+        onSignOut={async () => { await handleSignOut(); }}
       />
 
       <ConfirmDialog
-        isOpen={isUnsyncedSignOutDialogOpen}
+        isOpen={isSignOutConfirmOpen}
         title="¿Cerrar sesión?"
         message="Tienes cambios sin sincronizar. Si cierras sesión ahora se perderán en este dispositivo."
         confirmLabel="Cerrar sesión igualmente"
-        onCancel={() => handleConfirmUnsyncedSignOut(false)}
-        onConfirm={() => handleConfirmUnsyncedSignOut(true)}
+        onCancel={() => resolveSignOutConfirmation(false)}
+        onConfirm={() => resolveSignOutConfirmation(true)}
       />
 
       {/* RM New Record Detection Alert Modal */}
@@ -512,7 +432,7 @@ export default function App() {
         exerciseDiary={exerciseDiary}
         routines={routines}
         catalog={catalog}
-        onOpenDiary={openExerciseDiary}
+        onOpenDiary={handleOpenExerciseDiary}
         onClose={dismissWorkoutSummary}
       />
 
@@ -525,7 +445,7 @@ export default function App() {
         rmLogs={rmLogs}
         workoutHistory={workoutHistory}
         exerciseDiary={exerciseDiary}
-        isSyncEnabled={account.isSyncEnabled}
+        isSyncEnabled={isSyncEnabled}
         onImportComplete={handleImportComplete}
       />
 
@@ -543,14 +463,14 @@ export default function App() {
               ? () => selectRoutine(activeRestTimer.routineId, 'execute')
               : undefined
           }
-          onClose={handleCloseRestTimer}
+          onClose={closeRestTimer}
         />
       )}
 
       {/* Floating Feedback Toast Notification */}
       <ToastNotification
         message={feedbackMessage}
-        onClose={() => setFeedbackMessage(null)}
+        onClose={clearFeedback}
       />
     </div>
   );

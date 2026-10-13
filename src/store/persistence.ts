@@ -27,7 +27,7 @@ function getScope(ownerId?: string): StorageScope {
   return ownerId ? { ownerId } : GUEST_STORAGE_SCOPE;
 }
 
-function getScopeKey(ownerId?: string): string {
+export function getStorageScopeKey(ownerId?: string): string {
   return ownerId ? `owner:${encodeURIComponent(ownerId)}` : GUEST_STORAGE_SCOPE;
 }
 
@@ -75,7 +75,7 @@ export function hydrateStorage(
   ownerId?: string,
   transferGuestData = false,
 ): () => void {
-  const requestedScopeKey = getScopeKey(ownerId);
+  const requestedScopeKey = getStorageScopeKey(ownerId);
   const scope = getScope(ownerId);
   let isCurrent = true;
 
@@ -126,7 +126,7 @@ export async function refreshFromStorage(
   ownerId?: string,
 ): Promise<void> {
   if (!ownerId) return;
-  const requestedScopeKey = getScopeKey(ownerId);
+  const requestedScopeKey = getStorageScopeKey(ownerId);
   const requestedScope = getScope(ownerId);
   const baselineState = store.getState();
   if (

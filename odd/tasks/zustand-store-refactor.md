@@ -57,7 +57,7 @@ Replace App-owned state and prop drilling with one Zustand store that every comp
 
 | ID | Task | Route | Risk | Checks | Commit |
 |----|------|-------|------|--------|--------|
-| T1 | ADR 0009 + rule flip; add `zustand`; store foundation; `dataSlice` + persistence adapter replacing `useAppStorage`; test helpers | delegated writer (gpt-6-luna) | high | test, lint, build, independent verifier | done `b8fdbac` |
+| T1 | ADR 0009 + rule flip; add `zustand`; store foundation; `dataSlice` + persistence adapter replacing `useAppStorage`; test helpers | delegated writer (gpt-6-luna) | high | test, lint, build, independent verifier | done `5ac01cb` |
 | T2 | `uiSlice`, `restTimerSlice`, `diaryNavigationSlice`, `accountSlice`, `syncSlice`; `useAppBootstrap`; sign-out flow as store action | delegated writer (gpt-6-luna) | high | test, lint, build, independent verifier | |
 | T3 | `routineSlice`, `workoutSlice`, `rmSlice`; import action + `buildImportSummaryMessage`; delete replaced hooks | delegated writer (gpt-6-luna) | medium | test, lint, build | |
 | T4 | Shell de-prop and thin `App.tsx`: header, tab bar, sidebar, banner, overlays, cleanup screen, tab content | delegated writer (gpt-6-luna) | medium | test, lint, build | |
@@ -86,7 +86,8 @@ Replace App-owned state and prop drilling with one Zustand store that every comp
 
 - T1 (high): writer `pnpm test` 137 pass, lint pass, build pass. Independent verifier FAIL: (a) hydration rejection leaves app loading — pre-existing behavior in original `useAppStorage`, out of scope; (b) missing lifecycle edge tests — one scoped correction added StrictMode double-hydration, competing-scope, and owner-change-during-refresh tests; parent spot check `pnpm test` 140 pass, `pnpm build` pass.
 - Follow-up for T2: App duplicates the `owner:<id>` scope-key format to gate data; move gating into a store selector once account state lives in the store.
+- T2 (high): writer `pnpm test` 149 pass, lint, build pass; `useAuth` publishes in a layout effect (scope gating before paint), App keeps `// T3:` bridges. Independent verifier FAIL: (1) sync `isOnline` mirrored in a passive effect could be stale for the sign-out gate — corrected by publishing sync state in a layout effect (harness mocks map `useLayoutEffect`); (2) App-level render/callback assertions from the deleted characterization test (tab content, sidebar/backup wiring, RestTimerBar render+close) are reassigned to T4, which recomposes App. Parent spot check: `pnpm test` 149 pass, `pnpm lint` pass, `pnpm build` pass.
 
 ## Next step
 
-T2.
+T3.

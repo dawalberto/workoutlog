@@ -141,6 +141,16 @@ function createLocalStorage() {
   };
 }
 
+function mockSyncStore(): void {
+  const state = {
+    publishSyncState: vi.fn(),
+    registerSyncControls: vi.fn(),
+  };
+  vi.doMock('../src/store/appStore', () => ({
+    useAppStore: (selector: (value: typeof state) => unknown) => selector(state),
+  }));
+}
+
 function createBaseline() {
   return {
     catalog: [{ id: 'old-definition', name: 'Existing exercise' }],
@@ -280,6 +290,7 @@ describe('sync wiring', () => {
     if (storage) (await storage.getDatabase()).close();
     Reflect.deleteProperty(globalThis, 'window');
     vi.doUnmock('react');
+    vi.doUnmock('../src/store/appStore');
     vi.restoreAllMocks();
   });
 
@@ -298,6 +309,8 @@ describe('sync wiring', () => {
           useCallback: (callback: (...args: never[]) => unknown, deps: readonly unknown[]) =>
             activeHarness!.useMemo(() => callback, deps),
           useEffect: (callback: () => void | (() => void), deps?: readonly unknown[]) =>
+            activeHarness!.useEffect(callback, deps),
+          useLayoutEffect: (callback: () => void | (() => void), deps?: readonly unknown[]) =>
             activeHarness!.useEffect(callback, deps),
         };
       });
@@ -634,6 +647,8 @@ describe('sync wiring', () => {
         activeHarness!.useMemo(() => callback, deps),
       useEffect: (callback: () => void | (() => void), deps?: readonly unknown[]) =>
         activeHarness!.useEffect(callback, deps),
+      useLayoutEffect: (callback: () => void | (() => void), deps?: readonly unknown[]) =>
+        activeHarness!.useEffect(callback, deps),
     }));
     vi.doMock('../src/services/db', () => ({
       flushScopedStorageWrites: vi.fn(async () => undefined),
@@ -665,6 +680,7 @@ describe('sync wiring', () => {
       value: true,
     });
 
+    mockSyncStore();
     const { useSync } = await import('../src/hooks/useSync');
     const options: UseSyncOptions = {
       ownerId: 'owner-1',
@@ -725,6 +741,8 @@ describe('sync wiring', () => {
           activeHarness!.useMemo(() => callback, deps),
         useEffect: (callback: () => void | (() => void), deps?: readonly unknown[]) =>
           activeHarness!.useEffect(callback, deps),
+        useLayoutEffect: (callback: () => void | (() => void), deps?: readonly unknown[]) =>
+          activeHarness!.useEffect(callback, deps),
       };
     });
     vi.doMock('../src/services/db', () => ({
@@ -757,6 +775,7 @@ describe('sync wiring', () => {
       value: true,
     });
 
+    mockSyncStore();
     const { useSync } = await import('../src/hooks/useSync');
     type SyncCollections = Pick<
       UseSyncOptions,
@@ -843,6 +862,7 @@ describe('sync wiring', () => {
       useRef: (initial: unknown) => activeHarness!.useRef(initial),
       useCallback: (callback: unknown, deps: readonly unknown[]) => activeHarness!.useMemo(() => callback, deps),
       useEffect: (callback: () => void | (() => void), deps?: readonly unknown[]) => activeHarness!.useEffect(callback, deps),
+      useLayoutEffect: (callback: () => void | (() => void), deps?: readonly unknown[]) => activeHarness!.useEffect(callback, deps),
     }));
     let rejectQueueRead = false;
     const getPendingSyncOperations = vi.fn(async () => {
@@ -867,6 +887,7 @@ describe('sync wiring', () => {
       removeEventListener: target.removeEventListener.bind(target),
     });
     Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
+    mockSyncStore();
     const { useSync } = await import('../src/hooks/useSync');
     const options: UseSyncOptions = {
       ownerId: 'owner-1', syncEnabled: true, isStorageLoaded: true, isOwnerHydrationComplete: true,
