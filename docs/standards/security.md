@@ -36,9 +36,9 @@ Last verified: 2026-10-13
 - Composite FKs include `user_id`, so a child can only reference a parent of the same owner.
 - Deleting an auth user cascades to all their rows.
 
-### Observation: direct table writes
+### Synced table writes
 
-`authenticated` is granted `SELECT, INSERT, UPDATE` on the tables (same migration, ~361). The client only writes through `sync_push`, but RLS would also allow an owner to `INSERT`/`UPDATE` their own rows directly via the REST API, bypassing `sync_push` validation (whitelist, base revision, idempotency). The trigger still assigns revisions. Impact is limited to the user's own data. `TODO(human): decide whether to revoke direct INSERT/UPDATE grants so sync_push is the only write path.`
+Authenticated clients retain `SELECT` on the 12 synced tables for pull reads, but do not have direct `INSERT`, `UPDATE`, `DELETE`, or `TRUNCATE` privileges. All client writes go through `public.sync_push`, which enforces the column whitelist, base revisions, foreign keys, idempotency receipts, and server revision bumps. Owner `INSERT`/`UPDATE` RLS policies remain as defense in depth, but cannot be used without the corresponding table privileges. The private sync revision counter and push receipts remain inaccessible to client roles.
 
 ## SECURITY DEFINER guidelines
 

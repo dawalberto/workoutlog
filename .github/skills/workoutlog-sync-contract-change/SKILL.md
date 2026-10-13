@@ -21,7 +21,7 @@ Load when adding, altering, or removing anything that travels through `sync_push
 
 ## Execution Steps
 
-1. [ ] Migration: column/table with sync metadata, trigger, RLS, grants (`workoutlog-supabase-migration`).
+1. [ ] Migration: column/table with sync metadata, trigger, RLS, and least-privilege grants (`workoutlog-supabase-migration`); synced-table client writes remain exclusive to `sync_push`, with `SELECT` retained for pulls.
 2. [ ] Migration: `CREATE OR REPLACE public.sync_push` copied from the latest definition, extending whitelist/columns/FK checks.
 3. [ ] pgTAP for RLS and `sync_push` acceptance/rejection.
 4. [ ] Regenerate `src/types/database.types.ts`.

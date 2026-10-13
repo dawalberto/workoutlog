@@ -17,6 +17,7 @@ Load for any change under `supabase/migrations/` or `supabase/tests/`. If the ch
 - Forward-only: create `supabase/migrations/YYYYMMDDHHMMSS_snake_description.sql` newer than the latest file. Never edit an existing migration.
 - Additive only: new columns nullable or defaulted; never drop/rename columns deployed clients send.
 - Synced tables copy `20261007135400_create_private_workout_data.sql`: `user_id` FK `ON DELETE CASCADE`, PK `(user_id, id)`, `server_revision`, `server_updated_at`, `deleted_at`, `set_workout_sync_metadata` trigger, RLS enabled, owner select/insert/update policies with `(select auth.uid())`, no DELETE policy.
+- Client roles keep `SELECT` for pull reads but do not get direct `INSERT`, `UPDATE`, `DELETE`, or `TRUNCATE` on synced tables; route client writes through `sync_push`. Keep owner insert/update policies as defense in depth.
 - Functions: `SECURITY DEFINER` only when needed, with `SET search_path = pg_catalog, private`, schema-qualified names, `auth.uid()` identity, `format('%I')` + `USING`; then `REVOKE ALL … FROM PUBLIC, anon` and `GRANT EXECUTE … TO authenticated` (pattern: `20261010111000_…` lines 1–5, 415–416). Prefer `SECURITY INVOKER` when RLS suffices.
 - Keep `seed.sql` aligned with the active schema as a local-development fixture; never reintroduce billing objects or put secrets in `config.toml`. See the [seed guide](../../../docs/architecture/backend.md#seed-and-first-run-starter-data).
 

@@ -47,11 +47,11 @@ All tables: `user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE`,
 | Operation | Policy | Notes |
 |---|---|---|
 | SELECT | `<table>_owner_select`: `user_id = (select auth.uid())` | authenticated only |
-| INSERT | `<table>_owner_insert`: `WITH CHECK user_id = auth.uid()` | authenticated only |
-| UPDATE | `<table>_owner_update`: `USING` + `WITH CHECK` owner | authenticated only |
+| INSERT | `<table>_owner_insert`: `WITH CHECK user_id = auth.uid()` | policy retained as defense in depth; direct client INSERT privilege is revoked |
+| UPDATE | `<table>_owner_update`: `USING` + `WITH CHECK` owner | policy retained as defense in depth; direct client UPDATE privilege is revoked |
 | DELETE | **none** | Deletion = setting `deleted_at` (tombstone) through `sync_push` |
 
-Grants: `REVOKE ALL ... FROM PUBLIC, anon, authenticated`, then `GRANT SELECT, INSERT, UPDATE ... TO authenticated` (lines 352–386). See [security](../standards/security.md) for the implication that direct table writes bypass `sync_push` validation.
+Grants: the initial migration grants `SELECT, INSERT, UPDATE` to `authenticated`; the forward migration [`20261013155500_revoke_direct_sync_table_writes.sql`](../../supabase/migrations/20261013155500_revoke_direct_sync_table_writes.sql) revokes direct `INSERT`, `UPDATE`, `DELETE`, and `TRUNCATE` from `PUBLIC`, `anon`, and `authenticated` on all synced tables. Authenticated `SELECT` remains available for pull reads. `sync_push` is the only client write path; its `SECURITY DEFINER` owner retains the table privileges required to apply validated changes. The RLS insert/update policies remain in place as defense in depth. See [security](../standards/security.md#synced-table-writes).
 
 ## RPCs
 
@@ -115,6 +115,7 @@ Production redirect URLs are configured in the Supabase dashboard (Auth > URL co
 | `20261010100000_allow_authenticated_account_sync` | `sync_push` for all authenticated users | Superseded function |
 | `20261010110000_remove_stripe_billing_add_sync_entitlement` | Drops all billing objects; adds `get_sync_entitlement` | Active |
 | `20261010111000_preserve_history_metrics_in_sync_push` | Current `sync_push` definition | **Active (latest)** |
+| `20261013155500_revoke_direct_sync_table_writes` | Restricts synced-table client writes to `sync_push`; keeps pull reads | Active |
 
 Billing context: [ADR 0005](../decisions/0005-remove-billing-signed-in-sync.md).
 
