@@ -57,6 +57,7 @@ const catalogProps = {
 
 afterEach(() => {
   vi.doUnmock('react');
+  vi.doUnmock('../src/hooks/routine/useAddExerciseModal');
   vi.resetModules();
 });
 
@@ -98,13 +99,21 @@ describe('ExerciseCatalog characterization', () => {
   });
 
   it('preserves AddExerciseModal markup with the catalog tab open', async () => {
+    vi.doMock('../src/hooks/routine/useAddExerciseModal', () => ({
+      useAddExerciseModal: () => ({
+        catalog: exercises,
+        rmLogs: [],
+        exerciseDiary: [],
+        onOpenDiary: undefined,
+        addCatalogExercise: vi.fn(),
+        addCustomExercise: vi.fn(),
+      }),
+    }));
     const { AddExerciseModal } = await import('../src/components/AddExerciseModal');
     const markup = renderToStaticMarkup(
       <AddExerciseModal
         isOpen
         onClose={vi.fn()}
-        catalog={exercises}
-        onAddExercise={vi.fn()}
       />,
     );
     expect(markup).toMatchSnapshot('add-exercise-modal-open');

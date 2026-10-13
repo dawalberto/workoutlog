@@ -36,14 +36,7 @@ export const TabContent: React.FC = () => {
   } = useTabContent();
 
   return activeTab === AppTab.ROUTINES ? (
-    <RoutineList
-      routines={routines}
-      activeSessions={activeSessions}
-      onCreateRoutine={createRoutine}
-      onSelectRoutine={selectRoutine}
-      onDuplicateRoutine={duplicateRoutine}
-      onDeleteRoutine={deleteRoutine}
-    />
+    <RoutineList />
   ) : activeTab === AppTab.EXERCISES ? (
     <ExerciseCatalog
       exercises={catalog}

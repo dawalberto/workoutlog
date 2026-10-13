@@ -1,4 +1,4 @@
-import React, { isValidElement, type ReactNode } from 'react';
+import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Routine } from '../src/types';
 
@@ -7,7 +7,12 @@ function createHarness() {
   let cursor = 0;
   const effects: Array<() => void> = [];
   return {
-    render<T>(fn: () => T) { cursor = 0; const result = fn(); effects.splice(0).forEach((effect) => effect()); return result; },
+    render<T>(fn: () => T) {
+      cursor = 0;
+      const result = fn();
+      effects.splice(0).forEach((effect) => effect());
+      return result;
+    },
     useState(initial: unknown) {
       const index = cursor++;
       if (!slots[index]) slots[index] = { value: typeof initial === 'function' ? initial() : initial };
@@ -36,92 +41,102 @@ function createHarness() {
   };
 }
 
-type Props = { children?: ReactNode; [key: string]: unknown };
-function find(node: ReactNode, id: string): React.ReactElement<Props> | undefined {
-  if (Array.isArray(node)) {
-    for (const child of node) {
-      const match = find(child, id);
-      if (match) return match;
-    }
-    return undefined;
-  }
-  if (!isValidElement<Props>(node)) return undefined;
-  if (node.props.id === id) return node;
-  if (typeof node.type === 'function') {
-    const renderComponent = node.type as (props: Props) => ReactNode;
-    return find(renderComponent(node.props), id);
-  }
-  return find(node.props.children, id);
-}
-
 async function setup() {
   const harness = createHarness();
   vi.doMock('react', async (original) => ({
     ...await original<typeof import('react')>(),
-    useState: harness.useState, useRef: harness.useRef,
-    useCallback: harness.useCallback, useEffect: harness.useEffect,
+    useState: harness.useState,
+    useRef: harness.useRef,
+    useCallback: harness.useCallback,
+    useEffect: harness.useEffect,
   }));
   vi.doMock('../src/hooks/useWorkoutTimer', () => ({ useWorkoutTimer: () => 0 }));
-  const { RoutineView } = await import('../src/components/RoutineView');
   const routine: Routine = {
     id: 'routine', name: 'Routine', notes: 'Notes',
     createdAt: '2024-01-01', updatedAt: '2024-01-01',
     exercises: [{ id: 'exercise', name: 'Press', sets: [{ id: 'set', reps: 8, weight: 20, restSeconds: 60, setNumber: 1 }] }],
   };
-  const props: React.ComponentProps<typeof RoutineView> = {
-    routine, catalog: [], initialMode: 'edit', onSaveRoutine: vi.fn(), onSaveToCatalog: vi.fn(),
-    onBack: vi.fn(), onStartSession: vi.fn(), onToggleSetComplete: vi.fn(),
-    onResetSession: vi.fn(), onFinishSession: vi.fn(),
+  const saveRoutine = vi.fn();
+  const storeState = {
+    routines: [routine],
+    activeRoutineId: routine.id,
+    routineSubMode: 'edit',
+    activeSessions: {} as Record<string, { routineId: string; startTime: number; completedSetIds: string[] }>,
+    activeRestTimer: null,
+    saveRoutine,
+    selectRoutine: vi.fn(),
   };
+  vi.doMock('../src/store/appStore', () => ({
+    useAppStore: (selector: (state: typeof storeState) => unknown) => selector(storeState),
+  }));
+  const { useRoutineViewState } = await import('../src/hooks/useRoutineViewState');
   const scrollTo = vi.fn();
   const scrollIntoView = vi.fn();
   vi.stubGlobal('window', { scrollTo });
   vi.stubGlobal('document', { getElementById: vi.fn(() => ({ scrollIntoView })) });
-  return { props, scrollTo, scrollIntoView, render: () => harness.render(() => RoutineView(props)) };
+  let viewState: ReturnType<typeof useRoutineViewState>;
+  const render = () => harness.render(() => {
+    viewState = useRoutineViewState();
+    return viewState;
+  });
+  return { storeState, saveRoutine, scrollTo, scrollIntoView, render, get viewState() { return viewState!; } };
 }
 
-afterEach(() => { vi.doUnmock('react'); vi.doUnmock('../src/hooks/useWorkoutTimer'); vi.resetModules(); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.useRealTimers(); });
+afterEach(() => {
+  vi.doUnmock('react');
+  vi.doUnmock('../src/store/appStore');
+  vi.doUnmock('../src/hooks/useWorkoutTimer');
+  vi.resetModules();
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
+});
 
 describe('RoutineView editing', () => {
   it.each(['name', 'notes'] as const)('commits %s on blur without overwriting external exercise changes', async (field) => {
-    const { props, render } = await setup();
-    const input = () => find(render() as ReactNode, `routine-${field}-input`)!;
-    (input().props.onChange as (event: unknown) => void)({ target: { value: 'Draft' } });
-    expect(props.onSaveRoutine).not.toHaveBeenCalled();
-    props.routine = { ...props.routine, exercises: [] };
-    expect(input().props.value).toBe('Draft');
-    (input().props.onBlur as (event: unknown) => void)({ currentTarget: { value: 'Draft' } });
-    expect(props.onSaveRoutine).toHaveBeenCalledExactlyOnceWith({
-      ...props.routine, [field]: 'Draft', updatedAt: expect.any(String),
+    const { storeState, saveRoutine, render } = await setup();
+    let viewState = render();
+    const fieldProps = () => viewState.routineFieldProps(field)!;
+    (fieldProps().onChange as (event: unknown) => void)({ target: { value: 'Draft' } });
+    expect(saveRoutine).not.toHaveBeenCalled();
+    storeState.routines[0] = { ...storeState.routines[0]!, exercises: [] };
+    viewState = render();
+    expect(fieldProps().value).toBe('Draft');
+    (fieldProps().onBlur as (event: unknown) => void)({ currentTarget: { value: 'Draft' } });
+    expect(saveRoutine).toHaveBeenCalledExactlyOnceWith({
+      ...storeState.routines[0], [field]: 'Draft', updatedAt: expect.any(String),
     });
-    props.routine = { ...props.routine, [field]: 'Remote' };
-    expect(input().props.value).toBe('Remote');
+    storeState.routines[0] = { ...storeState.routines[0]!, [field]: 'Remote' };
+    viewState = render();
+    expect(fieldProps().value).toBe('Remote');
   });
 
   it('preserves scroll for edits but advances when completion changes the active exercise', async () => {
     vi.useFakeTimers();
-    const { props, render, scrollTo, scrollIntoView } = await setup();
-    props.routine = { ...props.routine, exercises: [
-      ...props.routine.exercises,
-      { id: 'next-exercise', name: 'Row', sets: [{ id: 'next-set', setNumber: 1, reps: 8, weight: 20, restSeconds: 60 }] },
-    ] };
+    const { storeState, render, scrollTo, scrollIntoView } = await setup();
+    storeState.routines[0] = {
+      ...storeState.routines[0]!,
+      exercises: [
+        ...storeState.routines[0]!.exercises,
+        { id: 'next-exercise', name: 'Row', sets: [{ id: 'next-set', setNumber: 1, reps: 8, weight: 20, restSeconds: 60 }] },
+      ],
+    };
     render();
     expect(scrollTo).toHaveBeenCalledTimes(1);
-    props.routine = { ...props.routine, exercises: props.routine.exercises.map((ex) => ({
+    storeState.routines[0] = { ...storeState.routines[0]!, exercises: storeState.routines[0]!.exercises.map((ex) => ({
       ...ex, sets: ex.sets.map((set) => ({ ...set, weight: 40 })),
     })) };
     render();
     expect(scrollTo).toHaveBeenCalledTimes(1);
-    props.session = { routineId: 'routine', startTime: 1700000000000, completedSetIds: [] };
+    storeState.activeSessions.routine = { routineId: 'routine', startTime: 1700000000000, completedSetIds: [] };
     render();
     await vi.runAllTimersAsync();
     expect(scrollIntoView).toHaveBeenCalledTimes(1);
-    props.routine = { ...props.routine, notes: 'Changed' };
-    props.onSaveRoutine = vi.fn();
+    storeState.routines[0] = { ...storeState.routines[0]!, notes: 'Changed' };
     render();
     await vi.runAllTimersAsync();
     expect(scrollIntoView).toHaveBeenCalledTimes(1);
-    props.session = { ...props.session, completedSetIds: ['set'] };
+    storeState.activeSessions.routine = { ...storeState.activeSessions.routine!, completedSetIds: ['set'] };
     render();
     await vi.runAllTimersAsync();
     expect(scrollIntoView).toHaveBeenCalledTimes(2);

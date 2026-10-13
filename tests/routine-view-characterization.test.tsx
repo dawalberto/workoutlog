@@ -1,7 +1,15 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Routine } from '../src/types';
+import type { AppState } from '../src/store/appStore';
+import { RoutineView } from '../src/components/RoutineView';
+import { appStore } from '../src/store/appStore';
+import {
+  resetAppStore,
+  seedAppStore,
+  useCurrentStateAsServerSnapshot,
+} from './store-test-utils';
 
 vi.mock('../src/hooks/useWorkoutTimer', () => ({ useWorkoutTimer: () => 123 }));
 
@@ -34,35 +42,44 @@ const routine: Routine = {
   ],
 };
 
-const baseProps = {
-  routine,
-  catalog: [],
-  rmLogs: [],
-  exerciseDiary: [],
-  onSaveRoutine: vi.fn(),
-  onSaveToCatalog: vi.fn(),
-  onBack: vi.fn(),
-  onStartSession: vi.fn(),
-  onToggleSetComplete: vi.fn(),
-  onResetSession: vi.fn(),
-  onFinishSession: vi.fn(),
-};
+beforeEach(() => {
+  resetAppStore();
+  seedAppStore({
+    routines: [routine],
+    activeRoutineId: routine.id,
+    routineSubMode: 'edit',
+    catalog: [],
+    rmLogs: [],
+    exerciseDiary: [],
+    activeSessions: {},
+    openExerciseDiary: undefined as unknown as AppState['openExerciseDiary'],
+  });
+  useCurrentStateAsServerSnapshot();
+});
+
+afterEach(() => {
+  resetAppStore();
+});
 
 describe('RoutineView characterization', () => {
-  it('preserves edit mode markup', async () => {
-    const { RoutineView } = await import('../src/components/RoutineView');
-    expect(renderToStaticMarkup(<RoutineView {...baseProps} initialMode="edit" />))
+  it('preserves edit mode markup', () => {
+    expect(renderToStaticMarkup(<RoutineView />))
       .toMatchSnapshot('routine-edit');
   });
 
-  it('preserves active-workout markup with partial progress', async () => {
-    const { RoutineView } = await import('../src/components/RoutineView');
-    expect(renderToStaticMarkup(
-      <RoutineView
-        {...baseProps}
-        initialMode="execute"
-        session={{ routineId: routine.id, startTime: 1767225600000, completedSetIds: ['press-set-1'] }}
-      />,
-    )).toMatchSnapshot('routine-active-workout-partial-progress');
+  it('preserves active-workout markup with partial progress', () => {
+    seedAppStore({
+      routineSubMode: 'execute',
+      activeSessions: {
+        [routine.id]: {
+          routineId: routine.id,
+          startTime: 1767225600000,
+          completedSetIds: ['press-set-1'],
+        },
+      },
+    });
+
+    expect(renderToStaticMarkup(<RoutineView />))
+      .toMatchSnapshot('routine-active-workout-partial-progress');
   });
 });

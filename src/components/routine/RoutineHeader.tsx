@@ -1,7 +1,8 @@
 import React, { type ReactNode } from 'react';
 import { ArrowLeft, Clock, Edit3, FileText, Play } from 'lucide-react';
-import type { Routine, RoutineSubMode, ActiveWorkoutSession } from '../../types';
+import type { RoutineSubMode } from '../../types';
 import { formatSecondsToTime, formatWorkoutDuration } from '../../utils/timeCalculations';
+import { useRoutineHeader } from '../../hooks/routine/useRoutineHeader';
 
 type RoutineFieldProps = {
   value: string;
@@ -11,32 +12,31 @@ type RoutineFieldProps = {
 };
 
 interface RoutineHeaderProps {
-  routine: Routine;
   subMode: RoutineSubMode;
-  session?: ActiveWorkoutSession | null;
   elapsedSeconds: number;
-  totalWorkoutSeconds: number;
-  allExercisesCompleted: boolean;
-  onBack: () => void;
-  onModeChange: (mode: RoutineSubMode) => void;
-  routineFieldProps: (field: 'name' | 'notes') => RoutineFieldProps;
+  routineFieldProps: (field: 'name' | 'notes') => RoutineFieldProps | undefined;
   progress?: ReactNode;
   children: ReactNode;
 }
 
 export const RoutineHeader: React.FC<RoutineHeaderProps> = ({
-  routine,
   subMode,
-  session,
   elapsedSeconds,
-  totalWorkoutSeconds,
-  allExercisesCompleted,
-  onBack,
-  onModeChange,
   routineFieldProps,
   progress,
   children,
-}) => (
+}) => {
+  const {
+    routine,
+    session,
+    totalWorkoutSeconds,
+    allExercisesCompleted,
+    onBack,
+    onModeChange,
+  } = useRoutineHeader();
+  if (!routine) return null;
+
+  return (
   <>
     {/* Top sticky bar */}
     <div className="sticky top-0 z-40 bg-[#121214]/90 backdrop-blur-xl border-b border-white/[0.08] shadow-lg pt-[env(safe-area-inset-top,0px)]">
@@ -177,4 +177,5 @@ export const RoutineHeader: React.FC<RoutineHeaderProps> = ({
       {children}
     </div>
   </>
-);
+  );
+};

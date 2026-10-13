@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   Check, 
   Trash2, 
@@ -18,202 +18,64 @@ import {
   FileText, 
   Image as ImageIcon 
 } from 'lucide-react';
-import { Exercise, WorkoutSet, ExerciseRmLog, ExerciseDiary } from '../types';
 import { 
-  getExerciseTotalSeconds, 
   getSetTotalSeconds, 
   formatSecondsToTime,
-  formatExerciseSummary 
 } from '../utils/timeCalculations';
 import { VideoPreview } from './VideoPreview';
 import { RmBadge } from './RmBadge';
 import { DiaryButton } from './DiaryButton';
 import { TimePickerField } from './TimePickerField';
+import { useExerciseCard } from '../hooks/routine/useExerciseCard';
 
 interface ExerciseCardProps {
-  exercise: Exercise;
-  exerciseIndex: number;
-  totalExercises?: number;
-  isExecutionMode: boolean;
-  completedSetIds: Set<string>;
+  exerciseId: string;
   isCollapsed?: boolean;
-  rmLogs?: ExerciseRmLog[];
-  exerciseDiary?: ExerciseDiary[];
   onToggleCollapse?: () => void;
   onToggleSetComplete: (setId: string, restSeconds: number, exerciseName: string, setNumber: number) => void;
-  onUpdateExercise: (updated: Exercise) => void;
-  onDeleteExercise: () => void;
-  onMoveToPosition?: (targetIndex: number) => void;
-  onCheckRmWeight?: (exerciseName: string, newWeight: number, exerciseId?: string) => void;
-  onOpenDiary?: (exerciseName: string, exerciseId?: string) => void;
 }
 
 export const ExerciseCard: React.FC<ExerciseCardProps> = ({
-  exercise,
-  exerciseIndex,
-  totalExercises = 1,
-  isExecutionMode,
-  completedSetIds,
+  exerciseId,
   isCollapsed: propIsCollapsed,
-  rmLogs = [],
-  exerciseDiary = [],
   onToggleCollapse,
   onToggleSetComplete,
-  onUpdateExercise,
-  onDeleteExercise,
-  onMoveToPosition,
-  onCheckRmWeight,
-  onOpenDiary,
 }) => {
-  const [showVideoInput, setShowVideoInput] = useState(false);
-  const [showImageInput, setShowImageInput] = useState(false);
-  const [setDrafts, setSetDrafts] = useState<Record<string, string>>({});
-  const [textDrafts, setTextDrafts] = useState<Record<string, string>>({});
-  type TextField = 'name' | 'notes' | 'imageUrl' | 'videoUrl';
-  const textFieldProps = (field: TextField) => {
-    const key = `${exercise.id}:${field}`;
-    return {
-      value: textDrafts[key] ?? exercise[field] ?? '',
-      onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
-        const value = event.target.value;
-        setTextDrafts((drafts) => ({ ...drafts, [key]: value }));
-      },
-      onBlur: (event: React.FocusEvent<HTMLInputElement>) => {
-        if (!(key in textDrafts)) return;
-        const value = event.currentTarget.value;
-        setTextDrafts((drafts) => {
-          const next = { ...drafts };
-          delete next[key];
-          return next;
-        });
-        if (value !== (exercise[field] ?? '')) onUpdateExercise({ ...exercise, [field]: value });
-      },
-      onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => {
-        if (event.key === 'Enter') event.currentTarget.blur();
-      },
-    };
-  };
-
-  // Check if all sets of this exercise are completed in the current session
-  const totalSetsCount = exercise.sets.length;
-  const completedSetsCount = exercise.sets.filter((s) => completedSetIds.has(s.id)).length;
-  const isAllCompleted = totalSetsCount > 0 && completedSetsCount === totalSetsCount;
-
-  // Collapse state (controlled from RoutineView or local fallback)
-  const [localCollapsed, setLocalCollapsed] = useState<boolean>(() => isExecutionMode && isAllCompleted);
-  const isCollapsed = propIsCollapsed !== undefined ? propIsCollapsed : localCollapsed;
-  const handleToggleCollapse = onToggleCollapse || (() => setLocalCollapsed(!localCollapsed));
-
-  const totalExerciseSeconds = getExerciseTotalSeconds(exercise);
-  const summaryText = formatExerciseSummary(exercise.sets);
-
-  // Handlers for Sets CRUD
-  const handleUpdateSet = (setId: string, field: keyof WorkoutSet, value: number | string) => {
-    const updatedSets = exercise.sets.map((s) => {
-      if (s.id === setId) {
-        return { ...s, [field]: value };
-      }
-      return s;
-    });
-    onUpdateExercise({ ...exercise, sets: updatedSets });
-  };
-
-  const setDraftKey = (setId: string, field: 'reps' | 'weight') =>
-    `${setId}:${field}`;
-
-  const handleSetDraftChange = (
-    setId: string,
-    field: 'reps' | 'weight',
-    value: string,
-  ) => {
-    const key = setDraftKey(setId, field);
-    setSetDrafts((drafts) => ({ ...drafts, [key]: value }));
-  };
-
-  const handleCommitReps = (set: WorkoutSet, inputValue: string) => {
-    const key = setDraftKey(set.id, 'reps');
-    if (!(key in setDrafts)) return;
-
-    const value =
-      !inputValue || isNaN(Number(inputValue)) || Number(inputValue) < 1
-        ? 1
-        : Number(inputValue);
-    setSetDrafts((drafts) => {
-      const nextDrafts = { ...drafts };
-      delete nextDrafts[key];
-      return nextDrafts;
-    });
-    if (Number(set.reps) !== value) {
-      handleUpdateSet(set.id, 'reps', value);
-    }
-  };
-
-  const handleCommitWeight = (set: WorkoutSet, inputValue: string) => {
-    const key = setDraftKey(set.id, 'weight');
-    if (!(key in setDrafts)) return;
-
-    const parsedValue = Number(inputValue);
-    const value =
-      inputValue === '' || isNaN(parsedValue) || parsedValue < 0
-        ? 0
-        : parsedValue;
-    const changed = Number(set.weight) !== value;
-    setSetDrafts((drafts) => {
-      const nextDrafts = { ...drafts };
-      delete nextDrafts[key];
-      return nextDrafts;
-    });
-    if (!changed) return;
-
-    handleUpdateSet(set.id, 'weight', value);
-    if (value > 0 && onCheckRmWeight) {
-      onCheckRmWeight(exercise.name, value, exercise.definitionId);
-    }
-  };
-
-  const handleApplyRestToAllSets = (newRest: number) => {
-    const updatedSets = exercise.sets.map((s) => ({ ...s, restSeconds: newRest }));
-    onUpdateExercise({ ...exercise, sets: updatedSets });
-  };
-
-  const handleDuplicateSet = (indexToDuplicate: number) => {
-    const setToDuplicate = exercise.sets[indexToDuplicate];
-    if (!setToDuplicate) return;
-
-    const newSet: WorkoutSet = {
-      ...setToDuplicate,
-      id: 'set-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
-      setNumber: exercise.sets.length + 1,
-    };
-
-    const nextSets = [
-      ...exercise.sets.slice(0, indexToDuplicate + 1),
-      newSet,
-      ...exercise.sets.slice(indexToDuplicate + 1),
-    ].map((s, idx) => ({ ...s, setNumber: idx + 1 }));
-
-    onUpdateExercise({ ...exercise, sets: nextSets });
-  };
-
-  const handleAddSet = () => {
-    const lastSet = exercise.sets[exercise.sets.length - 1];
-    const newSet: WorkoutSet = {
-      id: 'set-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
-      setNumber: exercise.sets.length + 1,
-      reps: lastSet ? lastSet.reps : 10,
-      weight: lastSet ? lastSet.weight : 0,
-      restSeconds: lastSet ? lastSet.restSeconds : 60,
-    };
-    onUpdateExercise({ ...exercise, sets: [...exercise.sets, newSet] });
-  };
-
-  const handleDeleteSet = (setId: string) => {
-    if (exercise.sets.length <= 1) return;
-    const filtered = exercise.sets
-      .filter((s) => s.id !== setId)
-      .map((s, idx) => ({ ...s, setNumber: idx + 1 }));
-    onUpdateExercise({ ...exercise, sets: filtered });
-  };
+  const {
+    exercise,
+    exerciseIndex,
+    isExecutionMode,
+    completedSetIds,
+    rmLogs,
+    exerciseDiary,
+    updateExercise: onUpdateExercise,
+    deleteExercise: onDeleteExercise,
+    onCheckRmWeight,
+    onOpenDiary,
+    showVideoInput,
+    setShowVideoInput,
+    showImageInput,
+    setShowImageInput,
+    setDrafts,
+    textFieldProps,
+    totalSetsCount,
+    completedSetsCount,
+    isAllCompleted,
+    isCollapsed,
+    handleToggleCollapse,
+    totalExerciseSeconds,
+    summaryText,
+    handleUpdateSet,
+    setDraftKey,
+    handleSetDraftChange,
+    handleCommitReps,
+    handleCommitWeight,
+    handleApplyRestToAllSets,
+    handleDuplicateSet,
+    handleAddSet,
+    handleDeleteSet,
+  } = useExerciseCard(exerciseId, propIsCollapsed, onToggleCollapse);
+  if (!exercise) return null;
 
   return (
     <div

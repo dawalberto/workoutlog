@@ -1,32 +1,30 @@
 import React from 'react';
 import { Flag, X, Clock, Layers, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { formatDetailedDuration } from '../utils/timeCalculations';
+import { useWorkoutFinishConfirmModal } from '../hooks/routine/useWorkoutFinishConfirmModal';
 
 interface WorkoutFinishConfirmModalProps {
   isOpen: boolean;
-  routineName: string;
   elapsedSeconds: number;
-  completedSetsCount: number;
-  totalSetsCount: number;
-  onConfirm: () => void;
   onCancel: () => void;
+  onConfirm: () => void;
 }
 
 export const WorkoutFinishConfirmModal: React.FC<WorkoutFinishConfirmModalProps> = ({
   isOpen,
-  routineName,
   elapsedSeconds,
-  completedSetsCount,
-  totalSetsCount,
-  onConfirm,
   onCancel,
+  onConfirm,
 }) => {
+  const {
+    routineName,
+    completedSetsCount,
+    totalSetsCount,
+    completionPercentage,
+    isAllCompleted,
+    remainingSets,
+  } = useWorkoutFinishConfirmModal();
   if (!isOpen) return null;
-
-  const completionPercentage =
-    totalSetsCount > 0 ? Math.round((completedSetsCount / totalSetsCount) * 100) : 0;
-  const isAllCompleted = totalSetsCount > 0 && completedSetsCount === totalSetsCount;
-  const remainingSets = Math.max(0, totalSetsCount - completedSetsCount);
 
   return (
     <div
