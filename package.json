@@ -14,6 +14,7 @@
     "db:test": "supabase test db --local",
     "db:lint": "supabase db lint --local",
     "db:types": "node scripts/generate-db-types.mjs",
+    "sync:contract:check": "node --import tsx scripts/check-sync-contract.mjs",
     "generate:assets": "node scripts/generate-assets.js"
   },
   "dependencies": {

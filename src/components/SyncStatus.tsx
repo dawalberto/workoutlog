@@ -7,6 +7,7 @@ export interface SyncStatusProps {
   pendingChanges: number;
   status: UseSyncStatus;
   onRetry: () => void;
+  onUpdate?: () => void;
 }
 
 export const SyncStatus: React.FC<SyncStatusProps> = ({
@@ -15,15 +16,22 @@ export const SyncStatus: React.FC<SyncStatusProps> = ({
   pendingChanges,
   status,
   onRetry,
+  onUpdate = () => window.dispatchEvent(new Event('workoutlog:update-app')),
 }) => {
   let title: string;
   let description: string;
   let tone = 'border-white/[0.08] bg-[#1C1C1E] text-zinc-300';
   let canRetry = false;
+  let requiresUpdate = false;
 
   if (!isSyncEnabled) {
     title = 'Solo en este dispositivo';
     description = 'Tus datos se guardan solo en este dispositivo.';
+  } else if (status.updateRequired) {
+    title = 'Actualización necesaria';
+    description = 'Actualiza la app para continuar sincronizando.';
+    tone = 'border-[#00FF87]/30 bg-[#00FF87]/10 text-white';
+    requiresUpdate = true;
   } else if (!isOnline) {
     title = 'Sin conexión';
     description = 'Tus datos locales están a salvo.';
@@ -76,6 +84,15 @@ export const SyncStatus: React.FC<SyncStatusProps> = ({
           className="min-h-[48px] shrink-0 rounded-lg border border-current px-3 font-bold hover:bg-white/10"
         >
           Reintentar
+        </button>
+      )}
+      {requiresUpdate && (
+        <button
+          type="button"
+          onClick={onUpdate}
+          className="min-h-[48px] w-full shrink-0 rounded-xl bg-[#00FF87] px-4 font-extrabold text-black shadow-[0_0_20px_rgba(0,255,135,0.35)] transition-transform active:scale-[0.97] sm:w-auto"
+        >
+          Actualizar
         </button>
       )}
     </div>

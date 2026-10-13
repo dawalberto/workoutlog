@@ -1,5 +1,6 @@
 import { IDBFactory } from 'fake-indexeddb';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { SYNC_CONTRACT_VERSION } from '../../src/sync/contract';
 
 type DbModule = typeof import('../../src/services/db');
 type CloudSyncModule = typeof import('../../src/services/cloud-sync');
@@ -438,6 +439,7 @@ describe('cloud sync', () => {
     expect(rpc).toHaveBeenCalledWith('sync_push', {
       p_operation_id: queued!.request.operationId,
       p_changes: queued!.request.changes,
+      p_contract_version: SYNC_CONTRACT_VERSION,
     });
     expect(await storage.getPendingSyncOperations(scope)).toHaveLength(0);
     expect(
@@ -469,6 +471,36 @@ describe('cloud sync', () => {
 
     expect(rpc).toHaveBeenCalledTimes(3);
     expect(await storage.getPendingSyncOperations(scope)).toHaveLength(1);
+  });
+
+  it.each([
+    'sync_contract_version_unsupported',
+    'sync_contract_version_required',
+  ])('retains the outbox and marks contract version errors as update-required (%s)', async (message) => {
+    const scope = { ownerId: 'owner-1' };
+    await storage.setScopedStoredItem(
+      storage.DB_KEYS.CATALOG,
+      [{ id: 'definition-1', name: 'Bench press' }],
+      scope,
+    );
+    const [queued] = await storage.getPendingSyncOperations(scope);
+    const rpc = vi.fn(async () => ({
+      data: null,
+      error: { code: 'P0001', message },
+    }));
+    const client = createClient({}, rpc);
+
+    await expect(
+      cloudSync.syncCloudData({
+        ownerId: scope.ownerId,
+        syncEnabled: true,
+        online: true,
+        client: client as never,
+      }),
+    ).rejects.toMatchObject({ updateRequired: true });
+
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(await storage.getPendingSyncOperations(scope)).toEqual([queued]);
   });
 
   it('preserves local-only behavior when signed out, offline, unentitled, or unconfigured', async () => {

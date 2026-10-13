@@ -36,6 +36,7 @@ export interface UseSyncStatus {
   state: 'idle' | 'syncing' | 'synced' | 'error';
   error: string | null;
   lastSyncedAt: number | null;
+  updateRequired?: boolean;
 }
 
 export interface UseSyncResult {
@@ -52,6 +53,7 @@ const initialStatus: UseSyncStatus = {
   state: 'idle',
   error: null,
   lastSyncedAt: null,
+  updateRequired: false,
 };
 
 function isBrowserOnline(): boolean {
@@ -60,6 +62,12 @@ function isBrowserOnline(): boolean {
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Cloud sync failed.';
+}
+
+function isUpdateRequiredError(error: unknown): boolean {
+  return error instanceof Error &&
+    'updateRequired' in error &&
+    error.updateRequired === true;
 }
 
 function pendingOperationsSignature(
@@ -74,6 +82,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
   const coordinatorRef = useRef<SyncCoordinator | null>(null);
   const failedPendingSignatureRef = useRef<string | null>(null);
   const blockedOwnerIdRef = useRef<string | null>(null);
+  const updateRequiredOwnerIdRef = useRef<string | null>(null);
   const pullRequestedRef = useRef(true);
   const mountedRef = useRef(true);
   const [status, setStatus] = useState<UseSyncStatus>(initialStatus);
@@ -155,6 +164,12 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
     if (blockedOwnerIdRef.current && blockedOwnerIdRef.current !== options.ownerId) {
       blockedOwnerIdRef.current = null;
     }
+    if (
+      updateRequiredOwnerIdRef.current &&
+      updateRequiredOwnerIdRef.current !== options.ownerId
+    ) {
+      updateRequiredOwnerIdRef.current = null;
+    }
     coordinatorRef.current?.dispose();
     coordinatorRef.current = null;
     pullRequestedRef.current = true;
@@ -207,6 +222,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
           !latest.syncEnabled ||
           !latest.isStorageLoaded ||
           !latest.isOwnerHydrationComplete ||
+          updateRequiredOwnerIdRef.current === syncOwnerId ||
           !isBrowserOnline()
         ) {
           if (mountedRef.current) setStatus(initialStatus);
@@ -245,6 +261,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
               current.syncEnabled &&
               current.isStorageLoaded &&
               current.isOwnerHydrationComplete &&
+              updateRequiredOwnerIdRef.current !== syncOwnerId &&
               isBrowserOnline()
             );
           };
@@ -274,6 +291,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
               state: 'synced',
               error: null,
               lastSyncedAt: Date.now(),
+              updateRequired: false,
             });
           }
         } catch (error) {
@@ -291,6 +309,10 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
               return;
             }
             await refreshPendingChanges(current.ownerId);
+            const updateRequired = isUpdateRequiredError(error);
+            if (updateRequired) {
+              updateRequiredOwnerIdRef.current = syncOwnerId;
+            }
             try {
               const operations = await getPendingSyncOperations({
                 ownerId: syncOwnerId,
@@ -304,6 +326,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
               ...previous,
               state: 'error',
               error: errorMessage(error),
+              updateRequired,
             }));
           }
         }
@@ -317,7 +340,10 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
     }
     const startReactiveSync = async () => {
       const failedPendingSignature = failedPendingSignatureRef.current;
-      if (blockedOwnerIdRef.current === syncOwnerId) return;
+      if (
+        blockedOwnerIdRef.current === syncOwnerId ||
+        updateRequiredOwnerIdRef.current === syncOwnerId
+      ) return;
       await flushScopedStorageWrites({ ownerId: syncOwnerId });
       const operations = await getPendingSyncOperations({ ownerId: syncOwnerId });
       if (!pullRequestedRef.current && operations.length === 0) return;
@@ -365,7 +391,8 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
       if (
         !isBrowserOnline() ||
         failedPendingSignatureRef.current !== null ||
-        blockedOwnerIdRef.current === options.ownerId
+        blockedOwnerIdRef.current === options.ownerId ||
+        updateRequiredOwnerIdRef.current === options.ownerId
       ) return;
       pullRequestedRef.current = true;
       void coordinatorRef.current?.run();
@@ -377,7 +404,11 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
   ]);
 
   const retry = () => {
-    if (isOnline && blockedOwnerIdRef.current !== optionsRef.current.ownerId) {
+    if (
+      isOnline &&
+      blockedOwnerIdRef.current !== optionsRef.current.ownerId &&
+      updateRequiredOwnerIdRef.current !== optionsRef.current.ownerId
+    ) {
       failedPendingSignatureRef.current = null;
       pullRequestedRef.current = true;
       void coordinatorRef.current?.run();
@@ -389,6 +420,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
     if (
       !current.ownerId ||
       blockedOwnerIdRef.current === current.ownerId ||
+      updateRequiredOwnerIdRef.current === current.ownerId ||
       !current.syncEnabled ||
       !current.isStorageLoaded ||
       !current.isOwnerHydrationComplete ||

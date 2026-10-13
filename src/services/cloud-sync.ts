@@ -1,6 +1,10 @@
 import type { Json } from '../types/database.types';
 import type { SupabaseBrowserClient } from './supabase';
-import { SYNC_TABLES, type SyncTable } from '../sync/contract';
+import {
+  SYNC_CONTRACT_VERSION,
+  SYNC_TABLES,
+  type SyncTable,
+} from '../sync/contract';
 import {
   acknowledgeSyncOperation,
   applyRemoteSyncChanges,
@@ -42,7 +46,10 @@ export interface CloudSyncResult {
 }
 
 export class CloudSyncError extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    readonly updateRequired = false,
+  ) {
     super(message);
     this.name = 'CloudSyncError';
   }
@@ -282,6 +289,7 @@ async function pushWithRetry(
     const { data, error } = await client.rpc('sync_push', {
       p_operation_id: operation.request.operationId,
       p_changes: operation.request.changes as unknown as Json,
+      p_contract_version: SYNC_CONTRACT_VERSION,
     });
     if (!error) {
       return {
@@ -291,6 +299,12 @@ async function pushWithRetry(
     }
 
     const message = error.message || 'unknown RPC error';
+    if (
+      message.includes('sync_contract_version_unsupported') ||
+      message.includes('sync_contract_version_required')
+    ) {
+      throw new CloudSyncError(message, true);
+    }
     if (message.includes('sync_stale_revision_conflict')) return { kind: 'stale' };
     if (message.includes('sync_operation_conflict')) {
       throw new CloudSyncError(
