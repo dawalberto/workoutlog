@@ -2,13 +2,13 @@
 
 How WorkoutLog's parts fit together: a static React PWA that stores data locally in IndexedDB and, for signed-in users, syncs directly with Supabase.
 
-Last verified: 2026-10-13
+Last verified: 2026-10-14
 
 ## In one paragraph
 
 WorkoutLog is a single-page React 19 + Vite app served as static files from GitHub Pages. All user data (routines, exercise catalog, active sessions, RM logs, workout history, exercise diary) lives first in the browser's IndexedDB. Guests never touch the network. Signed-in users (Google OAuth via Supabase Auth) get every local change queued in an IndexedDB outbox and pushed to Postgres through one RPC (`sync_push`); remote changes are pulled per table by server revision. There is **no custom server**: Supabase (Auth, Postgres, RLS, RPCs) is the whole backend.
 
-Future server-side logic will use Supabase Edge Functions, its managed serverless runtime; no custom server is needed. Push notifications are deferred, and no `supabase/functions/` directory exists today.
+Server-side push dispatch uses the managed `send-rest-push` Supabase Edge Function; no custom server is needed. Signed-in clients register a browser subscription and schedule timer completion through authenticated RPCs, while guests continue to use local timer feedback.
 
 ## System context
 
@@ -23,6 +23,7 @@ flowchart LR
   subgraph supabase["Supabase project"]
     auth["Supabase Auth"]
     pg[("Postgres 17<br/>RLS + RPCs")]
+    fn["send-rest-push<br/>Edge Function"]
   end
   google["Google OAuth"]
   pages["GitHub Pages<br/>(static hosting)"]
@@ -35,6 +36,9 @@ flowchart LR
   pwa -- "signInWithOAuth" --> auth
   auth <--> google
   pwa -- "rpc('sync_push'), table selects" --> pg
+  pwa -- "subscription + timer RPCs" --> pg
+  pg -- "pg_cron / pg_net" --> fn
+  fn -- "Web Push" --> sw
   gha -- "build + deploy dist/" --> pages
 ```
 
@@ -44,7 +48,7 @@ flowchart LR
 |---|---|---|
 | Composition root and shell | Boots lifecycle adapters, applies readiness gates, composes tabs and overlays | [`src/App.tsx`](../../src/App.tsx), [`src/components/AppShell.tsx`](../../src/components/AppShell.tsx) |
 | App state | Zustand store composed from domain slices; narrow selectors and component hooks | [`src/store/`](../../src/store/appStore.ts) |
-| Lifecycle adapters | Hydration/persistence, auth, sync; mounted once by app bootstrap | [`src/hooks/useAppBootstrap.ts`](../../src/hooks/useAppBootstrap.ts), [`src/store/persistence.ts`](../../src/store/persistence.ts) |
+| Lifecycle adapters | Hydration/persistence, auth, sync, and rest-push scheduling; mounted once by app bootstrap | [`src/hooks/useAppBootstrap.ts`](../../src/hooks/useAppBootstrap.ts), [`src/store/persistence.ts`](../../src/store/persistence.ts), [`src/hooks/useRestPush.ts`](../../src/hooks/useRestPush.ts) |
 | UI components | Feature containers and reusable presentation components (Spanish copy) | [`src/components/`](../../src/components/RoutineView.tsx) |
 | Local DB service | IndexedDB stores, scopes, outbox, cursors, metadata | [`src/services/db.ts`](../../src/services/db.ts) |
 | Sync queue | Diff collections → outbox changes, ordering, apply remote | [`src/services/sync-queue.ts`](../../src/services/sync-queue.ts) |
@@ -86,6 +90,8 @@ sequenceDiagram
 ```
 
 The state write, record metadata, and outbox entries are written in one IndexedDB transaction (`writeStoredItems`, [`src/services/db.ts`](../../src/services/db.ts) around lines 281–350). Guests stop there: the `guest` scope keeps its outbox but nothing is pushed; on first sign-in guest data and outbox move to the owner scope once (`transferGuestDataToOwnerOnce`). The exact algorithm, limits, and error handling are specified in the [frontend–backend strategy](frontend-backend-strategy.md).
+
+Rest-timer Web Push is separate from workout-data sync: `useRestPush` observes the in-memory timer and signed-in identity, while a serial controller registers the subscription and reconciles one server schedule through dedicated RPCs. Timer state and push subscription details are not added to IndexedDB or the sync contract. The server sends the push through `send-rest-push`; the classic handler imported by the production service worker displays the system notification while the page can be suspended.
 
 ## Deployment topology
 

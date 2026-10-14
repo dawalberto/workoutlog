@@ -8,6 +8,7 @@ export function useRestTimerBar() {
   const onPause = useAppStore((state) => state.pauseRestTimer);
   const onResume = useAppStore((state) => state.resumeRestTimer);
   const onExtend = useAppStore((state) => state.extendRestTimer);
+  const restPushArmed = useAppStore((state) => state.restPush.armed);
 
   return activeRestTimer
     ? {
@@ -18,6 +19,7 @@ export function useRestTimerBar() {
       onPause,
       onResume,
       onExtend,
+      restPushArmed,
     }
     : null;
 }

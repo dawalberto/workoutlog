@@ -9,6 +9,7 @@ import { createUiSlice, type UiSlice } from './slices/uiSlice';
 import { createRoutineSlice, type RoutineSlice } from './slices/routineSlice';
 import { createWorkoutSlice, type WorkoutSlice } from './slices/workoutSlice';
 import { createRmSlice, type RmSlice } from './slices/rmSlice';
+import { createRestPushSlice, type RestPushSlice } from './slices/restPushSlice';
 
 export type AppState =
   & DataSlice
@@ -19,7 +20,8 @@ export type AppState =
   & SyncSlice
   & RoutineSlice
   & WorkoutSlice
-  & RmSlice;
+  & RmSlice
+  & RestPushSlice;
 
 export const createAppStore = (initial?: Partial<AppState>) =>
   createStore<AppState>()((...args) => ({
@@ -32,6 +34,7 @@ export const createAppStore = (initial?: Partial<AppState>) =>
     ...createRoutineSlice(...args),
     ...createWorkoutSlice(...args),
     ...createRmSlice(...args),
+    ...createRestPushSlice(...args),
     ...initial,
   }));
 

@@ -35,7 +35,7 @@ The rest timer finish feedback (`playTimerFinishBeep`, `triggerTimerVibration`) 
 - [x] `T1-db`: Migration (tables, RLS, RPCs, service-role claim/complete functions, pg_cron + pg_net dispatch, Vault secret lookup, cleanup), `config.toml` function entry, pgTAP, regenerated types, backend docs + ADR 0010. Route: delegated writer (multi-file, high risk).
 - [x] `T2-edge`: `supabase/functions/send-rest-push` with Deno tests, VAPID key script, CI Deno step, local end-to-end smoke (cron → function → delivery attempt), AGENTS/backend deploy docs. Route: delegated writer; risk tier: high.
 - [x] `T3-store`: Move pause/resume/extend into `restTimerSlice` (+ sessionStorage), `RestTimerBar` consumes actions, tests. Route: delegated writer; risk tier: medium.
-- [ ] `T4-client`: SW push handler, `src/services/push.ts`, pure plan helper, `useRestPush` adapter, enable CTA, foreground/background dedupe, `.env.example`, frontend docs, tests. Route: delegated writer.
+- [x] `T4-client`: SW push handler, `src/services/push.ts`, pure plan helper, `useRestPush` adapter, enable CTA, foreground/background dedupe, `.env.example`, frontend docs, tests. Route: delegated writer; risk tier: high.
 - [ ] `T5-review`: Independent review (reviewer agent) + full checks.
 
 ## Acceptance criteria
@@ -84,6 +84,18 @@ Forecast exceeds 400 authored lines. Strategy: `ask-on-risk` resolved in autopil
   - Local cleanup invocation — passed; PostgreSQL reports permission to delete old `cron.job_run_details`.
   - Initial work-unit commit: `896baf8` (this task evidence is included by amendment).
 - `T3-store` complete: `ActiveRestTimer` now persists paused time, pure timer helpers drive store actions, and `RestTimerBar` reads pause and remaining state from the store. Extension after finish starts a fresh countdown and resets `initialSeconds` and the progress denominator to the extension length; running and paused extensions preserve their prior `initialSeconds` behavior. Risk tier: medium.
+- `T4-client` complete: the production Workbox worker imports the classic push handler; a browser-only API layer and serialized controller reconcile account subscriptions and timer schedules; an ephemeral store slice exposes support/permission/armed state; the timer prompt remains Spanish and local chime behavior stays on the existing `ambient` audio session. Risk tier: high.
+- `T4-client` RED: `pnpm test tests/utils/restPush.test.ts tests/services/push.test.ts tests/services/rest-push-controller.test.ts` — failed as expected before implementation because the new utility and service modules did not yet exist.
+- `T4-client` verification:
+  - `pnpm test` — passed; 30 files and 202 tests.
+  - `pnpm lint` — passed (`tsc --noEmit`).
+  - `pnpm build` — passed; only the existing >500 kB chunk warning.
+  - Build artifact check — passed; `dist/sw.js` imports `push-sw.js` and `dist/push-sw.js` exists.
+  - `node --check public/push-sw.js` — passed.
+  - `git diff --check` — passed.
+  - `pnpm dev` — could not start because port 5173 was already in use. Static configuration check confirms `importScripts` is only in the build-time Workbox configuration; Vite's dev service worker remains a module worker.
+  - Runtime boundary: real-device notification sound/vibration was not verified. `TODO(human): test an installed iOS PWA and Android browser using deployed push configuration.`
+  - Initial work-unit commit before this evidence amendment: `fa10524`.
 - `T3-store` verification:
   - RED: `pnpm test tests/utils/restTimer.test.ts tests/store/rest-timer-slice.test.ts` — failed as expected before implementation because timer helpers and store actions were missing.
   - Focused: `pnpm test tests/utils/restTimer.test.ts tests/store/rest-timer-slice.test.ts` — passed; 2 files and 10 tests.
@@ -95,4 +107,4 @@ Forecast exceeds 400 authored lines. Strategy: `ask-on-risk` resolved in autopil
 
 ## Next step
 
-`T4-client`.
+`T5-review`.

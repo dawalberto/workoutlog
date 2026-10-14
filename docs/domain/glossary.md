@@ -2,7 +2,7 @@
 
 Domain and sync terms with their code identifiers and Spanish UI labels.
 
-Last verified: 2026-10-13
+Last verified: 2026-10-14
 
 UI labels were checked in `src/components/` (file noted when not obvious). "—" means the term has no user-facing label.
 
@@ -17,6 +17,7 @@ UI labels were checked in `src/components/` (file noted when not obvious). "—"
 | Reps | Repetitions in a set | `WorkoutSet.reps` | "Reps" |
 | Weight | Load in kg | `WorkoutSet.weight` | "Peso" |
 | Rest | Rest time after a set | `WorkoutSet.restSeconds`, `ActiveRestTimer` | "Descanso" |
+| Rest push | Server-scheduled Web Push delivered when a signed-in user's rest timer ends | `rest_push_schedules`, `useRestPush` | "Avisarme con el móvil bloqueado" |
 | Edit mode | Modify a routine's structure | `subMode === 'edit'` in `RoutineView`; `isExecutionMode={false}` on `ExerciseCard` | "Editar" ([`RoutineView.tsx`](../../src/components/RoutineView.tsx)) |
 | Execute mode | Perform a routine, ticking sets | `subMode === 'execute'`; `isExecutionMode={true}` | "Entrenar" |
 | Active session | Routine currently being performed | `ActiveWorkoutSession` (`routineId`, `startedAt`, `completedSetIds`), tables `active_workout_sessions`, `active_session_completed_sets` | "Entrenamiento en curso" ([`ActiveWorkoutTopBanner.tsx`](../../src/components/ActiveWorkoutTopBanner.tsx)) |

@@ -21,7 +21,9 @@ Last verified: 2026-10-14
 |---|---|---|
 | `pnpm dev` exits: port 5173 in use | `--strictPort` in the `dev` script ([`package.json`](../package.json)) | Stop the other process on 5173. Keep 5173: Supabase Auth `site_url`/redirects expect it. |
 | No sign-in option works; status "Solo en este dispositivo" | `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` missing or invalid → client is `null` → local-only mode ([`src/services/supabase.ts`](../src/services/supabase.ts)) | Fill `.env.local` from `supabase status`; restart `pnpm dev`. |
+| No rest-timer push prompt appears | `VITE_VAPID_PUBLIC_KEY` is empty or unavailable in the frontend build | Generate a public key with `pnpm push:vapid`, set `VITE_VAPID_PUBLIC_KEY` in `.env.local` (or the deployment environment), and rebuild. Keep the VAPID private key server-side. |
 | UI does not reflect code changes / old assets | PWA service worker active in dev (`devOptions.enabled: true`, [`vite.config.ts`](../vite.config.ts)) | DevTools → Application → Service Workers → Unregister; hard reload. |
+| Push worker errors in development | The production Workbox worker uses classic `importScripts`, but the Vite development worker is a module worker | Push notification handling is build/preview-only; use `pnpm build` followed by `pnpm preview` or a deployed PWA to verify it. |
 | `supabase start` fails | Docker not running | Start Docker and retry. |
 
 ## Auth

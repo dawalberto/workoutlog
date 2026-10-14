@@ -9,6 +9,7 @@ import {
 } from '../utils/audioBeep';
 import { useRestTimerBar } from '../hooks/shell/useRestTimerBar';
 import { getRestTimerRemainingMs } from '../utils/restTimer';
+import { RestPushPrompt } from './RestPushPrompt';
 
 export const RestTimerBar: React.FC = () => {
   const timer = useRestTimerBar();
@@ -21,6 +22,7 @@ export const RestTimerBar: React.FC = () => {
     onPause,
     onResume,
     onExtend,
+    restPushArmed,
   } = timer;
   const { initialSeconds, targetEndTime, pausedRemainingMs, exerciseName, setNumber } = activeRestTimer;
   const isPaused = pausedRemainingMs !== undefined;
@@ -61,9 +63,9 @@ export const RestTimerBar: React.FC = () => {
     setSecondsLeft(remainingSec);
 
     if (remainingMs <= 0) {
-      handleFinish(true);
+      handleFinish(document.visibilityState !== 'hidden' || !restPushArmed);
     }
-  }, [activeRestTimer, isPaused, handleFinish]);
+  }, [activeRestTimer, isPaused, handleFinish, restPushArmed]);
 
   // Reset when initialSeconds, targetEndTime, or exercise/set changes
   useEffect(() => {
@@ -177,7 +179,7 @@ export const RestTimerBar: React.FC = () => {
     return (
       <div
         id="floating-mini-rest-timer"
-        className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 animate-slide-up pointer-events-auto max-w-[calc(100%-1.5rem)]"
+        className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-1.5 transition-all duration-300 animate-slide-up pointer-events-auto max-w-[calc(100%-1.5rem)]"
       >
         <div
           className={`rounded-full border shadow-2xl px-3.5 sm:px-4 py-2 backdrop-blur-2xl flex items-center gap-2.5 sm:gap-3 transition-all duration-300 ${
@@ -254,6 +256,7 @@ export const RestTimerBar: React.FC = () => {
             <X className="w-4 h-4" />
           </button>
         </div>
+        <RestPushPrompt />
       </div>
     );
   }
@@ -395,6 +398,9 @@ export const RestTimerBar: React.FC = () => {
             }`}
             style={{ width: `${progressPercent}%` }}
           />
+        </div>
+        <div className="mt-2">
+          <RestPushPrompt />
         </div>
       </div>
     </div>
