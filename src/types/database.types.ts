@@ -123,6 +123,40 @@ isOneToOne: false
       referencedColumns: ["user_id","id"]
     }
                   ]
+                },"push_subscriptions": {
+                  Row: {
+                    "auth": string,"created_at": string,"endpoint": string,"id": string,"p256dh": string,"updated_at": string,"user_agent": string | null,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "auth": string,"created_at"?: string,"endpoint": string,"id"?: string,"p256dh": string,"updated_at"?: string,"user_agent"?: string | null,"user_id": string
+                  }
+                  Update: {
+                    "auth"?: string,"created_at"?: string,"endpoint"?: string,"id"?: string,"p256dh"?: string,"updated_at"?: string,"user_agent"?: string | null,"user_id"?: string
+                  }
+                  Relationships: [
+
+                  ]
+                },"rest_push_schedules": {
+                  Row: {
+                    "attempts": number,"body": string,"created_at": string,"fire_at": string,"id": string,"last_error": string | null,"status": string,"subscription_id": string,"title": string,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "attempts"?: number,"body": string,"created_at"?: string,"fire_at": string,"id"?: string,"last_error"?: string | null,"status"?: string,"subscription_id": string,"title": string,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "attempts"?: number,"body"?: string,"created_at"?: string,"fire_at"?: string,"id"?: string,"last_error"?: string | null,"status"?: string,"subscription_id"?: string,"title"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "rest_push_schedules_subscription_id_fkey"
+      columns: ["subscription_id"]
+isOneToOne: false
+      referencedRelation: "push_subscriptions"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"rm_logs": {
                   Row: {
                     "category": string | null,"created_at": string,"definition_id": string | null,"deleted_at": string | null,"exercise_name": string,"id": string,"server_revision": number,"server_updated_at": string,"updated_at": string,"user_id": string
@@ -269,11 +303,34 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "get_sync_entitlement":
+            "cancel_rest_push":
+{ Args: { "p_endpoint": string }; Returns: undefined
+                           },
+"claim_due_rest_pushes":
+{ Args: { "p_limit"?: number }; Returns: {
+              "auth": string,"body": string,"endpoint": string,"fire_at": string,"p256dh": string,"schedule_id": string,"title": string
+            }[]
+                           },
+"complete_rest_push":
+{ Args: { "p_error"?: string,"p_schedule_id": string,"p_status": string }; Returns: undefined
+                           },
+"delete_push_subscription":
+{ Args: { "p_endpoint": string }; Returns: undefined
+                           },
+"get_sync_entitlement":
 { Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"remove_push_subscription_by_endpoint":
+{ Args: { "p_endpoint": string }; Returns: undefined
+                           },
+"schedule_rest_push":
+{ Args: { "p_body": string,"p_delay_ms": number,"p_endpoint": string,"p_title": string }; Returns: string
                            },
 "sync_push":
 { Args: { "p_changes": Json,"p_contract_version"?: number,"p_operation_id": string }; Returns: Json
+                           },
+"upsert_push_subscription":
+{ Args: { "p_auth": string,"p_endpoint": string,"p_p256dh": string,"p_user_agent"?: string }; Returns: string
                            }
           }
           Enums: {

@@ -2,7 +2,7 @@
 
 Index of the human-facing documentation for WorkoutLog, a local-first workout tracker (React PWA + Supabase).
 
-Last verified: 2026-10-13
+Last verified: 2026-10-14
 
 ## Start here
 
@@ -62,6 +62,7 @@ The root [`README.md`](../README.md) is the short project summary; this folder h
 | [0007](decisions/0007-pnpm-package-manager.md) | pnpm is the package manager. |
 | [0008](decisions/0008-sync-contract-source-and-version.md) | Typed sync contract manifest, private SQL metadata, parity check, and client version gate. |
 | [0009](decisions/0009-zustand-app-store.md) | One Zustand app store with lifecycle adapters for persistence, auth, and sync. |
+| [0010](decisions/0010-server-scheduled-rest-push.md) | Server-scheduled Web Push for rest timer completion. |
 
 ### Work logs
 
