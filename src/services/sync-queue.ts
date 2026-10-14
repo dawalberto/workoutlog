@@ -743,9 +743,7 @@ function applyRoutineChange(value: unknown, change: SyncRemoteChange): Routine[]
 function applyRoutineExerciseChange(value: unknown, change: SyncRemoteChange): Routine[] {
   const routines = arrayOf<Routine>(value);
   const routineId = stringValue(change.record, 'routine_id', '');
-  if (change.deletedAt !== null && !routines.some((routine) => routine.id === routineId)) {
-    return routines;
-  }
+  if (!routines.some((routine) => routine.id === routineId)) return routines;
   const exerciseId = stringValue(change.record, 'id', change.id);
   const position = integerValue(change.record, 'position', 0);
   return updateRoutine(routines, routineId, (routine) => {
@@ -778,15 +776,12 @@ function applyWorkoutSetChange(value: unknown, change: SyncRemoteChange): Routin
   const routineId = stringValue(change.record, 'routine_id', '');
   const exerciseId = stringValue(change.record, 'routine_exercise_id', '');
   if (
-    change.deletedAt !== null &&
     !routines.some(
       (routine) =>
         routine.id === routineId &&
         routine.exercises.some((exercise) => exercise.id === exerciseId),
     )
-  ) {
-    return routines;
-  }
+  ) return routines;
   const setId = stringValue(change.record, 'id', change.id);
   const position = integerValue(change.record, 'position', 0);
   return updateRoutine(routines, routineId, (routine) => ({
@@ -845,12 +840,8 @@ function applyCompletedSetChange(
   const sessions = isRecord(value) ? (value as Record<string, ActiveWorkoutSession>) : {};
   const routineId = stringValue(change.record, 'routine_id', '');
   const setId = stringValue(change.record, 'set_id', '');
-  if (change.deletedAt !== null && !sessions[routineId]) return sessions;
-  const current = sessions[routineId] ?? {
-    routineId,
-    startTime: 0,
-    completedSetIds: [],
-  };
+  const current = sessions[routineId];
+  if (!current) return sessions;
   const completedSetIds =
     change.deletedAt !== null
       ? current.completedSetIds.filter((id) => id !== setId)
@@ -890,7 +881,7 @@ function applyRmLogChange(value: unknown, change: SyncRemoteChange): ExerciseRmL
 function applyRmRecordChange(value: unknown, change: SyncRemoteChange): ExerciseRmLog[] {
   const logs = arrayOf<ExerciseRmLog>(value);
   const logId = stringValue(change.record, 'log_id', '');
-  if (change.deletedAt !== null && !logs.some((log) => log.id === logId)) return logs;
+  if (!logs.some((log) => log.id === logId)) return logs;
   const recordId = stringValue(change.record, 'id', change.id);
   return updateRmLog(logs, logId, (log) => {
     if (change.deletedAt !== null) {
@@ -964,10 +955,7 @@ function applyWorkoutHistoryExerciseChange(
 ): WorkoutHistoryLog[] {
   const logs = arrayOf<WorkoutHistoryLog>(value);
   const historyId = stringValue(change.record, 'history_id', '');
-  if (change.deletedAt !== null && !logs.some((log) => log.id === historyId)) return logs;
-  if (!logs.some((log) => log.id === historyId)) {
-    throw new Error('Workout history exercise has no matching history record.');
-  }
+  if (!logs.some((log) => log.id === historyId)) return logs;
   const position = requiredNonNegativeIntegerValue(change.record, 'position');
   return updateWorkoutHistory(logs, historyId, (history) => {
     const positionedExercises = history.exercisesSummary.map(
@@ -1044,9 +1032,7 @@ function applyExerciseDiaryEntryChange(
 ): ExerciseDiary[] {
   const diaries = arrayOf<ExerciseDiary>(value);
   const diaryId = stringValue(change.record, 'diary_id', '');
-  if (change.deletedAt !== null && !diaries.some((diary) => diary.id === diaryId)) {
-    return diaries;
-  }
+  if (!diaries.some((diary) => diary.id === diaryId)) return diaries;
   const entryId = stringValue(change.record, 'id', change.id);
   return updateExerciseDiary(diaries, diaryId, (diary) => {
     if (change.deletedAt !== null) {

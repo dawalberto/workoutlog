@@ -2,7 +2,7 @@
 
 What the Supabase backend contains — schema, RLS, RPCs, auth, migrations — and what it deliberately does not contain.
 
-Last verified: 2026-10-13
+Last verified: 2026-10-14
 
 ## At a glance
 
@@ -62,12 +62,13 @@ Grants: the initial migration grants `SELECT, INSERT, UPDATE` to `authenticated`
 
 | Function | Security | Access | Purpose |
 |---|---|---|---|
-| `public.sync_push(p_operation_id uuid, p_changes jsonb, p_contract_version integer DEFAULT NULL) returns jsonb` | `SECURITY DEFINER`, `search_path = pg_catalog, private` | `authenticated` | Validated, idempotent batch of 1–100 upserts/deletes; checks the contract version and returns `{ operationId, changes[] }` with new revisions |
+| `public.sync_push(p_operation_id uuid, p_changes jsonb, p_contract_version integer DEFAULT NULL) returns jsonb` | `SECURITY DEFINER`, `search_path = pg_catalog, private` | `authenticated` | Validated, idempotent batch of 1–100 upserts/deletes; child upserts under tombstoned parents and live descendants of newly tombstoned parents receive tombstones with new revisions |
 | `public.get_sync_entitlement() returns jsonb` | `SECURITY INVOKER`, `search_path = pg_catalog` | `authenticated` only | Returns `{ eligible: true }`; raises `28000` if unauthenticated |
 
 - Latest `sync_push`: [`20261013183000_sync_contract_metadata_and_version.sql`](../../supabase/migrations/20261013183000_sync_contract_metadata_and_version.sql) (metadata, version gate, grant/revoke). Prior: `20261010111000_preserve_history_metrics_in_sync_push.sql`, `20261010100000_allow_authenticated_account_sync.sql`, `20261007150000_add_sync_push.sql`.
 - `get_sync_entitlement`: [`20261010110000_remove_stripe_billing_add_sync_entitlement.sql`](../../supabase/migrations/20261010110000_remove_stripe_billing_add_sync_entitlement.sql) lines 59–78.
 - Idempotency: receipts keyed by `(user_id, operation_id)` with a SHA-256 payload hash (pgcrypto in `extensions`). Same ID + same payload → stored response; same ID + different payload → `sync_operation_conflict`.
+- Child upserts whose referenced parent is tombstoned ignore their base revision, remain tombstoned, and are acknowledged normally; stale child edits cannot resurrect them or wedge the outbox. Parent tombstones also cascade atomically through owner-scoped live descendants; each update advances `server_revision` through the sync metadata trigger. The migration's repair applies this cascade to existing data. A completely missing parent still follows the foreign-key error path.
 
 ### `sync_push` errors
 
@@ -122,7 +123,8 @@ Production redirect URLs are configured in the Supabase dashboard (Auth > URL co
 | `20261010110000_remove_stripe_billing_add_sync_entitlement` | Drops all billing objects; adds `get_sync_entitlement` | Active |
 | `20261010111000_preserve_history_metrics_in_sync_push` | Previous `sync_push` definition | Superseded |
 | `20261013155500_revoke_direct_sync_table_writes` | Restricts synced-table client writes to `sync_push`; keeps pull reads | Active |
-| `20261013183000_sync_contract_metadata_and_version` | Private contract metadata, version gate, and `sync_push` whitelist driven by metadata | **Active (latest)** |
+| `20261013183000_sync_contract_metadata_and_version` | Private contract metadata, version gate, and `sync_push` whitelist driven by metadata | Active |
+| `20261014154300_tombstone_children_of_deleted_parents` | Guards child upserts, cascades parent tombstones, and repairs existing live descendants | **Active (latest)** |
 
 Billing context: [ADR 0005](../decisions/0005-remove-billing-signed-in-sync.md).
 
