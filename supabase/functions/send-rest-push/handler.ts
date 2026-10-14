@@ -98,44 +98,79 @@ export function createHandler(deps: HandlerDependencies): (request: Request) => 
         counts.claimed += schedules.length;
 
         await forEachBounded(schedules, SEND_CONCURRENCY, async (schedule) => {
-          if (!(deps.isEndpointAllowed ?? isAllowedPushEndpoint)(schedule.endpoint)) {
-            await deps.rpc.complete(schedule.schedule_id, 'failed', 'endpoint_not_allowed');
-            await deps.rpc.remove(schedule.endpoint);
-            counts.failed++;
-            counts.removed++;
-            return;
-          }
-          if (!await deps.rpc.isSending(schedule.schedule_id)) return;
-
-          const payload: PushPayload = {
-            title: schedule.title,
-            body: schedule.body,
-            tag: 'rest-timer',
-            url: '/workoutlog/',
-            scheduleId: schedule.schedule_id,
-            fireAt: schedule.fire_at,
-          };
-
+          let failureCode = 'status_check_failed';
           try {
-            await deps.sendPush(
-              {
-                endpoint: schedule.endpoint,
-                keys: { p256dh: schedule.p256dh, auth: schedule.auth },
-              },
-              payload,
-            );
-            await deps.rpc.complete(schedule.schedule_id, 'sent');
-            counts.sent++;
-          } catch (error) {
-            if (isGone(error)) {
+            if (!(deps.isEndpointAllowed ?? isAllowedPushEndpoint)(schedule.endpoint)) {
+              failureCode = 'endpoint_not_allowed';
+              console.error(
+                'rest_push_schedule_failed',
+                failureCode,
+                schedule.schedule_id,
+              );
+              await deps.rpc.complete(schedule.schedule_id, 'failed', failureCode);
               await deps.rpc.remove(schedule.endpoint);
-              await deps.rpc.complete(schedule.schedule_id, 'failed', 'gone');
               counts.failed++;
               counts.removed++;
               return;
             }
+            if (!await deps.rpc.isSending(schedule.schedule_id)) return;
 
-            await deps.rpc.complete(schedule.schedule_id, 'failed', 'delivery_failed');
+            const payload: PushPayload = {
+              title: schedule.title,
+              body: schedule.body,
+              tag: 'rest-timer',
+              url: '/workoutlog/',
+              scheduleId: schedule.schedule_id,
+              fireAt: schedule.fire_at,
+            };
+
+            failureCode = 'delivery_failed';
+            try {
+              await deps.sendPush(
+                {
+                  endpoint: schedule.endpoint,
+                  keys: { p256dh: schedule.p256dh, auth: schedule.auth },
+                },
+                payload,
+              );
+            } catch (error) {
+              console.error(
+                'rest_push_delivery_failed',
+                shortErrorCode(error),
+                schedule.schedule_id,
+              );
+              if (isGone(error)) {
+                failureCode = 'gone';
+                await deps.rpc.remove(schedule.endpoint);
+                await deps.rpc.complete(schedule.schedule_id, 'failed', failureCode);
+                counts.failed++;
+                counts.removed++;
+                return;
+              }
+
+              await deps.rpc.complete(schedule.schedule_id, 'failed', failureCode);
+              counts.failed++;
+              return;
+            }
+
+            failureCode = 'completion_failed';
+            await deps.rpc.complete(schedule.schedule_id, 'sent');
+            counts.sent++;
+          } catch (error) {
+            console.error(
+              'rest_push_schedule_failed',
+              shortErrorCode(error),
+              schedule.schedule_id,
+            );
+            try {
+              await deps.rpc.complete(schedule.schedule_id, 'failed', failureCode);
+            } catch (completionError) {
+              console.error(
+                'rest_push_completion_failed',
+                shortErrorCode(completionError),
+                schedule.schedule_id,
+              );
+            }
             counts.failed++;
           }
         });
@@ -144,10 +179,31 @@ export function createHandler(deps: HandlerDependencies): (request: Request) => 
       }
 
       return json(counts, 200);
-    } catch {
+    } catch (error) {
+      console.error('rest_push_dispatch_failed', shortErrorCode(error));
       return json({ error: 'dispatch_failed' }, 500);
     }
   };
+}
+
+function shortErrorCode(error: unknown): string {
+  if (typeof error === 'object' && error !== null && 'code' in error) {
+    const code = error.code;
+    if (typeof code === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(code)) return code;
+  }
+  if (typeof error === 'object' && error !== null) {
+    const status = 'statusCode' in error
+      ? error.statusCode
+      : 'status' in error
+      ? error.status
+      : undefined;
+    if (typeof status === 'number' && status >= 100 && status <= 599) return String(status);
+  }
+  if (error instanceof Error) {
+    if (/^[A-Za-z0-9_-]{1,64}$/.test(error.message)) return error.message;
+    if (/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(error.name)) return error.name;
+  }
+  return 'unknown_error';
 }
 
 function constantTimeEquals(left: string, right: string): boolean {

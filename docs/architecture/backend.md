@@ -71,6 +71,7 @@ Grants: the initial migration grants `SELECT, INSERT, UPDATE` to `authenticated`
 | `public.claim_due_rest_pushes(integer) returns table` | `SECURITY DEFINER`, empty search path | `service_role` only | Atomically claims due schedules; fails sending rows stale for more than 60 seconds |
 | `public.complete_rest_push(uuid, text, text) returns void` | `SECURITY DEFINER`, empty search path | `service_role` only | Marks a schedule sent or failed only while it remains in `sending` |
 | `public.remove_push_subscription_by_endpoint(text) returns void` | `SECURITY DEFINER`, empty search path | `service_role` only | Deletes a subscription whose push endpoint is gone |
+| `public.is_rest_push_sending(uuid) returns boolean` | `SECURITY DEFINER`, stable, empty search path | `service_role` only | Checks a claimed schedule through an RPC; the sender has no direct schedule-table access |
 | `private.dispatch_due_rest_pushes() returns bigint` | `SECURITY DEFINER`, empty search path | Cron / database owner only | Calls `send-rest-push` through `pg_net` when a schedule is due and both Vault secrets exist |
 | `private.cleanup_rest_push() returns void` | `SECURITY DEFINER`, empty search path | Cron / database owner only | Removes final schedules and old cron run details |
 
@@ -85,7 +86,7 @@ The push tables are independent from the 12 synced workout tables and are not li
 
 The client can keep at most ten subscriptions per account. Registering another endpoint deletes the least recently refreshed rows first (`updated_at`, then `created_at`). There can be at most one `pending` schedule per subscription; rescheduling cancels its prior `pending` or `sending` row. Schedule delays are limited to 1 second through 2 hours.
 
-Subscription endpoints are restricted in both the database and the Edge Function to `fcm.googleapis.com`, `android.googleapis.com`, and subdomains of `push.apple.com`, `push.services.mozilla.com`, and `notify.windows.com`. The Edge Function checks this allowlist before sending and removes rejected subscriptions. Immediately before sending, it also verifies that the claimed schedule remains in `sending`; cancelled queued claims are skipped. Its pinned `web-push@3.6.7` sender uses Node's `https.request` transport, which does not automatically follow redirects.
+Subscription endpoints are restricted in both the database and the Edge Function to `fcm.googleapis.com`, `android.googleapis.com`, and subdomains of `push.apple.com`, `push.services.mozilla.com`, and `notify.windows.com`. The Edge Function checks this allowlist before sending and removes rejected subscriptions. Immediately before sending, it calls `public.is_rest_push_sending` to verify that the claimed schedule remains in `sending`; the check runs as `service_role` through a narrowly granted RPC, not a direct table read. Cancelled queued claims are skipped. Its pinned `web-push@3.6.7` sender uses Node's `https.request` transport, which does not automatically follow redirects.
 
 `pg_cron` runs `private.dispatch_due_rest_pushes()` every two seconds. It returns without an HTTP request when no rows are due, or when either Vault secret is absent. With both secrets present, it enqueues a `net.http_post` request to the Edge Function. `public.claim_due_rest_pushes` uses `FOR UPDATE SKIP LOCKED`, so concurrent function invocations claim disjoint rows. The Edge Function reports each result with `complete_rest_push`; for expired endpoints it calls `remove_push_subscription_by_endpoint`.
 
@@ -173,7 +174,8 @@ Production redirect URLs are configured in the Supabase dashboard (Auth > URL co
 | `20261013183000_sync_contract_metadata_and_version` | Private contract metadata, version gate, and `sync_push` whitelist driven by metadata | Active |
 | `20261014154300_tombstone_children_of_deleted_parents` | Guards child upserts, cascades parent tombstones, and repairs existing live descendants | Active |
 | `20261014171406_rest_timer_push` | Web Push subscriptions/schedules, RPC access, `pg_cron` dispatch and cleanup | Active |
-| `20261014200000_harden_rest_push` | Web Push host allowlist, cleanup of invalid subscriptions, and cancellation-safe schedule transitions | **Active (latest)** |
+| `20261014200000_harden_rest_push` | Web Push host allowlist, cleanup of invalid subscriptions, and cancellation-safe schedule transitions | Active |
+| `20261014210000_rest_push_sending_check` | Adds the service-role-only schedule status RPC without granting direct table access | **Active (latest)** |
 
 Billing context: [ADR 0005](../decisions/0005-remove-billing-signed-in-sync.md).
 

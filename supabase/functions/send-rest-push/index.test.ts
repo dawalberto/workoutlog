@@ -273,6 +273,61 @@ deno.test('skips a claimed schedule cancelled before its push request starts', a
   equal(completed, false);
 });
 
+deno.test('marks a schedule failed when its sending status check rejects', async () => {
+  const completed: unknown[][] = [];
+  const dependencies = createDependencies({
+    rpc: {
+      claim: async () => [schedule],
+      isSending: async () => {
+        throw new Error('schedule_status_failed');
+      },
+      complete: async (...args: unknown[]) => completed.push(args),
+      remove: async () => undefined,
+    },
+  });
+  const response = await createHandler(dependencies)(post());
+
+  equal(response.status, 200);
+  deepEqual(await response.json(), {
+    claimed: 1,
+    sent: 0,
+    failed: 1,
+    removed: 0,
+    rounds: 1,
+  });
+  deepEqual(completed, [['schedule-1', 'failed', 'status_check_failed']]);
+});
+
+deno.test('continues the batch when completing a failed schedule rejects', async () => {
+  const nextSchedule = { ...schedule, schedule_id: 'schedule-2' };
+  const completed: unknown[][] = [];
+  const dependencies = createDependencies({
+    rpc: {
+      claim: async () => [schedule, nextSchedule],
+      isSending: async (scheduleId: string) => {
+        if (scheduleId === schedule.schedule_id) throw new Error('schedule_status_failed');
+        return true;
+      },
+      complete: async (...args: unknown[]) => {
+        if (args[0] === schedule.schedule_id) throw new Error('completion_failed');
+        completed.push(args);
+      },
+      remove: async () => undefined,
+    },
+  });
+  const response = await createHandler(dependencies)(post());
+
+  equal(response.status, 200);
+  deepEqual(await response.json(), {
+    claimed: 2,
+    sent: 1,
+    failed: 1,
+    removed: 0,
+    rounds: 1,
+  });
+  deepEqual(completed, [['schedule-2', 'sent']]);
+});
+
 deno.test('sends RFC 8291 encrypted Web Push with VAPID and decryptable payload', async () => {
   const vapidKeys = await crypto.subtle.generateKey(
     { name: 'ECDSA', namedCurve: 'P-256' },

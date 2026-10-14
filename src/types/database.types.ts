@@ -320,6 +320,9 @@ isOneToOne: false
 "get_sync_entitlement":
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
+"is_rest_push_sending":
+{ Args: { "p_schedule_id": string }; Returns: boolean
+                           },
 "remove_push_subscription_by_endpoint":
 { Args: { "p_endpoint": string }; Returns: undefined
                            },

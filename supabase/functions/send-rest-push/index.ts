@@ -32,14 +32,11 @@ const rpc: DispatchRpc = {
   },
   async isSending(scheduleId) {
     if (!supabase) throw new Error('configuration_missing');
-    const { data, error } = await supabase
-      .from('rest_push_schedules')
-      .select('id')
-      .eq('id', scheduleId)
-      .eq('status', 'sending')
-      .maybeSingle();
+    const { data, error } = await supabase.rpc('is_rest_push_sending', {
+      p_schedule_id: scheduleId,
+    });
     if (error) throw new Error('schedule_status_failed');
-    return data !== null;
+    return data as boolean;
   },
   async complete(scheduleId, status, errorMessage) {
     if (!supabase) throw new Error('configuration_missing');
