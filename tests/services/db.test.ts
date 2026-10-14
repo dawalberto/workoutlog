@@ -1,6 +1,7 @@
 import { IDBFactory } from 'fake-indexeddb';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Routine } from '../../src/types';
+import { syncRecordId } from '../../src/services/sync-queue';
+import type { Routine, WorkoutHistoryLog } from '../../src/types';
 
 type DbModule = typeof import('../../src/services/db');
 
@@ -89,6 +90,143 @@ afterEach(async () => {
 });
 
 describe('IndexedDB storage', () => {
+  it('commits a tombstone followed by an orphan child and preserves pending operations', async () => {
+    const scope = { ownerId: 'history-tombstone-owner' };
+    const history = {
+      id: 'history-tombstone',
+      routineId: 'routine-1',
+      routineName: 'Saved routine',
+      startTime: 1700000000000,
+      endTime: 1700000300000,
+      durationSeconds: 300,
+      completedSetsCount: 1,
+      totalSetsCount: 1,
+      completionPercentage: 100,
+      exercisesSummary: [
+        { name: 'Existing exercise', completedSets: 1, totalSets: 1, position: 0 },
+      ],
+      completedAt: '2024-01-01T00:05:00.000Z',
+    };
+    await storage.setScopedStoredItem(storage.DB_KEYS.WORKOUT_HISTORY, [history], scope);
+    for (const operation of await storage.getPendingSyncOperations(scope)) {
+      const change = operation.request.changes[0]!;
+      await storage.acknowledgeSyncOperation(
+        operation.request.operationId,
+        {
+          table: change.table,
+          id: syncRecordId(change.table, change.record),
+          revision: '2',
+          deletedAt: null,
+        },
+        scope,
+      );
+    }
+    await storage.setScopedStoredItem(
+      storage.DB_KEYS.ROUTINES,
+      [{ id: 'pending-routine', name: 'Pending routine', exercises: [] }],
+      scope,
+    );
+    await storage.setServerCursor('5', scope);
+    const outboxBefore = await storage.getPendingSyncOperations(scope);
+    const childRecord = {
+      history_id: history.id,
+      position: 0,
+      exercise_name: 'Sentadilla',
+      sets_completed: 3,
+      sets_total: 3,
+    };
+
+    await storage.applyRemoteSyncChanges(
+      [
+        {
+          table: 'workout_history',
+          id: history.id,
+          revision: '6',
+          deletedAt: '2024-01-02T00:00:00.000Z',
+          record: { id: history.id },
+        },
+        {
+          table: 'workout_history_exercises',
+          id: syncRecordId('workout_history_exercises', childRecord),
+          revision: '7',
+          deletedAt: null,
+          record: childRecord,
+        },
+        {
+          table: 'exercise_definitions',
+          id: 'remote-definition',
+          revision: '8',
+          deletedAt: null,
+          record: { name: 'Press' },
+        },
+      ],
+      '8',
+      scope,
+    );
+
+    expect(await storage.getScopedStoredItem(storage.DB_KEYS.WORKOUT_HISTORY, [], scope)).toEqual([]);
+    expect(await storage.getScopedStoredItem(storage.DB_KEYS.CATALOG, [], scope)).toEqual([
+      expect.objectContaining({ id: 'remote-definition', name: 'Press' }),
+    ]);
+    expect(await storage.getServerCursor(scope)).toBe('8');
+    expect(await storage.getPendingSyncOperations(scope)).toEqual(outboxBefore);
+  });
+
+  it('applies a history child even when its parent appears later in the pull batch', async () => {
+    const historyId = 'history-out-of-order';
+    const childRecord = {
+      history_id: historyId,
+      position: 0,
+      exercise_name: 'Sentadilla',
+      sets_completed: 3,
+      sets_total: 3,
+    };
+
+    await storage.applyRemoteSyncChanges(
+      [
+        {
+          table: 'workout_history_exercises',
+          id: syncRecordId('workout_history_exercises', childRecord),
+          revision: '2',
+          deletedAt: null,
+          record: childRecord,
+        },
+        {
+          table: 'workout_history',
+          id: historyId,
+          revision: '3',
+          deletedAt: null,
+          record: {
+            id: historyId,
+            routine_id: 'routine-1',
+            routine_name: 'Saved routine',
+            started_at: '2024-01-01T00:00:00.000Z',
+            completed_at: '2024-01-01T00:05:00.000Z',
+            duration_seconds: 300,
+            sets_completed: 3,
+            total_sets_count: 3,
+            completion_percentage: 100,
+          },
+        },
+      ],
+      '3',
+    );
+
+    const histories = await storage.getScopedStoredItem<WorkoutHistoryLog[]>(
+      storage.DB_KEYS.WORKOUT_HISTORY,
+      [],
+    );
+    expect(histories).toHaveLength(1);
+    expect(histories[0]!.exercisesSummary).toEqual([
+      {
+        name: 'Sentadilla',
+        completedSets: 3,
+        totalSets: 3,
+        position: 0,
+      },
+    ]);
+  });
+
   it('merges edits during refresh while retaining remote additions and local deletions', () => {
     const baseline = [{ id: 'edit', name: 'Old' }, { id: 'deleted', name: 'Delete' }];
     const current = [{ id: 'edit', name: 'Typed during refresh' }];

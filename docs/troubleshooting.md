@@ -2,7 +2,7 @@
 
 Symptom → cause → fix for common WorkoutLog development and runtime problems.
 
-Last verified: 2026-10-11
+Last verified: 2026-10-14
 
 ## Quick index
 
@@ -42,6 +42,7 @@ States come from [`useSync`](../src/hooks/useSync.ts) and are shown by [`SyncSta
 | "Error de sincronización" + network message | Offline, Supabase down, or project paused | Check connectivity / Supabase dashboard; resume the project; press "Reintentar". |
 | "…stopped after 3 queue drain rounds; pending changes are retained." | Edits kept arriving during a push pass (`MAX_PUSH_DRAIN_ROUNDS = 3`) | Expected under heavy editing; the next trigger or Retry continues. |
 | "Sync stopped after repeated stale revisions." / "could not reconcile the server revision conflict" | Another device keeps changing the same records, or a local op cannot be reconciled after a full pull | Retry. If persistent, inspect `sync_outbox` in DevTools → IndexedDB → `WorkoutLogDB`, and the server row's `server_revision`/`deleted_at`. |
+| `sync_stale_revision_conflict` with "has no matching history record" | A live history-exercise row can remain after its parent history is tombstoned or absent, aborting older clients' pull transaction | Update/reload the app. Updated clients apply parents before children, drop orphan summaries, advance the cursor, and retain pending outbox changes. |
 | "Sync push was rejected; pending changes are retained." | Server rejected the payload (SQLSTATE `22`, `23`, `28`, `42`, `P0001`), e.g. `sync_change_field_not_allowed` after a contract mismatch | Check that the deployed migration matches the client (see [contract evolution](architecture/frontend-backend-strategy.md#evolving-without-breaking-clients)). |
 | "…required parent is missing (foreign key violation)." | Child pushed without its required parent on the server | Check outbox order and that the parent exists locally; see [FK repair](architecture/frontend-backend-strategy.md#fk-23503-repair). |
 | "Sync rejected a reused operation ID with a different payload." | Outbox entry mutated without a new operation ID | Bug: operation payload changes must get a fresh UUID. |

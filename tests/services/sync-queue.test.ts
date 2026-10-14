@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  applyRemoteSyncChange,
   orderSyncOperations,
   optionalSyncReference,
   type SyncPushChange,
@@ -34,6 +35,93 @@ function operation(
 }
 
 describe('sync queue ordering', () => {
+  it('drops a remote history exercise when its parent history is missing', () => {
+    const record = {
+      history_id: 'missing-history',
+      position: 0,
+      exercise_name: 'Sentadilla',
+      sets_completed: 3,
+      sets_total: 3,
+    };
+
+    expect(() =>
+      applyRemoteSyncChange([], {
+        table: 'workout_history_exercises',
+        id: JSON.stringify(['missing-history', 0]),
+        revision: '1',
+        deletedAt: null,
+        record,
+      }),
+    ).not.toThrow();
+    expect(
+      applyRemoteSyncChange([], {
+        table: 'workout_history_exercises',
+        id: JSON.stringify(['missing-history', 0]),
+        revision: '1',
+        deletedAt: null,
+        record,
+      }),
+    ).toEqual([]);
+  });
+
+  it('drops other nested child upserts when their required parents are missing', () => {
+    const change = (
+      table: SyncTable,
+      id: string,
+      record: Record<string, unknown>,
+    ) => ({
+      table,
+      id,
+      revision: '1',
+      deletedAt: null,
+      record,
+    });
+
+    expect(
+      applyRemoteSyncChange(
+        [],
+        change('routine_exercises', 'exercise', {
+          id: 'exercise',
+          routine_id: 'missing-routine',
+        }),
+      ),
+    ).toEqual([]);
+    expect(
+      applyRemoteSyncChange(
+        [],
+        change('workout_sets', 'set', {
+          id: 'set',
+          routine_id: 'missing-routine',
+          routine_exercise_id: 'missing-exercise',
+        }),
+      ),
+    ).toEqual([]);
+    expect(
+      applyRemoteSyncChange(
+        {},
+        change('active_session_completed_sets', 'completion', {
+          routine_id: 'missing-routine',
+          set_id: 'missing-set',
+        }),
+      ),
+    ).toEqual({});
+    expect(
+      applyRemoteSyncChange(
+        [],
+        change('rm_records', 'record', { id: 'record', log_id: 'missing-log' }),
+      ),
+    ).toEqual([]);
+    expect(
+      applyRemoteSyncChange(
+        [],
+        change('exercise_diary_entries', 'entry', {
+          id: 'entry',
+          diary_id: 'missing-diary',
+        }),
+      ),
+    ).toEqual([]);
+  });
+
   it.each(['routine_exercises', 'rm_logs', 'exercise_diaries', 'workout_history'] as const)(
     'identifies only the optional snapshot reference for %s',
     (table) => {
