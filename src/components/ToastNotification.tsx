@@ -5,18 +5,11 @@
 
 import React, { useEffect } from 'react';
 import { CheckCircle2, X } from 'lucide-react';
+import { useToast } from '../hooks/shell/useToast';
 
-export interface ToastNotificationProps {
-  message: string | null;
-  onClose: () => void;
-  durationMs?: number;
-}
-
-export const ToastNotification: React.FC<ToastNotificationProps> = ({
-  message,
-  onClose,
-  durationMs = 4000,
-}) => {
+export const ToastNotification: React.FC = () => {
+  const { message, onClose } = useToast();
+  const durationMs = 4000;
   useEffect(() => {
     if (!message) return;
     const timer = setTimeout(() => {
@@ -24,7 +17,7 @@ export const ToastNotification: React.FC<ToastNotificationProps> = ({
     }, durationMs);
 
     return () => clearTimeout(timer);
-  }, [message, durationMs, onClose]);
+  }, [message, onClose]);
 
   if (!message) return null;
 

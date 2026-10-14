@@ -46,18 +46,12 @@ const exercises: ExerciseDefinition[] = [
   },
 ];
 
-const catalogProps = {
-  exercises,
-  rmLogs: [],
-  exerciseDiary: [],
-  onCreateExercise: vi.fn(),
-  onUpdateExercise: vi.fn(),
-  onDeleteExercise: vi.fn(),
-};
-
-afterEach(() => {
+afterEach(async () => {
   vi.doUnmock('react');
+  vi.doUnmock('../src/hooks/routine/useAddExerciseModal');
   vi.resetModules();
+  const { resetAppStore } = await import('./store-test-utils');
+  resetAppStore();
 });
 
 async function renderCatalog(
@@ -67,6 +61,10 @@ async function renderCatalog(
 ) {
   vi.doUnmock('react');
   vi.resetModules();
+  const storeTestUtils = await import('./store-test-utils');
+  storeTestUtils.seedPersistedAppStore({ catalog: exercises, rmLogs: [], exerciseDiary: [] });
+  storeTestUtils.seedAppStore({ openExerciseDiary: undefined as never });
+  storeTestUtils.useCurrentStateAsServerSnapshot();
 
   if (searchTerm !== undefined || selectedCategory !== undefined || additionalState.length > 0) {
     let stateIndex = 0;
@@ -89,7 +87,7 @@ async function renderCatalog(
   }
 
   const { ExerciseCatalog } = await import('../src/components/ExerciseCatalog');
-  return renderToStaticMarkup(<ExerciseCatalog {...catalogProps} />);
+  return renderToStaticMarkup(<ExerciseCatalog />);
 }
 
 describe('ExerciseCatalog characterization', () => {
@@ -98,15 +96,22 @@ describe('ExerciseCatalog characterization', () => {
   });
 
   it('preserves AddExerciseModal markup with the catalog tab open', async () => {
+    vi.doMock('../src/hooks/routine/useAddExerciseModal', () => ({
+      useAddExerciseModal: () => ({
+        catalog: exercises,
+        rmLogs: [],
+        exerciseDiary: [],
+        onOpenDiary: undefined,
+        addCatalogExercise: vi.fn(),
+        addCustomExercise: vi.fn(),
+      }),
+    }));
+    const storeTestUtils = await import('./store-test-utils');
+    storeTestUtils.seedPersistedAppStore({ catalog: exercises, rmLogs: [], exerciseDiary: [] });
+    storeTestUtils.seedAppStore({ openExerciseDiary: undefined as never });
+    storeTestUtils.useCurrentStateAsServerSnapshot();
     const { AddExerciseModal } = await import('../src/components/AddExerciseModal');
-    const markup = renderToStaticMarkup(
-      <AddExerciseModal
-        isOpen
-        onClose={vi.fn()}
-        catalog={exercises}
-        onAddExercise={vi.fn()}
-      />,
-    );
+    const markup = renderToStaticMarkup(<AddExerciseModal isOpen onClose={vi.fn()} />);
     expect(markup).toMatchSnapshot('add-exercise-modal-open');
   });
 

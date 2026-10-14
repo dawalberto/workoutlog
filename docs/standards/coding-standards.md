@@ -9,7 +9,7 @@ Last verified: 2026-10-13
 - TypeScript everywhere; `pnpm lint` (`tsc --noEmit`) is the only linter. No ESLint/Prettier — match the surrounding style.
 - Single quotes, semicolons, 2-space indentation, **relative imports**.
 - Components: `export const Name: React.FC<NameProps>` + `interface NameProps` in the same file. Export a component's props interface only when another module imports it; otherwise keep it module-private.
-- State lives in `App.tsx` and hooks; persist through `useAppStorage` / `src/services/db.ts`. A future refactor to one Zustand store is planned; do not introduce Zustand patterns or ad-hoc global state now.
+- Shared state and actions live in the Zustand store (`src/store/`); components and focused feature hooks read them through narrow `useAppStore` selectors. Persistence, auth, and sync are lifecycle adapters. Do not add React context or another global state mechanism ([ADR 0009](../decisions/0009-zustand-app-store.md)).
 - Code, identifiers, comments: **English**. UI copy: **Spanish**.
 - Text inputs commit on **blur**.
 - Style with Tailwind classes following the [UI skill](../../.github/skills/workoutlog-ui-style/SKILL.md).
@@ -21,7 +21,7 @@ Last verified: 2026-10-13
 |---|---|---|
 | Component file + export | PascalCase, one component per file | [`src/components/RoutineList.tsx`](../../src/components/RoutineList.tsx) → `RoutineList` |
 | Props | Export a component's props interface only when another module imports it; otherwise keep it module-private | `RmBadgeProps` in [`RmBadge.tsx`](../../src/components/RmBadge.tsx) |
-| Hook | `useThing` in `src/hooks/useThing.ts`, with `UseThingProps` / `UseThingReturn` | [`useRmTracker.ts`](../../src/hooks/useRmTracker.ts) |
+| Hook | `useThing` in `src/hooks/`, grouped by feature for component hooks | [`useRoutineExerciseList`](../../src/hooks/routine/useRoutineExerciseList.ts) |
 | Service | kebab-case or short lowercase file names | `sync-queue.ts`, `cloud-sync.ts`, `db.ts` |
 | Utility | camelCase file, pure functions | [`rmCalculations.ts`](../../src/utils/rmCalculations.ts) |
 | Constants | `UPPER_SNAKE_CASE` | `PULL_LIMIT`, `GUEST_ROUTINE_LIMIT` |
@@ -33,7 +33,7 @@ Last verified: 2026-10-13
 | Do | Don't |
 |---|---|
 | `export const SyncStatus: React.FC<SyncStatusProps> = ({ … }) => { … }` (all 31 components) | Default exports for components (only `App.tsx` uses a default export – legacy) |
-| Receive data and callbacks as props | Read IndexedDB or call Supabase from a component |
+| Container components select shared state/actions; reusable presentation leaves receive focused props | Read IndexedDB or call Supabase from a component |
 | Commit text/number fields on blur ([`ExerciseCard.tsx`](../../src/components/ExerciseCard.tsx) ~81, 522, 572) | Call `onUpdate…` on every keystroke (floods the outbox) |
 | Use Tailwind utility classes and the custom classes in [`src/index.css`](../../src/index.css) | CSS modules, styled-components, new global CSS for one component |
 | Inline `style` only for computed values (progress widths in `RestTimerBar`, `RoutineView`) | Inline `style` for static colors/spacing |
@@ -43,8 +43,8 @@ Last verified: 2026-10-13
 
 | Do | Don't |
 |---|---|
-| Keep persisted collections in App state; pass setters into hooks; return actions | Add ad-hoc global state mechanisms; do not introduce Zustand patterns before the planned single-store refactor |
-| Persist through `useAppStorage` → `setScopedStoredItem` | Write `localStorage` directly (legacy; migrated away) |
+| Keep shared state and actions in the Zustand store; select only what components need | Add React context or another global state mechanism |
+| Persist through the store adapter → `setScopedStoredItem` | Write `localStorage` directly (legacy; migrated away) |
 | Wait for hydration before reactive writes | Overwrite unloaded data with defaults |
 | Keep sync logic in `src/services/*` and `useSync` | Push to Supabase from feature hooks |
 
@@ -79,7 +79,7 @@ Last verified: 2026-10-13
 |---|---|
 | Default export + Apache SPDX header from AI Studio scaffold | [`src/App.tsx`](../../src/App.tsx) |
 | `{StrictMode}` import style without spaces and `.tsx` extension in import | [`src/main.tsx`](../../src/main.tsx) |
-| 700–1000-line components | `RmLogsView`, `DataBackupModal`, `ExerciseDiaryView`, `ExerciseCatalog`, `RoutineView` — split when touching heavily |
+| Large feature components | Split into focused components and per-component hooks when touching them heavily |
 
 `metadata.json` and the `DISABLE_HMR` check in [`vite.config.ts`](../../vite.config.ts) are intentionally retained so the repository can be reopened in Google AI Studio; do not remove them.
 

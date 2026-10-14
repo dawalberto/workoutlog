@@ -1,37 +1,26 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import type {
-  ActiveRestTimer,
-  ActiveWorkoutSession,
-  Routine,
-  RoutineSubMode,
-} from '../types';
+import { useAppStore } from '../store/appStore';
+import { selectActiveRoutine } from '../store/selectors';
 import { findActiveRoutineExerciseId } from '../utils/routineView';
+import { useWorkoutTimer } from './useWorkoutTimer';
 
-interface UseRoutineViewStateProps {
-  routine: Routine;
-  initialMode: RoutineSubMode;
-  session?: ActiveWorkoutSession | null;
-  activeRestTimer?: ActiveRestTimer | null;
-  onSaveRoutine: (updatedRoutine: Routine) => void;
-}
-
-export function useRoutineViewState({
-  routine,
-  initialMode,
-  session,
-  activeRestTimer,
-  onSaveRoutine,
-}: UseRoutineViewStateProps) {
-  const [subMode, setSubMode] = useState<RoutineSubMode>(initialMode);
-  const [isFinishConfirmOpen, setIsFinishConfirmOpen] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showReorderModal, setShowReorderModal] = useState(false);
+export function useRoutineViewState() {
+  const routine = useAppStore(selectActiveRoutine);
+  const session = useAppStore((state) =>
+    routine ? state.activeSessions[routine.id] : undefined,
+  );
+  const activeRestTimer = useAppStore((state) => state.activeRestTimer);
+  const subMode = useAppStore((state) => state.routineSubMode);
+  const elapsedSeconds = useWorkoutTimer(session?.startTime);
+  const saveRoutine = useAppStore((state) => state.saveRoutine);
   const [textDrafts, setTextDrafts] = useState<Record<string, string>>({});
 
   const routineFieldProps = (field: 'name' | 'notes') => {
-    const key = `${routine.id}:${field}`;
+    if (!routine) return undefined;
+    const currentRoutine = routine;
+    const key = `${currentRoutine.id}:${field}`;
     return {
-      value: textDrafts[key] ?? routine[field] ?? '',
+      value: textDrafts[key] ?? currentRoutine[field] ?? '',
       onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const value = event.target.value;
         setTextDrafts((drafts) => ({ ...drafts, [key]: value }));
@@ -44,8 +33,12 @@ export function useRoutineViewState({
           delete next[key];
           return next;
         });
-        if (value !== (routine[field] ?? '')) {
-          onSaveRoutine({ ...routine, [field]: value, updatedAt: new Date().toISOString() });
+        if (value !== (currentRoutine[field] ?? '')) {
+          saveRoutine({
+            ...currentRoutine,
+            [field]: value,
+            updatedAt: new Date().toISOString(),
+          });
         }
       },
       onKeyDown: (event: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -58,16 +51,17 @@ export function useRoutineViewState({
   };
 
   const findActiveExerciseId = useCallback(
-    () => findActiveRoutineExerciseId(routine, session, activeRestTimer),
-    [routine.exercises, routine.id, activeRestTimer, session?.completedSetIds],
+    () => routine ? findActiveRoutineExerciseId(routine, session, activeRestTimer) : '',
+    [routine, session, activeRestTimer],
   );
 
   const computeInitialCollapsed = useCallback((): Set<string> => {
+    const collapsed = new Set<string>();
+    if (!routine) return collapsed;
+
     const isSessionActive = Boolean(
       session?.startTime || (session?.completedSetIds && session.completedSetIds.length > 0),
     );
-    const collapsed = new Set<string>();
-
     if (isSessionActive && routine.exercises.length > 0) {
       const activeId = findActiveExerciseId();
       routine.exercises.forEach((exercise) => {
@@ -79,29 +73,34 @@ export function useRoutineViewState({
       });
     }
     return collapsed;
-  }, [routine.exercises, session?.startTime, session?.completedSetIds, findActiveExerciseId]);
+  }, [routine, session?.startTime, session?.completedSetIds, findActiveExerciseId]);
 
-  const [collapsedExerciseIds, setCollapsedExerciseIds] = useState<Set<string>>(computeInitialCollapsed);
-  const prevRoutineIdRef = useRef(routine.id);
+  const [collapsedExerciseIds, setCollapsedExerciseIds] = useState<Set<string>>(
+    computeInitialCollapsed,
+  );
+  const prevRoutineIdRef = useRef(routine?.id);
   useEffect(() => {
-    if (prevRoutineIdRef.current !== routine.id) {
-      prevRoutineIdRef.current = routine.id;
+    if (prevRoutineIdRef.current !== routine?.id) {
+      prevRoutineIdRef.current = routine?.id;
       setCollapsedExerciseIds(computeInitialCollapsed());
     }
-  }, [routine.id, computeInitialCollapsed]);
+  }, [routine?.id, computeInitialCollapsed]);
 
   const scrollContextRef = useRef({ findActiveExerciseId, session, routine });
   scrollContextRef.current = { findActiveExerciseId, session, routine };
   const activeExerciseId = findActiveExerciseId();
   useEffect(() => {
-    const { findActiveExerciseId: getActiveExerciseId, session: currentSession, routine: currentRoutine } =
-      scrollContextRef.current;
+    const {
+      findActiveExerciseId: getActiveExerciseId,
+      session: currentSession,
+      routine: currentRoutine,
+    } = scrollContextRef.current;
     const isSessionActive = Boolean(
       currentSession?.startTime ||
         (currentSession?.completedSetIds && currentSession.completedSetIds.length > 0),
     );
 
-    if (isSessionActive && currentRoutine.exercises.length > 0) {
+    if (currentRoutine && isSessionActive && currentRoutine.exercises.length > 0) {
       const activeId = getActiveExerciseId();
       if (activeId) {
         const timer = setTimeout(() => {
@@ -113,7 +112,7 @@ export function useRoutineViewState({
     } else {
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     }
-  }, [routine.id, session?.startTime, activeExerciseId]);
+  }, [routine?.id, session?.startTime, activeExerciseId]);
 
   const handleToggleCollapseExercise = (exerciseId: string) => {
     setCollapsedExerciseIds((previous) => {
@@ -125,18 +124,13 @@ export function useRoutineViewState({
   };
 
   return {
+    routine,
+    session,
     subMode,
-    setSubMode,
-    isFinishConfirmOpen,
-    setIsFinishConfirmOpen,
-    showAddModal,
-    setShowAddModal,
-    showReorderModal,
-    setShowReorderModal,
+    elapsedSeconds,
     routineFieldProps,
     collapsedExerciseIds,
     setCollapsedExerciseIds,
-    activeExerciseId,
     handleToggleCollapseExercise,
   };
 }

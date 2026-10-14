@@ -7,26 +7,18 @@ import {
   startRestAudioKeepAlive,
   stopRestAudioKeepAlive 
 } from '../utils/audioBeep';
+import { useRestTimerBar } from '../hooks/shell/useRestTimerBar';
 
-interface RestTimerBarProps {
-  initialSeconds: number;
-  targetEndTime?: number;
-  exerciseName?: string;
-  setNumber?: number;
-  isInsideActiveRoutine?: boolean;
-  onReturnToRoutine?: () => void;
-  onClose: () => void;
-}
-
-export const RestTimerBar: React.FC<RestTimerBarProps> = ({
-  initialSeconds,
-  targetEndTime,
-  exerciseName,
-  setNumber,
-  isInsideActiveRoutine = true,
-  onReturnToRoutine,
-  onClose,
-}) => {
+export const RestTimerBar: React.FC = () => {
+  const timer = useRestTimerBar();
+  if (!timer) return null;
+  const {
+    activeRestTimer,
+    isInsideActiveRoutine,
+    onReturnToRoutine,
+    onClose,
+  } = timer;
+  const { initialSeconds, targetEndTime, exerciseName, setNumber } = activeRestTimer;
   // Compute initial remaining time based on targetEndTime if available
   const getInitialRemaining = () => {
     if (targetEndTime) {

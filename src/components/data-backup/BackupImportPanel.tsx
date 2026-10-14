@@ -6,51 +6,36 @@ import {
   RefreshCw,
   Upload,
 } from 'lucide-react';
-import type { ParsedBackupData } from '../../utils/backup';
-
-type ImportMode = 'merge' | 'overwrite';
+import type {
+  BackupImportActions,
+  BackupImportState,
+} from '../../hooks/data-backup/useDataBackup';
 
 interface BackupImportPanelProps {
   fileInputRef: React.RefObject<HTMLInputElement | null>;
-  selectedFile: File | null;
-  parsedData: ParsedBackupData | null;
-  parseError: string | null;
-  importMode: ImportMode;
-  replaceDuplicateExercises: boolean;
-  onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onDrop: (event: React.DragEvent<HTMLDivElement>) => void;
-  onImportModeChange: (mode: ImportMode) => void;
-  onReplaceDuplicateExercisesChange: (replace: boolean) => void;
-  onResetFile: () => void;
+  state: BackupImportState;
+  actions: BackupImportActions;
 }
 
 export const BackupImportPanel: React.FC<BackupImportPanelProps> = ({
   fileInputRef,
-  selectedFile,
-  parsedData,
-  parseError,
-  importMode,
-  replaceDuplicateExercises,
-  onFileChange,
-  onDrop,
-  onImportModeChange,
-  onReplaceDuplicateExercisesChange,
-  onResetFile,
+  state,
+  actions,
 }) => (
   <div className="space-y-4">
     <input
       ref={fileInputRef}
       type="file"
       accept=".json,application/json"
-      onChange={onFileChange}
+      onChange={actions.onFileChange}
       className="hidden"
       id="file-input-backup"
     />
 
-    {!parsedData ? (
+    {!state.parsedData ? (
       <div
         onDragOver={(event) => event.preventDefault()}
-        onDrop={onDrop}
+        onDrop={actions.onDrop}
         onClick={() => fileInputRef.current?.click()}
         className="border-2 border-dashed border-white/20 hover:border-[#00FF87]/50 bg-black/25 hover:bg-black/35 rounded-2xl p-6 text-center cursor-pointer transition-colors"
       >
@@ -79,36 +64,36 @@ export const BackupImportPanel: React.FC<BackupImportPanelProps> = ({
             </span>
             <div className="min-w-0">
               <span className="text-xs font-bold text-white block truncate">
-                {selectedFile?.name}
+                {state.selectedFile?.name}
               </span>
               <div className="flex items-center gap-2 mt-0.5 text-[11px] text-zinc-400 flex-wrap">
-                {parsedData.hasExercises && (
+                {state.parsedData.hasExercises && (
                   <span className="text-[#00FF87] font-semibold">
-                    {parsedData.catalog.length} ejercicios
+                    {state.parsedData.catalog.length} ejercicios
                   </span>
                 )}
-                {parsedData.hasExercises && (parsedData.hasRoutines || parsedData.hasRmLogs || parsedData.hasHistory || parsedData.hasDiary) && <span>•</span>}
-                {parsedData.hasRoutines && (
+                {state.parsedData.hasExercises && (state.parsedData.hasRoutines || state.parsedData.hasRmLogs || state.parsedData.hasHistory || state.parsedData.hasDiary) && <span>•</span>}
+                {state.parsedData.hasRoutines && (
                   <span className="text-blue-400 font-semibold">
-                    {parsedData.routines.length} rutinas
+                    {state.parsedData.routines.length} rutinas
                   </span>
                 )}
-                {parsedData.hasRoutines && (parsedData.hasRmLogs || parsedData.hasHistory || parsedData.hasDiary) && <span>•</span>}
-                {parsedData.hasRmLogs && (
+                {state.parsedData.hasRoutines && (state.parsedData.hasRmLogs || state.parsedData.hasHistory || state.parsedData.hasDiary) && <span>•</span>}
+                {state.parsedData.hasRmLogs && (
                   <span className="text-amber-400 font-semibold">
-                    {parsedData.rmLogs.length} RMs
+                    {state.parsedData.rmLogs.length} RMs
                   </span>
                 )}
-                {parsedData.hasRmLogs && (parsedData.hasHistory || parsedData.hasDiary) && <span>•</span>}
-                {parsedData.hasHistory && (
+                {state.parsedData.hasRmLogs && (state.parsedData.hasHistory || state.parsedData.hasDiary) && <span>•</span>}
+                {state.parsedData.hasHistory && (
                   <span className="text-purple-400 font-semibold">
-                    {parsedData.workoutHistory.length} sesiones
+                    {state.parsedData.workoutHistory.length} sesiones
                   </span>
                 )}
-                {parsedData.hasHistory && parsedData.hasDiary && <span>•</span>}
-                {parsedData.hasDiary && (
+                {state.parsedData.hasHistory && state.parsedData.hasDiary && <span>•</span>}
+                {state.parsedData.hasDiary && (
                   <span className="text-teal-400 font-semibold">
-                    {parsedData.exerciseDiary.reduce((sum, diary) => sum + (diary.entries?.length || 0), 0)} notas diario ({parsedData.exerciseDiary.length} ejercicios)
+                    {state.parsedData.exerciseDiary.reduce((sum, diary) => sum + (diary.entries?.length || 0), 0)} notas diario ({state.parsedData.exerciseDiary.length} ejercicios)
                   </span>
                 )}
               </div>
@@ -117,7 +102,7 @@ export const BackupImportPanel: React.FC<BackupImportPanelProps> = ({
 
           <button
             type="button"
-            onClick={onResetFile}
+            onClick={actions.onResetFile}
             className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/[0.08] text-xs font-medium"
             title="Cambiar archivo"
           >
@@ -133,7 +118,7 @@ export const BackupImportPanel: React.FC<BackupImportPanelProps> = ({
           <label
             htmlFor="radio-import-merge"
             className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition-all ${
-              importMode === 'merge'
+              state.importMode === 'merge'
                 ? 'border-[#00FF87] bg-[#00FF87]/10 shadow-[0_0_12px_rgba(0,255,135,0.15)]'
                 : 'border-white/[0.08] bg-black/25 hover:bg-black/35'
             }`}
@@ -143,8 +128,8 @@ export const BackupImportPanel: React.FC<BackupImportPanelProps> = ({
               type="radio"
               name="importMode"
               value="merge"
-              checked={importMode === 'merge'}
-              onChange={() => onImportModeChange('merge')}
+              checked={state.importMode === 'merge'}
+              onChange={() => actions.onImportModeChange('merge')}
               className="mt-0.5 accent-[#00FF87] w-4 h-4 cursor-pointer"
             />
             <div className="space-y-1 min-w-0 flex-1">
@@ -160,7 +145,7 @@ export const BackupImportPanel: React.FC<BackupImportPanelProps> = ({
                 Añade los nuevos datos a tu biblioteca y rutinas sin perder lo que ya tienes guardado.
               </p>
 
-              {importMode === 'merge' && (
+              {state.importMode === 'merge' && (
                 <div className="mt-3 pt-2.5 border-t border-white/[0.08]">
                   <label
                     htmlFor="chk-replace-duplicates"
@@ -169,8 +154,8 @@ export const BackupImportPanel: React.FC<BackupImportPanelProps> = ({
                     <input
                       id="chk-replace-duplicates"
                       type="checkbox"
-                      checked={replaceDuplicateExercises}
-                      onChange={(event) => onReplaceDuplicateExercisesChange(event.target.checked)}
+                      checked={state.replaceDuplicateExercises}
+                      onChange={(event) => actions.onReplaceDuplicateExercisesChange(event.target.checked)}
                       className="mt-0.5 rounded accent-[#00FF87] w-3.5 h-3.5 cursor-pointer"
                     />
                     <div className="text-[11px] leading-snug">
@@ -178,7 +163,7 @@ export const BackupImportPanel: React.FC<BackupImportPanelProps> = ({
                         Si un ejercicio ya existe, sobrescribirlo con el del archivo
                       </span>
                       <span className="text-zinc-400 block mt-0.5">
-                        {replaceDuplicateExercises
+                        {state.replaceDuplicateExercises
                           ? 'Se actualizarán las notas, imagen o vídeos tanto en la biblioteca como en tus rutinas con la versión importada (conservando tus series grabadas).'
                           : 'Se conservará intacto el ejercicio que ya tienes guardado en la app.'}
                       </span>
@@ -195,7 +180,7 @@ export const BackupImportPanel: React.FC<BackupImportPanelProps> = ({
           <label
             htmlFor="radio-import-overwrite"
             className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition-all ${
-              importMode === 'overwrite'
+              state.importMode === 'overwrite'
                 ? 'border-amber-500/80 bg-amber-500/10 shadow-lg'
                 : 'border-white/[0.08] bg-black/25 hover:bg-black/35'
             }`}
@@ -205,8 +190,8 @@ export const BackupImportPanel: React.FC<BackupImportPanelProps> = ({
               type="radio"
               name="importMode"
               value="overwrite"
-              checked={importMode === 'overwrite'}
-              onChange={() => onImportModeChange('overwrite')}
+              checked={state.importMode === 'overwrite'}
+              onChange={() => actions.onImportModeChange('overwrite')}
               className="mt-0.5 accent-amber-500 w-4 h-4 cursor-pointer"
             />
             <div className="space-y-1 min-w-0 flex-1">
@@ -225,10 +210,10 @@ export const BackupImportPanel: React.FC<BackupImportPanelProps> = ({
       </div>
     )}
 
-    {parseError && (
+    {state.parseError && (
       <div className="flex items-start gap-2 p-3 bg-rose-500/15 border border-rose-500/30 text-rose-300 rounded-xl text-xs">
         <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-        <span>{parseError}</span>
+        <span>{state.parseError}</span>
       </div>
     )}
 

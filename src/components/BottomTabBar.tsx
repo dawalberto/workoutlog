@@ -6,26 +6,18 @@
 import React from 'react';
 import { Flame, Dumbbell, Trophy, Calendar, BookOpen } from 'lucide-react';
 import { AppTab } from '../types';
+import { useBottomTabBar } from '../hooks/shell/useBottomTabBar';
 
-export interface BottomTabBarProps {
-  activeTab: AppTab;
-  onSelectTab: (tab: AppTab) => void;
-  routinesCount: number;
-  catalogCount: number;
-  rmCount: number;
-  historyCount: number;
-  diaryCount: number;
-}
-
-export const BottomTabBar: React.FC<BottomTabBarProps> = ({
-  activeTab,
-  onSelectTab,
-  routinesCount,
-  catalogCount,
-  rmCount,
-  historyCount,
-  diaryCount,
-}) => {
+export const BottomTabBar: React.FC = () => {
+  const {
+    activeTab,
+    onSelectTab,
+    routinesCount,
+    catalogCount,
+    rmCount,
+    historyCount,
+    diaryCount,
+  } = useBottomTabBar();
   const tabs = [
     {
       id: 'tab-nav-routines',

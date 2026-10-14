@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React from 'react';
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -10,20 +10,9 @@ import {
   Layers,
   X
 } from 'lucide-react';
-import { WorkoutHistoryLog, ExerciseRmLog, ExerciseDiary, Routine, ExerciseDefinition } from '../types';
 import { WorkoutDetailModal } from './WorkoutDetailModal';
 import { formatDetailedDuration } from '../utils/timeCalculations';
-
-interface WorkoutHistoryViewProps {
-  historyLogs: WorkoutHistoryLog[];
-  rmLogs?: ExerciseRmLog[];
-  exerciseDiary?: ExerciseDiary[];
-  routines?: Routine[];
-  catalog?: ExerciseDefinition[];
-  onOpenDiary?: (exerciseName: string, exerciseId?: string) => void;
-  onDeleteLog: (logId: string) => void;
-  onGoToRoutines: () => void;
-}
+import { useWorkoutHistoryView } from '../hooks/workout-history/useWorkoutHistoryView';
 
 const MONTH_NAMES = [
   'Enero',
@@ -42,193 +31,26 @@ const MONTH_NAMES = [
 
 const WEEKDAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
-export const WorkoutHistoryView: React.FC<WorkoutHistoryViewProps> = ({
-  historyLogs,
-  rmLogs = [],
-  exerciseDiary = [],
-  routines = [],
-  catalog = [],
-  onOpenDiary,
-  onDeleteLog,
-  onGoToRoutines,
-}) => {
-  const today = useMemo(() => new Date(), []);
-  const [currentYear, setCurrentYear] = useState<number>(today.getFullYear());
-  const [currentMonth, setCurrentMonth] = useState<number>(today.getMonth());
-
-  // Detail modal state for a selected workout log
-  const [selectedLog, setSelectedLog] = useState<WorkoutHistoryLog | null>(null);
-
-  // If a day has multiple workouts, show a quick selector modal
-  const [selectedDayWorkouts, setSelectedDayWorkouts] = useState<{
-    dateLabel: string;
-    workouts: WorkoutHistoryLog[];
-  } | null>(null);
-
-  // Map history logs by 'YYYY-MM-DD'
-  const logsByDate = useMemo(() => {
-    const map = new Map<string, WorkoutHistoryLog[]>();
-    historyLogs.forEach((log) => {
-      const d = new Date(log.completedAt || log.endTime);
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      const dateKey = `${year}-${month}-${day}`;
-      if (!map.has(dateKey)) {
-        map.set(dateKey, []);
-      }
-      map.get(dateKey)!.push(log);
-    });
-    return map;
-  }, [historyLogs]);
-
-  // Statistics: Current Week, Current Month, Total
-  const { currentWeekCount, currentMonthCount, totalCount } = useMemo(() => {
-    const now = new Date();
-    // Start of current ISO week (Monday)
-    const dayOfWeek = now.getDay();
-    const diffToMonday = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek;
-    const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday, 0, 0, 0, 0);
-    const endOfWeek = new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000 - 1);
-
-    const curYear = now.getFullYear();
-    const curMonth = now.getMonth();
-
-    let weekCount = 0;
-    let monthCount = 0;
-
-    historyLogs.forEach((log) => {
-      const d = new Date(log.completedAt || log.endTime);
-      if (d >= startOfWeek && d <= endOfWeek) {
-        weekCount++;
-      }
-      if (d.getFullYear() === curYear && d.getMonth() === curMonth) {
-        monthCount++;
-      }
-    });
-
-    return {
-      currentWeekCount: weekCount,
-      currentMonthCount: monthCount,
-      totalCount: historyLogs.length,
-    };
-  }, [historyLogs]);
-
-  // Navigation handlers
-  const handlePrevMonth = () => {
-    if (currentMonth === 0) {
-      setCurrentMonth(11);
-      setCurrentYear((y) => y - 1);
-    } else {
-      setCurrentMonth((m) => m - 1);
-    }
-  };
-
-  const handleNextMonth = () => {
-    if (currentMonth === 11) {
-      setCurrentMonth(0);
-      setCurrentYear((y) => y + 1);
-    } else {
-      setCurrentMonth((m) => m + 1);
-    }
-  };
-
-  const handleGoToday = () => {
-    setCurrentMonth(today.getMonth());
-    setCurrentYear(today.getFullYear());
-  };
-
-  // Calendar matrix calculation
-  const calendarCells = useMemo(() => {
-    // 1st day of month
-    const firstDay = new Date(currentYear, currentMonth, 1);
-    const firstDayOfWeek = firstDay.getDay(); // 0 is Sunday, 1 is Monday
-    // Monday is index 0
-    const startOffset = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
-
-    // Days in current month
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-
-    // Days in previous month
-    const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
-
-    const cells: {
-      day: number;
-      dateKey: string;
-      isCurrentMonth: boolean;
-      isToday: boolean;
-      workouts: WorkoutHistoryLog[];
-    }[] = [];
-
-    // Preceding month trailing days
-    for (let i = startOffset - 1; i >= 0; i--) {
-      const day = daysInPrevMonth - i;
-      const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-      const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-      const dateKey = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      cells.push({
-        day,
-        dateKey,
-        isCurrentMonth: false,
-        isToday: false,
-        workouts: logsByDate.get(dateKey) || [],
-      });
-    }
-
-    // Current month days
-    const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      cells.push({
-        day,
-        dateKey,
-        isCurrentMonth: true,
-        isToday: dateKey === todayKey,
-        workouts: logsByDate.get(dateKey) || [],
-      });
-    }
-
-    // Following month leading days to complete grid (multiples of 7)
-    const remaining = (7 - (cells.length % 7)) % 7;
-    for (let i = 1; i <= remaining; i++) {
-      const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
-      const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
-      const dateKey = `${nextYear}-${String(nextMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-      cells.push({
-        day: i,
-        dateKey,
-        isCurrentMonth: false,
-        isToday: false,
-        workouts: logsByDate.get(dateKey) || [],
-      });
-    }
-
-    return cells;
-  }, [currentYear, currentMonth, logsByDate, today]);
-
-  // Click on a day
-  const handleCellClick = (dateKey: string, workouts: WorkoutHistoryLog[]) => {
-    if (workouts.length === 0) return;
-
-    if (workouts.length === 1) {
-      setSelectedLog(workouts[0]);
-    } else {
-      // Multiple workouts on this day: show day list
-      const [year, month, day] = dateKey.split('-').map(Number);
-      const dateObj = new Date(year, month - 1, day);
-      const dateLabel = dateObj.toLocaleDateString('es-ES', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-      });
-      setSelectedDayWorkouts({
-        dateLabel,
-        workouts,
-      });
-    }
-  };
-
-  const isViewingCurrentMonth = currentYear === today.getFullYear() && currentMonth === today.getMonth();
+export const WorkoutHistoryView: React.FC = () => {
+  const {
+    calendarCells,
+    currentMonth,
+    currentMonthCount,
+    currentWeekCount,
+    currentYear,
+    handleCellClick,
+    handleGoToday,
+    handleNextMonth,
+    handlePrevMonth,
+    isViewingCurrentMonth,
+    onGoToRoutines,
+    selectedDayWorkouts,
+    selectedLog,
+    setSelectedDayWorkouts,
+    setSelectedLog,
+    today,
+    totalCount,
+  } = useWorkoutHistoryView();
 
   return (
     <div id="workout-history-container" className="min-h-screen bg-[#0D0D0D] text-white pb-28 pt-4 sm:pt-6">
@@ -533,14 +355,8 @@ export const WorkoutHistoryView: React.FC<WorkoutHistoryViewProps> = ({
 
       {/* Workout Detail Breakdown Modal */}
       <WorkoutDetailModal
-        log={selectedLog}
-        rmLogs={rmLogs}
-        exerciseDiary={exerciseDiary}
-        routines={routines}
-        catalog={catalog}
-        onOpenDiary={onOpenDiary}
+        logId={selectedLog?.id ?? null}
         onClose={() => setSelectedLog(null)}
-        onDelete={onDeleteLog}
       />
       </div>
     </div>

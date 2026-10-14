@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   loadSyncEligibility,
   runSignOutFlow,
@@ -16,6 +16,8 @@ import {
   getSupabaseBrowserClient,
   type SupabaseBrowserClient,
 } from '../services/supabase';
+import { useAppStore } from '../store/appStore';
+import type { AccountSnapshot } from '../store/slices/accountSlice';
 
 export interface AuthenticatedIdentity {
   id: string;
@@ -51,6 +53,8 @@ export function getOAuthRedirectUrl(origin: string, baseUrl: string): string {
 }
 
 export function useAuth(): UseAuthReturn {
+  const publishAccountState = useAppStore((state) => state.publishAccountState);
+  const registerAccountControls = useAppStore((state) => state.registerAccountControls);
   const clientRef = useRef<SupabaseBrowserClient | null>(null);
   const [user, setUser] = useState<AuthenticatedIdentity | null>(null);
   const [isSyncEnabled, setIsSyncEnabled] = useState(false);
@@ -267,6 +271,47 @@ export function useAuth(): UseAuthReturn {
       setIsSigningOut(false);
     }
   };
+
+  useLayoutEffect(() => {
+    const snapshot: AccountSnapshot = {
+      user,
+      isSyncEnabled,
+      isLoading,
+      isSyncEligibilityLoading,
+      isSigningIn,
+      isSigningOut,
+      cleanupPending: cleanupOwnerId !== null,
+      error,
+    };
+    publishAccountState(snapshot);
+  }, [
+    cleanupOwnerId,
+    error,
+    isLoading,
+    isSigningIn,
+    isSigningOut,
+    isSyncEligibilityLoading,
+    isSyncEnabled,
+    publishAccountState,
+    user,
+  ]);
+
+  useEffect(() => {
+    const controls = {
+      signInWithGoogle,
+      signOut,
+      retryLocalCleanup,
+      refreshSyncEligibility,
+    };
+    registerAccountControls(controls);
+    return () => registerAccountControls(null);
+  }, [
+    refreshSyncEligibility,
+    registerAccountControls,
+    retryLocalCleanup,
+    signInWithGoogle,
+    signOut,
+  ]);
 
   return {
     user,

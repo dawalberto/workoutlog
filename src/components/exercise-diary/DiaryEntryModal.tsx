@@ -1,39 +1,24 @@
 import React from 'react';
 import { BookOpen, Check, X } from 'lucide-react';
-import type { ExerciseDefinition, DiaryFeeling, ExerciseDiaryEntry } from '../../types';
+import type { ExerciseDefinition, ExerciseDiaryEntry } from '../../types';
+import type { DiaryEntryFormState } from '../../hooks/useExerciseDiary';
 
 interface DiaryEntryModalProps {
   isOpen: boolean;
   editingEntry: { diaryId: string; entry: ExerciseDiaryEntry } | null;
   catalog: ExerciseDefinition[];
-  formExerciseName: string;
-  formDate: string;
-  formNote: string;
-  formFeeling: DiaryFeeling | undefined;
-  formError: string | null;
+  form: DiaryEntryFormState;
   onClose: () => void;
   onSave: (event?: React.FormEvent) => void;
-  onFormExerciseNameChange: (value: string) => void;
-  onFormDateChange: (value: string) => void;
-  onFormNoteChange: (value: string) => void;
-  onFormFeelingChange: (value: DiaryFeeling | undefined) => void;
 }
 
 export const DiaryEntryModal: React.FC<DiaryEntryModalProps> = ({
   isOpen,
   editingEntry,
   catalog,
-  formExerciseName,
-  formDate,
-  formNote,
-  formFeeling,
-  formError,
+  form,
   onClose,
   onSave,
-  onFormExerciseNameChange,
-  onFormDateChange,
-  onFormNoteChange,
-  onFormFeelingChange,
 }) => {
   if (!isOpen) return null;
 
@@ -76,9 +61,9 @@ export const DiaryEntryModal: React.FC<DiaryEntryModalProps> = ({
         {/* Modal Form */}
         <form onSubmit={onSave} className="flex-1 flex flex-col overflow-hidden">
           <div className="p-5 sm:p-6 overflow-y-auto space-y-4">
-            {formError && (
+            {form.formError && (
               <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-300 font-semibold animate-in fade-in">
-                {formError}
+                {form.formError}
               </div>
             )}
 
@@ -88,9 +73,9 @@ export const DiaryEntryModal: React.FC<DiaryEntryModalProps> = ({
                 Ejercicio de la Biblioteca <span className="text-rose-500">*</span>
               </label>
               <select
-                value={formExerciseName}
+                value={form.formExerciseName}
                 disabled={Boolean(editingEntry)}
-                onChange={(e) => onFormExerciseNameChange(e.target.value)}
+                onChange={(e) => form.setFormExerciseName(e.target.value)}
                 className="w-full min-h-[48px] px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-white/10 bg-black/40 text-white font-semibold focus:outline-none focus:border-[#00FF87] focus:ring-1 focus:ring-[#00FF87] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 {catalog.map((c) => (
@@ -108,8 +93,8 @@ export const DiaryEntryModal: React.FC<DiaryEntryModalProps> = ({
               </label>
               <input
                 type="date"
-                value={formDate}
-                onChange={(e) => onFormDateChange(e.target.value)}
+                value={form.formDate}
+                onChange={(e) => form.setFormDate(e.target.value)}
                 className="w-full min-h-[48px] px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-white/10 bg-black/40 text-white font-semibold focus:outline-none focus:border-[#00FF87] focus:ring-1 focus:ring-[#00FF87] transition-all"
               />
             </div>
@@ -120,10 +105,10 @@ export const DiaryEntryModal: React.FC<DiaryEntryModalProps> = ({
                 <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
                   Sensación en la sesión
                 </label>
-                {formFeeling && (
+                {form.formFeeling && (
                   <button
                     type="button"
-                    onClick={() => onFormFeelingChange(undefined)}
+                    onClick={() => form.setFormFeeling(undefined)}
                     className="text-[11px] text-zinc-400 hover:text-white"
                   >
                     Quitar sensación
@@ -134,9 +119,9 @@ export const DiaryEntryModal: React.FC<DiaryEntryModalProps> = ({
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
-                  onClick={() => onFormFeelingChange('good')}
+                  onClick={() => form.setFormFeeling('good')}
                   className={`min-h-[48px] p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-[0.97] ${
-                    formFeeling === 'good'
+                    form.formFeeling === 'good'
                       ? 'bg-emerald-500 text-black border-emerald-400 font-black shadow-[0_0_12px_rgba(16,185,129,0.4)]'
                       : 'bg-emerald-950/20 text-emerald-300 border-emerald-500/20 hover:border-emerald-500/40 hover:bg-emerald-950/40'
                   }`}
@@ -147,9 +132,9 @@ export const DiaryEntryModal: React.FC<DiaryEntryModalProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => onFormFeelingChange('neutral')}
+                  onClick={() => form.setFormFeeling('neutral')}
                   className={`min-h-[48px] p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-[0.97] ${
-                    formFeeling === 'neutral'
+                    form.formFeeling === 'neutral'
                       ? 'bg-amber-500 text-black border-amber-400 font-black shadow-[0_0_12px_rgba(245,158,11,0.4)]'
                       : 'bg-amber-950/20 text-amber-300 border-amber-500/20 hover:border-amber-500/40 hover:bg-amber-950/40'
                   }`}
@@ -160,9 +145,9 @@ export const DiaryEntryModal: React.FC<DiaryEntryModalProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => onFormFeelingChange('bad')}
+                  onClick={() => form.setFormFeeling('bad')}
                   className={`min-h-[48px] p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-[0.97] ${
-                    formFeeling === 'bad'
+                    form.formFeeling === 'bad'
                       ? 'bg-rose-500 text-white border-rose-400 font-black shadow-[0_0_12px_rgba(244,63,94,0.4)]'
                       : 'bg-rose-950/20 text-rose-300 border-rose-500/20 hover:border-rose-500/40 hover:bg-rose-950/40'
                   }`}
@@ -180,8 +165,8 @@ export const DiaryEntryModal: React.FC<DiaryEntryModalProps> = ({
               </label>
               <textarea
                 rows={6}
-                value={formNote}
-                onChange={(e) => onFormNoteChange(e.target.value)}
+                value={form.formNote}
+                onChange={(e) => form.setFormNote(e.target.value)}
                 onKeyDown={(e) => {
                   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                     e.preventDefault();

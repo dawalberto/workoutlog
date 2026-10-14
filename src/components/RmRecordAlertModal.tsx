@@ -1,26 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Check, X, ArrowUpRight, Flame } from 'lucide-react';
 import { formatRmDate } from '../utils/rmCalculations';
+import { useRmRecordAlert } from '../hooks/shell/useRmRecordAlert';
 
-interface RmRecordAlertModalProps {
-  isOpen: boolean;
-  exerciseName: string;
-  newWeight: number;
-  previousRmWeight: number;
-  previousRmDate?: string;
-  onConfirm: (shouldUpdateRm: boolean) => void;
-  onClose: () => void;
-}
-
-export const RmRecordAlertModal: React.FC<RmRecordAlertModalProps> = ({
-  isOpen,
-  exerciseName,
-  newWeight,
-  previousRmWeight,
-  previousRmDate,
-  onConfirm,
-  onClose,
-}) => {
+export const RmRecordAlertModal: React.FC = () => {
+  const {
+    isOpen,
+    exerciseName,
+    newWeight,
+    previousRmWeight,
+    previousRmDate,
+    onConfirm,
+    onClose,
+  } = useRmRecordAlert();
   const [shouldUpdateRm, setShouldUpdateRm] = useState(true);
 
   // Reset to true whenever modal opens for a new weight

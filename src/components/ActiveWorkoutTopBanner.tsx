@@ -5,21 +5,22 @@
 
 import React from 'react';
 import { ArrowRight, Flame } from 'lucide-react';
-import { Routine, ActiveWorkoutSession } from '../types';
+import type { Routine, ActiveWorkoutSession } from '../types';
 import { useWorkoutTimer } from '../hooks/useWorkoutTimer';
 import { formatWorkoutDuration } from '../utils/timeCalculations';
-
-export interface ActiveWorkoutTopBannerProps {
-  routine: Routine;
-  session: ActiveWorkoutSession;
-  onOpenRoutine: () => void;
-}
+import { useActiveWorkoutBanner } from '../hooks/shell/useActiveWorkoutBanner';
 
 /**
  * Banner shown when a workout session is currently active and the user
  * is browsing outside the routine screen. Allows quick 1-tap return.
  */
-export const ActiveWorkoutTopBanner: React.FC<ActiveWorkoutTopBannerProps> = ({
+interface ActiveWorkoutBannerProps {
+  routine: Routine;
+  session: ActiveWorkoutSession;
+  onOpenRoutine: () => void;
+}
+
+const ActiveWorkoutBanner: React.FC<ActiveWorkoutBannerProps> = ({
   routine,
   session,
   onOpenRoutine,
@@ -58,4 +59,10 @@ export const ActiveWorkoutTopBanner: React.FC<ActiveWorkoutTopBannerProps> = ({
       </button>
     </div>
   );
+};
+
+export const ActiveWorkoutTopBanner: React.FC = () => {
+  const workout = useActiveWorkoutBanner();
+  if (!workout) return null;
+  return <ActiveWorkoutBanner {...workout} />;
 };

@@ -1,31 +1,22 @@
 import React from 'react';
 import { Trophy, Clock, CheckCircle2, Dumbbell, X, Trash2, Calendar } from 'lucide-react';
-import { WorkoutHistoryLog, ExerciseRmLog, ExerciseDiary, Routine, ExerciseDefinition } from '../types';
+import { WorkoutHistoryLog } from '../types';
 import { formatDetailedDuration, formatExerciseSummary } from '../utils/timeCalculations';
 import { RmBadge } from './RmBadge';
 import { DiaryButton } from './DiaryButton';
+import { useWorkoutDetailModal } from '../hooks/workout-history/useWorkoutDetailModal';
 
 interface WorkoutDetailModalProps {
-  log: WorkoutHistoryLog | null;
-  rmLogs?: ExerciseRmLog[];
-  exerciseDiary?: ExerciseDiary[];
-  routines?: Routine[];
-  catalog?: ExerciseDefinition[];
-  onOpenDiary?: (exerciseName: string, exerciseId?: string) => void;
+  logId: string | null;
   onClose: () => void;
-  onDelete: (logId: string) => void;
 }
 
 export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
-  log,
-  rmLogs = [],
-  exerciseDiary = [],
-  routines = [],
-  catalog = [],
-  onOpenDiary,
+  logId,
   onClose,
-  onDelete,
 }) => {
+  const { log, rmLogs, exerciseDiary, routines, catalog, onOpenDiary, onDelete } =
+    useWorkoutDetailModal(logId);
   if (!log) return null;
 
   const handleDelete = () => {

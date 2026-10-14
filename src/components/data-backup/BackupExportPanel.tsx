@@ -10,47 +10,24 @@ import {
   Trophy,
 } from 'lucide-react';
 import type {
-  ExerciseDefinition,
-  ExerciseDiary,
-  ExerciseRmLog,
-  Routine,
-  WorkoutHistoryLog,
-} from '../../types';
+  BackupExportActions,
+  BackupExportData,
+} from '../../hooks/data-backup/useDataBackup';
 
 interface BackupExportPanelProps {
-  catalog: ExerciseDefinition[];
-  routines: Routine[];
-  rmLogs: ExerciseRmLog[];
-  workoutHistory: WorkoutHistoryLog[];
-  exerciseDiary: ExerciseDiary[];
-  exportSuccessMessage: string | null;
-  onExportRoutines: () => void;
-  onExportExercises: () => void;
-  onExportRmLogs: () => void;
-  onExportHistory: () => void;
-  onExportDiary: () => void;
-  onExportAll: () => void;
+  data: BackupExportData;
+  actions: BackupExportActions;
 }
 
 export const BackupExportPanel: React.FC<BackupExportPanelProps> = ({
-  catalog,
-  routines,
-  rmLogs,
-  workoutHistory,
-  exerciseDiary,
-  exportSuccessMessage,
-  onExportRoutines,
-  onExportExercises,
-  onExportRmLogs,
-  onExportHistory,
-  onExportDiary,
-  onExportAll,
+  data,
+  actions,
 }) => (
   <div className="space-y-4">
-    {exportSuccessMessage && (
+    {data.exportSuccessMessage && (
       <div className="flex items-center gap-2 p-3 bg-[#00FF87]/15 border border-[#00FF87]/30 text-[#00FF87] rounded-xl text-xs font-bold animate-in fade-in">
         <CheckCircle2 className="w-4 h-4 text-[#00FF87] shrink-0" />
-        <span>{exportSuccessMessage}</span>
+        <span>{data.exportSuccessMessage}</span>
       </div>
     )}
 
@@ -66,7 +43,7 @@ export const BackupExportPanel: React.FC<BackupExportPanelProps> = ({
               <Flame className="w-4 h-4 text-orange-400 fill-current" />
             </span>
             <span className="text-[11px] font-extrabold text-orange-400 bg-orange-500/15 px-2 py-0.5 rounded-full border border-orange-500/30">
-              {routines.length} rutinas
+              {data.routines.length} rutinas
             </span>
           </div>
           <h3 className="text-sm font-bold text-white mt-2.5">
@@ -80,7 +57,7 @@ export const BackupExportPanel: React.FC<BackupExportPanelProps> = ({
         <button
           id="btn-export-routines"
           type="button"
-          onClick={onExportRoutines}
+          onClick={actions.onExportRoutines}
           className="mt-4 w-full min-h-[44px] inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold rounded-xl border border-white/10 bg-white/[0.06] hover:bg-white/[0.12] text-white transition active:scale-[0.97]"
         >
           <Download className="w-3.5 h-3.5" />
@@ -95,7 +72,7 @@ export const BackupExportPanel: React.FC<BackupExportPanelProps> = ({
               <Dumbbell className="w-4 h-4 text-cyan-400" />
             </span>
             <span className="text-[11px] font-extrabold text-cyan-400 bg-cyan-500/15 px-2 py-0.5 rounded-full border border-cyan-500/30">
-              {catalog.length} ejerc.
+              {data.catalog.length} ejerc.
             </span>
           </div>
           <h3 className="text-sm font-bold text-white mt-2.5">
@@ -109,7 +86,7 @@ export const BackupExportPanel: React.FC<BackupExportPanelProps> = ({
         <button
           id="btn-export-exercises"
           type="button"
-          onClick={onExportExercises}
+          onClick={actions.onExportExercises}
           className="mt-4 w-full min-h-[44px] inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold rounded-xl border border-white/10 bg-white/[0.06] hover:bg-white/[0.12] text-white transition active:scale-[0.97]"
         >
           <Download className="w-3.5 h-3.5" />
@@ -124,7 +101,7 @@ export const BackupExportPanel: React.FC<BackupExportPanelProps> = ({
               <Trophy className="w-4 h-4 text-amber-400" />
             </span>
             <span className="text-[11px] font-extrabold text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30">
-              {rmLogs.length} RMs
+              {data.rmLogs.length} RMs
             </span>
           </div>
           <h3 className="text-sm font-bold text-white mt-2.5">
@@ -138,7 +115,7 @@ export const BackupExportPanel: React.FC<BackupExportPanelProps> = ({
         <button
           id="btn-export-rms"
           type="button"
-          onClick={onExportRmLogs}
+          onClick={actions.onExportRmLogs}
           className="mt-4 w-full min-h-[44px] inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold rounded-xl border border-white/10 bg-white/[0.06] hover:bg-white/[0.12] text-white transition active:scale-[0.97]"
         >
           <Download className="w-3.5 h-3.5" />
@@ -153,7 +130,7 @@ export const BackupExportPanel: React.FC<BackupExportPanelProps> = ({
               <Calendar className="w-4 h-4 text-blue-400" />
             </span>
             <span className="text-[11px] font-extrabold text-blue-400 bg-blue-500/15 px-2 py-0.5 rounded-full border border-blue-500/30">
-              {workoutHistory.length} sesiones
+              {data.workoutHistory.length} sesiones
             </span>
           </div>
           <h3 className="text-sm font-bold text-white mt-2.5">
@@ -167,7 +144,7 @@ export const BackupExportPanel: React.FC<BackupExportPanelProps> = ({
         <button
           id="btn-export-history"
           type="button"
-          onClick={onExportHistory}
+          onClick={actions.onExportHistory}
           className="mt-4 w-full min-h-[44px] inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold rounded-xl border border-white/10 bg-white/[0.06] hover:bg-white/[0.12] text-white transition active:scale-[0.97]"
         >
           <Download className="w-3.5 h-3.5" />
@@ -182,7 +159,7 @@ export const BackupExportPanel: React.FC<BackupExportPanelProps> = ({
               <BookOpen className="w-4 h-4 text-teal-400" />
             </span>
             <span className="text-[11px] font-extrabold text-teal-400 bg-teal-500/15 px-2 py-0.5 rounded-full border border-teal-500/30">
-              {exerciseDiary.reduce((sum, diary) => sum + (diary.entries?.length || 0), 0)} notas
+              {data.exerciseDiary.reduce((sum, diary) => sum + (diary.entries?.length || 0), 0)} notas
             </span>
           </div>
           <h3 className="text-sm font-bold text-white mt-2.5">
@@ -196,7 +173,7 @@ export const BackupExportPanel: React.FC<BackupExportPanelProps> = ({
         <button
           id="btn-export-diary"
           type="button"
-          onClick={onExportDiary}
+          onClick={actions.onExportDiary}
           className="mt-4 w-full min-h-[44px] inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold rounded-xl border border-white/10 bg-white/[0.06] hover:bg-white/[0.12] text-white transition active:scale-[0.97]"
         >
           <Download className="w-3.5 h-3.5" />
@@ -218,14 +195,14 @@ export const BackupExportPanel: React.FC<BackupExportPanelProps> = ({
             Todo el contenido de la App
           </h3>
           <p className="text-xs text-zinc-300 mt-1 leading-relaxed">
-            {catalog.length} ejercicios, {routines.length} rutinas, {rmLogs.length} RMs, {workoutHistory.length} sesiones y {exerciseDiary.reduce((sum, diary) => sum + (diary.entries?.length || 0), 0)} notas del diario.
+            {data.catalog.length} ejercicios, {data.routines.length} rutinas, {data.rmLogs.length} RMs, {data.workoutHistory.length} sesiones y {data.exerciseDiary.reduce((sum, diary) => sum + (diary.entries?.length || 0), 0)} notas del diario.
           </p>
         </div>
 
         <button
           id="btn-export-all"
           type="button"
-          onClick={onExportAll}
+          onClick={actions.onExportAll}
           className="mt-4 w-full min-h-[48px] inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-extrabold rounded-xl bg-[#00FF87] hover:bg-[#00e57a] text-black transition active:scale-[0.97] shadow-[0_0_15px_rgba(0,255,135,0.3)]"
         >
           <Download className="w-4 h-4 stroke-[2.5]" />

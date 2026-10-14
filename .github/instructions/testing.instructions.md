@@ -5,6 +5,8 @@ description: "Vitest and pgTAP conventions for WorkoutLog tests."
 
 # Testing instructions
 
+Last verified: 2026-10-13
+
 Load the [testing skill](../skills/workoutlog-testing/SKILL.md). Depth: [testing strategy](../../docs/standards/testing-strategy.md).
 
 ## Vitest (`tests/**`)
@@ -13,6 +15,7 @@ Load the [testing skill](../skills/workoutlog-testing/SKILL.md). Depth: [testing
 - IndexedDB: `import { IDBFactory } from 'fake-indexeddb';` and assign a fresh `new IDBFactory()` in `beforeEach`, with `vi.resetModules()` and a stubbed `globalThis.window` (see `tests/services/db.test.ts`).
 - Component behavior: mock React's `useState`/`useRef` with a harness via `vi.doMock('react', …)`, call the component as a function, find elements with `isValidElement`, and invoke handlers such as `onBlur` (see `tests/exercise-card.test.tsx`, `tests/routine-view.test.tsx`).
 - Static output: `renderToStaticMarkup` from `react-dom/server` (see `tests/sync-wiring.test.tsx`).
+- Zustand slice logic: test isolated `createAppStore()` instances. For server-rendered singleton selector tests, use `tests/store-test-utils.ts`; Zustand 5 reads `getInitialState()` as the server snapshot (details in the [testing strategy](../../docs/standards/testing-strategy.md#techniques-in-use)).
 - Supabase: fake clients built from `vi.fn()` for `rpc`, `auth.*`, and chained `from().select().gt().order().limit()` (see `tests/services/cloud-sync.test.ts`, `tests/auth.test.ts`).
 - Place files at `tests/<area>/<name>.test.ts(x)` mirroring `src/`.
 - Fixtures are synthetic (`'Sentadilla'`, `set-1`); never real user data or exports.

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   X,
   ArrowUpDown,
@@ -9,115 +9,38 @@ import {
   Check,
   RotateCcw
 } from 'lucide-react';
-import { Exercise } from '../types';
+import { useReorderExercisesModal } from '../hooks/routine/useReorderExercisesModal';
 
 interface ReorderExercisesModalProps {
   isOpen: boolean;
   onClose: () => void;
-  exercises: Exercise[];
-  onSaveOrder: (newOrderedExercises: Exercise[]) => void;
 }
 
 export const ReorderExercisesModal: React.FC<ReorderExercisesModalProps> = ({
   isOpen,
   onClose,
-  exercises,
-  onSaveOrder,
 }) => {
-  const [items, setItems] = useState<Exercise[]>([]);
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-
-  // Mobile touch drag states
-  const [touchActiveIndex, setTouchActiveIndex] = useState<number | null>(null);
-  const [touchOverIndex, setTouchOverIndex] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (isOpen) {
-      setItems([...exercises]);
-      setDraggedIndex(null);
-      setDragOverIndex(null);
-      setTouchActiveIndex(null);
-      setTouchOverIndex(null);
-    }
-  }, [isOpen, exercises]);
+  const {
+    items,
+    draggedIndex,
+    dragOverIndex,
+    touchActiveIndex,
+    touchOverIndex,
+    move,
+    moveToPosition,
+    setDraggedIndex,
+    setDragOverIndex,
+    setTouchActiveIndex,
+    setTouchOverIndex,
+    handleDragOver,
+    handleDrop,
+    handleTouchMove,
+    handleTouchEnd,
+    reset,
+    saveOrder,
+  } = useReorderExercisesModal(isOpen);
 
   if (!isOpen) return null;
-
-  const handleMove = (fromIndex: number, toIndex: number) => {
-    if (toIndex < 0 || toIndex >= items.length || fromIndex === toIndex) return;
-    const updated = [...items];
-    const [moved] = updated.splice(fromIndex, 1);
-    updated.splice(toIndex, 0, moved);
-    setItems(updated);
-  };
-
-  const handleMoveToPosition = (fromIndex: number, targetPosition: number) => {
-    const toIndex = targetPosition - 1;
-    handleMove(fromIndex, toIndex);
-  };
-
-  // Mouse Drag Handlers
-  const handleDragStart = (index: number) => {
-    setDraggedIndex(index);
-  };
-
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    if (dragOverIndex !== index) {
-      setDragOverIndex(index);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
-    e.preventDefault();
-    if (draggedIndex === null) return;
-    handleMove(draggedIndex, dropIndex);
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-  };
-
-  // Mobile Touch Handlers
-  const handleTouchStart = (index: number) => {
-    setTouchActiveIndex(index);
-    setTouchOverIndex(index);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (touchActiveIndex === null) return;
-    const touch = e.touches[0];
-    if (!touch) return;
-    const elem = document.elementFromPoint(touch.clientX, touch.clientY);
-    const itemEl = elem?.closest('[data-reorder-index]');
-    if (itemEl) {
-      const targetIdx = Number(itemEl.getAttribute('data-reorder-index'));
-      if (!isNaN(targetIdx) && targetIdx !== touchOverIndex) {
-        setTouchOverIndex(targetIdx);
-      }
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (touchActiveIndex !== null && touchOverIndex !== null && touchActiveIndex !== touchOverIndex) {
-      handleMove(touchActiveIndex, touchOverIndex);
-    }
-    setTouchActiveIndex(null);
-    setTouchOverIndex(null);
-  };
-
-  const handleReset = () => {
-    setItems([...exercises]);
-  };
-
-  const handleSave = () => {
-    onSaveOrder(items);
-    onClose();
-  };
 
   return (
     <div
@@ -172,10 +95,13 @@ export const ReorderExercisesModal: React.FC<ReorderExercisesModalProps> = ({
                   id={`reorder-item-${ex.id}`}
                   data-reorder-index={index}
                   draggable
-                  onDragStart={() => handleDragStart(index)}
+                  onDragStart={() => setDraggedIndex(index)}
                   onDragOver={(e) => handleDragOver(e, index)}
                   onDrop={(e) => handleDrop(e, index)}
-                  onDragEnd={handleDragEnd}
+                  onDragEnd={() => {
+                    setDraggedIndex(null);
+                    setDragOverIndex(null);
+                  }}
                   className={`flex items-center gap-2.5 p-3 rounded-xl border transition-all ${
                     isDraggingThis || isTouchActiveThis
                       ? 'opacity-40 border-dashed border-[#00FF87] bg-[#00FF87]/10 scale-[0.99]'
@@ -188,7 +114,10 @@ export const ReorderExercisesModal: React.FC<ReorderExercisesModalProps> = ({
                   <div
                     className="cursor-grab active:cursor-grabbing text-zinc-400 hover:text-white p-2 -m-1 shrink-0 touch-none select-none"
                     title="Mantén pulsado y arrastra para reordenar"
-                    onTouchStart={() => handleTouchStart(index)}
+                    onTouchStart={() => {
+                      setTouchActiveIndex(index);
+                      setTouchOverIndex(index);
+                    }}
                     onTouchMove={handleTouchMove}
                     onTouchEnd={handleTouchEnd}
                     onTouchCancel={handleTouchEnd}
@@ -202,7 +131,7 @@ export const ReorderExercisesModal: React.FC<ReorderExercisesModalProps> = ({
                       id={`select-reorder-pos-${ex.id}`}
                       aria-label={`Posición para ${ex.name}`}
                       value={index + 1}
-                      onChange={(e) => handleMoveToPosition(index, Number(e.target.value))}
+                      onChange={(e) => moveToPosition(index, Number(e.target.value))}
                       className="appearance-none cursor-pointer w-8 h-8 rounded-lg text-xs font-black text-center bg-white/[0.08] text-white hover:bg-[#00FF87] hover:text-black focus:ring-2 focus:ring-[#00FF87] transition-all border border-white/10"
                       title="Selecciona la posición deseada"
                     >
@@ -251,7 +180,7 @@ export const ReorderExercisesModal: React.FC<ReorderExercisesModalProps> = ({
                     <button
                       type="button"
                       disabled={index === 0}
-                      onClick={() => handleMove(index, index - 1)}
+                      onClick={() => move(index, index - 1)}
                       title="Subir un puesto"
                       className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg border border-white/10 bg-black/30 text-zinc-300 hover:bg-white/[0.08] hover:text-white disabled:opacity-20 disabled:pointer-events-none transition-colors"
                     >
@@ -260,7 +189,7 @@ export const ReorderExercisesModal: React.FC<ReorderExercisesModalProps> = ({
                     <button
                       type="button"
                       disabled={index === items.length - 1}
-                      onClick={() => handleMove(index, index + 1)}
+                      onClick={() => move(index, index + 1)}
                       title="Bajar un puesto"
                       className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg border border-white/10 bg-black/30 text-zinc-300 hover:bg-white/[0.08] hover:text-white disabled:opacity-20 disabled:pointer-events-none transition-colors"
                     >
@@ -277,7 +206,7 @@ export const ReorderExercisesModal: React.FC<ReorderExercisesModalProps> = ({
         <div className="p-4 border-t border-white/[0.08] bg-black/30 flex items-center justify-between gap-3">
           <button
             type="button"
-            onClick={handleReset}
+            onClick={reset}
             className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" /> Reestablecer
@@ -294,7 +223,10 @@ export const ReorderExercisesModal: React.FC<ReorderExercisesModalProps> = ({
             <button
               id="btn-confirm-reorder"
               type="button"
-              onClick={handleSave}
+              onClick={() => {
+                saveOrder();
+                onClose();
+              }}
               className="inline-flex items-center gap-2 px-5 py-2.5 min-h-[44px] text-xs font-extrabold rounded-xl bg-[#00FF87] text-black hover:bg-[#00e57a] active:scale-[0.97] transition-all shadow-[0_0_12px_rgba(0,255,135,0.3)]"
             >
               <Check className="w-4 h-4 stroke-[3]" /> Guardar Orden

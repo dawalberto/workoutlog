@@ -1,6 +1,6 @@
 import React, { isValidElement, type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { Exercise } from '../src/types';
+import type { Exercise, Routine } from '../src/types';
 
 type StateSlot = { value: unknown; initialized: boolean };
 type ElementProps = {
@@ -63,25 +63,45 @@ const exercise: Exercise = {
 
 async function setupExerciseCard() {
   const harness = createStateHarness();
+  let currentExercise = exercise;
+  const onUpdateExercise = vi.fn();
+  const onCheckRmWeight = vi.fn();
   vi.doMock('react', async (importOriginal) => {
     const actual = await importOriginal<typeof import('react')>();
     return {
       ...actual,
       useState: (initial: unknown) => harness.useState(initial),
+      useMemo: (factory: () => unknown) => factory(),
     };
   });
+  const storeState = {
+    routines: [{
+      id: 'routine',
+      name: 'Rutina',
+      exercises: [currentExercise],
+      createdAt: '2026-01-01',
+      updatedAt: '2026-01-01',
+    }],
+    activeRoutineId: 'routine',
+    activeSessions: {},
+    routineSubMode: 'edit',
+    rmLogs: [],
+    exerciseDiary: [],
+    saveRoutine: vi.fn((routine: Routine) => {
+      storeState.routines = [routine];
+      currentExercise = routine.exercises[0];
+      onUpdateExercise(currentExercise);
+    }),
+    checkRmWeight: onCheckRmWeight,
+    openExerciseDiary: vi.fn(),
+  };
+  vi.doMock('../src/store/appStore', () => ({
+    useAppStore: (selector: (state: typeof storeState) => unknown) => selector(storeState),
+  }));
   const { ExerciseCard } = await import('../src/components/ExerciseCard');
-  const onUpdateExercise = vi.fn();
-  const onCheckRmWeight = vi.fn();
-  const props = {
-    exercise,
-    exerciseIndex: 0,
-    isExecutionMode: false,
-    completedSetIds: new Set<string>(),
+  const props: React.ComponentProps<typeof ExerciseCard> = {
+    exerciseId: exercise.id,
     onToggleSetComplete: vi.fn(),
-    onUpdateExercise,
-    onDeleteExercise: vi.fn(),
-    onCheckRmWeight,
   };
   const render = () => harness.render(() => ExerciseCard(props));
   const findSetInput = (inputMode: string) =>
@@ -98,11 +118,25 @@ async function setupExerciseCard() {
       onBlur: (event: { currentTarget: { value: string } }) => void;
     }>;
 
-  return { findSetInput, onUpdateExercise, onCheckRmWeight, render, props };
+  return {
+    findSetInput,
+    onUpdateExercise,
+    onCheckRmWeight,
+    render,
+    props,
+    setExercise: (updated: Exercise) => {
+      currentExercise = updated;
+      storeState.routines = storeState.routines.map((routine) => ({
+        ...routine,
+        exercises: [updated],
+      }));
+    },
+  };
 }
 
 afterEach(() => {
   vi.doUnmock('react');
+  vi.doUnmock('../src/store/appStore');
   vi.resetModules();
   vi.restoreAllMocks();
 });
@@ -111,7 +145,7 @@ describe('ExerciseCard set field edits', () => {
   it.each(['name', 'notes', 'imageUrl', 'videoUrl'] as const)(
     'drafts %s until blur and merges the latest external exercise data',
     async (field) => {
-      const { render, props, onUpdateExercise } = await setupExerciseCard();
+      const { render, setExercise, onUpdateExercise } = await setupExerciseCard();
       if (field === 'imageUrl' || field === 'videoUrl') {
         const title = field === 'imageUrl' ? 'Configurar imagen miniatura / preview' : 'Configurar enlace de video';
         const button = findElement(render() as ReactNode, (element) => element.props.title === title);
@@ -131,11 +165,14 @@ describe('ExerciseCard set field edits', () => {
       expect(input()).toBeDefined();
       (input().props.onChange as (e: unknown) => void)({ target: { value: 'Draft' } });
       expect(onUpdateExercise).not.toHaveBeenCalled();
-      props.exercise = { ...exercise, category: 'External category' };
+      setExercise({ ...exercise, category: 'External category' });
       expect(input().props.value).toBe('Draft');
       (input().props.onBlur as (e: unknown) => void)({ currentTarget: { value: 'Draft' } });
-      expect(onUpdateExercise).toHaveBeenCalledExactlyOnceWith({ ...props.exercise, [field]: 'Draft' });
-      props.exercise = { ...props.exercise, [field]: 'Remote value' };
+      expect(onUpdateExercise).toHaveBeenCalledExactlyOnceWith({
+        ...{ ...exercise, category: 'External category' },
+        [field]: 'Draft',
+      });
+      setExercise({ ...exercise, category: 'External category', [field]: 'Remote value' });
       expect(input().props.value).toBe('Remote value');
     },
   );
@@ -189,7 +226,7 @@ describe('ExerciseCard set field edits', () => {
   });
 
   it('preserves empty drafts and the existing minimum-value normalization on blur', async () => {
-    const { findSetInput, onUpdateExercise, onCheckRmWeight } =
+    const { findSetInput, onUpdateExercise, onCheckRmWeight, setExercise } =
       await setupExerciseCard();
     findSetInput('numeric').props.onChange({ target: { value: '' } });
     expect(onUpdateExercise).not.toHaveBeenCalled();
@@ -202,6 +239,7 @@ describe('ExerciseCard set field edits', () => {
     });
 
     onUpdateExercise.mockClear();
+    setExercise(exercise);
     findSetInput('decimal').props.onChange({ target: { value: '-2' } });
     expect(onUpdateExercise).not.toHaveBeenCalled();
     findSetInput('decimal').props.onBlur({ currentTarget: { value: '-2' } });
