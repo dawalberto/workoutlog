@@ -2,7 +2,7 @@
 
 How WorkoutLog is tested (Vitest for TypeScript, pgTAP for Postgres) and what each kind of change must cover.
 
-Last verified: 2026-10-13
+Last verified: 2026-10-14
 
 ## Commands
 
@@ -11,6 +11,7 @@ Last verified: 2026-10-13
 | `pnpm test` | All Vitest tests | See the latest test run for current totals |
 | `pnpm test tests/utils/backup.test.ts` | One file | Verified |
 | `pnpm test -t "<test name>"` | Tests matching a name | Standard Vitest |
+| `pnpm fn:test` | Supabase Edge Function Deno tests | Requires Deno 2 |
 | `pnpm lint` | `tsc --noEmit` typecheck | Counts as the lint gate |
 | `pnpm build` | Production build | Catches build-only failures |
 | `pnpm db:reset` | Replay all migrations locally | Requires `supabase start` (Docker); **wipes local DB** |
@@ -36,6 +37,7 @@ CI ([`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)) runs `pnpm tes
 | Characterization snapshots | `tests/__snapshots__/` and matching tests | Capture established markup/behavior before refactoring, then keep the baseline unchanged while refactoring; never update snapshots with `-u` during a refactor |
 | Fake Supabase client | [`tests/auth.test.ts`](../../tests/auth.test.ts), [`cloud-sync.test.ts`](../../tests/services/cloud-sync.test.ts) | Objects with `vi.fn()` for `rpc`, `auth.signInWithOAuth`, and chained `from().select().gt().order().limit()` |
 | Pure function tests | [`sync-queue.test.ts`](../../tests/services/sync-queue.test.ts), [`backup.test.ts`](../../tests/utils/backup.test.ts), [`routine-limit.test.ts`](../../tests/routine-limit.test.ts) | Direct input/output assertions |
+| Rest timer push plan/controller | [`tests/utils/restPush.test.ts`](../../tests/utils/restPush.test.ts), [`tests/services/rest-push-controller.test.ts`](../../tests/services/rest-push-controller.test.ts), [`tests/services/push.test.ts`](../../tests/services/push.test.ts) | Pure plan boundaries, serialized state reconciliation, deduplication, and RPC argument/result handling |
 | Vanilla Zustand store tests | [`tests/store/`](../../tests/store/) | Create isolated stores with `createAppStore()`; test slice actions and persistence without a React harness. |
 | Store-backed selector render tests | [`tests/store-test-utils.ts`](../../tests/store-test-utils.ts) | Zustand 5 `useStore` reads `getInitialState()` for the server snapshot. Seed the singleton and spy on `getInitialState()` to return current state before `renderToStaticMarkup`; reset the store and spies afterward. |
 
@@ -71,6 +73,7 @@ ROLLBACK;
 | Persistence (`db.ts`, store persistence adapter) | `tests/services/db.test.ts` and `tests/store/persistence.test.ts` with fake IndexedDB: hydration, scopes, migration, reload, and store subscription behavior |
 | Outbox / diff / ordering | `tests/services/sync-queue.test.ts` |
 | Push/pull, conflicts, errors | `tests/services/cloud-sync.test.ts` with fake client |
+| Web Push client scheduling | Rest-push controller and RPC wrapper tests; run `pnpm fn:test` for sender behavior |
 | Backup format | `tests/utils/backup.test.ts`, including legacy shapes |
 | Migration / RLS / RPC | pgTAP in `supabase/tests/` + `pnpm db:reset && pnpm db:test && pnpm db:lint` |
 | Sync contract (field/table) | Both sides — see the [checklist](../architecture/frontend-backend-strategy.md#checklist-add-a-synced-field-or-table) |

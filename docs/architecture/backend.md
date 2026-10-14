@@ -6,7 +6,7 @@ Last verified: 2026-10-14
 
 ## At a glance
 
-- **Supabase only**: Auth + Postgres 17 + RLS + two RPCs. No custom server or Edge Functions today; no cron or Storage buckets are in use. Future server-side logic (for example, rest-timer push notifications) will use Supabase Edge Functions, its managed serverless runtime, so no custom server is needed. Push notifications are deferred.
+- **Supabase only**: Auth + Postgres 17 + RLS + RPCs, with one managed Edge Function, `send-rest-push`, for server-scheduled rest-timer Web Push. There is no custom server. Push storage and dispatch use `pg_cron` and `pg_net`.
 - 12 owner-scoped tables in `public`, all with sync metadata maintained by a trigger.
 - Clients write through versioned `public.sync_push` and read with table selects. Private contract metadata drives its whitelist. Contract details: [frontend–backend strategy](frontend-backend-strategy.md).
 - Migrations in [`supabase/migrations/`](../../supabase/migrations/20261007135400_create_private_workout_data.sql) are forward-only; never edit an applied one.
@@ -64,6 +64,53 @@ Grants: the initial migration grants `SELECT, INSERT, UPDATE` to `authenticated`
 |---|---|---|---|
 | `public.sync_push(p_operation_id uuid, p_changes jsonb, p_contract_version integer DEFAULT NULL) returns jsonb` | `SECURITY DEFINER`, `search_path = pg_catalog, private` | `authenticated` | Validated, idempotent batch of 1–100 upserts/deletes; child upserts under tombstoned parents and live descendants of newly tombstoned parents receive tombstones with new revisions |
 | `public.get_sync_entitlement() returns jsonb` | `SECURITY INVOKER`, `search_path = pg_catalog` | `authenticated` only | Returns `{ eligible: true }`; raises `28000` if unauthenticated |
+| `public.upsert_push_subscription(text, text, text, text) returns uuid` | `SECURITY DEFINER`, empty search path | `authenticated` only | Registers or transfers an allowlisted Web Push endpoint; removes the oldest subscriptions beyond ten per user |
+| `public.delete_push_subscription(text) returns void` | `SECURITY DEFINER`, empty search path | `authenticated` only | Deletes the caller's endpoint |
+| `public.schedule_rest_push(text, integer, text, text) returns uuid` | `SECURITY DEFINER`, empty search path | `authenticated` only | Cancels the endpoint's pending or sending schedule and replaces it with a server-calculated deadline |
+| `public.cancel_rest_push(text) returns void` | `SECURITY DEFINER`, empty search path | `authenticated` only | Cancels the caller's pending or sending schedule |
+| `public.claim_due_rest_pushes(integer) returns table` | `SECURITY DEFINER`, empty search path | `service_role` only | Atomically claims due schedules; fails sending rows stale for more than 60 seconds |
+| `public.complete_rest_push(uuid, text, text) returns void` | `SECURITY DEFINER`, empty search path | `service_role` only | Marks a schedule sent or failed only while it remains in `sending` |
+| `public.remove_push_subscription_by_endpoint(text) returns void` | `SECURITY DEFINER`, empty search path | `service_role` only | Deletes a subscription whose push endpoint is gone |
+| `private.dispatch_due_rest_pushes() returns bigint` | `SECURITY DEFINER`, empty search path | Cron / database owner only | Calls `send-rest-push` through `pg_net` when a schedule is due and both Vault secrets exist |
+| `private.cleanup_rest_push() returns void` | `SECURITY DEFINER`, empty search path | Cron / database owner only | Removes final schedules and old cron run details |
+
+### Rest timer push data and dispatch
+
+The push tables are independent from the 12 synced workout tables and are not listed in `src/sync/contract.ts` or the private sync metadata.
+
+| Table | Purpose | Client access |
+|---|---|---|
+| `public.push_subscriptions` | One Web Push endpoint and its encryption keys per registered device; an endpoint can be transferred to the currently signed-in account | Authenticated `SELECT` of own rows only; all writes go through RPCs |
+| `public.rest_push_schedules` | Notification title/body, server `fire_at`, delivery status, attempts, and last error | Authenticated `SELECT` of own rows only; all writes go through RPCs |
+
+The client can keep at most ten subscriptions per account. Registering another endpoint deletes the least recently refreshed rows first (`updated_at`, then `created_at`). There can be at most one `pending` schedule per subscription; rescheduling cancels its prior `pending` or `sending` row. Schedule delays are limited to 1 second through 2 hours.
+
+Subscription endpoints are restricted in both the database and the Edge Function to `fcm.googleapis.com`, `android.googleapis.com`, and subdomains of `push.apple.com`, `push.services.mozilla.com`, and `notify.windows.com`. The Edge Function checks this allowlist before sending and removes rejected subscriptions. Immediately before sending, it also verifies that the claimed schedule remains in `sending`; cancelled queued claims are skipped. Its pinned `web-push@3.6.7` sender uses Node's `https.request` transport, which does not automatically follow redirects.
+
+`pg_cron` runs `private.dispatch_due_rest_pushes()` every two seconds. It returns without an HTTP request when no rows are due, or when either Vault secret is absent. With both secrets present, it enqueues a `net.http_post` request to the Edge Function. `public.claim_due_rest_pushes` uses `FOR UPDATE SKIP LOCKED`, so concurrent function invocations claim disjoint rows. The Edge Function reports each result with `complete_rest_push`; for expired endpoints it calls `remove_push_subscription_by_endpoint`.
+
+Cancel and reschedule also mark claimed `sending` rows as `cancelled`, and completion never overwrites that state. A push request already handed to a provider cannot be recalled; there remains a sub-second race between cancellation and provider acceptance.
+
+The daily `cleanup-rest-pushes` job removes `sent`, `failed`, and `cancelled` schedules older than a day and attempts to remove cron run details older than a day. Run-detail cleanup is skipped if the database role lacks permission.
+
+#### Vault setup
+
+Store the full function URL and a high-entropy shared dispatch secret in Vault. Do not place their values in `supabase/config.toml`, migrations, or source control.
+
+Locally, after the `send-rest-push` function is available, create the secrets in the local database:
+
+```sql
+select vault.create_secret(
+  '<full local function URL>',
+  'rest_push_function_url'
+);
+select vault.create_secret(
+  '<high-entropy shared secret>',
+  'rest_push_dispatch_secret'
+);
+```
+
+Use a local URL reachable from the database container, such as `http://host.docker.internal:54321/functions/v1/send-rest-push`. In production, run the same `vault.create_secret` calls against the production database with the deployed function URL, for example `https://<project-ref>.supabase.co/functions/v1/send-rest-push`, and the production-only secret. Never include real values in docs or logs.
 
 - Latest `sync_push`: [`20261013183000_sync_contract_metadata_and_version.sql`](../../supabase/migrations/20261013183000_sync_contract_metadata_and_version.sql) (metadata, version gate, grant/revoke). Prior: `20261010111000_preserve_history_metrics_in_sync_push.sql`, `20261010100000_allow_authenticated_account_sync.sql`, `20261007150000_add_sync_push.sql`.
 - `get_sync_entitlement`: [`20261010110000_remove_stripe_billing_add_sync_entitlement.sql`](../../supabase/migrations/20261010110000_remove_stripe_billing_add_sync_entitlement.sql) lines 59–78.
@@ -124,7 +171,9 @@ Production redirect URLs are configured in the Supabase dashboard (Auth > URL co
 | `20261010111000_preserve_history_metrics_in_sync_push` | Previous `sync_push` definition | Superseded |
 | `20261013155500_revoke_direct_sync_table_writes` | Restricts synced-table client writes to `sync_push`; keeps pull reads | Active |
 | `20261013183000_sync_contract_metadata_and_version` | Private contract metadata, version gate, and `sync_push` whitelist driven by metadata | Active |
-| `20261014154300_tombstone_children_of_deleted_parents` | Guards child upserts, cascades parent tombstones, and repairs existing live descendants | **Active (latest)** |
+| `20261014154300_tombstone_children_of_deleted_parents` | Guards child upserts, cascades parent tombstones, and repairs existing live descendants | Active |
+| `20261014171406_rest_timer_push` | Web Push subscriptions/schedules, RPC access, `pg_cron` dispatch and cleanup | Active |
+| `20261014200000_harden_rest_push` | Web Push host allowlist, cleanup of invalid subscriptions, and cancellation-safe schedule transitions | **Active (latest)** |
 
 Billing context: [ADR 0005](../decisions/0005-remove-billing-signed-in-sync.md).
 
@@ -150,19 +199,47 @@ TODO(human): define the final starter exercises and routines in `src/data/initia
 
 | Not present | Implication |
 |---|---|
-| Custom server (a former Fastify backend lived outside this repo; consolidated away in `b624129`) | All logic is SQL (RPCs, triggers, RLS) or client-side |
-| Edge Functions (`supabase/functions/` absent today) | No server-side HTTP handlers or webhooks yet; future server-side logic will use Supabase Edge Functions |
-| Scheduled jobs (pg_cron) | No background maintenance (e.g. tombstone cleanup) |
+| Custom server (a former Fastify backend lived outside this repo; consolidated away in `b624129`) | Server-side push delivery runs in the managed `send-rest-push` Edge Function |
+| Production Vault secrets | `rest_push_function_url` and `rest_push_dispatch_secret` must be created in the target database before push dispatch can send HTTP requests |
 | Storage buckets | Media URLs are stored as strings only |
 | Billing | Removed; see ADR 0005 |
 | CI migration deployment | Migrations are applied manually with the Supabase CLI |
 
-## Adding server-side logic (Edge Functions, scheduled jobs, push)
+## Rest-timer Edge Function deployment
 
-Future server-side logic (for example, rest-timer push notifications) will run as Supabase Edge Functions, Supabase's managed serverless runtime; no custom server is needed. Push notifications are deferred and not implemented, and no `supabase/functions/` directory exists today.
+`send-rest-push` is the only Edge Function; no custom server is needed. It checks the database dispatch secret, claims schedules with the service-role RPCs, and sends RFC 8291 Web Push using VAPID.
 
-- Set secrets with `supabase secrets set` or in the Supabase dashboard, read them with `Deno.env.get`, and never commit them.
-- Deploy functions with `supabase functions deploy`.
+- Function environment:
+
+  | Variable | Purpose |
+  |---|---|
+  | `REST_PUSH_DISPATCH_SECRET` | High-entropy secret shared with the database Vault dispatcher |
+  | `VAPID_PUBLIC_KEY` | Base64url P-256 public point (65 bytes) |
+  | `VAPID_PRIVATE_KEY` | Base64url P-256 private scalar (32 bytes); server-side only |
+  | `VAPID_SUBJECT` | `mailto:` or `https:` contact URI used in VAPID |
+  | `SUPABASE_URL` | Supabase project URL, provided by the Edge Runtime |
+  | `SUPABASE_SERVICE_ROLE_KEY` | Service-role key, provided by the Edge Runtime; never expose it to the browser |
+
+- Generate a VAPID P-256 key pair with `pnpm push:vapid`. Use the generated public key for `VITE_VAPID_PUBLIC_KEY` and `VAPID_PUBLIC_KEY`; keep the private key server-side.
+- Set Edge Function environment secrets (replace every placeholder with the generated/configured value):
+
+  ```sh
+  supabase secrets set \
+    REST_PUSH_DISPATCH_SECRET='replace-with-a-random-shared-secret' \
+    VAPID_PUBLIC_KEY='replace-with-the-generated-public-key' \
+    VAPID_PRIVATE_KEY='replace-with-the-generated-private-key' \
+    VAPID_SUBJECT='mailto:admin@example.test'
+  ```
+
+- Deploy the function with JWT verification disabled because the database dispatcher authenticates through `x-dispatch-secret`:
+
+  ```sh
+  supabase functions deploy send-rest-push --no-verify-jwt
+  ```
+
+- Create `rest_push_function_url` and `rest_push_dispatch_secret` in Vault using `vault.create_secret` as described above. The URL is the deployed function URL; the secret must exactly match `REST_PUSH_DISPATCH_SECRET`. The dispatcher intentionally does nothing until both Vault secrets exist.
+- Deploy in this order: apply the database migration; deploy `send-rest-push` and set its Edge Function secrets; create both Vault secrets in the target database; then deploy the frontend with `VITE_VAPID_PUBLIC_KEY`.
+- For local setup, see [onboarding](../onboarding.md#local-rest-timer-push).
 
 ## Related
 
@@ -171,5 +248,6 @@ Future server-side logic (for example, rest-timer push notifications) will run a
 - [Security](../standards/security.md)
 - [Testing strategy](../standards/testing-strategy.md)
 - [ADR 0008 – Sync contract source and version](../decisions/0008-sync-contract-source-and-version.md)
+- [ADR 0010 – Server-scheduled rest timer push notifications](../decisions/0010-server-scheduled-rest-push.md)
 - [ADR 0002 – Supabase-only backend](../decisions/0002-supabase-only-backend.md)
 - [ADR 0005 – Remove billing](../decisions/0005-remove-billing-signed-in-sync.md)
