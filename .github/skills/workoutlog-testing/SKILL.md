@@ -4,7 +4,7 @@ description: "Trigger: tests, Vitest, pgTAP, fake-indexeddb, mocks, fixtures, te
 license: Apache-2.0
 metadata:
   author: "dawalberto"
-  version: "1.0"
+  version: "1.1"
 ---
 
 ## Activation Contract
@@ -29,6 +29,8 @@ Load when adding or changing tests in `tests/` or `supabase/tests/`, or when dec
 | Rendered status text | `renderToStaticMarkup` (`tests/sync-wiring.test.tsx`) |
 | Behavior before a refactor | Characterization test and snapshot in `tests/__snapshots__/`; keep it unchanged during the refactor |
 | Persistence | Fake IndexedDB (`tests/services/db.test.ts`) |
+| Store slice/action logic | Isolated vanilla stores from `createAppStore()` (`tests/store/`); no React harness |
+| Store-backed selector with server rendering | Use `tests/store-test-utils.ts`; Zustand 5 `useStore` uses `getInitialState()` as the server snapshot, so seed the singleton and spy on `getInitialState()` to read the seeded state |
 | Push/pull/errors | Fake Supabase client (`tests/services/cloud-sync.test.ts`) |
 | Migration/RLS/RPC | pgTAP (`supabase/tests/workout_rls.test.sql`) |
 | UI-only styling | None mandatory; `pnpm lint` + `pnpm build` |

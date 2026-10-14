@@ -1,13 +1,12 @@
 import React from 'react';
 import { Dumbbell } from 'lucide-react';
-import type { ExerciseDefinition, ExerciseDiary, ExerciseRmLog } from '../../types';
+import type { ExerciseDefinition } from '../../types';
+import { useExerciseCatalogGrid } from '../../hooks/exercise-catalog/useExerciseCatalogGrid';
 import { ExerciseCatalogCard } from './ExerciseCatalogCard';
 
 interface ExerciseCatalogGridProps {
-  exercises: ExerciseDefinition[];
-  rmLogs: ExerciseRmLog[];
-  exerciseDiary: ExerciseDiary[];
-  onOpenDiary?: (exerciseName: string, exerciseId?: string) => void;
+  searchTerm: string;
+  selectedCategory: string;
   onCreateExercise: () => void;
   onPreview: (exercise: ExerciseDefinition) => void;
   onEdit: (exercise: ExerciseDefinition) => void;
@@ -15,16 +14,15 @@ interface ExerciseCatalogGridProps {
 }
 
 export const ExerciseCatalogGrid: React.FC<ExerciseCatalogGridProps> = ({
-  exercises,
-  rmLogs,
-  exerciseDiary,
-  onOpenDiary,
+  searchTerm,
+  selectedCategory,
   onCreateExercise,
   onPreview,
   onEdit,
   onDelete,
-}) => (
-  exercises.length === 0 ? (
+}) => {
+  const exercises = useExerciseCatalogGrid(searchTerm, selectedCategory);
+  return exercises.length === 0 ? (
     <div className="text-center py-20 px-6 bg-[#1C1C1E] rounded-2xl border border-white/[0.08] max-w-md mx-auto my-6 shadow-xl">
       <div className="w-14 h-14 bg-zinc-900 border border-white/10 rounded-2xl flex items-center justify-center mx-auto mb-3 text-zinc-500">
         <Dumbbell className="w-7 h-7" />
@@ -47,14 +45,11 @@ export const ExerciseCatalogGrid: React.FC<ExerciseCatalogGridProps> = ({
         <ExerciseCatalogCard
           key={exercise.id}
           exercise={exercise}
-          rmLogs={rmLogs}
-          exerciseDiary={exerciseDiary}
-          onOpenDiary={onOpenDiary}
           onPreview={onPreview}
           onEdit={onEdit}
           onDelete={onDelete}
         />
       ))}
     </div>
-  )
-);
+  );
+};

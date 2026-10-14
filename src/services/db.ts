@@ -809,6 +809,10 @@ const syncCollectionForTable = Object.fromEntries(
   SYNC_CONTRACT_TABLES.map(({ name, storageKey }) => [name, storageKey]),
 ) as Record<SyncTable, (typeof syncCollectionKeys)[number]>;
 
+const syncTableApplicationOrder = new Map<SyncTable, number>(
+  SYNC_CONTRACT_TABLES.map(({ name }, index) => [name, index]),
+);
+
 function compareServerRevisions(left: string, right: string): number {
   const leftRevision = BigInt(left);
   const rightRevision = BigInt(right);
@@ -854,8 +858,14 @@ export async function applyRemoteSyncChanges(
     const changedCollections = new Set<string>();
     const removedOperations = new Set<number>();
     const latestMetadata = new Map(metadata);
+    // Contract order applies each parent collection before its nested children.
+    const changesInApplyOrder = [...changes].sort(
+      (left, right) =>
+        syncTableApplicationOrder.get(left.table)! -
+        syncTableApplicationOrder.get(right.table)!,
+    );
 
-    for (const change of changes) {
+    for (const change of changesInApplyOrder) {
       const keyForRecord = metadataKey(owner, change.table, change.id);
       const previous = latestMetadata.get(keyForRecord);
       if (

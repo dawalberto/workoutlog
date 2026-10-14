@@ -6,6 +6,8 @@ import {
   createRmRecord,
   deleteRmRecordFromLogs,
   editRmRecordInLogs,
+  filterRmLogs,
+  getAvailableRmCatalog,
   sortRmRecordsByDate,
 } from '../../src/utils/rmLogs';
 
@@ -101,5 +103,27 @@ describe('RM log transformations', () => {
       records: [newestRecord],
       updatedAt: 'now',
     });
+  });
+
+  it('filters RM logs by normalized exercise name or category', () => {
+    const rowLog = {
+      ...log,
+      id: 'rm-log-row',
+      exerciseId: 'exercise-row',
+      exerciseName: 'Remo con Barra',
+      category: 'Espalda',
+    };
+
+    expect(filterRmLogs([log, rowLog], '  REMO  ')).toEqual([rowLog]);
+    expect(filterRmLogs([log, rowLog], 'espalda')).toEqual([rowLog]);
+    expect(filterRmLogs([log, rowLog], '')).toEqual([log, rowLog]);
+  });
+
+  it('excludes tracked names from catalog choices before applying search', () => {
+    const tracked = { ...exercise, name: 'Press de Banca' };
+    const available = { ...exercise, id: 'exercise-row', name: 'Remo con Barra', category: 'Espalda' };
+
+    expect(getAvailableRmCatalog([tracked, available], [log], 'ESPALDA')).toEqual([available]);
+    expect(getAvailableRmCatalog([tracked, available], [log], '')).toEqual([available]);
   });
 });

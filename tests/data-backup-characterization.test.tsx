@@ -8,6 +8,7 @@ import type {
   Routine,
   WorkoutHistoryLog,
 } from '../src/types';
+import type { AppState } from '../src/store/appStore';
 
 const { downloadJsonFileMock } = vi.hoisted(() => ({
   downloadJsonFileMock: vi.fn(),
@@ -25,18 +26,6 @@ const routines: Routine[] = [];
 const rmLogs: ExerciseRmLog[] = [];
 const workoutHistory: WorkoutHistoryLog[] = [];
 const exerciseDiary: ExerciseDiary[] = [];
-
-const backupProps = {
-  isOpen: true,
-  onClose: vi.fn(),
-  catalog,
-  routines,
-  rmLogs,
-  workoutHistory,
-  exerciseDiary,
-  isSyncEnabled: false,
-  onImportComplete: vi.fn(),
-};
 
 type ElementProps = { children?: ReactNode; [key: string]: unknown };
 type StateOverrides = Record<number, unknown>;
@@ -60,9 +49,32 @@ function findElement(
   return findElement(node.props.children, predicate);
 }
 
-async function setup(overrides: StateOverrides = {}, props = backupProps) {
+async function setup(
+  overrides: StateOverrides = {},
+  storeState: {
+    closeBackupModal?: AppState['closeBackupModal'];
+    importBackup?: AppState['importBackup'];
+  } = {},
+) {
   vi.doUnmock('react');
   vi.resetModules();
+  const storeTestUtils = await import('./store-test-utils');
+  storeTestUtils.seedPersistedAppStore({ catalog, routines, rmLogs, workoutHistory, exerciseDiary });
+  storeTestUtils.seedAppStore({
+    isBackupModalOpen: true,
+    isSyncEnabled: false,
+    ...storeState,
+  });
+  storeTestUtils.useCurrentStateAsServerSnapshot();
+  const storeModule = await import('../src/store/appStore');
+  vi.doMock('../src/store/appStore', () => ({
+    appStore: storeModule.appStore,
+    useAppStore: (selector: (state: AppState) => unknown) =>
+      selector(storeModule.appStore.getState()),
+  }));
+  vi.doMock('zustand/react/shallow', () => ({
+    useShallow: (selector: unknown) => selector,
+  }));
   let stateIndex = 0;
   vi.doMock('react', async (importOriginal) => {
     const actual = await importOriginal<typeof import('react')>();
@@ -83,13 +95,17 @@ async function setup(overrides: StateOverrides = {}, props = backupProps) {
   const { DataBackupModal } = await import('../src/components/DataBackupModal');
   const render = (): React.ReactElement => {
     stateIndex = 0;
-    return DataBackupModal(props) as React.ReactElement;
+    return DataBackupModal({}) as React.ReactElement;
   };
-  return { render };
+  return { render, appStore: storeModule.appStore };
 }
 
-afterEach(() => {
+afterEach(async () => {
   vi.doUnmock('react');
+  vi.doUnmock('../src/store/appStore');
+  vi.doUnmock('zustand/react/shallow');
+  const { resetAppStore } = await import('./store-test-utils');
+  resetAppStore();
   vi.resetModules();
   vi.clearAllMocks();
   vi.useRealTimers();
@@ -151,33 +167,37 @@ describe('DataBackupModal characterization', () => {
       const { parseImportedData } = await import('../src/utils/backup');
       const parsedData = parseImportedData(JSON.stringify({ catalog: importedCatalog }));
       const onClose = vi.fn();
-      const onImportComplete = vi.fn();
+      const importBackup = vi.fn<AppState['importBackup']>();
       const { render } = await setup({
         0: 'import',
         1: { name: 'workoutlog-backup.json' },
         2: parsedData,
         4: mode,
-      }, {
-          ...backupProps,
-          onClose,
-          onImportComplete,
-      });
+      }, { closeBackupModal: onClose, importBackup });
       const confirmImport = findElement(render(), (props) => props.id === 'btn-confirm-import');
 
       (confirmImport?.props.onClick as () => void)();
 
-      expect(onImportComplete).toHaveBeenCalledOnce();
-      const [mergedCatalog, nextRoutines, nextRmLogs, nextHistory, nextDiary, summary] =
-        onImportComplete.mock.calls[0];
-      expect((mergedCatalog as ExerciseDefinition[]).map(({ id }) => id)).toEqual(
+      expect(importBackup).toHaveBeenCalledOnce();
+      const [data, summary] = importBackup.mock.calls[0] as [
+        {
+          catalog: ExerciseDefinition[];
+          routines: Routine[];
+          rmLogs: ExerciseRmLog[];
+          workoutHistory: WorkoutHistoryLog[];
+          exerciseDiary: ExerciseDiary[];
+        },
+        { mode: string },
+      ];
+      expect(data.catalog.map(({ id }) => id)).toEqual(
         mode === 'merge'
           ? ['exercise-press', 'imported-squat']
           : ['imported-squat'],
       );
-      expect(nextRoutines).toEqual([]);
-      expect(nextRmLogs).toEqual([]);
-      expect(nextHistory).toEqual([]);
-      expect(nextDiary).toEqual([]);
+      expect(data.routines).toEqual([]);
+      expect(data.rmLogs).toEqual([]);
+      expect(data.workoutHistory).toEqual([]);
+      expect(data.exerciseDiary).toEqual([]);
       expect(summary).toEqual(expect.objectContaining({ mode }));
       expect(onClose).toHaveBeenCalledOnce();
     },

@@ -1,31 +1,28 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Clock, Flag, Play, RotateCcw } from 'lucide-react';
-import type { ActiveWorkoutSession, Routine } from '../../types';
 import { formatWorkoutDuration } from '../../utils/timeCalculations';
+import { useWorkoutProgressPanel } from '../../hooks/routine/useWorkoutProgressPanel';
+import { WorkoutFinishConfirmModal } from '../WorkoutFinishConfirmModal';
 
 interface WorkoutProgressPanelProps {
-  routine: Routine;
-  session?: ActiveWorkoutSession | null;
   elapsedSeconds: number;
-  completedSetsCount: number;
-  totalSetsCount: number;
-  completionPercentage: number;
-  onStartSession: (routineId: string) => void;
-  onResetSession: () => void;
-  onOpenFinishConfirm: () => void;
 }
 
-export const WorkoutProgressPanel: React.FC<WorkoutProgressPanelProps> = ({
-  routine,
-  session,
-  elapsedSeconds,
-  completedSetsCount,
-  totalSetsCount,
-  completionPercentage,
-  onStartSession,
-  onResetSession,
-  onOpenFinishConfirm,
-}) => (
+export const WorkoutProgressPanel: React.FC<WorkoutProgressPanelProps> = ({ elapsedSeconds }) => {
+  const [isFinishConfirmOpen, setIsFinishConfirmOpen] = useState(false);
+  const {
+    routine,
+    session,
+    completedSetsCount,
+    totalSetsCount,
+    completionPercentage,
+    onStartSession,
+    onResetSession,
+    onConfirmFinish,
+  } = useWorkoutProgressPanel();
+  if (!routine) return null;
+
+  return (
   <>
     {/* Progress bar and Live Stopwatch in Execution Mode */}
     <div className="mt-6 pt-5 border-t border-white/[0.08]">
@@ -71,7 +68,7 @@ export const WorkoutProgressPanel: React.FC<WorkoutProgressPanelProps> = ({
             <button
               id="btn-start-workout-session"
               type="button"
-              onClick={() => onStartSession(routine.id)}
+              onClick={onStartSession}
               className="min-h-[48px] inline-flex items-center gap-2 px-6 text-sm font-extrabold rounded-2xl bg-[#00FF87] hover:bg-[#00e57a] text-black shadow-[0_0_20px_rgba(0,255,135,0.35)] transition-all active:scale-[0.97]"
             >
               <Play className="w-4 h-4 fill-current" />
@@ -103,7 +100,7 @@ export const WorkoutProgressPanel: React.FC<WorkoutProgressPanelProps> = ({
               <button
                 id="btn-finish-workout-session"
                 type="button"
-                onClick={onOpenFinishConfirm}
+                onClick={() => setIsFinishConfirmOpen(true)}
                 className="min-h-[48px] inline-flex items-center gap-2 px-5 text-sm font-extrabold rounded-2xl bg-[#00E5FF] hover:bg-[#00cbe2] text-black shadow-[0_0_20px_rgba(0,229,255,0.3)] transition-all active:scale-[0.97]"
               >
                 <Flag className="w-4 h-4 stroke-[2.5]" />
@@ -114,5 +111,15 @@ export const WorkoutProgressPanel: React.FC<WorkoutProgressPanelProps> = ({
         )}
       </div>
     </div>
+    <WorkoutFinishConfirmModal
+      isOpen={isFinishConfirmOpen}
+      elapsedSeconds={elapsedSeconds}
+      onCancel={() => setIsFinishConfirmOpen(false)}
+      onConfirm={() => {
+        setIsFinishConfirmOpen(false);
+        onConfirmFinish();
+      }}
+    />
   </>
-);
+  );
+};

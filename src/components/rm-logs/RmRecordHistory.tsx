@@ -10,40 +10,24 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react';
-import type { ExerciseRmLog, RmRecord } from '../../types';
+import type { ExerciseRmLog } from '../../types';
 import { formatRmDate } from '../../utils/rmCalculations';
+import { useRmRecordHistory } from '../../hooks/rm-logs/useRmRecordHistory';
+import type { RmRecordFormState } from '../../hooks/rm-logs/useRmRecordForm';
 
 interface RmRecordHistoryProps {
   log: ExerciseRmLog;
-  editingRecordId: string | null;
-  editWeight: string;
-  setEditWeight: (value: string) => void;
-  editDate: string;
-  setEditDate: (value: string) => void;
-  editNotes: string;
-  setEditNotes: (value: string) => void;
+  recordForm: RmRecordFormState;
   onOpenQuickLog: () => void;
-  onCancelEdit: () => void;
-  onStartEditRecord: (record: RmRecord) => void;
-  onSaveEditRecord: (logId: string, recordId: string) => void;
-  onDeleteRecord: (logId: string, recordId: string) => void;
 }
 
 export const RmRecordHistory: React.FC<RmRecordHistoryProps> = ({
   log,
-  editingRecordId,
-  editWeight,
-  setEditWeight,
-  editDate,
-  setEditDate,
-  editNotes,
-  setEditNotes,
+  recordForm,
   onOpenQuickLog,
-  onCancelEdit,
-  onStartEditRecord,
-  onSaveEditRecord,
-  onDeleteRecord,
-}) => (
+}) => {
+  const actions = useRmRecordHistory(log, recordForm);
+  return (
   <div className="border-t border-white/[0.08] bg-black/40 p-4 sm:p-5 animate-in slide-in-from-top-2 duration-150">
     <div className="flex items-center justify-between mb-3">
       <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -64,7 +48,7 @@ export const RmRecordHistory: React.FC<RmRecordHistoryProps> = ({
       {log.records.map((record, rIdx) => {
         const nextRecord = log.records[rIdx + 1];
         const diff = nextRecord ? record.weight - nextRecord.weight : 0;
-        const isEditingThis = editingRecordId === record.id;
+        const isEditingThis = actions.editingRecordId === record.id;
 
         if (isEditingThis) {
           return (
@@ -81,8 +65,8 @@ export const RmRecordHistory: React.FC<RmRecordHistoryProps> = ({
                     type="number"
                     step="0.5"
                     min="0"
-                    value={editWeight}
-                    onChange={(e) => setEditWeight(e.target.value)}
+                    value={actions.editWeight}
+                    onChange={(e) => actions.setEditWeight(e.target.value)}
                     className="w-full min-h-[44px] px-3 py-2 text-xs font-bold rounded-xl border border-white/10 bg-zinc-900 text-white focus:outline-none focus:border-[#00FF87]"
                   />
                 </div>
@@ -93,8 +77,8 @@ export const RmRecordHistory: React.FC<RmRecordHistoryProps> = ({
                   </label>
                   <input
                     type="date"
-                    value={editDate}
-                    onChange={(e) => setEditDate(e.target.value)}
+                    value={actions.editDate}
+                    onChange={(e) => actions.setEditDate(e.target.value)}
                     className="w-full min-h-[44px] px-3 py-2 text-xs font-semibold rounded-xl border border-white/10 bg-zinc-900 text-white focus:outline-none focus:border-[#00FF87]"
                   />
                 </div>
@@ -106,8 +90,8 @@ export const RmRecordHistory: React.FC<RmRecordHistoryProps> = ({
                   <input
                     type="text"
                     placeholder="RPE 9.5, agarre cerrado..."
-                    value={editNotes}
-                    onChange={(e) => setEditNotes(e.target.value)}
+                    value={actions.editNotes}
+                    onChange={(e) => actions.setEditNotes(e.target.value)}
                     className="w-full min-h-[44px] px-3 py-2 text-xs rounded-xl border border-white/10 bg-zinc-900 text-white focus:outline-none focus:border-[#00FF87]"
                   />
                 </div>
@@ -116,14 +100,14 @@ export const RmRecordHistory: React.FC<RmRecordHistoryProps> = ({
               <div className="flex items-center justify-end gap-2">
                 <button
                   type="button"
-                  onClick={onCancelEdit}
+                  onClick={actions.handleCancelEdit}
                   className="px-3 min-h-[40px] text-xs font-semibold text-zinc-400 hover:text-white rounded-xl"
                 >
                   Cancelar
                 </button>
                 <button
                   type="button"
-                  onClick={() => onSaveEditRecord(log.id, record.id)}
+                  onClick={() => actions.handleSaveEditRecord(log.id, record.id)}
                   className="px-4 min-h-[40px] text-xs font-bold text-black bg-[#00FF87] hover:bg-[#00e57a] rounded-xl flex items-center gap-1 active:scale-95"
                 >
                   <Check className="w-3.5 h-3.5" /> Guardar
@@ -187,7 +171,7 @@ export const RmRecordHistory: React.FC<RmRecordHistoryProps> = ({
             <div className="flex items-center gap-1 shrink-0">
               <button
                 type="button"
-                onClick={() => onStartEditRecord(record)}
+                onClick={() => actions.handleStartEditRecord(record)}
                 className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors"
                 title="Editar registro"
                 aria-label="Editar registro"
@@ -197,7 +181,7 @@ export const RmRecordHistory: React.FC<RmRecordHistoryProps> = ({
 
               <button
                 type="button"
-                onClick={() => onDeleteRecord(log.id, record.id)}
+                onClick={() => actions.handleDeleteRecord(log.id, record.id)}
                 className="p-1.5 text-zinc-400 hover:text-rose-400 rounded-lg hover:bg-rose-500/10 transition-colors"
                 title="Eliminar registro"
                 aria-label="Eliminar registro"
@@ -210,4 +194,5 @@ export const RmRecordHistory: React.FC<RmRecordHistoryProps> = ({
       })}
     </div>
   </div>
-);
+  );
+};

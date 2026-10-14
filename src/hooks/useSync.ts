@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type {
   ActiveWorkoutSession,
   ExerciseDefinition,
@@ -17,6 +17,8 @@ import {
   getPendingSyncOperations,
 } from '../services/db';
 import { getSupabaseBrowserClient } from '../services/supabase';
+import { useAppStore } from '../store/appStore';
+import type { SyncSnapshot } from '../store/slices/syncSlice';
 
 export interface UseSyncOptions {
   ownerId: string | null;
@@ -77,6 +79,8 @@ function pendingOperationsSignature(
 }
 
 export function useSync(options: UseSyncOptions): UseSyncResult {
+  const publishSyncState = useAppStore((state) => state.publishSyncState);
+  const registerSyncControls = useAppStore((state) => state.registerSyncControls);
   const optionsRef = useRef(options);
   optionsRef.current = options;
   const coordinatorRef = useRef<SyncCoordinator | null>(null);
@@ -452,6 +456,36 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
       void coordinatorRef.current?.run();
     }
   }, []);
+
+  // Publish before paint so store actions (e.g. sign-out) never read a stale online flag.
+  useLayoutEffect(() => {
+    const snapshot: SyncSnapshot = {
+      status: status.state,
+      error: status.error,
+      isOnline,
+      pendingCount: pendingChanges,
+      lastSyncedAt: status.lastSyncedAt,
+      updateRequired: status.updateRequired ?? false,
+    };
+    publishSyncState(snapshot);
+  }, [
+    isOnline,
+    pendingChanges,
+    publishSyncState,
+    status,
+  ]);
+
+  useEffect(() => {
+    const controls = { retry, syncNow, stopSync, resumeSync };
+    registerSyncControls(controls);
+    return () => registerSyncControls(null);
+  }, [
+    registerSyncControls,
+    resumeSync,
+    retry,
+    stopSync,
+    syncNow,
+  ]);
 
   return { status, isOnline, pendingChanges, retry, syncNow, stopSync, resumeSync };
 }

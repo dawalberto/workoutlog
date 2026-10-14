@@ -34,7 +34,7 @@ Accepted.
 - `2d5045f refactor: migrate storage from localStorage to IndexedDB`
 - `a4e29ea feat(storage): add scoped IndexedDB sync foundation`
 - [`src/services/db.ts`](../../src/services/db.ts) lines 28–37, 197–220, ~281–350
-- [`src/hooks/useAppStorage.ts`](../../src/hooks/useAppStorage.ts)
+- [`src/store/persistence.ts`](../../src/store/persistence.ts)
 - Rationale beyond offline use: `TODO(human): confirm original motivation for leaving localStorage (size, structure, sync).`
 
 ## Related

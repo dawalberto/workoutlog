@@ -5,78 +5,15 @@
 
 import React from 'react';
 import { Dumbbell, Plus, Search, X } from 'lucide-react';
-import type { ExerciseDefinition, ExerciseDiary, ExerciseRmLog } from '../types';
 import { useExerciseCatalog } from '../hooks/useExerciseCatalog';
 import { ExerciseCatalogGrid } from './exercise-catalog/ExerciseCatalogGrid';
 import { ExerciseFormModal } from './exercise-catalog/ExerciseFormModal';
 import { ExercisePreviewModal } from './exercise-catalog/ExercisePreviewModal';
 
-interface ExerciseCatalogProps {
-  exercises: ExerciseDefinition[];
-  rmLogs?: ExerciseRmLog[];
-  exerciseDiary?: ExerciseDiary[];
-  onCreateExercise: (exercise: ExerciseDefinition) => void;
-  onUpdateExercise: (exercise: ExerciseDefinition) => void;
-  onDeleteExercise: (id: string) => void;
-  onCheckRmWeight?: (exerciseName: string, newWeight: number, exerciseId?: string) => void;
-  onOpenDiary?: (exerciseName: string, exerciseId?: string) => void;
-}
-
 const CATEGORIES = ['Todos', 'Pecho', 'Espalda', 'Pierna', 'Hombro', 'Brazos', 'Core'];
 
-export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
-  exercises,
-  rmLogs = [],
-  exerciseDiary = [],
-  onCreateExercise,
-  onUpdateExercise,
-  onDeleteExercise,
-  onCheckRmWeight,
-  onOpenDiary,
-}) => {
-  const {
-    searchTerm,
-    setSearchTerm,
-    selectedCategory,
-    setSelectedCategory,
-    isEditing,
-    setIsEditing,
-    editingExercise,
-    previewExercise,
-    setPreviewExercise,
-    formName,
-    setFormName,
-    formCategory,
-    setFormCategory,
-    formImageUrl,
-    setFormImageUrl,
-    formVideoUrl,
-    setFormVideoUrl,
-    formNotes,
-    setFormNotes,
-    formDefaultSets,
-    setFormDefaultSets,
-    formDefaultReps,
-    setFormDefaultReps,
-    formDefaultWeight,
-    setFormDefaultWeight,
-    formDefaultRest,
-    setFormDefaultRest,
-    imageError,
-    setImageError,
-    filteredExercises,
-    handleOpenCreate,
-    handleOpenEdit,
-    handleSaveForm,
-    handleDelete,
-  } = useExerciseCatalog({
-    exercises,
-    onCreateExercise,
-    onUpdateExercise,
-    onDeleteExercise,
-    onCheckRmWeight,
-  });
-
+export const ExerciseCatalog: React.FC = () => {
+  const catalog = useExerciseCatalog();
   return (
     <div id="exercise-catalog-page" className="min-h-screen bg-[#0D0D0D] text-white pb-28 pt-4 sm:pt-6">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
@@ -100,7 +37,7 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
             <button
               id="btn-new-catalog-exercise"
               type="button"
-              onClick={handleOpenCreate}
+              onClick={catalog.handleOpenCreate}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 min-h-[48px] rounded-2xl text-sm font-extrabold bg-[#00FF87] hover:bg-[#00e57a] text-black shadow-[0_0_20px_rgba(0,255,135,0.35)] transition-all active:scale-[0.97]"
             >
               <Plus className="w-5 h-5 stroke-[2.5]" />
@@ -115,15 +52,15 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
             <Search className="w-4 h-4 text-zinc-500 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={catalog.searchTerm}
+              onChange={(e) => catalog.setSearchTerm(e.target.value)}
               placeholder="Buscar ejercicio o grupo muscular..."
               className="w-full min-h-[48px] pl-11 pr-10 py-2.5 text-sm rounded-2xl border border-white/10 bg-[#1C1C1E] text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/20 transition-all shadow-inner"
             />
-            {searchTerm && (
+            {catalog.searchTerm && (
               <button
                 type="button"
-                onClick={() => setSearchTerm('')}
+                onClick={() => catalog.setSearchTerm('')}
                 className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white p-1"
               >
                 <X className="w-4 h-4" />
@@ -137,9 +74,9 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
               <button
                 key={cat}
                 type="button"
-                onClick={() => setSelectedCategory(cat)}
+                onClick={() => catalog.setSelectedCategory(cat)}
                 className={`min-h-[44px] px-3.5 py-2 text-xs font-bold rounded-xl shrink-0 transition-all active:scale-95 ${
-                  selectedCategory === cat
+                  catalog.selectedCategory === cat
                     ? 'bg-[#00FF87] text-black shadow-[0_0_12px_rgba(0,255,135,0.35)] font-black'
                     : 'bg-[#1C1C1E] text-zinc-400 hover:text-white border border-white/5'
                 }`}
@@ -152,58 +89,34 @@ export const ExerciseCatalog: React.FC<ExerciseCatalogProps> = ({
 
         {/* Main List Info */}
         <div className="flex items-center justify-between text-xs font-semibold text-[#A1A1AA] px-1 mb-4">
-          <span>{filteredExercises.length} {filteredExercises.length === 1 ? 'ejercicio registrado' : 'ejercicios registrados'}</span>
+          <span>{catalog.filteredExercises.length} {catalog.filteredExercises.length === 1 ? 'ejercicio registrado' : 'ejercicios registrados'}</span>
         </div>
 
         {/* Cards Grid */}
         <ExerciseCatalogGrid
-          exercises={filteredExercises}
-          rmLogs={rmLogs}
-          exerciseDiary={exerciseDiary}
-          onOpenDiary={onOpenDiary}
-          onCreateExercise={handleOpenCreate}
-          onPreview={setPreviewExercise}
-          onEdit={handleOpenEdit}
-          onDelete={handleDelete}
+          searchTerm={catalog.searchTerm}
+          selectedCategory={catalog.selectedCategory}
+          onCreateExercise={catalog.handleOpenCreate}
+          onPreview={catalog.setPreviewExercise}
+          onEdit={catalog.handleOpenEdit}
+          onDelete={catalog.handleDelete}
         />
       </div>
 
       {/* Exercise Preview Modal */}
       <ExercisePreviewModal
-        exercise={previewExercise}
-        rmLogs={rmLogs}
-        exerciseDiary={exerciseDiary}
-        onOpenDiary={onOpenDiary}
-        onClose={() => setPreviewExercise(null)}
-        onEdit={handleOpenEdit}
+        exercise={catalog.previewExercise}
+        onClose={() => catalog.setPreviewExercise(null)}
+        onEdit={catalog.handleOpenEdit}
       />
 
       {/* Create / Edit Exercise Modal */}
       <ExerciseFormModal
-        isOpen={isEditing}
-        editingExercise={editingExercise}
-        formName={formName}
-        setFormName={setFormName}
-        formCategory={formCategory}
-        setFormCategory={setFormCategory}
-        formImageUrl={formImageUrl}
-        setFormImageUrl={setFormImageUrl}
-        formVideoUrl={formVideoUrl}
-        setFormVideoUrl={setFormVideoUrl}
-        formNotes={formNotes}
-        setFormNotes={setFormNotes}
-        formDefaultSets={formDefaultSets}
-        setFormDefaultSets={setFormDefaultSets}
-        formDefaultReps={formDefaultReps}
-        setFormDefaultReps={setFormDefaultReps}
-        formDefaultWeight={formDefaultWeight}
-        setFormDefaultWeight={setFormDefaultWeight}
-        formDefaultRest={formDefaultRest}
-        setFormDefaultRest={setFormDefaultRest}
-        imageError={imageError}
-        setImageError={setImageError}
-        onClose={() => setIsEditing(false)}
-        onSubmit={handleSaveForm}
+        isOpen={catalog.isEditing}
+        editingExercise={catalog.editingExercise}
+        form={catalog.form}
+        onClose={() => catalog.setIsEditing(false)}
+        onSubmit={catalog.handleSaveForm}
       />
     </div>
   );

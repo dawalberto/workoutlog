@@ -20,11 +20,11 @@ UI labels were checked in `src/components/` (file noted when not obvious). "—"
 | Edit mode | Modify a routine's structure | `subMode === 'edit'` in `RoutineView`; `isExecutionMode={false}` on `ExerciseCard` | "Editar" ([`RoutineView.tsx`](../../src/components/RoutineView.tsx)) |
 | Execute mode | Perform a routine, ticking sets | `subMode === 'execute'`; `isExecutionMode={true}` | "Entrenar" |
 | Active session | Routine currently being performed | `ActiveWorkoutSession` (`routineId`, `startedAt`, `completedSetIds`), tables `active_workout_sessions`, `active_session_completed_sets` | "Entrenamiento en curso" ([`ActiveWorkoutTopBanner.tsx`](../../src/components/ActiveWorkoutTopBanner.tsx)) |
-| Finish workout | End the session and save to history | `useWorkoutSession` | "Finalizar" |
+| Finish workout | End the session and save to history | `finishSession` store action | "Finalizar" |
 | Workout history | Saved completed sessions with metrics | `WorkoutHistoryLog`, tables `workout_history`, `workout_history_exercises` | "Historial" (tab); "Historial de Entrenamientos" |
 | Workout summary | Post-session summary | `WorkoutCompletionSummary`, `WorkoutSummaryModal` | "Resumen" |
 | RM | Repetition maximum (e.g. 1RM) tracked per exercise | `ExerciseRmLog`, `RmRecord`, tables `rm_logs`, `rm_records` | "RMs" (tab); "1RM" |
-| Personal record | New best RM | `RmRecordAlertModal`, `useRmTracker` | "Nuevo récord!", "Récord personal" |
+| Personal record | New best RM | `pendingRmAlert` store state and `checkRmWeight` action | "Nuevo récord!", "Récord personal" |
 | Diary | Dated notes per exercise | `ExerciseDiary`, `ExerciseDiaryEntry`, tables `exercise_diaries`, `exercise_diary_entries` | "Diario" (tab); "Diario de Ejercicios" |
 | Feeling | Diary entry mood: `good` / `neutral` / `bad` | `DiaryFeeling` | "Sensación en la sesión" ([`ExerciseDiaryView.tsx`](../../src/components/ExerciseDiaryView.tsx)) |
 | Starter data | Initial routines/exercises created as private user records | [`src/data/initialData.ts`](../../src/data/initialData.ts) | — |
@@ -35,7 +35,7 @@ UI labels were checked in `src/components/` (file noted when not obvious). "—"
 |---|---|---|---|
 | Guest | Not signed in; data only on this device | `GUEST_STORAGE_SCOPE = 'guest'` | "Solo en este dispositivo" ([`SyncStatus.tsx`](../../src/components/SyncStatus.tsx)) |
 | Owner | Signed-in user; data synced | scope `owner:<userId>` | — |
-| Sign in / out | Google OAuth via Supabase | `useAuth().signInWithGoogle` / `signOut` | "Continuar con Google" / "Cerrar sesión" ([`SidebarMenu.tsx`](../../src/components/SidebarMenu.tsx)) |
+| Sign in / out | Google OAuth via Supabase | `account` store actions, registered by the `useAuth` lifecycle adapter | "Continuar con Google" / "Cerrar sesión" ([`SidebarMenu.tsx`](../../src/components/SidebarMenu.tsx)) |
 | Entitlement | Server answer on sync eligibility (always eligible when signed in) | `get_sync_entitlement()`, `account.isSyncEnabled` | — |
 | Guest routine limit | Maximum routines for guests | `GUEST_ROUTINE_LIMIT = 3` ([`src/utils/backup.ts`](../../src/utils/backup.ts)) | — |
 | Sync eligibility | Signed-in users can sync; guests stay local-only | `account.isSyncEnabled`, `syncEnabled`, `isSyncEnabled` | "Solo en este dispositivo" ([`SyncStatus.tsx`](../../src/components/SyncStatus.tsx)) |
@@ -55,7 +55,7 @@ UI labels were checked in `src/components/` (file noted when not obvious). "—"
 | Tombstone | Soft-deleted row kept so deletions sync | `deleted_at` | — |
 | Stale conflict | Push rejected because the server row moved on | `sync_stale_revision_conflict` | "Error de sincronización" |
 | Drain round | One admitted snapshot of the outbox during a push pass | `MAX_PUSH_DRAIN_ROUNDS` | — |
-| Sync status | Current sync state | `useSync` `idle \| syncing \| synced \| error` | "Sincronizando", "Sincronizado", "Error de sincronización", "Sin conexión", "Listo para sincronizar"; button "Reintentar" |
+| Sync status | Current sync state | `syncStatus` store state, published by the `useSync` lifecycle adapter (`idle \| syncing \| synced \| error`) | "Sincronizando", "Sincronizado", "Error de sincronización", "Sin conexión", "Listo para sincronizar"; button "Reintentar" |
 
 ## Related
 

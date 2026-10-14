@@ -6,25 +6,20 @@
 import React from 'react';
 import { Flame, Menu } from 'lucide-react';
 import { AppTab } from '../types';
-
-export interface AppHeaderProps {
-  activeTab: AppTab;
-  onSelectTab: (tab: AppTab) => void;
-  routinesCount: number;
-  catalogCount: number;
-  onOpenMenu: () => void;
-}
+import { useAppHeader } from '../hooks/shell/useAppHeader';
 
 /**
  * Main application header with brand logo, sleek dark aesthetic, and drawer trigger.
  */
-export const AppHeader: React.FC<AppHeaderProps> = ({
-  activeTab,
-  onSelectTab,
-  routinesCount,
-  catalogCount,
-  onOpenMenu,
-}) => {
+export const AppHeader: React.FC = () => {
+  const {
+    activeTab,
+    onSelectTab,
+    routinesCount,
+    catalogCount,
+    onOpenMenu,
+  } = useAppHeader();
+
   return (
     <header className="bg-[#121214]/90 backdrop-blur-xl border-b border-white/[0.08] sticky top-0 z-40 shadow-lg pt-[env(safe-area-inset-top,0px)]">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">

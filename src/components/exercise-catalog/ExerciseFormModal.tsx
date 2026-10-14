@@ -1,32 +1,13 @@
 import React from 'react';
-import type { Dispatch, SetStateAction } from 'react';
 import { Dumbbell, Image as ImageIcon, X } from 'lucide-react';
 import type { ExerciseDefinition } from '../../types';
 import { TimePickerField } from '../TimePickerField';
+import type { ExerciseFormState } from '../../hooks/exercise-catalog/useExerciseForm';
 
 interface ExerciseFormModalProps {
   isOpen: boolean;
   editingExercise: ExerciseDefinition | null;
-  formName: string;
-  setFormName: Dispatch<SetStateAction<string>>;
-  formCategory: string;
-  setFormCategory: Dispatch<SetStateAction<string>>;
-  formImageUrl: string;
-  setFormImageUrl: Dispatch<SetStateAction<string>>;
-  formVideoUrl: string;
-  setFormVideoUrl: Dispatch<SetStateAction<string>>;
-  formNotes: string;
-  setFormNotes: Dispatch<SetStateAction<string>>;
-  formDefaultSets: number | string;
-  setFormDefaultSets: Dispatch<SetStateAction<number | string>>;
-  formDefaultReps: number | string;
-  setFormDefaultReps: Dispatch<SetStateAction<number | string>>;
-  formDefaultWeight: number | string;
-  setFormDefaultWeight: Dispatch<SetStateAction<number | string>>;
-  formDefaultRest: number | string;
-  setFormDefaultRest: Dispatch<SetStateAction<number | string>>;
-  imageError: boolean;
-  setImageError: Dispatch<SetStateAction<boolean>>;
+  form: ExerciseFormState;
   onClose: () => void;
   onSubmit: (event: React.FormEvent) => void;
 }
@@ -34,26 +15,7 @@ interface ExerciseFormModalProps {
 export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
   isOpen,
   editingExercise,
-  formName,
-  setFormName,
-  formCategory,
-  setFormCategory,
-  formImageUrl,
-  setFormImageUrl,
-  formVideoUrl,
-  setFormVideoUrl,
-  formNotes,
-  setFormNotes,
-  formDefaultSets,
-  setFormDefaultSets,
-  formDefaultReps,
-  setFormDefaultReps,
-  formDefaultWeight,
-  setFormDefaultWeight,
-  formDefaultRest,
-  setFormDefaultRest,
-  imageError,
-  setImageError,
+  form,
   onClose,
   onSubmit,
 }) => {
@@ -90,8 +52,8 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
             <input
               type="text"
               required
-              value={formName}
-              onChange={(e) => setFormName(e.target.value)}
+              value={form.name}
+              onChange={(e) => form.setName(e.target.value)}
               placeholder="ej. Press de Banca Plano, Sentadilla..."
               className="w-full min-h-[48px] px-4 text-sm font-bold rounded-2xl border border-white/10 bg-zinc-900 text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/20 shadow-inner"
             />
@@ -107,9 +69,9 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
                 <button
                   key={cat}
                   type="button"
-                  onClick={() => setFormCategory(cat)}
+                  onClick={() => form.setCategory(cat)}
                   className={`min-h-[40px] px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all ${
-                    formCategory === cat
+                    form.category === cat
                       ? 'bg-[#00FF87] text-black shadow-sm font-black'
                       : 'bg-zinc-900 text-zinc-400 hover:text-white border border-white/5'
                   }`}
@@ -128,13 +90,13 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
             </label>
             <div className="flex items-center gap-3">
               <div className="w-14 h-14 rounded-2xl border border-white/10 bg-zinc-900 shrink-0 overflow-hidden flex items-center justify-center relative shadow-inner">
-                {formImageUrl && !imageError ? (
+                {form.imageUrl && !form.imageError ? (
                   <img
-                    src={formImageUrl}
+                    src={form.imageUrl}
                     alt="Vista previa"
                     className="w-full h-full object-cover"
-                    onError={() => setImageError(true)}
-                    onLoad={() => setImageError(false)}
+                    onError={() => form.setImageError(true)}
+                    onLoad={() => form.setImageError(false)}
                   />
                 ) : (
                   <ImageIcon className="w-5 h-5 text-zinc-600" />
@@ -143,15 +105,15 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
               <div className="flex-1">
                 <input
                   type="url"
-                  value={formImageUrl}
+                  value={form.imageUrl}
                   onChange={(e) => {
-                    setFormImageUrl(e.target.value);
-                    setImageError(false);
+                    form.setImageUrl(e.target.value);
+                    form.setImageError(false);
                   }}
                   placeholder="https://ejemplo.com/imagen.jpg..."
                   className="w-full min-h-[48px] px-4 text-xs rounded-2xl border border-white/10 bg-zinc-900 text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#00FF87]"
                 />
-                {imageError && (
+                {form.imageError && (
                   <p className="text-[11px] text-amber-400 mt-1">
                     No se pudo cargar la imagen desde este enlace.
                   </p>
@@ -167,8 +129,8 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
             </label>
             <input
               type="url"
-              value={formVideoUrl}
-              onChange={(e) => setFormVideoUrl(e.target.value)}
+              value={form.videoUrl}
+              onChange={(e) => form.setVideoUrl(e.target.value)}
               placeholder="https://www.youtube.com/watch?v=..."
               className="w-full min-h-[48px] px-4 text-xs rounded-2xl border border-white/10 bg-zinc-900 text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#00FF87]"
             />
@@ -181,8 +143,8 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
             </label>
             <textarea
               rows={2}
-              value={formNotes}
-              onChange={(e) => setFormNotes(e.target.value)}
+              value={form.notes}
+              onChange={(e) => form.setNotes(e.target.value)}
               placeholder="Instrucciones sobre postura, agarre o tempo..."
               className="w-full p-3 text-xs rounded-2xl border border-white/10 bg-zinc-900 text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#00FF87]"
             />
@@ -202,9 +164,9 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
                   pattern="[0-9]*"
                   min="1"
                   max="12"
-                  value={formDefaultSets}
+                  value={form.defaultSets}
                   onFocus={(e) => e.target.select()}
-                  onChange={(e) => setFormDefaultSets(e.target.value)}
+                  onChange={(e) => form.setDefaultSets(e.target.value)}
                   className="w-full min-h-[44px] text-center text-xs font-black rounded-xl border border-white/10 bg-zinc-800 text-white focus:border-[#00FF87] focus:outline-none"
                 />
               </div>
@@ -216,9 +178,9 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
                   pattern="[0-9]*"
                   min="1"
                   max="100"
-                  value={formDefaultReps}
+                  value={form.defaultReps}
                   onFocus={(e) => e.target.select()}
-                  onChange={(e) => setFormDefaultReps(e.target.value)}
+                  onChange={(e) => form.setDefaultReps(e.target.value)}
                   className="w-full min-h-[44px] text-center text-xs font-black rounded-xl border border-white/10 bg-zinc-800 text-white focus:border-[#00FF87] focus:outline-none"
                 />
               </div>
@@ -231,9 +193,9 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
                   step="0.5"
                   min="0"
                   max="500"
-                  value={formDefaultWeight}
+                  value={form.defaultWeight}
                   onFocus={(e) => e.target.select()}
-                  onChange={(e) => setFormDefaultWeight(e.target.value)}
+                  onChange={(e) => form.setDefaultWeight(e.target.value)}
                   className="w-full min-h-[44px] text-center text-xs font-black rounded-xl border border-white/10 bg-zinc-800 text-white focus:border-[#00FF87] focus:outline-none"
                 />
               </div>
@@ -241,8 +203,8 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
                 <TimePickerField
                   variant="compact"
                   label="Descanso"
-                  value={formDefaultRest}
-                  onChange={(secs) => setFormDefaultRest(secs)}
+                  value={form.defaultRest}
+                  onChange={(secs) => form.setDefaultRest(secs)}
                   modalTitle="Tiempo de descanso por defecto"
                 />
               </div>

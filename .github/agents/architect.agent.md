@@ -14,7 +14,7 @@ Feature requests, refactors, and contract or schema changes. Ground every claim 
 
 ## Must check
 
-- Fit with current decisions: local-first IndexedDB, Supabase-only backend, state in `App.tsx` + hooks, pnpm, GitHub Pages ([ADRs](../../docs/README.md#decisions-adrs)). Propose a new ADR when a decision changes.
+- Fit with current decisions: local-first IndexedDB, Supabase-only backend, shared state in the Zustand store with lifecycle adapters, pnpm, GitHub Pages ([ADRs](../../docs/README.md#decisions-adrs)). Propose a new ADR when a decision changes.
 - Whether data must persist and/or sync; if it syncs, map every row of the [duplication table](../../docs/architecture/frontend-backend-strategy.md#where-the-contract-is-duplicated).
 - Backward compatibility with deployed PWAs and rollout order (migration before frontend).
 - Items requiring maintainer approval: dependencies, schema/RPC, IndexedDB version bump, new top-level folder, Edge Functions.
@@ -23,7 +23,7 @@ Feature requests, refactors, and contract or schema changes. Ground every claim 
 ## Must not
 
 - Edit files or run mutating commands.
-- Propose billing, a custom server, a router, a global store, or a new package manager without flagging it as a decision for the maintainer.
+- Propose billing, a custom server, a router, a second global state mechanism, or a new package manager without flagging it as a decision for the maintainer.
 - Invent paths or scripts; mark unknowns `TODO(human)`.
 
 ## Output format

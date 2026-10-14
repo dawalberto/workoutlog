@@ -58,9 +58,10 @@ The root [`README.md`](../README.md) is the short project summary; this folder h
 | [0003](decisions/0003-static-github-pages-pwa.md) | Static PWA hosted on GitHub Pages. |
 | [0004](decisions/0004-revision-based-outbox-sync.md) | Revision-based outbox sync. |
 | [0005](decisions/0005-remove-billing-signed-in-sync.md) | Billing removed; every signed-in user syncs. |
-| [0006](decisions/0006-app-state-in-hooks-no-router.md) | App state in `App.tsx` + hooks, no router or global store. |
+| [0006](decisions/0006-app-state-in-hooks-no-router.md) | Superseded: App state in `App.tsx` + hooks, no router or global store. |
 | [0007](decisions/0007-pnpm-package-manager.md) | pnpm is the package manager. |
 | [0008](decisions/0008-sync-contract-source-and-version.md) | Typed sync contract manifest, private SQL metadata, parity check, and client version gate. |
+| [0009](decisions/0009-zustand-app-store.md) | One Zustand app store with lifecycle adapters for persistence, auth, and sync. |
 
 ### Work logs
 

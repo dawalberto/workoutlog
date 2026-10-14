@@ -47,7 +47,7 @@ Last verified: 2026-10-13
 | File | `applyTo` |
 |---|---|
 | `frontend.instructions.md` | `src/App.tsx,src/main.tsx,src/components/**,src/hooks/**,src/utils/**,src/data/**,src/index.css,src/types.ts` |
-| `sync-contract.instructions.md` | `src/services/**,src/types/database.types.ts,src/utils/backup.ts,src/hooks/useSync.ts,src/hooks/useAppStorage.ts,src/hooks/useAuth.ts` |
+| `sync-contract.instructions.md` | `src/sync/**,src/services/**,src/store/**,src/types/database.types.ts,src/utils/backup.ts,src/hooks/useSync.ts,src/hooks/useStorageLifecycle.ts,src/hooks/useAuth.ts,supabase/migrations/**,supabase/tests/**,scripts/check-sync-contract.mjs` |
 | `database.instructions.md` | `supabase/**` |
 | `testing.instructions.md` | `tests/**,supabase/tests/**` |
 | `ci-build.instructions.md` | `.github/workflows/**,vite.config.ts,vitest.config.ts,tsconfig.json,package.json,pnpm-workspace.yaml,index.html,scripts/**` |

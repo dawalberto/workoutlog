@@ -1,110 +1,66 @@
-import React, { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
+import { AppTab } from '../types';
 import type { ExerciseDefinition } from '../types';
-import { filterExerciseCatalog } from '../utils/exerciseCatalog';
+import { useAppStore } from '../store/appStore';
+import { selectPersistedData } from '../store/selectors';
+import { buildCatalogExercise, filterExerciseCatalog } from '../utils/exerciseCatalog';
+import { useExerciseForm } from './exercise-catalog/useExerciseForm';
 
-interface UseExerciseCatalogProps {
-  exercises: ExerciseDefinition[];
-  onCreateExercise: (exercise: ExerciseDefinition) => void;
-  onUpdateExercise: (exercise: ExerciseDefinition) => void;
-  onDeleteExercise: (id: string) => void;
-  onCheckRmWeight?: (exerciseName: string, newWeight: number, exerciseId?: string) => void;
-}
+export function useExerciseCatalog() {
+  const data = useAppStore(useShallow(selectPersistedData));
+  const createCatalogExercise = useAppStore((state) => state.createCatalogExercise);
+  const updateCatalogExercise = useAppStore((state) => state.updateCatalogExercise);
+  const deleteCatalogExercise = useAppStore((state) => state.deleteCatalogExercise);
+  const checkRmWeight = useAppStore((state) => state.checkRmWeight);
+  const openExerciseDiary = useAppStore((state) => state.openExerciseDiary);
+  const setActiveTab = useAppStore((state) => state.setActiveTab);
 
-export const useExerciseCatalog = ({
-  exercises,
-  onCreateExercise,
-  onUpdateExercise,
-  onDeleteExercise,
-  onCheckRmWeight,
-}: UseExerciseCatalogProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
-  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [editingExercise, setEditingExercise] = useState<ExerciseDefinition | null>(null);
   const [previewExercise, setPreviewExercise] = useState<ExerciseDefinition | null>(null);
+  const { form, reset: resetForm } = useExerciseForm();
 
-  const [formName, setFormName] = useState('');
-  const [formCategory, setFormCategory] = useState('Pecho');
-  const [formImageUrl, setFormImageUrl] = useState('');
-  const [formVideoUrl, setFormVideoUrl] = useState('');
-  const [formNotes, setFormNotes] = useState('');
-  const [formDefaultSets, setFormDefaultSets] = useState<number | string>(3);
-  const [formDefaultReps, setFormDefaultReps] = useState<number | string>(10);
-  const [formDefaultWeight, setFormDefaultWeight] = useState<number | string>(50);
-  const [formDefaultRest, setFormDefaultRest] = useState<number | string>(90);
-  const [imageError, setImageError] = useState(false);
-
-  const filteredExercises = filterExerciseCatalog(exercises, searchTerm, selectedCategory);
+  const filteredExercises = useMemo(
+    () => filterExerciseCatalog(data.catalog, searchTerm, selectedCategory),
+    [data.catalog, searchTerm, selectedCategory],
+  );
 
   const handleOpenCreate = () => {
     setPreviewExercise(null);
     setEditingExercise(null);
-    setFormName('');
-    setFormCategory('Pecho');
-    setFormImageUrl('');
-    setFormVideoUrl('');
-    setFormNotes('');
-    setFormDefaultSets(3);
-    setFormDefaultReps(10);
-    setFormDefaultWeight(50);
-    setFormDefaultRest(90);
-    setImageError(false);
+    resetForm();
     setIsEditing(true);
   };
 
-  const handleOpenEdit = (ex: ExerciseDefinition) => {
+  const handleOpenEdit = (exercise: ExerciseDefinition) => {
     setPreviewExercise(null);
-    setEditingExercise(ex);
-    setFormName(ex.name);
-    setFormCategory(ex.category || 'Pecho');
-    setFormImageUrl(ex.imageUrl || '');
-    setFormVideoUrl(ex.videoUrl || '');
-    setFormNotes(ex.notes || '');
-    setFormDefaultSets(ex.defaultSetsCount || 3);
-    setFormDefaultReps(ex.defaultReps || 10);
-    setFormDefaultWeight(ex.defaultWeight || 50);
-    setFormDefaultRest(ex.defaultRestSeconds || 90);
-    setImageError(false);
+    setEditingExercise(exercise);
+    resetForm(exercise);
     setIsEditing(true);
   };
 
-  const handleSaveForm = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formName.trim()) return;
+  const handleSaveForm = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!form.name.trim()) return;
 
+    const savedExercise = buildCatalogExercise(
+      form,
+      editingExercise,
+      `def-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      new Date().toISOString(),
+    );
     if (editingExercise) {
-      onUpdateExercise({
-        ...editingExercise,
-        name: formName.trim(),
-        category: formCategory,
-        imageUrl: formImageUrl.trim(),
-        videoUrl: formVideoUrl.trim(),
-        notes: formNotes.trim(),
-        defaultSetsCount: Number(formDefaultSets) || 3,
-        defaultReps: Number(formDefaultReps) || 10,
-        defaultWeight: Number(formDefaultWeight) || 0,
-        defaultRestSeconds: Number(formDefaultRest) || 60,
-      });
+      updateCatalogExercise(savedExercise);
     } else {
-      const newDef: ExerciseDefinition = {
-        id: 'def-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
-        name: formName.trim(),
-        category: formCategory,
-        imageUrl: formImageUrl.trim(),
-        videoUrl: formVideoUrl.trim(),
-        notes: formNotes.trim(),
-        defaultSetsCount: Number(formDefaultSets) || 3,
-        defaultReps: Number(formDefaultReps) || 10,
-        defaultWeight: Number(formDefaultWeight) || 0,
-        defaultRestSeconds: Number(formDefaultRest) || 60,
-        createdAt: new Date().toISOString(),
-      };
-      onCreateExercise(newDef);
+      createCatalogExercise(savedExercise);
     }
 
-    const savedWeight = Number(formDefaultWeight) || 0;
-    if (savedWeight > 0 && onCheckRmWeight) {
-      onCheckRmWeight(formName.trim(), savedWeight, editingExercise?.id);
+    const savedWeight = Number(form.defaultWeight) || 0;
+    if (savedWeight > 0) {
+      checkRmWeight(savedExercise.name, savedWeight, editingExercise?.id);
     }
 
     setIsEditing(false);
@@ -112,15 +68,15 @@ export const useExerciseCatalog = ({
   };
 
   const handleDelete = (id: string, name: string) => {
-    if (window.confirm(`¿Seguro que deseas eliminar "${name}" de la biblioteca?`)) {
-      if (previewExercise?.id === id) {
-        setPreviewExercise(null);
-      }
-      onDeleteExercise(id);
-    }
+    if (!window.confirm(`¿Seguro que deseas eliminar "${name}" de la biblioteca?`)) return;
+    if (previewExercise?.id === id) setPreviewExercise(null);
+    deleteCatalogExercise(id);
   };
 
   return {
+    catalog: data.catalog,
+    rmLogs: data.rmLogs,
+    exerciseDiary: data.exerciseDiary,
     searchTerm,
     setSearchTerm,
     selectedCategory,
@@ -130,30 +86,13 @@ export const useExerciseCatalog = ({
     editingExercise,
     previewExercise,
     setPreviewExercise,
-    formName,
-    setFormName,
-    formCategory,
-    setFormCategory,
-    formImageUrl,
-    setFormImageUrl,
-    formVideoUrl,
-    setFormVideoUrl,
-    formNotes,
-    setFormNotes,
-    formDefaultSets,
-    setFormDefaultSets,
-    formDefaultReps,
-    setFormDefaultReps,
-    formDefaultWeight,
-    setFormDefaultWeight,
-    formDefaultRest,
-    setFormDefaultRest,
-    imageError,
-    setImageError,
+    form,
     filteredExercises,
     handleOpenCreate,
     handleOpenEdit,
     handleSaveForm,
     handleDelete,
+    onOpenDiary: openExerciseDiary,
+    onGoToCatalog: () => setActiveTab(AppTab.EXERCISES),
   };
-};
+}

@@ -1,4 +1,30 @@
 import type { ExerciseDefinition, ExerciseRmLog, RmRecord } from '../types';
+import { normalizeExerciseTitle } from './backup';
+
+export function filterRmLogs(logs: ExerciseRmLog[], searchTerm: string): ExerciseRmLog[] {
+  const term = normalizeExerciseTitle(searchTerm);
+  if (!term) return logs;
+  return logs.filter((log) =>
+    normalizeExerciseTitle(log.exerciseName).includes(term) ||
+    Boolean(log.category && normalizeExerciseTitle(log.category).includes(term))
+  );
+}
+
+export function getAvailableRmCatalog(
+  catalog: ExerciseDefinition[],
+  rmLogs: ExerciseRmLog[],
+  searchTerm: string,
+): ExerciseDefinition[] {
+  const trackedNames = new Set(rmLogs.map((log) => normalizeExerciseTitle(log.exerciseName)));
+  const term = normalizeExerciseTitle(searchTerm);
+  return catalog.filter((definition) => {
+    const normalizedName = normalizeExerciseTitle(definition.name);
+    if (trackedNames.has(normalizedName)) return false;
+    if (!term) return true;
+    return normalizedName.includes(term) ||
+      Boolean(definition.category && normalizeExerciseTitle(definition.category).includes(term));
+  });
+}
 
 export function createRmRecord(
   id: string,

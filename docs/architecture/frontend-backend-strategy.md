@@ -38,7 +38,7 @@ There is no REST server, no GraphQL, no Realtime subscription. Polling (30 s) pl
 
 - IndexedDB `WorkoutLogDB` v2: stores `app_state`, `record_metadata`, `sync_outbox` (autoincrement `sequence`; indexes `scope`, unique `operationId`), `sync_cursors` ([`src/services/db.ts`](../../src/services/db.ts) 28–37, 197–220).
 - On first sign-in, `transferGuestDataToOwnerOnce` moves guest state, metadata, and outbox into the owner scope ([`db.ts`](../../src/services/db.ts) 479–~570).
-- Sync waits for owner-scope hydration ([`useAppStorage`](../../src/hooks/useAppStorage.ts)).
+- Sync waits for owner-scope hydration, which is coordinated by [`useStorageLifecycle`](../../src/hooks/useStorageLifecycle.ts) through the persistence adapter.
 
 ## Outbox entry
 

@@ -5,7 +5,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppHeader } from '../src/components/AppHeader';
 import { SyncStatus } from '../src/components/SyncStatus';
 import type { UseSyncOptions } from '../src/hooks/useSync';
-import { AppTab } from '../src/types';
 
 type HookHarness = ReturnType<typeof createHookHarness>;
 
@@ -139,6 +138,16 @@ function createLocalStorage() {
     removeItem: (key: string) => values.delete(key),
     clear: () => values.clear(),
   };
+}
+
+function mockSyncStore(): void {
+  const state = {
+    publishSyncState: vi.fn(),
+    registerSyncControls: vi.fn(),
+  };
+  vi.doMock('../src/store/appStore', () => ({
+    useAppStore: (selector: (value: typeof state) => unknown) => selector(state),
+  }));
 }
 
 function createBaseline() {
@@ -280,6 +289,8 @@ describe('sync wiring', () => {
     if (storage) (await storage.getDatabase()).close();
     Reflect.deleteProperty(globalThis, 'window');
     vi.doUnmock('react');
+    vi.doUnmock('../src/store/appStore');
+    vi.doUnmock('zustand/react/shallow');
     vi.restoreAllMocks();
   });
 
@@ -299,12 +310,24 @@ describe('sync wiring', () => {
             activeHarness!.useMemo(() => callback, deps),
           useEffect: (callback: () => void | (() => void), deps?: readonly unknown[]) =>
             activeHarness!.useEffect(callback, deps),
+          useLayoutEffect: (callback: () => void | (() => void), deps?: readonly unknown[]) =>
+            activeHarness!.useEffect(callback, deps),
         };
       });
 
       storage = await import('../src/services/db');
       const backup = await import('../src/utils/backup');
-      const { useAppStorage } = await import('../src/hooks/useAppStorage');
+      const storeModule = await import('../src/store/appStore');
+      const { appStore } = storeModule;
+      const persistence = await import('../src/store/persistence');
+      vi.doMock('../src/store/appStore', () => ({
+        ...storeModule,
+        useAppStore: (selector: (state: ReturnType<typeof appStore.getState>) => unknown) =>
+          selector(appStore.getState()),
+      }));
+      vi.doMock('zustand/react/shallow', () => ({
+        useShallow: (selector: unknown) => selector,
+      }));
       const { DataBackupModal } = await import('../src/components/DataBackupModal');
       const ownerScope = { ownerId: 'import-owner' };
       const baseline = createBaseline();
@@ -318,31 +341,13 @@ describe('sync wiring', () => {
         storage.setScopedStoredItem(storage.DB_KEYS.EXERCISE_DIARY, baseline.exerciseDiary, ownerScope),
       ]);
 
-      const renderStorage = () => hookHarness.render(() => useAppStorage('import-owner', false));
-      let appStorage = renderStorage();
-      await hookHarness.runEffects();
-      for (let attempt = 0; attempt < 20 && !appStorage.isStorageLoaded; attempt += 1) {
-        await new Promise((resolve) => setTimeout(resolve, 0));
-        appStorage = renderStorage();
-        await hookHarness.runEffects();
-      }
-      expect(appStorage.isStorageLoaded).toBe(true);
+      const stopPersistence = persistence.startPersistence(appStore);
+      const stopHydration = persistence.hydrateStorage(appStore, 'import-owner', false);
+      await vi.waitFor(() => expect(appStore.getState().isStorageLoaded).toBe(true));
+      appStore.setState({ isBackupModalOpen: true, isSyncEnabled: true });
       await storage.flushScopedStorageWrites(ownerScope);
 
       const modalHarness = createHookHarness();
-      const modalProps = {
-        isOpen: true,
-        onClose: vi.fn(),
-        ...appStorage,
-        isSyncEnabled: true,
-        onImportComplete: (
-          catalog: typeof appStorage.catalog,
-          routines: typeof appStorage.routines,
-          rmLogs: typeof appStorage.rmLogs,
-          workoutHistory: typeof appStorage.workoutHistory,
-          exerciseDiary: typeof appStorage.exerciseDiary,
-        ) => appStorage.applyImportData(catalog, routines, rmLogs, workoutHistory, exerciseDiary),
-      };
       const parsedData = backup.parseImportedData(createBackupJson());
       modalHarness.slots[0] = { value: 'import', initialized: true };
       modalHarness.slots[1] = {
@@ -353,7 +358,7 @@ describe('sync wiring', () => {
       modalHarness.slots[4] = { value: mode, initialized: true };
 
       const renderModal = async () =>
-        await modalHarness.render(() => DataBackupModal(modalProps));
+        await modalHarness.render(() => DataBackupModal({}));
       let modal = await renderModal();
       if (mode === 'overwrite') {
         findElement(modal, (element) => element.props.id === 'radio-import-overwrite')
@@ -363,9 +368,9 @@ describe('sync wiring', () => {
       findElement(modal, (element) => element.props.id === 'btn-confirm-import')
         ?.props.onClick?.();
 
-      appStorage = renderStorage();
-      await hookHarness.runEffects();
       await storage.flushScopedStorageWrites(ownerScope);
+      stopHydration();
+      stopPersistence();
 
       const operations = await storage.getPendingSyncOperations(ownerScope);
       const changes = operations.flatMap((operation) => operation.request.changes);
@@ -457,7 +462,7 @@ describe('sync wiring', () => {
         .toEqual(mode === 'overwrite' ? parsedData.catalog : expect.arrayContaining(parsedData.catalog));
       const storedRoutines = await storage.getScopedStoredItem(
         storage.DB_KEYS.ROUTINES,
-        appStorage.routines,
+        appStore.getState().routines,
         ownerScope,
       );
       expect(storedRoutines)
@@ -536,15 +541,7 @@ describe('sync wiring', () => {
     expect(localOnly).toContain('Solo en este dispositivo');
     expect(localOnly).toContain('Tus datos se guardan solo en este dispositivo.');
     expect(localOnly).not.toContain(['Pre', 'mium'].join(''));
-    const header = renderToStaticMarkup(
-      <AppHeader
-        activeTab={AppTab.ROUTINES}
-        onSelectTab={vi.fn()}
-        routinesCount={0}
-        catalogCount={0}
-        onOpenMenu={vi.fn()}
-      />,
-    );
+    const header = renderToStaticMarkup(<AppHeader />);
     expect(header).not.toContain(['Pre', 'mium'].join(''));
     expect(offline).toContain('Sin conexión');
     expect(offline).toContain('Tus datos locales están a salvo');
@@ -621,6 +618,8 @@ describe('sync wiring', () => {
         activeHarness!.useMemo(() => callback, deps),
       useEffect: (callback: () => void | (() => void), deps?: readonly unknown[]) =>
         activeHarness!.useEffect(callback, deps),
+      useLayoutEffect: (callback: () => void | (() => void), deps?: readonly unknown[]) =>
+        activeHarness!.useEffect(callback, deps),
     }));
     vi.doMock('../src/services/db', () => ({
       flushScopedStorageWrites: vi.fn(async () => undefined),
@@ -652,6 +651,7 @@ describe('sync wiring', () => {
       value: true,
     });
 
+    mockSyncStore();
     const { useSync } = await import('../src/hooks/useSync');
     const options: UseSyncOptions = {
       ownerId: 'owner-1',
@@ -712,6 +712,8 @@ describe('sync wiring', () => {
           activeHarness!.useMemo(() => callback, deps),
         useEffect: (callback: () => void | (() => void), deps?: readonly unknown[]) =>
           activeHarness!.useEffect(callback, deps),
+        useLayoutEffect: (callback: () => void | (() => void), deps?: readonly unknown[]) =>
+          activeHarness!.useEffect(callback, deps),
       };
     });
     vi.doMock('../src/services/db', () => ({
@@ -744,6 +746,7 @@ describe('sync wiring', () => {
       value: true,
     });
 
+    mockSyncStore();
     const { useSync } = await import('../src/hooks/useSync');
     type SyncCollections = Pick<
       UseSyncOptions,
@@ -830,6 +833,7 @@ describe('sync wiring', () => {
       useRef: (initial: unknown) => activeHarness!.useRef(initial),
       useCallback: (callback: unknown, deps: readonly unknown[]) => activeHarness!.useMemo(() => callback, deps),
       useEffect: (callback: () => void | (() => void), deps?: readonly unknown[]) => activeHarness!.useEffect(callback, deps),
+      useLayoutEffect: (callback: () => void | (() => void), deps?: readonly unknown[]) => activeHarness!.useEffect(callback, deps),
     }));
     let rejectQueueRead = false;
     const getPendingSyncOperations = vi.fn(async () => {
@@ -854,6 +858,7 @@ describe('sync wiring', () => {
       removeEventListener: target.removeEventListener.bind(target),
     });
     Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
+    mockSyncStore();
     const { useSync } = await import('../src/hooks/useSync');
     const options: UseSyncOptions = {
       ownerId: 'owner-1', syncEnabled: true, isStorageLoaded: true, isOwnerHydrationComplete: true,

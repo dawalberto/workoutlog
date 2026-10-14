@@ -16,34 +16,20 @@ import {
   Flame,
   Zap
 } from 'lucide-react';
-import { Routine, ActiveWorkoutSession } from '../types';
 import { getRoutineTotalSeconds, formatSecondsToTime } from '../utils/timeCalculations';
+import { useRoutineList } from '../hooks/routine/useRoutineList';
 
-interface RoutineListProps {
-  routines: Routine[];
-  activeSessions?: Record<string, ActiveWorkoutSession>;
-  onCreateRoutine: () => void;
-  onSelectRoutine: (routineId: string, mode: 'edit' | 'execute') => void;
-  onDuplicateRoutine: (routineId: string) => void;
-  onDeleteRoutine: (routineId: string) => void;
-}
-
-export const RoutineList: React.FC<RoutineListProps> = ({
-  routines,
-  activeSessions = {},
-  onCreateRoutine,
-  onSelectRoutine,
-  onDuplicateRoutine,
-  onDeleteRoutine,
-}) => {
-  // Aggregate stats for the Bento Grid Dashboard
-  const totalRoutines = routines.length;
-  const totalSetsOverall = routines.reduce(
-    (acc, r) => acc + r.exercises.reduce((sAcc, ex) => sAcc + ex.sets.length, 0),
-    0
-  );
-  const activeSessionsCount = Object.values(activeSessions).filter((s) => s.startTime).length;
-  const totalEstSecondsOverall = routines.reduce((acc, r) => acc + getRoutineTotalSeconds(r), 0);
+export const RoutineList: React.FC = () => {
+  const {
+    routines,
+    activeSessions,
+    totalRoutines,
+    totalSetsOverall,
+    onCreateRoutine,
+    onSelectRoutine,
+    onDuplicateRoutine,
+    onDeleteRoutine,
+  } = useRoutineList();
 
   return (
     <div id="routine-list-page" className="min-h-screen bg-[#0D0D0D] text-white pb-28 pt-4 sm:pt-6">

@@ -1,5 +1,5 @@
 ---
-applyTo: "src/sync/**,src/services/**,src/types/database.types.ts,src/utils/backup.ts,src/hooks/useSync.ts,src/hooks/useAppStorage.ts,src/hooks/useAuth.ts,supabase/migrations/**,supabase/tests/**,scripts/check-sync-contract.mjs"
+applyTo: "src/sync/**,src/services/**,src/store/**,src/types/database.types.ts,src/utils/backup.ts,src/hooks/useSync.ts,src/hooks/useStorageLifecycle.ts,src/hooks/useAuth.ts,supabase/migrations/**,supabase/tests/**,scripts/check-sync-contract.mjs"
 description: "Invariants for local persistence, the sync outbox, push/pull, auth, and backup in WorkoutLog."
 ---
 

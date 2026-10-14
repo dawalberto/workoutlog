@@ -4,7 +4,7 @@ description: "Trigger: offline sync, IndexedDB, browser storage, cloud sync. Pre
 license: Apache-2.0
 metadata:
   author: "dawalberto"
-  version: "1.1"
+  version: "1.2"
 ---
 
 ## Activation Contract
@@ -15,7 +15,7 @@ Load for WorkoutLog storage, offline, import/export, or cloud-sync changes.
 
 - Keep IndexedDB as the offline store for everyone. Guests are local-only (scope `guest`, limited to `GUEST_ROUTINE_LIMIT` routines); signed-in users sync all persisted collections because `get_sync_entitlement` returns `{ eligible: true }`.
 - Preserve string IDs, snapshots, and nested routine exercises and sets.
-- Hydrate before reactive writes; preserve localStorage migration and never overwrite unloaded data with defaults.
+- Hydrate before reactive writes; the Zustand persistence adapter owns hydration and writes through `useStorageLifecycle`. Preserve localStorage migration and never overwrite unloaded data with defaults.
 - Keep first-use exercises and routines private, editable user records; never add a shared seed catalog.
 - See the [backend seed guide](../../../docs/architecture/backend.md#seed-and-first-run-starter-data) for how first-run data differs from the local database fixture.
 - Append outbox entries in the same IndexedDB transaction as the state write (`writeStoredItems` in `db.ts`); one entry holds exactly one change. Never drop unacknowledged entries during ordinary operation; only confirmed sign-out may discard the owner's local outbox.
@@ -48,7 +48,8 @@ Summarize affected collections, identity/offline behavior, migration, conflict h
 ## References
 
 - [IndexedDB service](../../../src/services/db.ts)
-- [Storage hook](../../../src/hooks/useAppStorage.ts)
+- [Store persistence adapter](../../../src/store/persistence.ts)
+- [Storage lifecycle hook](../../../src/hooks/useStorageLifecycle.ts)
 - [Record types](../../../src/types.ts)
 - [Backup import and export](../../../src/utils/backup.ts)
 - [Frontend–backend strategy (sync contract)](../../../docs/architecture/frontend-backend-strategy.md)

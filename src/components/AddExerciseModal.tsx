@@ -10,31 +10,30 @@ import {
   Image as ImageIcon,
   Check
 } from 'lucide-react';
-import { Exercise, ExerciseDefinition, WorkoutSet, ExerciseRmLog, ExerciseDiary } from '../types';
+import type { ExerciseDefinition } from '../types';
 import { RmBadge } from './RmBadge';
 import { DiaryButton } from './DiaryButton';
 import { TimePickerField } from './TimePickerField';
 import { filterExerciseCatalog } from '../utils/exerciseCatalog';
+import { useAddExerciseModal } from '../hooks/routine/useAddExerciseModal';
 
 interface AddExerciseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  catalog: ExerciseDefinition[];
-  rmLogs?: ExerciseRmLog[];
-  exerciseDiary?: ExerciseDiary[];
-  onOpenDiary?: (exerciseName: string, exerciseId?: string) => void;
-  onAddExercise: (exercise: Exercise, saveToCatalog?: ExerciseDefinition) => void;
 }
 
 export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
   isOpen,
   onClose,
-  catalog,
-  rmLogs = [],
-  exerciseDiary = [],
-  onOpenDiary,
-  onAddExercise,
 }) => {
+  const {
+    catalog,
+    rmLogs,
+    exerciseDiary,
+    onOpenDiary,
+    addCatalogExercise,
+    addCustomExercise,
+  } = useAddExerciseModal();
   const [activeTab, setActiveTab] = useState<'catalog' | 'custom'>(() => 
     catalog.length > 0 ? 'catalog' : 'custom'
   );
@@ -74,31 +73,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
 
   // Add from preconfigured catalog
   const handleSelectFromCatalog = (item: ExerciseDefinition) => {
-    const setsCount = item.defaultSetsCount || 3;
-    const reps = item.defaultReps || 10;
-    const weight = item.defaultWeight || 0;
-    const restSeconds = item.defaultRestSeconds || 90;
-
-    const sets: WorkoutSet[] = Array.from({ length: setsCount }, (_, i) => ({
-      id: 'set-' + Date.now() + '-' + (i + 1) + '-' + Math.random().toString(36).substring(2, 5),
-      setNumber: i + 1,
-      reps,
-      weight,
-      restSeconds,
-    }));
-
-    const newExercise: Exercise = {
-      id: 'ex-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
-      definitionId: item.id,
-      name: item.name,
-      category: item.category,
-      imageUrl: item.imageUrl || '',
-      videoUrl: item.videoUrl || '',
-      notes: item.notes || '',
-      sets,
-    };
-
-    onAddExercise(newExercise);
+    addCatalogExercise(item);
 
     // Keep modal open, provide visual confirmation and toast feedback
     setJustAddedId(item.id);
@@ -117,56 +92,19 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
   // Add created in-the-moment
   const handleCreateCustom = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customName.trim()) return;
-
-    const count = Math.max(1, Number(customSetsCount) || 1);
-    const numReps = Math.max(1, Number(customReps) || 1);
-    const numWeight = Math.max(0, Number(customWeight) || 0);
-    const numRest = Math.max(0, Number(customRest) || 0);
-
-    const sets: WorkoutSet[] = Array.from({ length: count }, (_, i) => ({
-      id: 'set-' + Date.now() + '-' + (i + 1) + '-' + Math.random().toString(36).substring(2, 5),
-      setNumber: i + 1,
-      reps: numReps,
-      weight: numWeight,
-      restSeconds: numRest,
-    }));
-
-    const defId = saveToLibrary
-      ? 'def-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6)
-      : undefined;
-
-    const createdName = customName.trim();
-
-    const newExercise: Exercise = {
-      id: 'ex-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
-      definitionId: defId,
-      name: createdName,
+    const createdName = addCustomExercise({
+      name: customName,
       category: customCategory,
-      imageUrl: customImageUrl.trim(),
-      videoUrl: customVideoUrl.trim(),
-      notes: customNotes.trim(),
-      sets,
-    };
-
-    let templateToSave: ExerciseDefinition | undefined;
-    if (saveToLibrary && defId) {
-      templateToSave = {
-        id: defId,
-        name: createdName,
-        category: customCategory,
-        imageUrl: customImageUrl.trim(),
-        videoUrl: customVideoUrl.trim(),
-        notes: customNotes.trim(),
-        defaultSetsCount: count,
-        defaultReps: numReps,
-        defaultWeight: numWeight,
-        defaultRestSeconds: numRest,
-        createdAt: new Date().toISOString(),
-      };
-    }
-
-    onAddExercise(newExercise, templateToSave);
+      imageUrl: customImageUrl,
+      videoUrl: customVideoUrl,
+      notes: customNotes,
+      setsCount: customSetsCount,
+      reps: customReps,
+      weight: customWeight,
+      restSeconds: customRest,
+      saveToLibrary,
+    });
+    if (!createdName) return;
 
     // Keep modal open, reset form for next exercise, and show visual notification
     setCustomName('');
