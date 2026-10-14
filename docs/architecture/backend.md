@@ -6,7 +6,7 @@ Last verified: 2026-10-14
 
 ## At a glance
 
-- **Supabase only**: Auth + Postgres 17 + RLS + RPCs. There is no custom server. Rest-timer push storage and dispatch are installed with `pg_cron` and `pg_net`; the `send-rest-push` Edge Function source is added in the next work unit.
+- **Supabase only**: Auth + Postgres 17 + RLS + RPCs, with one managed Edge Function, `send-rest-push`, for server-scheduled rest-timer Web Push. There is no custom server. Push storage and dispatch use `pg_cron` and `pg_net`.
 - 12 owner-scoped tables in `public`, all with sync metadata maintained by a trigger.
 - Clients write through versioned `public.sync_push` and read with table selects. Private contract metadata drives its whitelist. Contract details: [frontend–backend strategy](frontend-backend-strategy.md).
 - Migrations in [`supabase/migrations/`](../../supabase/migrations/20261007135400_create_private_workout_data.sql) are forward-only; never edit an applied one.
@@ -194,21 +194,47 @@ TODO(human): define the final starter exercises and routines in `src/data/initia
 
 | Not present | Implication |
 |---|---|
-| Custom server (a former Fastify backend lived outside this repo; consolidated away in `b624129`) | All logic is SQL (RPCs, triggers, RLS) or client-side |
-| `send-rest-push` Edge Function source (`supabase/functions/send-rest-push/`) | Its configuration is registered, and the database dispatcher is installed; the source and sender implementation arrive in the next work unit |
+| Custom server (a former Fastify backend lived outside this repo; consolidated away in `b624129`) | Server-side push delivery runs in the managed `send-rest-push` Edge Function |
 | Production Vault secrets | `rest_push_function_url` and `rest_push_dispatch_secret` must be created in the target database before push dispatch can send HTTP requests |
 | Storage buckets | Media URLs are stored as strings only |
 | Billing | Removed; see ADR 0005 |
 | CI migration deployment | Migrations are applied manually with the Supabase CLI |
 
-## Adding server-side logic (Edge Functions, scheduled jobs, push)
+## Rest-timer Edge Function deployment
 
-Rest-timer push delivery uses the Supabase-managed `send-rest-push` Edge Function; no custom server is needed. The database migration and function configuration are in place, while the function source and VAPID sender are implemented in the next work unit.
+`send-rest-push` is the only Edge Function; no custom server is needed. It checks the database dispatch secret, claims schedules with the service-role RPCs, and sends RFC 8291 Web Push using VAPID.
 
-- Create `rest_push_function_url` and `rest_push_dispatch_secret` in Vault using `vault.create_secret` as described above; no secret values belong in `config.toml`.
-- The Edge Function uses `verify_jwt = false` because the database dispatcher authenticates with the shared `x-dispatch-secret` header.
-- Deployment order: apply the database migration first, deploy `send-rest-push`, create the two Vault secrets, then deploy the client that registers subscriptions and schedules notifications. The database dispatcher is a no-op until both secrets exist.
-- Deploy functions with `supabase functions deploy send-rest-push`.
+- Function environment:
+
+  | Variable | Purpose |
+  |---|---|
+  | `REST_PUSH_DISPATCH_SECRET` | High-entropy secret shared with the database Vault dispatcher |
+  | `VAPID_PUBLIC_KEY` | Base64url P-256 public point (65 bytes) |
+  | `VAPID_PRIVATE_KEY` | Base64url P-256 private scalar (32 bytes); server-side only |
+  | `VAPID_SUBJECT` | `mailto:` or `https:` contact URI used in VAPID |
+  | `SUPABASE_URL` | Supabase project URL, provided by the Edge Runtime |
+  | `SUPABASE_SERVICE_ROLE_KEY` | Service-role key, provided by the Edge Runtime; never expose it to the browser |
+
+- Generate a VAPID P-256 key pair with `pnpm push:vapid`. Use the generated public key for `VITE_VAPID_PUBLIC_KEY` and `VAPID_PUBLIC_KEY`; keep the private key server-side.
+- Set Edge Function environment secrets (replace every placeholder with the generated/configured value):
+
+  ```sh
+  supabase secrets set \
+    REST_PUSH_DISPATCH_SECRET='replace-with-a-random-shared-secret' \
+    VAPID_PUBLIC_KEY='replace-with-the-generated-public-key' \
+    VAPID_PRIVATE_KEY='replace-with-the-generated-private-key' \
+    VAPID_SUBJECT='mailto:admin@example.test'
+  ```
+
+- Deploy the function with JWT verification disabled because the database dispatcher authenticates through `x-dispatch-secret`:
+
+  ```sh
+  supabase functions deploy send-rest-push --no-verify-jwt
+  ```
+
+- Create `rest_push_function_url` and `rest_push_dispatch_secret` in Vault using `vault.create_secret` as described above. The URL is the deployed function URL; the secret must exactly match `REST_PUSH_DISPATCH_SECRET`. The dispatcher intentionally does nothing until both Vault secrets exist.
+- Deploy in this order: apply the database migration; deploy `send-rest-push` and set its Edge Function secrets; create both Vault secrets in the target database; then deploy the frontend with `VITE_VAPID_PUBLIC_KEY`.
+- For local setup, see [onboarding](../onboarding.md#local-rest-timer-push).
 
 ## Related
 

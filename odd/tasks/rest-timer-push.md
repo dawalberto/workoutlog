@@ -33,7 +33,7 @@ The rest timer finish feedback (`playTimerFinishBeep`, `triggerTimerVibration`) 
 ## Tasks
 
 - [x] `T1-db`: Migration (tables, RLS, RPCs, service-role claim/complete functions, pg_cron + pg_net dispatch, Vault secret lookup, cleanup), `config.toml` function entry, pgTAP, regenerated types, backend docs + ADR 0010. Route: delegated writer (multi-file, high risk).
-- [ ] `T2-edge`: `supabase/functions/send-rest-push` with Deno tests, VAPID key script, CI Deno step, local end-to-end smoke (cron → function → mock endpoint), AGENTS/backend deploy docs. Route: delegated writer.
+- [x] `T2-edge`: `supabase/functions/send-rest-push` with Deno tests, VAPID key script, CI Deno step, local end-to-end smoke (cron → function → delivery attempt), AGENTS/backend deploy docs. Route: delegated writer; risk tier: high.
 - [ ] `T3-store`: Move pause/resume/extend into `restTimerSlice` (+ sessionStorage), `RestTimerBar` consumes actions, tests. Route: delegated writer.
 - [ ] `T4-client`: SW push handler, `src/services/push.ts`, pure plan helper, `useRestPush` adapter, enable CTA, foreground/background dedupe, `.env.example`, frontend docs, tests. Route: delegated writer.
 - [ ] `T5-review`: Independent review (reviewer agent) + full checks.
@@ -55,7 +55,21 @@ Forecast exceeds 400 authored lines. Strategy: `ask-on-risk` resolved in autopil
 
 - Exploration done (rest timer is timestamp-based; pause/extend component-local; `generateSW`; no pg_cron/pg_net/functions; audio already `ambient`).
 - `T1-db` complete; route: delegated writer; risk tier: high.
+- `T2-edge` complete; route: delegated writer; risk tier: high. Sender uses pinned `npm:web-push@3.6.7`, which ran under Deno 2 and passed a real RFC 8291 encrypt/decrypt test against a local TLS mock.
+- Local smoke: `supabase functions serve send-rest-push --env-file supabase/functions/.env` served the handler; the database container reached it at `http://host.docker.internal:54321/functions/v1/send-rest-push`. `net._http_response` recorded HTTP 200 with `claimed=1`, `sent=0`, `failed=1`, `removed=0`, `rounds=1`; the synthetic schedule moved to `failed`, `attempts=1`, `last_error=delivery_failed` after the intentionally invalid `.invalid` push endpoint. The separate Deno TLS mock verified actual encryption and headers. Temporary Vault secrets, synthetic rows, and `.env` were removed.
 - Verification:
+  - `deno check --config supabase/functions/send-rest-push/deno.json supabase/functions/send-rest-push/index.ts` — passed.
+  - `pnpm fn:test` — passed; 7 Deno tests, including RFC 8291 body decryption.
+  - `pnpm push:vapid` — passed; generated values were redirected and not displayed.
+  - `pnpm lint` — passed (`tsc --noEmit`).
+  - `pnpm test` — passed; 25 files and 180 tests.
+  - `pnpm build` — passed; only the existing >500 kB chunk warning.
+  - `pnpm db:test` — passed; all 8 pgTAP files and 175 assertions.
+  - `git diff --check` — passed; `AGENTS.md` remains within the 200-line limit.
+  - `git check-ignore -v supabase/functions/.env` — confirmed the root `.gitignore` excludes the local function environment file.
+  - Local smoke cleanup query — confirmed zero temporary Vault secrets, users, subscriptions, and schedules remain.
+  - Documentation note: `docs/standards/testing-strategy.md` was not in the authorized edit surfaces; the new `pnpm fn:test` command is documented in onboarding, `AGENTS.md`, and CI/build instructions.
+  - T2-edge initial work-unit commit before evidence amendment: `29a5fa4`.
   - `pnpm db:reset` — passed on the local Supabase stack; migration applied and config parsed without the not-yet-created function directory.
   - `pnpm db:test` — passed; all 8 pgTAP files and 175 assertions, including 51 rest-push assertions.
   - `pnpm db:lint` — passed; no schema errors.
@@ -72,4 +86,4 @@ Forecast exceeds 400 authored lines. Strategy: `ask-on-risk` resolved in autopil
 
 ## Next step
 
-`T2-edge`.
+`T3-store`.

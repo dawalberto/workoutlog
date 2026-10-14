@@ -74,7 +74,9 @@ All commands require `supabase start` (Docker).
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| Rest timer does not beep/vibrate when the phone is locked or the app is backgrounded | Alerts run in foreground JS only (Web Audio + `navigator.vibrate`, [`src/utils/audioBeep.ts`](../src/utils/audioBeep.ts)); no Notification API, push, or wake lock | Known limitation. Keep the app in the foreground. Planned fix needs server push — see [backend](architecture/backend.md#adding-server-side-logic-edge-functions-scheduled-jobs-push). |
+| No rest-timer notification when the app is backgrounded | Push permission is denied, the PWA subscription is missing, or the OS suppresses notifications | Allow notifications for the installed PWA. On iOS, install the PWA to the Home Screen and use iOS 16.4 or later. Check Focus and silent-mode settings; they can suppress notification presentation or sound. |
+| No notification and no dispatch request | Vault does not contain `rest_push_function_url` or `rest_push_dispatch_secret`; the database dispatcher intentionally becomes a no-op | Add both Vault secrets as described in [backend architecture](architecture/backend.md#vault-setup). Check whether any requests were queued with `select request_id, status_code, error_msg, created from net._http_response order by created desc limit 10;` against the local database. No recent row can mean the dispatcher had no due schedule or Vault secrets were missing. |
+| Dispatch request failed or returned a non-200 response | The function is not served/deployed, its URL is unreachable from the database, or its shared dispatch secret differs from Vault | Check `net._http_response` and the `send-rest-push` function logs. Confirm `rest_push_function_url` is reachable from Postgres and `rest_push_dispatch_secret` exactly matches `REST_PUSH_DISPATCH_SECRET`; do not paste secret values into logs or support messages. |
 | Users still see an old version after deploy | Service worker `autoUpdate` has not swapped yet | Close all tabs / reopen the app. |
 
 ## Related
