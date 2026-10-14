@@ -8,6 +8,7 @@ import {
   stopRestAudioKeepAlive 
 } from '../utils/audioBeep';
 import { useRestTimerBar } from '../hooks/shell/useRestTimerBar';
+import { getRestTimerRemainingMs } from '../utils/restTimer';
 
 export const RestTimerBar: React.FC = () => {
   const timer = useRestTimerBar();
@@ -17,33 +18,23 @@ export const RestTimerBar: React.FC = () => {
     isInsideActiveRoutine,
     onReturnToRoutine,
     onClose,
+    onPause,
+    onResume,
+    onExtend,
   } = timer;
-  const { initialSeconds, targetEndTime, exerciseName, setNumber } = activeRestTimer;
-  // Compute initial remaining time based on targetEndTime if available
-  const getInitialRemaining = () => {
-    if (targetEndTime) {
-      const diff = targetEndTime - Date.now();
-      return Math.max(0, Math.ceil(diff / 1000));
-    }
-    return initialSeconds;
-  };
-
-  const initialRemainingSec = getInitialRemaining();
+  const { initialSeconds, targetEndTime, pausedRemainingMs, exerciseName, setNumber } = activeRestTimer;
+  const isPaused = pausedRemainingMs !== undefined;
+  const initialRemainingSec = Math.max(
+    0,
+    Math.ceil(getRestTimerRemainingMs(activeRestTimer, Date.now()) / 1000),
+  );
   const [secondsLeft, setSecondsLeft] = useState<number>(initialRemainingSec);
   const [totalSeconds, setTotalSeconds] = useState<number>(Math.max(initialSeconds, initialRemainingSec));
-  const [isPaused, setIsPaused] = useState<boolean>(false);
   const [hasFinished, setHasFinished] = useState<boolean>(initialRemainingSec <= 0);
 
   // Synchronous ref to prevent double-firing sound/vibration
   const hasFinishedRef = useRef<boolean>(initialRemainingSec <= 0);
 
-  // Accurate target timestamp (wall-clock ms since epoch)
-  const targetEndTimeRef = useRef<number>(
-    targetEndTime && targetEndTime > Date.now()
-      ? targetEndTime
-      : Date.now() + initialSeconds * 1000
-  );
-  const remainingWhenPausedRef = useRef<number>(initialRemainingSec * 1000);
   const workerRef = useRef<Worker | null>(null);
 
   const handleFinish = useCallback((shouldPlaySound: boolean = true) => {
@@ -65,31 +56,23 @@ export const RestTimerBar: React.FC = () => {
   const checkTick = useCallback(() => {
     if (isPaused || hasFinishedRef.current) return;
     const now = Date.now();
-    const remainingMs = targetEndTimeRef.current - now;
+    const remainingMs = getRestTimerRemainingMs(activeRestTimer, now);
     const remainingSec = Math.max(0, Math.ceil(remainingMs / 1000));
     setSecondsLeft(remainingSec);
 
     if (remainingMs <= 0) {
       handleFinish(true);
     }
-  }, [isPaused, handleFinish]);
+  }, [activeRestTimer, isPaused, handleFinish]);
 
   // Reset when initialSeconds, targetEndTime, or exercise/set changes
   useEffect(() => {
-    const target =
-      targetEndTime && targetEndTime > Date.now()
-        ? targetEndTime
-        : Date.now() + initialSeconds * 1000;
-
-    targetEndTimeRef.current = target;
     const now = Date.now();
-    const remainingMs = target - now;
+    const remainingMs = getRestTimerRemainingMs(activeRestTimer, now);
     const remainingSec = Math.max(0, Math.ceil(remainingMs / 1000));
 
-    remainingWhenPausedRef.current = Math.max(0, remainingMs);
     setSecondsLeft(remainingSec);
     setTotalSeconds((prev) => Math.max(prev, initialSeconds, remainingSec));
-    setIsPaused(false);
 
     if (remainingSec <= 0) {
       hasFinishedRef.current = true;
@@ -98,7 +81,7 @@ export const RestTimerBar: React.FC = () => {
       hasFinishedRef.current = false;
       setHasFinished(false);
     }
-  }, [initialSeconds, targetEndTime, exerciseName, setNumber]);
+  }, [activeRestTimer, initialSeconds, targetEndTime, pausedRemainingMs, exerciseName, setNumber]);
 
   // Setup ticking Web Worker + fallback interval + Page Visibility / Focus listeners
   useEffect(() => {
@@ -169,43 +152,19 @@ export const RestTimerBar: React.FC = () => {
     };
   }, [isPaused, hasFinished, checkTick]);
 
-  // Handle Pause / Resume
   const togglePause = () => {
-    if (isPaused) {
-      // Resuming
-      const target = Date.now() + remainingWhenPausedRef.current;
-      targetEndTimeRef.current = target;
-      setIsPaused(false);
-    } else {
-      // Pausing
-      remainingWhenPausedRef.current = Math.max(0, targetEndTimeRef.current - Date.now());
-      setIsPaused(true);
-    }
+    if (isPaused) onResume();
+    else onPause();
   };
 
-  // Handle Add Extra Time (+30s)
   const addExtraTime = (extra: number) => {
-    hasFinishedRef.current = false;
-
     if (hasFinished) {
-      const target = Date.now() + extra * 1000;
-      targetEndTimeRef.current = target;
       setSecondsLeft(extra);
       setTotalSeconds(extra);
+      hasFinishedRef.current = false;
       setHasFinished(false);
-      setIsPaused(false);
-    } else if (isPaused) {
-      remainingWhenPausedRef.current += extra * 1000;
-      const newSec = Math.ceil(remainingWhenPausedRef.current / 1000);
-      setSecondsLeft(newSec);
-      setTotalSeconds((prev) => Math.max(prev, newSec));
-    } else {
-      const target = targetEndTimeRef.current + extra * 1000;
-      targetEndTimeRef.current = target;
-      const newRemainingSec = Math.max(0, Math.ceil((target - Date.now()) / 1000));
-      setSecondsLeft(newRemainingSec);
-      setTotalSeconds((prev) => Math.max(prev, newRemainingSec));
     }
+    onExtend(extra);
   };
 
   const progressPercent =

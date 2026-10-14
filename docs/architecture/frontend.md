@@ -2,7 +2,7 @@
 
 Structure and conventions of the React PWA in `src/`, and where to extend it.
 
-Last verified: 2026-10-13
+Last verified: 2026-10-14
 
 ## At a glance
 
@@ -73,7 +73,7 @@ Signing out removes all local state for the signed-in owner, including queued ch
 
 ## Timers and audio
 
-- Rest-timer state and actions live in the store; [`src/utils/restTimer.ts`](../../src/utils/restTimer.ts) hydrates, expires, saves, and clears its `sessionStorage` value. [`RestTimerBar`](../../src/components/RestTimerBar.tsx) shows the countdown.
+- Rest-timer state and actions (`startRestTimer`, `pauseRestTimer`, `resumeRestTimer`, `extendRestTimer`, and `closeRestTimer`) live in the store. [`ActiveRestTimer`](../../src/types.ts) keeps `targetEndTime` for running timers and `pausedRemainingMs` for paused timers; [`src/utils/restTimer.ts`](../../src/utils/restTimer.ts) provides the pure timer calculations and hydrates, expires, saves, and clears the `sessionStorage` value. [`RestTimerBar`](../../src/components/RestTimerBar.tsx) derives pause and remaining-time state from the stored timer.
 - On completion: `playTimerFinishBeep()` (Web Audio with HTML5 audio fallback) and `triggerTimerVibration()` (`navigator.vibrate`) in [`src/utils/audioBeep.ts`](../../src/utils/audioBeep.ts).
 - **Limitation:** no Notification API, no push, no wake lock, no SW notification handling. When the phone is locked or the tab is backgrounded, the alert may not fire. Background notifications would need server-side push — see [backend: adding server-side logic](backend.md#adding-server-side-logic-edge-functions-scheduled-jobs-push).
 

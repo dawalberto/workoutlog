@@ -98,7 +98,8 @@ export interface ActiveWorkoutSession {
 export interface ActiveRestTimer {
   routineId: string;
   initialSeconds: number;
-  targetEndTime: number; // Date.now() + initialSeconds * 1000
+  targetEndTime: number; // End timestamp while the timer is running
+  pausedRemainingMs?: number;
   exerciseName?: string;
   setNumber?: number;
   key?: number;

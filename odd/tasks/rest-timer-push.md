@@ -34,7 +34,7 @@ The rest timer finish feedback (`playTimerFinishBeep`, `triggerTimerVibration`) 
 
 - [x] `T1-db`: Migration (tables, RLS, RPCs, service-role claim/complete functions, pg_cron + pg_net dispatch, Vault secret lookup, cleanup), `config.toml` function entry, pgTAP, regenerated types, backend docs + ADR 0010. Route: delegated writer (multi-file, high risk).
 - [x] `T2-edge`: `supabase/functions/send-rest-push` with Deno tests, VAPID key script, CI Deno step, local end-to-end smoke (cron → function → delivery attempt), AGENTS/backend deploy docs. Route: delegated writer; risk tier: high.
-- [ ] `T3-store`: Move pause/resume/extend into `restTimerSlice` (+ sessionStorage), `RestTimerBar` consumes actions, tests. Route: delegated writer.
+- [x] `T3-store`: Move pause/resume/extend into `restTimerSlice` (+ sessionStorage), `RestTimerBar` consumes actions, tests. Route: delegated writer; risk tier: medium.
 - [ ] `T4-client`: SW push handler, `src/services/push.ts`, pure plan helper, `useRestPush` adapter, enable CTA, foreground/background dedupe, `.env.example`, frontend docs, tests. Route: delegated writer.
 - [ ] `T5-review`: Independent review (reviewer agent) + full checks.
 
@@ -83,7 +83,16 @@ Forecast exceeds 400 authored lines. Strategy: `ask-on-risk` resolved in autopil
   - Local cron query — found `dispatch-rest-pushes` (`2 seconds`) and `cleanup-rest-pushes` (`17 3 * * *`).
   - Local cleanup invocation — passed; PostgreSQL reports permission to delete old `cron.job_run_details`.
   - Initial work-unit commit: `896baf8` (this task evidence is included by amendment).
+- `T3-store` complete: `ActiveRestTimer` now persists paused time, pure timer helpers drive store actions, and `RestTimerBar` reads pause and remaining state from the store. Extension after finish starts a fresh countdown and resets `initialSeconds` and the progress denominator to the extension length; running and paused extensions preserve their prior `initialSeconds` behavior. Risk tier: medium.
+- `T3-store` verification:
+  - RED: `pnpm test tests/utils/restTimer.test.ts tests/store/rest-timer-slice.test.ts` — failed as expected before implementation because timer helpers and store actions were missing.
+  - Focused: `pnpm test tests/utils/restTimer.test.ts tests/store/rest-timer-slice.test.ts` — passed; 2 files and 10 tests.
+  - `pnpm test` — passed; 26 files and 187 tests.
+  - `pnpm lint` — passed (`tsc --noEmit`).
+  - `pnpm build` — passed; only the existing >500 kB chunk warning.
+  - `git diff --check` — passed.
+  - Initial work-unit commit: `1bfeeb0` (this task evidence is included by amendment).
 
 ## Next step
 
-`T3-store`.
+`T4-client`.
