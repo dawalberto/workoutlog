@@ -1,8 +1,8 @@
 # WorkoutLog — agent instructions
 
-Last verified: 2026-10-13
+Last verified: 2026-10-14
 
-WorkoutLog is a local-first gym workout tracker shipped as a React PWA with a Spanish UI. All data (routines, catalog, active sessions, RM logs, history, diary) lives in IndexedDB and works offline. Signed-in users (Google OAuth) sync their private data directly with Supabase through RLS and the `sync_push` RPC. There is no custom server or Edge Function today; future server-side logic will use Supabase Edge Functions.
+WorkoutLog is a Local-first gym workout tracker shipped as a React PWA with a Spanish UI. All data (routines, catalog, active sessions, RM logs, history, diary) lives in IndexedDB and works offline. Signed-in users (Google OAuth) sync their private data directly with Supabase through RLS and the `sync_push` RPC. There is no custom server; one Supabase Edge Function, `send-rest-push`, delivers rest-timer push notifications.
 
 Read this file first, then load the matching skill and scoped instructions. Deep content lives in [`docs/`](docs/README.md); this file links instead of repeating it.
 
@@ -16,6 +16,7 @@ Read this file first, then load the matching skill and scoped instructions. Deep
 | State | Zustand ^5.0.15; one app store composed from slices |
 | Tests | Vitest ^5.0.3 (node env), fake-indexeddb ^6.2.5, pgTAP |
 | Backend | Supabase (Postgres 17, Auth, RLS, RPCs), @supabase/supabase-js ^2.57.0, Supabase CLI 2.120.0 (CI) |
+| Edge Functions | Deno 2, Supabase Edge Runtime; `send-rest-push` delivers server-scheduled rest-timer Web Push |
 | Tooling | Node 24, pnpm 10.25.0, Docker (local Supabase) |
 | Hosting | GitHub Pages via `.github/workflows/deploy.yml` |
 
@@ -32,6 +33,7 @@ Read this file first, then load the matching skill and scoped instructions. Deep
 | `src/types.ts`, `src/types/database.types.ts` | Domain types; generated Supabase types |
 | `tests/` | Vitest tests (mirrors `src/`) |
 | `supabase/` | `config.toml`, forward-only `migrations/`, pgTAP `tests/`, local development `seed.sql` (see [backend seed guide](docs/architecture/backend.md#seed-and-first-run-starter-data)) |
+| `supabase/functions/send-rest-push/` | Deno Edge Function, pinned imports, and Web Push tests |
 | `docs/` | Human docs (single source of truth) |
 | `odd/tasks/` | ODD feature task documents |
 | `.github/` | CI workflows, skills, instructions, agents, prompts |
@@ -45,6 +47,8 @@ Read this file first, then load the matching skill and scoped instructions. Deep
 | Build | `pnpm build` | Chunk-size warning (>500 kB) is expected |
 | Typecheck / lint | `pnpm lint` | `tsc --noEmit`; no ESLint/Prettier |
 | All tests | `pnpm test` | `vitest run` |
+| Edge Function tests | `pnpm fn:test` | Deno 2; includes RFC 8291 encryption/decryption test |
+| Generate VAPID keys | `pnpm push:vapid` | Prints browser public key and server VAPID keys |
 | One file | `pnpm test tests/utils/backup.test.ts` | |
 | By name | `pnpm test -t "<test name>"` | |
 | Local Supabase | `supabase start` / `supabase status` / `supabase stop --no-backup` | Docker |

@@ -10,6 +10,8 @@
     "clean": "rm -rf dist",
     "test": "vitest run",
     "lint": "tsc --noEmit",
+    "fn:test": "deno test --config supabase/functions/send-rest-push/deno.json --allow-env --allow-net --allow-read=supabase/functions supabase/functions",
+    "push:vapid": "node scripts/generate-vapid-keys.mjs",
     "db:reset": "supabase db reset --local --yes",
     "db:test": "supabase test db --local",
     "db:lint": "supabase db lint --local",

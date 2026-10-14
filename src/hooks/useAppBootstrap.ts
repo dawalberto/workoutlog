@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { useStorageLifecycle } from './useStorageLifecycle';
 import { useSync } from './useSync';
+import { useRestPush } from './useRestPush';
 import { appStore, useAppStore } from '../store/appStore';
 import { selectPersistedData } from '../store/selectors';
 import { refreshFromStorage } from '../store/persistence';
@@ -30,6 +31,7 @@ export function useAppBootstrap(): void {
     workoutHistory: persistedData.workoutHistory,
     exerciseDiary: persistedData.exerciseDiary,
   });
+  useRestPush();
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });

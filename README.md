@@ -1,6 +1,6 @@
 # WorkoutLog
 
-Last verified: 2026-10-13
+Last verified: 2026-10-14
 
 WorkoutLog is a browser-first workout tracker. Routines, sessions, records, history, and diary entries remain available in IndexedDB offline. Signed-in users synchronize their private data directly with Supabase through row-level security and database RPCs.
 
@@ -8,10 +8,10 @@ WorkoutLog is a browser-first workout tracker. Routines, sessions, records, hist
 
 - **Frontend:** Vite and React, deployed to GitHub Pages.
 - **App state:** one Zustand store with domain slices; persistence, auth, and sync are lifecycle adapters. [Frontend architecture](docs/architecture/frontend.md) · [ADR 0009](docs/decisions/0009-zustand-app-store.md).
-- **Data and authentication:** Supabase Auth, Postgres, RLS, migrations, and database tests in `supabase/`.
+- **Data and authentication:** Supabase Auth, Postgres, RLS, migrations, and database tests in `supabase/`; a managed Edge Function sends server-scheduled rest-timer push notifications to subscribed signed-in users.
 - **No dedicated backend:** there is no Fastify service, VPS runtime, Docker deployment, or server-side billing integration.
 - **No billing:** WorkoutLog has no Stripe client, plan UI, payment configuration, or billing database surface.
-- **No Edge Function today:** direct browser-to-Supabase synchronization covers the active feature set.
+- **Push notifications:** guests keep local timer feedback; signed-in users can opt in to a system notification when a timer ends while the PWA is in the background. Setup is documented in [backend architecture](docs/architecture/backend.md#rest-timer-edge-function-deployment).
 
 ### Sync and editing
 
@@ -34,6 +34,7 @@ Set only the public browser values in `.env.local`:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
+- `VITE_VAPID_PUBLIC_KEY` (optional; generate with `pnpm push:vapid` to enable rest-timer push)
 
 To develop authenticated synchronization, start the local Supabase project from this repository:
 

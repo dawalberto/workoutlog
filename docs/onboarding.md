@@ -2,7 +2,7 @@
 
 Get WorkoutLog running locally, verify it, and land your first change.
 
-Last verified: 2026-10-13
+Last verified: 2026-10-14
 
 ## Quick path
 
@@ -21,6 +21,7 @@ Without Supabase env vars the app runs fully offline ("local-only mode"). Add a 
 | Node.js | 24 | Runtime used by CI and deploy | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml), [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) |
 | pnpm | 10.25.0 | Canonical package manager (`packageManager` field) | [`package.json`](../package.json) |
 | Supabase CLI | 2.120.0 | Local Supabase stack, migrations, pgTAP tests | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) |
+| Deno | 2.x | Edge Function typecheck and tests | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) |
 | Docker | any recent | Required by `supabase start` | [`supabase/config.toml`](../supabase/config.toml) |
 
 There is no `.nvmrc` / `engines` field. Use pnpm only (see [ADR 0007](decisions/0007-pnpm-package-manager.md)).
@@ -69,6 +70,8 @@ Google sign-in locally needs `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` and `SUPA
 | Command | What it checks | Notes |
 |---|---|---|
 | `pnpm test` | All Vitest tests | See latest test run for current totals |
+| `pnpm fn:test` | Deno Edge Function tests | Includes local Web Push encryption/decryption |
+| `pnpm push:vapid` | Generate VAPID keys | Keep the private key in the server environment only |
 | `pnpm test tests/utils/backup.test.ts` | One test file | |
 | `pnpm test -t "<name>"` | Tests matching a name | Standard Vitest flag |
 | `pnpm lint` | `tsc --noEmit` typecheck | No ESLint/Prettier exist |
@@ -80,6 +83,28 @@ Google sign-in locally needs `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` and `SUPA
 | `supabase stop --no-backup` | Stops the local stack | |
 
 These match CI exactly; see [testing strategy](standards/testing-strategy.md).
+
+## Local rest-timer push
+
+The local push sender needs VAPID keys and the Supabase service-role key. The root `.gitignore` already ignores `supabase/functions/.env`; never commit that file.
+
+1. Start the local stack and generate a P-256 key pair:
+
+   ```sh
+   supabase start
+   pnpm push:vapid
+   ```
+
+   Use the generated public key for `VITE_VAPID_PUBLIC_KEY` and `VAPID_PUBLIC_KEY`; keep `VAPID_PRIVATE_KEY` server-side. Set `VAPID_SUBJECT` to a `mailto:` or `https:` contact URI.
+2. Create `supabase/functions/.env` with `REST_PUSH_DISPATCH_SECRET`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT`. Use a fresh random dispatch secret. The Supabase Edge Runtime supplies `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`; the CLI ignores user-defined `SUPABASE_*` entries.
+3. Serve the function locally:
+
+   ```sh
+   supabase functions serve send-rest-push --env-file supabase/functions/.env
+   ```
+
+4. Add local Vault secrets `rest_push_function_url` and `rest_push_dispatch_secret` using the SQL in [backend architecture](architecture/backend.md#vault-setup). The URL must be reachable from the database container; `http://host.docker.internal:54321/functions/v1/send-rest-push` is the Docker Desktop default.
+5. Run `pnpm fn:test` to verify the handler and Web Push encryption. Stop the local function server when finished and delete the ignored `.env` file.
 
 ## First PR walkthrough
 

@@ -5,6 +5,16 @@ export function useRestTimerBar() {
   const activeRoutineId = useAppStore((state) => state.activeRoutineId);
   const selectRoutine = useAppStore((state) => state.selectRoutine);
   const onClose = useAppStore((state) => state.closeRestTimer);
+  const onPause = useAppStore((state) => state.pauseRestTimer);
+  const onResume = useAppStore((state) => state.resumeRestTimer);
+  const onExtend = useAppStore((state) => state.extendRestTimer);
+  const restPushScheduleId = useAppStore((state) => state.restPush.scheduleId);
+  const lastDeliveredScheduleId = useAppStore(
+    (state) => state.restPush.lastDeliveredScheduleId,
+  );
+  const lastDeliveredWhileVisible = useAppStore(
+    (state) => state.restPush.lastDeliveredWhileVisible,
+  );
 
   return activeRestTimer
     ? {
@@ -12,6 +22,12 @@ export function useRestTimerBar() {
       isInsideActiveRoutine: Boolean(activeRoutineId),
       onReturnToRoutine: () => selectRoutine(activeRestTimer.routineId, 'execute'),
       onClose,
+      onPause,
+      onResume,
+      onExtend,
+      restPushScheduleId,
+      lastDeliveredScheduleId,
+      lastDeliveredWhileVisible,
     }
     : null;
 }
