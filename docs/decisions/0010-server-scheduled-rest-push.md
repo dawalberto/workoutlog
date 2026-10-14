@@ -16,7 +16,7 @@ The rest timer's beep and vibration run in page JavaScript. Mobile browsers may 
 
 Use standard Web Push for rest timer completion. Signed-in clients register subscriptions through authenticated RPCs and schedule a server-side `fire_at` timestamp. `pg_cron` polls every two seconds and invokes the `send-rest-push` Edge Function through `pg_net` only when a schedule is due. The function claims work with `FOR UPDATE SKIP LOCKED`, sends VAPID Web Push, and records the result through service-role-only RPCs.
 
-The database stores subscriptions and schedules in owner-scoped public tables protected by RLS. Client writes go through `SECURITY DEFINER` RPCs; these tables are not part of the synced-data contract. The dispatcher URL and shared request secret are stored in Vault as `rest_push_function_url` and `rest_push_dispatch_secret`.
+The database stores subscriptions and schedules in owner-scoped public tables protected by RLS. Client writes go through `SECURITY DEFINER` RPCs; these tables are not part of the synced-data contract. The dispatcher URL and shared request secret are stored in Vault as `rest_push_function_url` and `rest_push_dispatch_secret`. Subscription endpoints are limited to known Web Push provider hosts in both the database and sender. The sender verifies that each claimed schedule remains `sending` immediately before sending; its pinned `web-push@3.6.7` transport uses Node's `https.request`, which does not automatically follow redirects.
 
 ## Consequences
 
@@ -26,6 +26,7 @@ The database stores subscriptions and schedules in owner-scoped public tables pr
 | The server calculates the deadline, avoiding device clock skew. | The two-second polling cadence adds up to about two seconds of dispatch latency. |
 | The OS notification can make sound and vibrate without pausing other media. | On iOS, users must install the PWA to the Home Screen and use a supported OS version. |
 | Supabase Postgres and an Edge Function avoid a custom server or external scheduler. | `pg_cron`, `pg_net`, the Edge Function, and both Vault secrets must be configured; VAPID keys and endpoint failures need operational handling. |
+| Cancelling or rescheduling also cancels claimed `sending` rows, and completion cannot overwrite cancellation. | A provider request that has already been handed off cannot be recalled; a sub-second send-handoff race remains. |
 
 ## Alternatives
 
@@ -35,8 +36,8 @@ The database stores subscriptions and schedules in owner-scoped public tables pr
 
 ## Evidence
 
-- Files: `supabase/migrations/20261014171406_rest_timer_push.sql`, `supabase/tests/rest_push.test.sql`, `supabase/config.toml`
-- Follow-up: the `send-rest-push` Edge Function implementation is delivered in the next work unit.
+- Files: `supabase/migrations/20261014171406_rest_timer_push.sql`, `supabase/migrations/20261014200000_harden_rest_push.sql`, `supabase/tests/rest_push.test.sql`, `supabase/config.toml`
+- Follow-up: real-device notification sound, vibration, and delivery timing still need verification with deployed push configuration.
 
 ## Related
 

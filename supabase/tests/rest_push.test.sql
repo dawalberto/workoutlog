@@ -2,7 +2,7 @@ BEGIN;
 
 SET LOCAL search_path = public, extensions;
 
-SELECT plan(51);
+SELECT plan(66);
 
 INSERT INTO auth.users (
   id,
@@ -46,6 +46,39 @@ VALUES
     now()
   )
 ON CONFLICT (id) DO NOTHING;
+
+SELECT ok(
+  private.is_allowed_push_endpoint('https://fcm.googleapis.com/fcm/send/token'),
+  'FCM push endpoints are allowed'
+);
+SELECT ok(
+  private.is_allowed_push_endpoint('https://android.googleapis.com/gcm/send/token'),
+  'Android push endpoints are allowed'
+);
+SELECT ok(
+  private.is_allowed_push_endpoint('https://web.push.apple.com/push/token'),
+  'Safari Web Push endpoints are allowed'
+);
+SELECT ok(
+  private.is_allowed_push_endpoint('https://api.push.apple.com/push/token'),
+  'Apple push subdomains are allowed'
+);
+SELECT ok(
+  private.is_allowed_push_endpoint(
+    'https://updates.push.services.mozilla.com/wpush/v2/token'
+  ),
+  'Mozilla push service subdomains are allowed'
+);
+SELECT ok(
+  private.is_allowed_push_endpoint(
+    'https://wns2-example.notify.windows.com/w/?token=example'
+  ),
+  'Windows notification service subdomains are allowed'
+);
+SELECT ok(
+  private.is_allowed_push_endpoint('https://fcm.googleapis.com:443/fcm/send/token'),
+  'the default HTTPS port is allowed'
+);
 
 SELECT ok(
   has_function_privilege('anon', 'public.upsert_push_subscription(text,text,text,text)', 'EXECUTE') IS FALSE,
@@ -99,6 +132,73 @@ SELECT set_config(
   true
 );
 
+SELECT throws_ok(
+  $$SELECT public.upsert_push_subscription(
+      'https://evil.example/subscription',
+      'public-key',
+      'auth-secret',
+      NULL
+    )$$,
+  '22023',
+  'push_endpoint_not_allowed',
+  'unrecognized push hosts are rejected'
+);
+SELECT throws_ok(
+  $$SELECT public.upsert_push_subscription(
+      'https://fcm.googleapis.com.evil.com/subscription',
+      'public-key',
+      'auth-secret',
+      NULL
+    )$$,
+  '22023',
+  'push_endpoint_not_allowed',
+  'host suffix lookalikes are rejected'
+);
+SELECT throws_ok(
+  $$SELECT public.upsert_push_subscription(
+      'https://user@fcm.googleapis.com/subscription',
+      'public-key',
+      'auth-secret',
+      NULL
+    )$$,
+  '22023',
+  'push_endpoint_not_allowed',
+  'push endpoints with user information are rejected'
+);
+SELECT throws_ok(
+  $$SELECT public.upsert_push_subscription(
+      'https://fcm.googleapis.com:8443/subscription',
+      'public-key',
+      'auth-secret',
+      NULL
+    )$$,
+  '22023',
+  'push_endpoint_not_allowed',
+  'push endpoints with nonstandard ports are rejected'
+);
+SELECT throws_ok(
+  $$SELECT public.upsert_push_subscription(
+      'http://fcm.googleapis.com/subscription',
+      'public-key',
+      'auth-secret',
+      NULL
+    )$$,
+  '22023',
+  'push_endpoint_not_allowed',
+  'push endpoints without HTTPS are rejected'
+);
+SELECT throws_ok(
+  $$SELECT public.upsert_push_subscription(
+      'https://fcm.googleapis.com\evil.example/subscription',
+      'public-key',
+      'auth-secret',
+      NULL
+    )$$,
+  '22023',
+  'push_endpoint_not_allowed',
+  'push endpoints with parser-normalized backslashes are rejected'
+);
+
 SELECT ok(
   has_table_privilege('authenticated', 'public.push_subscriptions', 'SELECT'),
   'authenticated users can select subscriptions subject to RLS'
@@ -107,7 +207,7 @@ SELECT throws_ok(
   $$INSERT INTO public.push_subscriptions (user_id, endpoint, p256dh, auth)
     VALUES (
       '21000000-0000-4000-8000-000000000001',
-      'https://push.example.test/direct-subscription',
+      'https://fcm.googleapis.com/direct-subscription',
       'public-key',
       'auth-secret'
     )$$,
@@ -134,7 +234,7 @@ SELECT throws_ok(
 SELECT set_config(
   'test.rest_push_subscription_a',
   public.upsert_push_subscription(
-    'https://push.example.test/shared-device',
+    'https://fcm.googleapis.com/shared-device',
     'public-key-a',
     'auth-secret-a',
     'WorkoutLog test'
@@ -148,7 +248,7 @@ SELECT ok(
 SELECT set_config(
   'test.rest_push_schedule_a',
   public.schedule_rest_push(
-    'https://push.example.test/shared-device',
+    'https://fcm.googleapis.com/shared-device',
     60000,
     'Descanso terminado',
     'Es hora de continuar.'
@@ -177,7 +277,7 @@ SELECT is(
 );
 SELECT throws_ok(
   $$SELECT public.schedule_rest_push(
-      'https://push.example.test/shared-device',
+      'https://fcm.googleapis.com/shared-device',
       60000,
       'Not yours',
       ''
@@ -188,7 +288,7 @@ SELECT throws_ok(
 );
 SELECT throws_ok(
   $$SELECT public.schedule_rest_push(
-      'https://push.example.test/missing-device',
+      'https://fcm.googleapis.com/missing-device',
       999,
       'Too soon',
       ''
@@ -199,7 +299,7 @@ SELECT throws_ok(
 );
 SELECT throws_ok(
   $$SELECT public.schedule_rest_push(
-      'https://push.example.test/missing-device',
+      'https://fcm.googleapis.com/missing-device',
       7200001,
       'Too late',
       ''
@@ -216,7 +316,7 @@ SELECT set_config(
 SELECT set_config(
   'test.rest_push_schedule_a_rescheduled',
   public.schedule_rest_push(
-    'https://push.example.test/shared-device',
+    'https://fcm.googleapis.com/shared-device',
     120000,
     'Descanso reprogramado',
     ''
@@ -243,7 +343,7 @@ SELECT is(
   1,
   'rescheduling cancels the previous pending push'
 );
-SELECT public.cancel_rest_push('https://push.example.test/shared-device');
+SELECT public.cancel_rest_push('https://fcm.googleapis.com/shared-device');
 SELECT is(
   (
     SELECT count(*)::integer
@@ -268,7 +368,7 @@ SELECT is(
 SELECT set_config(
   'test.rest_push_schedule_a_before_transfer',
   public.schedule_rest_push(
-    'https://push.example.test/shared-device',
+    'https://fcm.googleapis.com/shared-device',
     60000,
     'Descanso antes de transferir',
     ''
@@ -282,7 +382,7 @@ SELECT set_config(
 );
 SELECT is(
   public.upsert_push_subscription(
-    'https://push.example.test/shared-device',
+    'https://fcm.googleapis.com/shared-device',
     'public-key-b',
     'auth-secret-b',
     'WorkoutLog account B'
@@ -319,7 +419,7 @@ SELECT set_config(
   '21000000-0000-4000-8000-000000000001',
   true
 );
-SELECT public.delete_push_subscription('https://push.example.test/shared-device');
+SELECT public.delete_push_subscription('https://fcm.googleapis.com/shared-device');
 SELECT set_config(
   'request.jwt.claim.sub',
   '21000000-0000-4000-8000-000000000002',
@@ -329,26 +429,26 @@ SELECT is(
   (
     SELECT count(*)::integer
     FROM public.push_subscriptions
-    WHERE endpoint = 'https://push.example.test/shared-device'
+    WHERE endpoint = 'https://fcm.googleapis.com/shared-device'
   ),
   1,
   'a previous owner cannot delete the subscription after transfer'
 );
 SELECT ok(
   public.upsert_push_subscription(
-    'https://push.example.test/client-delete',
+    'https://fcm.googleapis.com/client-delete',
     'public-key-delete',
     'auth-secret-delete',
     NULL
   ) IS NOT NULL,
   'owner B can register a second subscription'
 );
-SELECT public.delete_push_subscription('https://push.example.test/client-delete');
+SELECT public.delete_push_subscription('https://fcm.googleapis.com/client-delete');
 SELECT is(
   (
     SELECT count(*)::integer
     FROM public.push_subscriptions
-    WHERE endpoint = 'https://push.example.test/client-delete'
+    WHERE endpoint = 'https://fcm.googleapis.com/client-delete'
   ),
   0,
   'a user can delete their own subscription'
@@ -366,7 +466,7 @@ BEGIN
   FOR subscription_number IN 1..11 LOOP
     PERFORM public.upsert_push_subscription(
       pg_catalog.format(
-        'https://push.example.test/cap-%s',
+        'https://fcm.googleapis.com/cap-%s',
         subscription_number
       ),
       'public-key-cap',
@@ -389,7 +489,7 @@ SELECT set_config(
 );
 SELECT ok(
   public.upsert_push_subscription(
-    'https://push.example.test/due',
+    'https://fcm.googleapis.com/due',
     'public-key-due',
     'auth-secret-due',
     NULL
@@ -399,7 +499,7 @@ SELECT ok(
 SELECT set_config(
   'test.rest_push_schedule_due',
   public.schedule_rest_push(
-    'https://push.example.test/due',
+    'https://fcm.googleapis.com/due',
     60000,
     'Due push',
     ''
@@ -412,7 +512,7 @@ SELECT ok(
 );
 SELECT ok(
   public.upsert_push_subscription(
-    'https://push.example.test/future',
+    'https://fcm.googleapis.com/future',
     'public-key-future',
     'auth-secret-future',
     NULL
@@ -422,7 +522,7 @@ SELECT ok(
 SELECT set_config(
   'test.rest_push_schedule_future',
   public.schedule_rest_push(
-    'https://push.example.test/future',
+    'https://fcm.googleapis.com/future',
     1800000,
     'Future push',
     ''
@@ -435,7 +535,7 @@ SELECT ok(
 );
 SELECT ok(
   public.upsert_push_subscription(
-    'https://push.example.test/stale',
+    'https://fcm.googleapis.com/stale',
     'public-key-stale',
     'auth-secret-stale',
     NULL
@@ -445,7 +545,7 @@ SELECT ok(
 SELECT set_config(
   'test.rest_push_schedule_stale',
   public.schedule_rest_push(
-    'https://push.example.test/stale',
+    'https://fcm.googleapis.com/stale',
     1800000,
     'Stale push',
     ''
@@ -459,14 +559,70 @@ SELECT ok(
 SELECT set_config(
   'test.rest_push_schedule_dispatch',
   public.schedule_rest_push(
-    'https://push.example.test/shared-device',
+    'https://fcm.googleapis.com/shared-device',
     1800000,
     'Dispatch push',
     ''
   )::text,
   true
 );
+SELECT public.upsert_push_subscription(
+  'https://fcm.googleapis.com/sending-cancel',
+  'public-key-sending-cancel',
+  'auth-secret-sending-cancel',
+  NULL
+);
+SELECT set_config(
+  'test.rest_push_schedule_sending_cancel',
+  public.schedule_rest_push(
+    'https://fcm.googleapis.com/sending-cancel',
+    1800000,
+    'Cancel sending push',
+    ''
+  )::text,
+  true
+);
 RESET ROLE;
+SET LOCAL ROLE service_role;
+UPDATE public.rest_push_schedules
+SET status = 'sending',
+    updated_at = now()
+WHERE id = current_setting('test.rest_push_schedule_sending_cancel')::uuid;
+RESET ROLE;
+SET LOCAL ROLE authenticated;
+SELECT set_config(
+  'request.jwt.claim.sub',
+  '21000000-0000-4000-8000-000000000002',
+  true
+);
+SELECT public.cancel_rest_push('https://fcm.googleapis.com/sending-cancel');
+SELECT is(
+  (
+    SELECT status
+    FROM public.rest_push_schedules
+    WHERE id = current_setting('test.rest_push_schedule_sending_cancel')::uuid
+  ),
+  'cancelled',
+  'cancel marks an already-claimed sending push cancelled'
+);
+RESET ROLE;
+SET LOCAL ROLE service_role;
+SELECT public.complete_rest_push(
+  current_setting('test.rest_push_schedule_sending_cancel')::uuid,
+  'sent',
+  NULL
+);
+SELECT is(
+  (
+    SELECT status
+    FROM public.rest_push_schedules
+    WHERE id = current_setting('test.rest_push_schedule_sending_cancel')::uuid
+  ),
+  'cancelled',
+  'completion does not overwrite a cancelled schedule'
+);
+RESET ROLE;
+
 SELECT is(
   private.dispatch_due_rest_pushes(),
   NULL::bigint,
@@ -531,12 +687,12 @@ SELECT ok(
   ),
   'a sending push older than sixty seconds fails with stale error'
 );
-SELECT public.remove_push_subscription_by_endpoint('https://push.example.test/future');
+SELECT public.remove_push_subscription_by_endpoint('https://fcm.googleapis.com/future');
 SELECT is(
   (
     SELECT count(*)::integer
     FROM public.push_subscriptions
-    WHERE endpoint = 'https://push.example.test/future'
+    WHERE endpoint = 'https://fcm.googleapis.com/future'
   ),
   0,
   'service role can remove a dead push subscription'

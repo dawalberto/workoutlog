@@ -21,6 +21,7 @@ export interface RestPushControllerDependencies {
   cancel: (endpoint: string) => Promise<PushServiceResult>;
   now: () => number;
   onArmedChange: (armed: boolean) => void;
+  onScheduleIdChange?: (scheduleId: string | null) => void;
   onError?: (error: string | null) => void;
 }
 
@@ -32,6 +33,7 @@ interface RegisteredIdentity {
 interface ActiveSchedule {
   userId: string;
   endpoint: string;
+  scheduleId: string | null;
   targetEndTime: number;
 }
 
@@ -68,7 +70,10 @@ export function createRestPushController(
   const cancelEndpoint = async (endpoint: string): Promise<boolean> => {
     const result = await dependencies.cancel(endpoint);
     const succeeded = reportResult(result);
-    if (succeeded && activeSchedule?.endpoint === endpoint) activeSchedule = null;
+    if (succeeded && activeSchedule?.endpoint === endpoint) {
+      activeSchedule = null;
+      dependencies.onScheduleIdChange?.(null);
+    }
     return succeeded;
   };
 
@@ -150,14 +155,17 @@ export function createRestPushController(
     );
     if (!reportResult(result)) {
       setArmed(false);
+      dependencies.onScheduleIdChange?.(null);
       return;
     }
 
     activeSchedule = {
       userId: identity.userId,
       endpoint: identity.endpoint,
+      scheduleId: result.data,
       targetEndTime: plan.targetEndTime,
     };
+    dependencies.onScheduleIdChange?.(activeSchedule.scheduleId);
     const latest = latestSnapshot;
     const latestPlan = latest ? planRestPush(latest.timer, dependencies.now()) : null;
     setArmed(
@@ -201,6 +209,7 @@ export function createRestPushController(
     dispose: () => {
       disposed = true;
       pendingSnapshot = null;
+      dependencies.onScheduleIdChange?.(null);
       setArmed(false);
     },
   };

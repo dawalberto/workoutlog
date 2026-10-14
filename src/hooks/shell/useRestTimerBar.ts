@@ -8,7 +8,13 @@ export function useRestTimerBar() {
   const onPause = useAppStore((state) => state.pauseRestTimer);
   const onResume = useAppStore((state) => state.resumeRestTimer);
   const onExtend = useAppStore((state) => state.extendRestTimer);
-  const restPushArmed = useAppStore((state) => state.restPush.armed);
+  const restPushScheduleId = useAppStore((state) => state.restPush.scheduleId);
+  const lastDeliveredScheduleId = useAppStore(
+    (state) => state.restPush.lastDeliveredScheduleId,
+  );
+  const lastDeliveredWhileVisible = useAppStore(
+    (state) => state.restPush.lastDeliveredWhileVisible,
+  );
 
   return activeRestTimer
     ? {
@@ -19,7 +25,9 @@ export function useRestTimerBar() {
       onPause,
       onResume,
       onExtend,
-      restPushArmed,
+      restPushScheduleId,
+      lastDeliveredScheduleId,
+      lastDeliveredWhileVisible,
     }
     : null;
 }

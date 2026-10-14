@@ -1,6 +1,6 @@
 import { deepEqual, equal, match, ok } from 'node:assert/strict';
 import { Agent } from 'node:https';
-import { createHandler, type PushSchedule } from './handler.ts';
+import { createHandler, isAllowedPushEndpoint, type PushSchedule } from './handler.ts';
 import { createWebPushSender } from './push.ts';
 
 type Bytes = Uint8Array<ArrayBuffer>;
@@ -26,7 +26,7 @@ const deno = (globalThis as typeof globalThis & { Deno: TestRuntime }).Deno;
 
 const schedule: PushSchedule = {
   schedule_id: 'schedule-1',
-  endpoint: 'https://push.example.test/subscription',
+  endpoint: 'https://fcm.googleapis.com/subscription',
   p256dh: 'p256dh-key',
   auth: 'auth-key',
   title: 'Descanso terminado',
@@ -37,6 +37,7 @@ const schedule: PushSchedule = {
 function createDependencies(overrides: Record<string, unknown> = {}) {
   const rpc = {
     claim: async () => [schedule],
+    isSending: async () => true,
     complete: async () => undefined,
     remove: async () => undefined,
   };
@@ -87,6 +88,7 @@ deno.test('claims due work and completes successful sends as sent', async () => 
   const dependencies = createDependencies({
     rpc: {
       claim: async () => [schedule],
+      isSending: async () => true,
       complete: async (...args: unknown[]) => completed.push(args),
       remove: async () => undefined,
     },
@@ -126,6 +128,7 @@ deno.test('removes subscriptions after a 410 and completes the schedule as gone'
   const dependencies = createDependencies({
     rpc: {
       claim: async () => [schedule],
+      isSending: async () => true,
       complete: async (...args: unknown[]) => completed.push(args),
       remove: async (endpoint: string) => removed.push(endpoint),
     },
@@ -156,6 +159,7 @@ deno.test('completes generic delivery failures as failed without leaking provide
   const dependencies = createDependencies({
     rpc: {
       claim: async () => [schedule],
+      isSending: async () => true,
       complete: async (...args: unknown[]) => completed.push(args),
       remove: async () => undefined,
     },
@@ -180,6 +184,93 @@ deno.test('completes generic delivery failures as failed without leaking provide
   });
   deepEqual(completed, [['schedule-1', 'failed', 'delivery_failed']]);
   ok(!responseBody.includes('private token'));
+});
+
+deno.test('allows only supported Web Push endpoint hosts and HTTPS port 443', () => {
+  for (const endpoint of [
+    'https://fcm.googleapis.com/fcm/send/token',
+    'https://android.googleapis.com/gcm/send/token',
+    'https://web.push.apple.com/push/token',
+    'https://updates.push.services.mozilla.com/wpush/v2/token',
+    'https://wns2-example.notify.windows.com/w/?token=example',
+    'https://fcm.googleapis.com:443/fcm/send/token',
+  ]) {
+    ok(isAllowedPushEndpoint(endpoint), `${endpoint} should be allowed`);
+  }
+
+  for (const endpoint of [
+    'https://evil.example/subscription',
+    'https://fcm.googleapis.com.evil.com/subscription',
+    'https://fcm.googleapis.com\\evil.example/subscription',
+    'https://.push.apple.com/subscription',
+    'https://foo..push.apple.com/subscription',
+    'https://user@fcm.googleapis.com/subscription',
+    'https://fcm.googleapis.com:8443/subscription',
+    'http://fcm.googleapis.com/subscription',
+  ]) {
+    ok(!isAllowedPushEndpoint(endpoint), `${endpoint} should be rejected`);
+  }
+});
+
+deno.test('fails and removes a subscription with an unapproved endpoint before sending', async () => {
+  const deniedSchedule = { ...schedule, endpoint: 'https://evil.example/subscription' };
+  const completed: unknown[][] = [];
+  const removed: string[] = [];
+  let sent = false;
+  const dependencies = createDependencies({
+    rpc: {
+      claim: async () => [deniedSchedule],
+      isSending: async () => true,
+      complete: async (...args: unknown[]) => completed.push(args),
+      remove: async (endpoint: string) => removed.push(endpoint),
+    },
+    sendPush: async () => {
+      sent = true;
+    },
+  });
+  const response = await createHandler(dependencies)(post());
+
+  equal(response.status, 200);
+  deepEqual(await response.json(), {
+    claimed: 1,
+    sent: 0,
+    failed: 1,
+    removed: 1,
+    rounds: 1,
+  });
+  deepEqual(completed, [['schedule-1', 'failed', 'endpoint_not_allowed']]);
+  deepEqual(removed, [deniedSchedule.endpoint]);
+  equal(sent, false);
+});
+
+deno.test('skips a claimed schedule cancelled before its push request starts', async () => {
+  let sent = false;
+  let completed = false;
+  const dependencies = createDependencies({
+    rpc: {
+      claim: async () => [schedule],
+      isSending: async () => false,
+      complete: async () => {
+        completed = true;
+      },
+      remove: async () => undefined,
+    },
+    sendPush: async () => {
+      sent = true;
+    },
+  });
+  const response = await createHandler(dependencies)(post());
+
+  equal(response.status, 200);
+  deepEqual(await response.json(), {
+    claimed: 1,
+    sent: 0,
+    failed: 0,
+    removed: 0,
+    rounds: 1,
+  });
+  equal(sent, false);
+  equal(completed, false);
 });
 
 deno.test('sends RFC 8291 encrypted Web Push with VAPID and decryptable payload', async () => {
@@ -208,7 +299,7 @@ deno.test('sends RFC 8291 encrypted Web Push with VAPID and decryptable payload'
       cert: certificate,
       key: privateCertificateKey,
       onListen({ port }) {
-        const endpoint = `http://127.0.0.1:${port}`;
+        const endpoint = `https://127.0.0.1:${port}`;
         const sender = createWebPushSender(
           {
             subject: 'mailto:push@example.test',
@@ -217,24 +308,34 @@ deno.test('sends RFC 8291 encrypted Web Push with VAPID and decryptable payload'
           },
           { agent: new Agent({ rejectUnauthorized: false }) },
         );
-        sendPromise = sender(
-            {
-              endpoint: endpoint.replace('http:', 'https:'),
-              keys: {
-                p256dh: toBase64Url(userPublic),
-                auth: toBase64Url(authSecret),
-              },
+        const localSchedule = {
+          ...schedule,
+          endpoint,
+          p256dh: toBase64Url(userPublic),
+          auth: toBase64Url(authSecret),
+        };
+        const handler = createHandler({
+          ...createDependencies({
+            rpc: {
+              claim: async () => [localSchedule],
+              isSending: async () => true,
+              complete: async () => undefined,
+              remove: async () => undefined,
             },
-            {
-              title: 'Rest complete',
-              body: 'Next set',
-              tag: 'rest-timer',
-              url: '/workoutlog/',
-              scheduleId: 'schedule-1',
-              fireAt: '2026-10-14T17:00:00.000Z',
-            },
-          )
-          .catch(reject);
+          }),
+          isEndpointAllowed: (candidate: string) => candidate === endpoint,
+          sendPush: sender,
+        });
+        sendPromise = handler(post()).then(async (response) => {
+          equal(response.status, 200);
+          deepEqual(await response.json(), {
+            claimed: 1,
+            sent: 1,
+            failed: 0,
+            removed: 0,
+            rounds: 1,
+          });
+        }).catch(reject);
       },
       async handler(request) {
         resolve({
@@ -263,8 +364,8 @@ deno.test('sends RFC 8291 encrypted Web Push with VAPID and decryptable payload'
     authSecret,
   );
   deepEqual(JSON.parse(new TextDecoder().decode(plaintext)), {
-    title: 'Rest complete',
-    body: 'Next set',
+    title: schedule.title,
+    body: schedule.body,
     tag: 'rest-timer',
     url: '/workoutlog/',
     scheduleId: 'schedule-1',

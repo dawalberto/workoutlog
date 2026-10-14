@@ -19,6 +19,7 @@ export interface PushPayload {
 
 export interface DispatchRpc {
   claim(limit: number): Promise<PushSchedule[]>;
+  isSending(scheduleId: string): Promise<boolean>;
   complete(scheduleId: string, status: 'sent' | 'failed', error?: string): Promise<void>;
   remove(endpoint: string): Promise<void>;
 }
@@ -27,6 +28,7 @@ interface HandlerDependencies {
   dispatchSecret?: string;
   configured: boolean;
   rpc: DispatchRpc;
+  isEndpointAllowed?: (endpoint: string) => boolean;
   sendPush(
     subscription: { endpoint: string; keys: { p256dh: string; auth: string } },
     payload: PushPayload,
@@ -36,6 +38,42 @@ interface HandlerDependencies {
 const CLAIM_LIMIT = 100;
 const MAX_CLAIM_ROUNDS = 3;
 const SEND_CONCURRENCY = 8;
+
+export function isAllowedPushEndpoint(endpoint: string): boolean {
+  if (!endpoint.startsWith('https://') || /[\\\u0000-\u001F\u007F]/.test(endpoint)) return false;
+  const authority = endpoint.match(/^https:\/\/([^/?#]*)/);
+  if (!authority || authority[1] === undefined || authority[1].includes('@')) return false;
+
+  const hostAndPort = authority[1].match(/^([^:/?#]+)(?::([0-9]+))?$/);
+  if (!hostAndPort || (hostAndPort[2] !== undefined && hostAndPort[2] !== '443')) return false;
+
+  try {
+    const url = new URL(endpoint);
+    if (
+      url.protocol !== 'https:' ||
+      url.username !== '' ||
+      url.password !== '' ||
+      url.hostname.toLowerCase() !== hostAndPort[1]?.toLowerCase() ||
+      (url.port !== '' && url.port !== '443')
+    ) return false;
+
+    const hostname = url.hostname.toLowerCase();
+    return hostname === 'fcm.googleapis.com' ||
+      hostname === 'android.googleapis.com' ||
+      isProviderSubdomain(hostname, 'push.apple.com') ||
+      isProviderSubdomain(hostname, 'push.services.mozilla.com') ||
+      isProviderSubdomain(hostname, 'notify.windows.com');
+  } catch {
+    return false;
+  }
+}
+
+function isProviderSubdomain(hostname: string, suffix: string): boolean {
+  const suffixWithBoundary = `.${suffix}`;
+  if (!hostname.endsWith(suffixWithBoundary)) return false;
+  const subdomain = hostname.slice(0, -suffixWithBoundary.length);
+  return subdomain.length > 0 && subdomain.split('.').every((label) => /^[a-z0-9-]+$/.test(label));
+}
 
 export function createHandler(deps: HandlerDependencies): (request: Request) => Promise<Response> {
   return async (request) => {
@@ -60,6 +98,15 @@ export function createHandler(deps: HandlerDependencies): (request: Request) => 
         counts.claimed += schedules.length;
 
         await forEachBounded(schedules, SEND_CONCURRENCY, async (schedule) => {
+          if (!(deps.isEndpointAllowed ?? isAllowedPushEndpoint)(schedule.endpoint)) {
+            await deps.rpc.complete(schedule.schedule_id, 'failed', 'endpoint_not_allowed');
+            await deps.rpc.remove(schedule.endpoint);
+            counts.failed++;
+            counts.removed++;
+            return;
+          }
+          if (!await deps.rpc.isSending(schedule.schedule_id)) return;
+
           const payload: PushPayload = {
             title: schedule.title,
             body: schedule.body,

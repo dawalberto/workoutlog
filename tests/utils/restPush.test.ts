@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildRestPushMessage, planRestPush } from '../../src/utils/restPush';
+import {
+  buildRestPushMessage,
+  planRestPush,
+  shouldPlayLocalRestAlert,
+} from '../../src/utils/restPush';
 import type { ActiveRestTimer } from '../../src/types';
 
 const runningTimer: ActiveRestTimer = {
@@ -65,5 +69,22 @@ describe('rest push messages', () => {
         title: 'Descanso terminado',
         body: '¡A por la siguiente serie!',
       });
+  });
+
+});
+
+describe('local rest alert fallback', () => {
+  it('plays locally when no current schedule or matching delivery is known', () => {
+    expect(shouldPlayLocalRestAlert(null, null)).toBe(true);
+    expect(shouldPlayLocalRestAlert('schedule-current', null)).toBe(true);
+    expect(shouldPlayLocalRestAlert('schedule-current', 'schedule-previous')).toBe(true);
+  });
+
+  it('suppresses the local alert only after the current schedule is delivered', () => {
+    expect(shouldPlayLocalRestAlert('schedule-current', 'schedule-current', false)).toBe(false);
+  });
+
+  it('keeps local feedback when a matching foreground push is silent', () => {
+    expect(shouldPlayLocalRestAlert('schedule-current', 'schedule-current', true)).toBe(true);
   });
 });

@@ -40,3 +40,13 @@ export function buildRestPushMessage(timer: ActiveRestTimer): RestPushMessage {
 
   return { title, body: body.slice(0, 240) };
 }
+
+export function shouldPlayLocalRestAlert(
+  currentScheduleId: string | null,
+  deliveredScheduleId: string | null,
+  deliveredWhileVisible = false,
+): boolean {
+  return currentScheduleId === null ||
+    currentScheduleId !== deliveredScheduleId ||
+    deliveredWhileVisible;
+}

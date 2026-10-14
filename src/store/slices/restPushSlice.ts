@@ -8,6 +8,10 @@ export interface RestPushSnapshot {
   endpoint: string | null;
   subscription: PushSubscriptionJSON | null;
   armed: boolean;
+  scheduleId: string | null;
+  lastDeliveredScheduleId: string | null;
+  lastDeliveredAt: number | null;
+  lastDeliveredWhileVisible: boolean;
   error: string | null;
 }
 
@@ -24,6 +28,10 @@ export const createRestPushSlice: StateCreator<AppState, [], [], RestPushSlice> 
       endpoint: null,
       subscription: null,
       armed: false,
+      scheduleId: null,
+      lastDeliveredScheduleId: null,
+      lastDeliveredAt: null,
+      lastDeliveredWhileVisible: false,
       error: null,
     },
     setRestPushState: (snapshot) => set((state) => ({

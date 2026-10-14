@@ -64,12 +64,12 @@ Grants: the initial migration grants `SELECT, INSERT, UPDATE` to `authenticated`
 |---|---|---|---|
 | `public.sync_push(p_operation_id uuid, p_changes jsonb, p_contract_version integer DEFAULT NULL) returns jsonb` | `SECURITY DEFINER`, `search_path = pg_catalog, private` | `authenticated` | Validated, idempotent batch of 1–100 upserts/deletes; child upserts under tombstoned parents and live descendants of newly tombstoned parents receive tombstones with new revisions |
 | `public.get_sync_entitlement() returns jsonb` | `SECURITY INVOKER`, `search_path = pg_catalog` | `authenticated` only | Returns `{ eligible: true }`; raises `28000` if unauthenticated |
-| `public.upsert_push_subscription(text, text, text, text) returns uuid` | `SECURITY DEFINER`, empty search path | `authenticated` only | Registers or transfers a subscription endpoint; removes the oldest subscriptions beyond ten per user |
+| `public.upsert_push_subscription(text, text, text, text) returns uuid` | `SECURITY DEFINER`, empty search path | `authenticated` only | Registers or transfers an allowlisted Web Push endpoint; removes the oldest subscriptions beyond ten per user |
 | `public.delete_push_subscription(text) returns void` | `SECURITY DEFINER`, empty search path | `authenticated` only | Deletes the caller's endpoint |
-| `public.schedule_rest_push(text, integer, text, text) returns uuid` | `SECURITY DEFINER`, empty search path | `authenticated` only | Replaces the endpoint's pending schedule with a server-calculated deadline |
-| `public.cancel_rest_push(text) returns void` | `SECURITY DEFINER`, empty search path | `authenticated` only | Cancels the caller's pending schedule |
+| `public.schedule_rest_push(text, integer, text, text) returns uuid` | `SECURITY DEFINER`, empty search path | `authenticated` only | Cancels the endpoint's pending or sending schedule and replaces it with a server-calculated deadline |
+| `public.cancel_rest_push(text) returns void` | `SECURITY DEFINER`, empty search path | `authenticated` only | Cancels the caller's pending or sending schedule |
 | `public.claim_due_rest_pushes(integer) returns table` | `SECURITY DEFINER`, empty search path | `service_role` only | Atomically claims due schedules; fails sending rows stale for more than 60 seconds |
-| `public.complete_rest_push(uuid, text, text) returns void` | `SECURITY DEFINER`, empty search path | `service_role` only | Marks a claimed schedule sent or failed |
+| `public.complete_rest_push(uuid, text, text) returns void` | `SECURITY DEFINER`, empty search path | `service_role` only | Marks a schedule sent or failed only while it remains in `sending` |
 | `public.remove_push_subscription_by_endpoint(text) returns void` | `SECURITY DEFINER`, empty search path | `service_role` only | Deletes a subscription whose push endpoint is gone |
 | `private.dispatch_due_rest_pushes() returns bigint` | `SECURITY DEFINER`, empty search path | Cron / database owner only | Calls `send-rest-push` through `pg_net` when a schedule is due and both Vault secrets exist |
 | `private.cleanup_rest_push() returns void` | `SECURITY DEFINER`, empty search path | Cron / database owner only | Removes final schedules and old cron run details |
@@ -83,9 +83,13 @@ The push tables are independent from the 12 synced workout tables and are not li
 | `public.push_subscriptions` | One Web Push endpoint and its encryption keys per registered device; an endpoint can be transferred to the currently signed-in account | Authenticated `SELECT` of own rows only; all writes go through RPCs |
 | `public.rest_push_schedules` | Notification title/body, server `fire_at`, delivery status, attempts, and last error | Authenticated `SELECT` of own rows only; all writes go through RPCs |
 
-The client can keep at most ten subscriptions per account. Registering another endpoint deletes the least recently refreshed rows first (`updated_at`, then `created_at`). There can be at most one `pending` schedule per subscription; rescheduling cancels the previous pending row. Schedule delays are limited to 1 second through 2 hours.
+The client can keep at most ten subscriptions per account. Registering another endpoint deletes the least recently refreshed rows first (`updated_at`, then `created_at`). There can be at most one `pending` schedule per subscription; rescheduling cancels its prior `pending` or `sending` row. Schedule delays are limited to 1 second through 2 hours.
+
+Subscription endpoints are restricted in both the database and the Edge Function to `fcm.googleapis.com`, `android.googleapis.com`, and subdomains of `push.apple.com`, `push.services.mozilla.com`, and `notify.windows.com`. The Edge Function checks this allowlist before sending and removes rejected subscriptions. Immediately before sending, it also verifies that the claimed schedule remains in `sending`; cancelled queued claims are skipped. Its pinned `web-push@3.6.7` sender uses Node's `https.request` transport, which does not automatically follow redirects.
 
 `pg_cron` runs `private.dispatch_due_rest_pushes()` every two seconds. It returns without an HTTP request when no rows are due, or when either Vault secret is absent. With both secrets present, it enqueues a `net.http_post` request to the Edge Function. `public.claim_due_rest_pushes` uses `FOR UPDATE SKIP LOCKED`, so concurrent function invocations claim disjoint rows. The Edge Function reports each result with `complete_rest_push`; for expired endpoints it calls `remove_push_subscription_by_endpoint`.
+
+Cancel and reschedule also mark claimed `sending` rows as `cancelled`, and completion never overwrites that state. A push request already handed to a provider cannot be recalled; there remains a sub-second race between cancellation and provider acceptance.
 
 The daily `cleanup-rest-pushes` job removes `sent`, `failed`, and `cancelled` schedules older than a day and attempts to remove cron run details older than a day. Run-detail cleanup is skipped if the database role lacks permission.
 
@@ -168,7 +172,8 @@ Production redirect URLs are configured in the Supabase dashboard (Auth > URL co
 | `20261013155500_revoke_direct_sync_table_writes` | Restricts synced-table client writes to `sync_push`; keeps pull reads | Active |
 | `20261013183000_sync_contract_metadata_and_version` | Private contract metadata, version gate, and `sync_push` whitelist driven by metadata | Active |
 | `20261014154300_tombstone_children_of_deleted_parents` | Guards child upserts, cascades parent tombstones, and repairs existing live descendants | Active |
-| `20261014171406_rest_timer_push` | Web Push subscriptions/schedules, RPC access, `pg_cron` dispatch and cleanup | **Active (latest)** |
+| `20261014171406_rest_timer_push` | Web Push subscriptions/schedules, RPC access, `pg_cron` dispatch and cleanup | Active |
+| `20261014200000_harden_rest_push` | Web Push host allowlist, cleanup of invalid subscriptions, and cancellation-safe schedule transitions | **Active (latest)** |
 
 Billing context: [ADR 0005](../decisions/0005-remove-billing-signed-in-sync.md).
 

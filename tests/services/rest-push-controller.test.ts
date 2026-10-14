@@ -4,7 +4,7 @@ import type { PushServiceResult } from '../../src/services/push';
 import type { ActiveRestTimer } from '../../src/types';
 
 const subscription = {
-  endpoint: 'https://push.example.test/endpoint',
+  endpoint: 'https://fcm.googleapis.com/endpoint',
   keys: { p256dh: 'public-key', auth: 'auth-key' },
 };
 
@@ -32,12 +32,14 @@ function deps() {
     })),
     now: () => 1_000,
     onArmedChange: vi.fn(),
+    onScheduleIdChange: vi.fn(),
   };
 }
 
 describe('rest push controller', () => {
   it('registers once per user and endpoint and schedules the running timer', async () => {
     const dependencies = deps();
+    const onScheduleIdChange = dependencies.onScheduleIdChange;
     const controller = createRestPushController(dependencies);
     const snapshot = {
       userId: 'user-1',
@@ -55,6 +57,7 @@ describe('rest push controller', () => {
       { title: 'Descanso terminado', body: 'Sentadilla · Toca la serie 2' },
     );
     expect(dependencies.onArmedChange).toHaveBeenLastCalledWith(true);
+    expect(onScheduleIdChange).toHaveBeenLastCalledWith('schedule-id');
   });
 
   it('re-registers when the signed-in user changes', async () => {

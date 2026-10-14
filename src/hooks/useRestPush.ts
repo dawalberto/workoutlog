@@ -63,6 +63,24 @@ export function useRestPush(): void {
     let unsubscribeStore: (() => void) | null = null;
     let previousTimer: RestPushStoreSnapshot['timer'] = null;
 
+    const handleServiceWorkerMessage = (event: MessageEvent) => {
+      const message = event.data;
+      if (
+        typeof message === 'object' &&
+        message !== null &&
+        message.type === 'rest-push-delivered' &&
+        typeof message.scheduleId === 'string'
+      ) {
+        setRestPushState({
+          lastDeliveredScheduleId: message.scheduleId,
+          lastDeliveredAt: Date.now(),
+          lastDeliveredWhileVisible: document.visibilityState === 'visible',
+        });
+      }
+    };
+
+    navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
+
     const closeNotificationsWhenVisible = () => {
       if (document.visibilityState === 'visible') void closeRestNotifications();
     };
@@ -92,6 +110,9 @@ export function useRestPush(): void {
           now: Date.now,
           onArmedChange: (armed) => {
             if (mounted) setRestPushState({ armed });
+          },
+          onScheduleIdChange: (scheduleId) => {
+            if (mounted) setRestPushState({ scheduleId });
           },
           onError: (error) => {
             if (mounted) {
@@ -141,6 +162,7 @@ export function useRestPush(): void {
       mounted = false;
       unsubscribeStore?.();
       controller?.dispose();
+      navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage);
       window.removeEventListener('online', handleOnline);
       document.removeEventListener('visibilitychange', closeNotificationsWhenVisible);
     };

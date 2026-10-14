@@ -11,6 +11,10 @@ describe('rest push store slice', () => {
       endpoint: null,
       subscription: null,
       armed: false,
+      scheduleId: null,
+      lastDeliveredScheduleId: null,
+      lastDeliveredAt: null,
+      lastDeliveredWhileVisible: false,
       error: null,
     });
     expect(selectPersistedData(store.getState())).not.toHaveProperty('restPush');
@@ -19,6 +23,10 @@ describe('rest push store slice', () => {
       support: 'available',
       permission: 'granted',
       endpoint: 'https://push.example.test/endpoint',
+      scheduleId: 'schedule-1',
+      lastDeliveredScheduleId: 'schedule-1',
+      lastDeliveredAt: 1_234,
+      lastDeliveredWhileVisible: true,
     });
     expect(store.getState().restPush).toEqual({
       support: 'available',
@@ -26,6 +34,10 @@ describe('rest push store slice', () => {
       endpoint: 'https://push.example.test/endpoint',
       subscription: null,
       armed: false,
+      scheduleId: 'schedule-1',
+      lastDeliveredScheduleId: 'schedule-1',
+      lastDeliveredAt: 1_234,
+      lastDeliveredWhileVisible: true,
       error: null,
     });
   });

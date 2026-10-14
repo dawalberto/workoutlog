@@ -9,6 +9,7 @@ import {
 } from '../utils/audioBeep';
 import { useRestTimerBar } from '../hooks/shell/useRestTimerBar';
 import { getRestTimerRemainingMs } from '../utils/restTimer';
+import { shouldPlayLocalRestAlert } from '../utils/restPush';
 import { RestPushPrompt } from './RestPushPrompt';
 
 export const RestTimerBar: React.FC = () => {
@@ -22,7 +23,9 @@ export const RestTimerBar: React.FC = () => {
     onPause,
     onResume,
     onExtend,
-    restPushArmed,
+    restPushScheduleId,
+    lastDeliveredScheduleId,
+    lastDeliveredWhileVisible,
   } = timer;
   const { initialSeconds, targetEndTime, pausedRemainingMs, exerciseName, setNumber } = activeRestTimer;
   const isPaused = pausedRemainingMs !== undefined;
@@ -36,8 +39,18 @@ export const RestTimerBar: React.FC = () => {
 
   // Synchronous ref to prevent double-firing sound/vibration
   const hasFinishedRef = useRef<boolean>(initialRemainingSec <= 0);
+  const hasPlayedFinishAlertRef = useRef(false);
+  const pendingHiddenAlertRef = useRef(initialRemainingSec <= 0);
 
   const workerRef = useRef<Worker | null>(null);
+
+  const playFinishAlert = useCallback(() => {
+    if (hasPlayedFinishAlertRef.current) return;
+    hasPlayedFinishAlertRef.current = true;
+    pendingHiddenAlertRef.current = false;
+    playTimerFinishBeep();
+    triggerTimerVibration();
+  }, []);
 
   const handleFinish = useCallback((shouldPlaySound: boolean = true) => {
     // Strictly execute only once per timer run
@@ -46,13 +59,13 @@ export const RestTimerBar: React.FC = () => {
     setHasFinished(true);
     setSecondsLeft(0);
     stopRestAudioKeepAlive();
+    pendingHiddenAlertRef.current = !shouldPlaySound;
 
     // Audio and haptic vibration feedback
     if (shouldPlaySound) {
-      playTimerFinishBeep();
-      triggerTimerVibration();
+      playFinishAlert();
     }
-  }, []);
+  }, [playFinishAlert]);
 
   // Update check based on real wall-clock time
   const checkTick = useCallback(() => {
@@ -63,9 +76,22 @@ export const RestTimerBar: React.FC = () => {
     setSecondsLeft(remainingSec);
 
     if (remainingMs <= 0) {
-      handleFinish(document.visibilityState !== 'hidden' || !restPushArmed);
+      const shouldPlayInForeground = document.visibilityState !== 'hidden' &&
+        shouldPlayLocalRestAlert(
+          restPushScheduleId,
+          lastDeliveredScheduleId,
+          lastDeliveredWhileVisible,
+        );
+      handleFinish(shouldPlayInForeground);
     }
-  }, [activeRestTimer, isPaused, handleFinish, restPushArmed]);
+  }, [
+    activeRestTimer,
+    isPaused,
+    handleFinish,
+    lastDeliveredScheduleId,
+    lastDeliveredWhileVisible,
+    restPushScheduleId,
+  ]);
 
   // Reset when initialSeconds, targetEndTime, or exercise/set changes
   useEffect(() => {
@@ -81,6 +107,8 @@ export const RestTimerBar: React.FC = () => {
       setHasFinished(true);
     } else {
       hasFinishedRef.current = false;
+      hasPlayedFinishAlertRef.current = false;
+      pendingHiddenAlertRef.current = false;
       setHasFinished(false);
     }
   }, [activeRestTimer, initialSeconds, targetEndTime, pausedRemainingMs, exerciseName, setNumber]);
@@ -153,6 +181,46 @@ export const RestTimerBar: React.FC = () => {
       window.removeEventListener('focus', onFocus);
     };
   }, [isPaused, hasFinished, checkTick]);
+
+  useEffect(() => {
+    if (!hasFinished || !pendingHiddenAlertRef.current || hasPlayedFinishAlertRef.current) return;
+
+    const shouldPlayFallback = () => shouldPlayLocalRestAlert(
+      restPushScheduleId,
+      lastDeliveredScheduleId,
+      lastDeliveredWhileVisible,
+    );
+    if (!shouldPlayFallback()) {
+      pendingHiddenAlertRef.current = false;
+      return;
+    }
+    if (document.visibilityState === 'visible') {
+      playFinishAlert();
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      if (shouldPlayFallback()) playFinishAlert();
+      else pendingHiddenAlertRef.current = false;
+    }, 4_000);
+    const onVisibilityChange = () => {
+      if (document.visibilityState !== 'visible') return;
+      window.clearTimeout(timeout);
+      if (shouldPlayFallback()) playFinishAlert();
+      else pendingHiddenAlertRef.current = false;
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      window.clearTimeout(timeout);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [
+    hasFinished,
+    lastDeliveredScheduleId,
+    lastDeliveredWhileVisible,
+    playFinishAlert,
+    restPushScheduleId,
+  ]);
 
   const togglePause = () => {
     if (isPaused) onResume();
@@ -231,7 +299,7 @@ export const RestTimerBar: React.FC = () => {
               id="btn-mini-return-routine"
               type="button"
               onClick={onReturnToRoutine}
-              className={`px-3 py-1 text-xs font-black rounded-full transition-all flex items-center gap-1 active:scale-95 shrink-0 shadow-sm ${
+              className={`min-h-[48px] px-3 py-1 text-xs font-black rounded-full transition-all flex items-center gap-1 active:scale-95 shrink-0 shadow-sm ${
                 hasFinished
                   ? 'bg-black text-white hover:bg-zinc-900'
                   : 'bg-[#00FF87] text-black hover:bg-[#00e57a] shadow-[0_0_10px_rgba(0,255,135,0.3)]'
@@ -249,7 +317,7 @@ export const RestTimerBar: React.FC = () => {
             type="button"
             onClick={onClose}
             aria-label="Cerrar temporizador"
-            className={`p-1 rounded-full transition-colors active:scale-95 shrink-0 ${
+            className={`min-h-[48px] min-w-[48px] p-1 rounded-full transition-colors active:scale-95 shrink-0 ${
               hasFinished ? 'text-black/70 hover:text-black hover:bg-black/10' : 'text-zinc-400 hover:text-white hover:bg-white/10'
             }`}
           >
@@ -316,7 +384,7 @@ export const RestTimerBar: React.FC = () => {
               type="button"
               onClick={onClose}
               aria-label="Cerrar temporizador"
-              className={`p-1.5 rounded-xl transition-colors active:scale-95 ${
+              className={`min-h-[48px] min-w-[48px] p-1.5 rounded-xl transition-colors active:scale-95 ${
                 hasFinished ? 'text-black/70 hover:text-black hover:bg-black/10' : 'text-zinc-400 hover:text-white hover:bg-white/10'
               }`}
             >
@@ -349,7 +417,7 @@ export const RestTimerBar: React.FC = () => {
               id="btn-add-30s-rest"
               type="button"
               onClick={() => addExtraTime(30)}
-              className={`min-h-[44px] px-3 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1 active:scale-95 shrink-0 ${
+              className={`min-h-[48px] px-3 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1 active:scale-95 shrink-0 ${
                 hasFinished
                   ? 'bg-black/15 hover:bg-black/25 text-black'
                   : 'bg-zinc-800 hover:bg-zinc-700 text-white border border-white/10'
@@ -363,7 +431,7 @@ export const RestTimerBar: React.FC = () => {
                 id="btn-pause-rest-timer"
                 type="button"
                 onClick={togglePause}
-                className="min-h-[44px] min-w-[44px] p-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white border border-white/10 transition-all active:scale-95 flex items-center justify-center shrink-0"
+                className="min-h-[48px] min-w-[48px] p-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white border border-white/10 transition-all active:scale-95 flex items-center justify-center shrink-0"
                 title={isPaused ? 'Continuar' : 'Pausar'}
                 aria-label={isPaused ? 'Continuar descanso' : 'Pausar descanso'}
               >
@@ -379,7 +447,7 @@ export const RestTimerBar: React.FC = () => {
               id="btn-skip-rest-timer"
               type="button"
               onClick={onClose}
-              className={`min-h-[44px] px-4 sm:px-5 text-xs font-black rounded-xl transition-all active:scale-95 shrink-0 inline-flex items-center justify-center ${
+              className={`min-h-[48px] px-4 sm:px-5 text-xs font-black rounded-xl transition-all active:scale-95 shrink-0 inline-flex items-center justify-center ${
                 hasFinished
                   ? 'bg-black text-white hover:bg-zinc-900 shadow-md ring-1 ring-black/20'
                   : 'bg-[#00FF87] hover:bg-[#00e57a] text-black shadow-[0_0_15px_rgba(0,255,135,0.4)]'
