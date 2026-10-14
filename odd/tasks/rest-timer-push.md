@@ -1,5 +1,7 @@
 # Rest timer server push notifications
 
+Last verified: 2026-10-14
+
 ## Objective
 
 Notify signed-in users when a rest timer ends even if the phone is locked or the PWA is in the background: a system notification that sounds and vibrates without pausing other audio (Spotify, podcasts).
@@ -38,6 +40,7 @@ The rest timer finish feedback (`playTimerFinishBeep`, `triggerTimerVibration`) 
 - [x] `T4-client`: SW push handler, `src/services/push.ts`, pure plan helper, `useRestPush` adapter, enable CTA, foreground/background dedupe, `.env.example`, frontend docs, tests. Route: delegated writer; risk tier: high.
 - [x] `T5-review`: Independent review (reviewer agent) + full checks; review findings addressed in T6.
 - [x] `T6-review-fixes`: Restrict Web Push endpoints in SQL and Edge Function, prevent silent local alert loss when delivery is unconfirmed, cancel claimed sends during reschedule/cancel, and raise rest timer control hitboxes to 48 px. Route: delegated writer; risk tier: high.
+- [x] `T7-sending-check-grant`: Replace the sender's direct status-table read with a service-role-only RPC, isolate per-schedule failures, and add grant/handler regressions. Root cause: `service_role` had no `SELECT` on `rest_push_schedules`, so `isSending` raised `schedule_status_failed` outside the row-level catch and every cron dispatch returned 500 after claiming a row. Production evidence: `attempts=1`, `last_error IS NULL`, `net._http_response.status_code=500`, and grants limited to REFERENCES/TRIGGER/TRUNCATE. Risk tier: high.
 
 ## Acceptance criteria
 
@@ -125,6 +128,18 @@ Forecast exceeds 400 authored lines. Strategy: `ask-on-risk` resolved in autopil
   - `git diff --check && node --check public/push-sw.js` — passed.
   - Independent re-review — ready; no findings. Review agent could not run commands; all required commands were run by the writer.
   - Initial work-unit commit before evidence amendment: `7693f13`.
+- `T7-sending-check-grant` complete; route: delegated direct writer; risk tier: high.
+  - Root cause confirmed: the Edge Function's direct schedule `SELECT` was denied to `service_role`; `isSending` failed before the old per-schedule delivery catch, leaving claimed rows `sending` and returning `dispatch_failed` for the whole batch.
+  - Added `public.is_rest_push_sending(uuid)`, a stable `SECURITY DEFINER` RPC with an empty search path, executable only by `service_role`; no table privileges were granted.
+  - Added pgTAP checks for true on a `sending` row, false on pending/failed rows, denied execution for `anon`/`authenticated`, and service-role execution for all four sender RPCs.
+  - RED: `deno test --config supabase/functions/send-rest-push/deno.json --allow-env --allow-net --allow-read=supabase/functions supabase/functions/send-rest-push/index.test.ts` — failed as expected; both new regressions received HTTP 500.
+  - `pnpm db:reset && pnpm db:test && pnpm db:lint` — passed; 8 pgTAP files and 196 assertions, including 72 rest-push assertions; no schema errors.
+  - `pnpm db:types` — passed; generated types include `is_rest_push_sending`.
+  - `pnpm sync:contract:check` — passed; version 1 and 12 synced tables unchanged.
+  - `pnpm fn:test` — passed; 12 Deno tests. `deno check --config supabase/functions/send-rest-push/deno.json supabase/functions/send-rest-push/index.ts` — passed.
+  - `pnpm test` — passed; 30 files and 205 tests. `pnpm lint` — passed. `pnpm build` — passed with the existing >500 kB bundle warning.
+  - Local end-to-end smoke: cron → `pg_net` → locally served function → service-role RPCs → synthetic Apple endpoint. `net._http_response` recorded HTTP 200 with `claimed=1`, `sent=0`, `failed=1`, `removed=0`, `rounds=1`; the schedule finished `failed`, `attempts=1`, `last_error=delivery_failed`, not `sending`. The Edge Function was stopped, its ignored `.env` removed, and `pnpm db:reset` removed synthetic rows and Vault secrets (cleanup query: `0|0|0`).
+  - Work-unit commit: `fix(push): read schedule status through a service-role RPC` on `fix/rest-push-service-role-read`.
 
 ## Next step
 

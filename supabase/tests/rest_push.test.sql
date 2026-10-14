@@ -2,7 +2,7 @@ BEGIN;
 
 SET LOCAL search_path = public, extensions;
 
-SELECT plan(66);
+SELECT plan(72);
 
 INSERT INTO auth.users (
   id,
@@ -109,6 +109,14 @@ SELECT ok(
   'authenticated users cannot remove subscriptions by endpoint'
 );
 SELECT ok(
+  has_function_privilege('anon', 'public.is_rest_push_sending(uuid)', 'EXECUTE') IS FALSE,
+  'anonymous users cannot check push schedule status'
+);
+SELECT ok(
+  has_function_privilege('authenticated', 'public.is_rest_push_sending(uuid)', 'EXECUTE') IS FALSE,
+  'authenticated users cannot check push schedule status'
+);
+SELECT ok(
   has_function_privilege('authenticated', 'private.dispatch_due_rest_pushes()', 'EXECUTE') IS FALSE,
   'authenticated users cannot execute the private dispatcher'
 );
@@ -124,7 +132,10 @@ SELECT ok(
   has_function_privilege('service_role', 'public.remove_push_subscription_by_endpoint(text)', 'EXECUTE'),
   'service role can remove subscriptions by endpoint'
 );
-
+SELECT ok(
+  has_function_privilege('service_role', 'public.is_rest_push_sending(uuid)', 'EXECUTE'),
+  'service role can check push schedule status'
+);
 SET LOCAL ROLE authenticated;
 SELECT set_config(
   'request.jwt.claim.sub',
@@ -650,6 +661,21 @@ SELECT ok(
     WHERE id = current_setting('test.rest_push_schedule_due')::uuid
   ),
   'claim marks a due push sending and increments attempts'
+);
+SELECT is(
+  public.is_rest_push_sending(current_setting('test.rest_push_schedule_due')::uuid),
+  TRUE,
+  'service role sees a sending schedule through the status RPC'
+);
+SELECT is(
+  public.is_rest_push_sending(current_setting('test.rest_push_schedule_future')::uuid),
+  FALSE,
+  'service role sees a pending schedule as not sending'
+);
+SELECT is(
+  public.is_rest_push_sending(current_setting('test.rest_push_schedule_stale')::uuid),
+  FALSE,
+  'service role sees a failed schedule as not sending'
 );
 SELECT is(
   (
