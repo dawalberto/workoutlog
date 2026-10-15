@@ -92,12 +92,11 @@ Forecast exceeds 400 authored lines. Strategy: `ask-on-risk`, resolved in autopi
 - T4 RED: `pnpm test tests/app-shell.test.tsx tests/store/persistence.test.ts` — failed as expected before implementation (3 app-shell tests failed; existing persistence tests passed).
 - T4 GREEN: `pnpm test tests/app-shell.test.tsx tests/store/persistence.test.ts` — passed (2 files, 19 tests).
 - T4 typecheck: `pnpm lint` — passed (`tsc --noEmit`).
-- T4 commit: `9b2d571 fix(auth): show a loading gate while account data hydrates`.
+- T4 commit: `173896e fix(auth): show a loading gate while account data hydrates`.
 - Final `pnpm test && pnpm lint && pnpm build`: failed during `pnpm test` because two characterization snapshots include changed weight-input markup. The chained lint and build steps did not run in that command.
 - Final `pnpm lint && pnpm build`: passed; the build emitted the existing expected chunk-size warning (>500 kB).
 - T3 closure is reopened: the two failing snapshot files are outside the authorized edit surface — `tests/__snapshots__/exercise-catalog.test.tsx.snap` and `tests/__snapshots__/routine-view-characterization.test.tsx.snap`. They were not edited.
 - Next step: obtain authorization for those snapshot paths, update the expected text-input markup, and rerun the full verification gate.
-- Next step: implement T4 (`T4-hydration-gate`).
 
 ## Relevant files
 
