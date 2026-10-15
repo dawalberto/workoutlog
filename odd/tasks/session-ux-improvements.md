@@ -55,7 +55,7 @@ Out:
 - [x] `T4-hydration-gate`: Account-data loading gate. Route: delegated writer. Risk: high.
 - [x] `T5-catalog-weight-save`: Parse catalog default weights consistently on form submit, including Enter. Route: delegated writer. Risk: medium.
 - [x] `T5-drag-tracking`: Track pointer and touch movement directly across the whole rest banner without easing. Route: delegated writer. Risk: medium.
-- [ ] `T6-hydration-flash`: Hold the loading gate until initial auth resolves and avoid guest hydration during that interval. Route: delegated writer. Risk: high.
+- [x] `T6-hydration-flash`: Hold the loading gate until initial auth resolves and avoid guest hydration during that interval. Route: delegated writer. Risk: high.
 
 ## Acceptance criteria
 
@@ -63,7 +63,7 @@ Out:
 - Empty routines and already-finished sessions do not prompt. Unchecking and recompleting prompts again.
 - Normal and compact rest banners can be dragged from the whole banner with mouse and touch and stay inside the viewport without position easing. The grip remains a 48 px affordance; buttons on the banner still activate. Position is not persisted.
 - `53,5` and `53.5` commit as `53.5` on set weight, catalog/default weight, and RM weight fields. Integer weights still work.
-- A guest who is not signing in never sees the account loading gate. A signed-in user does not see guest records while the owner scope is hydrating.
+- A resolved signed-out guest sees guest content without the account loading message. Before auth resolution, during OAuth redirect, or while a signed-in owner scope hydrates, guest data remains hidden behind the loading screen.
 - `pnpm test`, `pnpm lint`, and `pnpm build` pass. No `supabase/` diff.
 
 ## Delivery
@@ -113,9 +113,15 @@ Forecast exceeds 400 authored lines. Strategy: `ask-on-risk`, resolved in autopi
 - T5-drag-tracking revised decisions: whole-banner drag, no position transition, and no per-move React state updates.
 - T5-drag-tracking route: delegated writer. Risk tier: medium.
 - T5-drag-tracking RED: `pnpm test tests/rest-timer-bar.test.tsx` — failed as expected (1 file, 4 failed and 1 passed; drag helper, root handlers, and non-animated banner behavior were missing).
-- T5-drag-tracking GREEN: `pnpm test tests/rest-timer-bar.test.tsx tests/app-shell.test.tsx` — passed (2 files, 13 tests).
-- T5-drag-tracking work-unit commit: `488af17 fix(rest-timer): track the pointer while dragging the banner`.
+- T5-drag-tracking GREEN: `pnpm test tests/rest-timer-bar.test.tsx tests/app-shell.test.tsx` — passed (2 files, 16 tests).
+- T5-drag-tracking work-unit commit: `5d4075a fix(rest-timer): track the pointer while dragging the banner`.
 - T6-hydration-flash revised decision: auth resolution must gate guest paint and guest hydration; a successful OAuth redirect keeps the signing-in gate active.
+- T6-hydration-flash implementation: initial auth listener events are buffered until `getSession()` settles, with a listener user preferred over a null result; later sign-out events still clear the user. Storage hydration now waits for resolved auth, and OAuth redirect startup keeps the loading screen visible.
+- T6-hydration-flash route: delegated writer. Risk tier: high.
+- T6-hydration-flash RED: `pnpm test tests/app-shell.test.tsx tests/auth.test.ts tests/sync-wiring.test.tsx tests/store/persistence.test.ts` — failed as expected (3 files failed, 1 passed; 4 tests failed and 39 passed because OAuth loading, initial auth settlement, and deferred guest hydration were not implemented).
+- T6-hydration-flash GREEN: `pnpm test tests/app-shell.test.tsx tests/auth.test.ts tests/sync-wiring.test.tsx tests/store/persistence.test.ts` — passed (4 files, 44 tests).
+- T6-hydration-flash work-unit commit: pending.
+- Final verification: `pnpm test && pnpm lint && pnpm build` — passed (33 files, 231 tests; TypeScript passed; production build passed with the expected >500 kB chunk-size warning).
 - Next step: done, pending parent confirmation.
 
 ## Relevant files

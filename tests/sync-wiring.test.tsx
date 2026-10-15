@@ -290,8 +290,45 @@ describe('sync wiring', () => {
     Reflect.deleteProperty(globalThis, 'window');
     vi.doUnmock('react');
     vi.doUnmock('../src/store/appStore');
+    vi.doUnmock('../src/store/persistence');
     vi.doUnmock('zustand/react/shallow');
     vi.restoreAllMocks();
+  });
+
+  it('defers guest hydration until initial authentication is resolved', async () => {
+    const harness = createHookHarness();
+    const store = {};
+    const startPersistence = vi.fn(() => vi.fn());
+    const hydrateStorage = vi.fn(() => vi.fn());
+
+    vi.doMock('react', async (importOriginal) => {
+      const actual = await importOriginal<typeof import('react')>();
+      return {
+        ...actual,
+        useEffect: (callback: () => void | (() => void), deps?: readonly unknown[]) =>
+          activeHarness!.useEffect(callback, deps),
+      };
+    });
+    vi.doMock('../src/store/appStore', () => ({ appStore: store }));
+    vi.doMock('../src/store/persistence', () => ({
+      hydrateStorage,
+      startPersistence,
+    }));
+
+    const { useStorageLifecycle } = await import('../src/hooks/useStorageLifecycle');
+    const render = (authResolved: boolean) =>
+      harness.render(() => useStorageLifecycle(undefined, false, authResolved));
+
+    render(false);
+    await harness.runEffects();
+    expect(startPersistence).toHaveBeenCalledOnce();
+    expect(hydrateStorage).not.toHaveBeenCalled();
+
+    render(true);
+    await harness.runEffects();
+    expect(hydrateStorage).toHaveBeenCalledOnce();
+    expect(hydrateStorage).toHaveBeenCalledWith(store, undefined, false);
+    harness.dispose();
   });
 
   it.each(['merge', 'overwrite'] as const)(

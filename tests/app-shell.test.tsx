@@ -39,6 +39,14 @@ describe('App shell composition', () => {
 
   const renderApp = () => renderToStaticMarkup(<App />);
 
+  const guestRoutine = {
+    id: 'guest-routine',
+    name: 'Guest-only routine',
+    exercises: [],
+    createdAt: '2026-10-15T00:00:00.000Z',
+    updatedAt: '2026-10-15T00:00:00.000Z',
+  };
+
   it('renders the tab view selected by the header action', () => {
     let headerActions: ReturnType<typeof useAppHeader>;
     const CaptureHeaderActions: React.FC = () => {
@@ -183,5 +191,50 @@ describe('App shell composition', () => {
     expect(markup).not.toContain('Cargando datos...');
     expect(markup).not.toContain('Iniciando WorkoutLog...');
     expect(markup).toContain('id="routine-list-page"');
+  });
+
+  it('keeps resolved guest routines visible without the account loading message', () => {
+    seedAppStore({
+      routines: [guestRoutine],
+      user: null,
+      isLoading: false,
+      isStorageLoaded: true,
+      activeScopeKey: 'guest',
+      hydratedScopeKey: 'guest',
+    });
+
+    const markup = renderApp();
+    expect(markup).toContain('Guest-only routine');
+    expect(markup).not.toContain('Cargando datos...');
+  });
+
+  it('hides guest routines while an OAuth redirect is starting', () => {
+    seedAppStore({
+      routines: [guestRoutine],
+      user: null,
+      isLoading: false,
+      isSigningIn: true,
+      isStorageLoaded: true,
+      activeScopeKey: 'guest',
+      hydratedScopeKey: 'guest',
+    });
+
+    const markup = renderApp();
+    expect(markup).toContain('Cargando datos...');
+    expect(markup).not.toContain('Guest-only routine');
+  });
+
+  it('hides guest routines while initial authentication is unresolved', () => {
+    seedAppStore({
+      routines: [guestRoutine],
+      user: null,
+      isLoading: true,
+      isStorageLoaded: true,
+      activeScopeKey: 'guest',
+      hydratedScopeKey: 'guest',
+    });
+
+    const markup = renderApp();
+    expect(markup).not.toContain('Guest-only routine');
   });
 });
