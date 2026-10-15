@@ -51,7 +51,7 @@ Out:
 
 - [x] `T1-finish-prompt`: Detect the all-sets-complete transition and show the new finish modal. Route: delegated writer. Risk: medium.
 - [x] `T2-drag-banner`: Drag both rest-banner modes. Route: delegated writer. Risk: medium.
-- [ ] `T3-decimal-weight`: Shared weight parser and kilogram inputs. Route: delegated writer. Risk: medium.
+- [x] `T3-decimal-weight`: Shared weight parser and kilogram inputs. Route: delegated writer. Risk: medium.
 - [ ] `T4-hydration-gate`: Account-data loading gate. Route: delegated writer. Risk: high.
 
 ## Acceptance criteria
@@ -80,8 +80,14 @@ Forecast exceeds 400 authored lines. Strategy: `ask-on-risk`, resolved in autopi
 - T2 route: delegated writer. Risk tier: medium.
 - T2 RED: `pnpm test tests/rest-timer-bar.test.tsx` — failed as expected before implementation (2 tests failed: the clamp helper was unavailable and the drag handle was absent).
 - T2 GREEN: `pnpm test tests/rest-timer-bar.test.tsx tests/app-shell.test.tsx` — passed (2 files, 7 tests).
-- T2 commit: `9dad702 feat(rest-timer): drag the rest banner anywhere on screen`.
-- Next step: implement T3 (`T3-decimal-weight`).
+- T2 commit: `6b6b71f feat(rest-timer): drag the rest banner anywhere on screen`.
+- T3 implementation: added a shared decimal parser and comma formatter, applied them to set, custom/default exercise, catalog-default, and RM weight fields, and retained blur-based commits with numeric persisted values.
+- T3 route: delegated writer. Risk tier: medium.
+- T3 RED: `pnpm test tests/utils/weightInput.test.ts tests/exercise-card.test.tsx tests/rm-logs-characterization.test.tsx` — failed as expected (1 missing utility module plus 4 failing behavior tests; comma weights were rejected or truncated).
+- T3 GREEN: `pnpm test tests/utils/weightInput.test.ts tests/exercise-card.test.tsx tests/rm-logs-characterization.test.tsx` — passed (3 files, 19 tests).
+- T3 typecheck: `pnpm lint` — passed (`tsc --noEmit`).
+- T3 commit: `fc6e190 feat(workout): accept decimal kilogram values`.
+- Next step: implement T4 (`T4-hydration-gate`).
 
 ## Relevant files
 

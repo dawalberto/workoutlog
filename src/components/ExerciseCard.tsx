@@ -27,6 +27,7 @@ import { RmBadge } from './RmBadge';
 import { DiaryButton } from './DiaryButton';
 import { TimePickerField } from './TimePickerField';
 import { useExerciseCard } from '../hooks/routine/useExerciseCard';
+import { formatWeightInput } from '../utils/weightInput';
 
 interface ExerciseCardProps {
   exerciseId: string;
@@ -406,22 +407,21 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                         ) : (
                           <div className="flex items-center justify-center">
                             <input
-                              type="number"
+                              type="text"
                               inputMode="decimal"
                               pattern="[0-9]*[.,]?[0-9]*"
-                              step="0.5"
                               min="0"
                               max="999"
                               value={
                                 setDrafts[setDraftKey(set.id, 'weight')] ??
-                                set.weight
+                                formatWeightInput(Number(set.weight))
                               }
                               onFocus={(e) => {
                                 e.target.select();
                                 handleSetDraftChange(
                                   set.id,
                                   'weight',
-                                  String(set.weight),
+                                  formatWeightInput(Number(set.weight)),
                                 );
                               }}
                               onChange={(e) =>
@@ -434,7 +434,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                               onBlur={(e) =>
                                 handleCommitWeight(set, e.currentTarget.value)
                               }
-                              className="w-16 sm:w-20 min-h-[48px] text-center text-sm font-extrabold py-2 px-1 rounded-xl border border-white/10 bg-zinc-900 text-white focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/30 focus:outline-none transition-all shadow-inner"
+                              className="w-16 sm:w-20 min-h-[48px] text-center text-base font-extrabold py-2 px-1 rounded-xl border border-white/10 bg-zinc-900 text-white focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/30 focus:outline-none transition-all shadow-inner"
                             />
                           </div>
                         )}

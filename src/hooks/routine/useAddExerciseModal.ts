@@ -1,6 +1,7 @@
 import type { Exercise, ExerciseDefinition, WorkoutSet } from '../../types';
 import { useAppStore } from '../../store/appStore';
 import { selectActiveRoutine } from '../../store/selectors';
+import { parseWeightInput } from '../../utils/weightInput';
 
 export interface CustomExerciseInput {
   name: string;
@@ -76,7 +77,7 @@ export function useAddExerciseModal() {
     if (!input.name.trim()) return null;
     const count = Math.max(1, Number(input.setsCount) || 1);
     const reps = Math.max(1, Number(input.reps) || 1);
-    const weight = Math.max(0, Number(input.weight) || 0);
+    const weight = Math.max(0, parseWeightInput(String(input.weight)) ?? 0);
     const restSeconds = Math.max(0, Number(input.restSeconds) || 0);
     const definitionId = input.saveToLibrary
       ? `def-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`

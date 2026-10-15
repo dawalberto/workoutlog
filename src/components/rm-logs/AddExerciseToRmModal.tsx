@@ -1,6 +1,7 @@
 import React from 'react';
 import { Dumbbell, Plus, Search, Trophy, X } from 'lucide-react';
 import type { useAddExerciseToRmModal } from '../../hooks/rm-logs/useAddExerciseToRmModal';
+import { formatWeightInput, parseWeightInput } from '../../utils/weightInput';
 
 interface AddExerciseToRmModalProps {
   isOpen: boolean;
@@ -149,12 +150,17 @@ export const AddExerciseToRmModal: React.FC<AddExerciseToRmModalProps> = ({
                 </label>
                 <div className="relative">
                   <input
-                    type="number"
-                    step="0.5"
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*[.,]?[0-9]*"
                     min="0"
                     placeholder="Ej: 100"
                     value={form.initialWeight}
                     onChange={(e) => form.setInitialWeight(e.target.value)}
+                    onBlur={(e) => {
+                      const parsedWeight = parseWeightInput(e.currentTarget.value);
+                      if (parsedWeight !== null) form.setInitialWeight(formatWeightInput(parsedWeight));
+                    }}
                     autoFocus
                     className="w-full min-h-[48px] px-3.5 py-2.5 text-base font-bold rounded-xl border border-white/10 bg-zinc-900 text-white focus:outline-none focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/20 pr-10"
                   />

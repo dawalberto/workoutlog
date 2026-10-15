@@ -2,6 +2,7 @@ import React from 'react';
 import { Dumbbell, Image as ImageIcon, X } from 'lucide-react';
 import type { ExerciseDefinition } from '../../types';
 import { TimePickerField } from '../TimePickerField';
+import { formatWeightInput, parseWeightInput } from '../../utils/weightInput';
 import type { ExerciseFormState } from '../../hooks/exercise-catalog/useExerciseForm';
 
 interface ExerciseFormModalProps {
@@ -187,16 +188,21 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
               <div>
                 <label className="block text-[10px] font-bold text-zinc-400 mb-1">Peso (kg)</label>
                 <input
-                  type="number"
+                  type="text"
                   inputMode="decimal"
                   pattern="[0-9]*[.,]?[0-9]*"
-                  step="0.5"
                   min="0"
                   max="500"
-                  value={form.defaultWeight}
+                  value={typeof form.defaultWeight === 'string'
+                    ? form.defaultWeight
+                    : formatWeightInput(form.defaultWeight)}
                   onFocus={(e) => e.target.select()}
                   onChange={(e) => form.setDefaultWeight(e.target.value)}
-                  className="w-full min-h-[44px] text-center text-xs font-black rounded-xl border border-white/10 bg-zinc-800 text-white focus:border-[#00FF87] focus:outline-none"
+                  onBlur={(e) => {
+                    const parsedWeight = parseWeightInput(e.currentTarget.value);
+                    form.setDefaultWeight(parsedWeight === null || parsedWeight < 0 ? 0 : parsedWeight);
+                  }}
+                  className="w-full min-h-[48px] text-center text-base font-black rounded-xl border border-white/10 bg-zinc-800 text-white focus:border-[#00FF87] focus:outline-none"
                 />
               </div>
               <div>

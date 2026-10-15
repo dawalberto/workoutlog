@@ -112,6 +112,7 @@ async function setupExerciseCard() {
         element.props.inputMode === inputMode,
     ) as React.ReactElement<{
       value: number | string;
+      type?: string;
       min?: string;
       max?: string;
       onChange: (event: { target: { value: string } }) => void;
@@ -202,6 +203,7 @@ describe('ExerciseCard set field edits', () => {
       await setupExerciseCard();
     const weightInput = findSetInput('decimal');
 
+    expect(weightInput.props.type).toBe('text');
     expect(weightInput.props.min).toBe('0');
     expect(weightInput.props.max).toBe('999');
     weightInput.props.onChange({ target: { value: '42.5' } });
@@ -221,6 +223,26 @@ describe('ExerciseCard set field edits', () => {
     expect(onCheckRmWeight).toHaveBeenCalledExactlyOnceWith(
       'Sentadilla',
       42.5,
+      'definition-1',
+    );
+    expect(findSetInput('decimal').props.value).toBe('42,5');
+  });
+
+  it('commits comma-decimal kilograms as a finite number on blur', async () => {
+    const { findSetInput, onUpdateExercise, onCheckRmWeight } =
+      await setupExerciseCard();
+    findSetInput('decimal').props.onChange({ target: { value: '53,5' } });
+    findSetInput('decimal').props.onBlur({
+      currentTarget: { value: '53,5' },
+    });
+
+    expect(onUpdateExercise).toHaveBeenCalledExactlyOnceWith({
+      ...exercise,
+      sets: [{ ...exercise.sets[0], weight: 53.5 }],
+    });
+    expect(onCheckRmWeight).toHaveBeenCalledExactlyOnceWith(
+      'Sentadilla',
+      53.5,
       'definition-1',
     );
   });

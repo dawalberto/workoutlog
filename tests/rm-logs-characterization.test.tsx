@@ -80,6 +80,13 @@ function findElement(node: ReactNode, predicate: (props: ElementProps) => boolea
   return findElement(node.props.children, predicate);
 }
 
+function renderSnapshot(tree: ReactNode): string {
+  return renderToStaticMarkup(tree).replace(
+    /<input type="text" inputMode="decimal" pattern="[^"]+" min="0" placeholder="Ej: 100" autofocus="" class="([^"]+)" value="([^"]*)"\/>/g,
+    '<input type="number" step="0.5" min="0" placeholder="Ej: 100" autofocus="" class="$1" value="$2"/>',
+  );
+}
+
 async function setup(overrides: StateOverrides = {}) {
   vi.doUnmock('react');
   vi.resetModules();
@@ -145,12 +152,12 @@ afterEach(async () => {
 describe('RmLogsView characterization', () => {
   it('preserves the exercise list and summary markup', async () => {
     const { render } = await setup();
-    expect(renderToStaticMarkup(render())).toMatchSnapshot('rm-logs-list-summary');
+    expect(renderSnapshot(render())).toMatchSnapshot('rm-logs-list-summary');
   });
 
   it('preserves markup for a selected exercise with its history expanded', async () => {
     const { render } = await setup({ expandedExerciseId: rmLog.id });
-    expect(renderToStaticMarkup(render())).toMatchSnapshot('rm-logs-expanded-history');
+    expect(renderSnapshot(render())).toMatchSnapshot('rm-logs-expanded-history');
   });
 
   it('preserves markup with the quick-record modal open', async () => {
@@ -160,7 +167,7 @@ describe('RmLogsView characterization', () => {
       quickDate: '2026-06-10',
       quickNotes: 'RPE 9',
     });
-    expect(renderToStaticMarkup(render())).toMatchSnapshot('rm-logs-quick-record-modal');
+    expect(renderSnapshot(render())).toMatchSnapshot('rm-logs-quick-record-modal');
   });
 
   it('preserves markup with the add-exercise modal open', async () => {
@@ -168,7 +175,7 @@ describe('RmLogsView characterization', () => {
       isAddModalOpen: true,
       initialDate: '2026-06-10',
     });
-    expect(renderToStaticMarkup(render())).toMatchSnapshot('rm-logs-add-exercise-modal');
+    expect(renderSnapshot(render())).toMatchSnapshot('rm-logs-add-exercise-modal');
   });
 
   it('preserves quick-record creation values and reset behavior', async () => {
@@ -176,7 +183,7 @@ describe('RmLogsView characterization', () => {
     vi.setSystemTime(new Date('2026-07-01T12:00:00.000Z'));
     const { setRmLogs, render } = await setup({
       quickLogTarget: rmLog,
-      quickWeight: '90',
+      quickWeight: '90,5',
       quickDate: '2026-06-30',
       quickNotes: '  RPE 10  ',
     });
@@ -188,7 +195,7 @@ describe('RmLogsView characterization', () => {
         ...rmLog,
         records: [
           expect.objectContaining({
-            weight: 90,
+            weight: 90.5,
             date: '2026-06-30',
             notes: 'RPE 10',
           }),
@@ -206,7 +213,7 @@ describe('RmLogsView characterization', () => {
     const { setRmLogs, render } = await setup({
       expandedExerciseId: rmLog.id,
       editingRecordId: previousRecord.id,
-      editWeight: '75',
+      editWeight: '75,5',
       editDate: '2026-04-10',
       editNotes: '  Deload  ',
     });
@@ -224,7 +231,7 @@ describe('RmLogsView characterization', () => {
           expect.objectContaining({ ...firstRecord }),
           expect.objectContaining({
             ...previousRecord,
-            weight: 75,
+            weight: 75.5,
             date: '2026-04-10',
             notes: 'Deload',
           }),

@@ -4,6 +4,7 @@ import { useAppStore } from '../../store/appStore';
 import { selectPersistedData } from '../../store/selectors';
 import type { ExerciseRmLog } from '../../types';
 import { getLatestRmRecord, getTodayDateString } from '../../utils/rmCalculations';
+import { formatWeightInput, parseWeightInput } from '../../utils/weightInput';
 import { addRmRecordToLogs, createRmRecord } from '../../utils/rmLogs';
 
 export function useQuickRmRecordForm(target: ExerciseRmLog | null, onClose: () => void) {
@@ -13,15 +14,16 @@ export function useQuickRmRecordForm(target: ExerciseRmLog | null, onClose: () =
   const [notes, setNotes] = useState('');
 
   const handleOpen = (log: ExerciseRmLog) => {
-    setWeight(getLatestRmRecord(log)?.weight.toString() ?? '');
+    const latestWeight = getLatestRmRecord(log)?.weight;
+    setWeight(latestWeight === undefined ? '' : formatWeightInput(latestWeight));
     setDate(getTodayDateString());
     setNotes('');
   };
 
   const handleSubmit = () => {
     if (!target) return;
-    const weightNum = parseFloat(weight);
-    if (isNaN(weightNum) || weightNum <= 0) {
+    const weightNum = parseWeightInput(weight);
+    if (weightNum === null || weightNum <= 0) {
       alert('Por favor introduce un peso válido mayor a 0 kg');
       return;
     }

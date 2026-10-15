@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import type { ExerciseRmLog } from '../../types';
 import { formatRmDate } from '../../utils/rmCalculations';
+import { formatWeightInput, parseWeightInput } from '../../utils/weightInput';
 import { useRmRecordHistory } from '../../hooks/rm-logs/useRmRecordHistory';
 import type { RmRecordFormState } from '../../hooks/rm-logs/useRmRecordForm';
 
@@ -62,12 +63,17 @@ export const RmRecordHistory: React.FC<RmRecordHistoryProps> = ({
                     Peso (kg) *
                   </label>
                   <input
-                    type="number"
-                    step="0.5"
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*[.,]?[0-9]*"
                     min="0"
                     value={actions.editWeight}
                     onChange={(e) => actions.setEditWeight(e.target.value)}
-                    className="w-full min-h-[44px] px-3 py-2 text-xs font-bold rounded-xl border border-white/10 bg-zinc-900 text-white focus:outline-none focus:border-[#00FF87]"
+                    onBlur={(e) => {
+                      const parsedWeight = parseWeightInput(e.currentTarget.value);
+                      if (parsedWeight !== null) actions.setEditWeight(formatWeightInput(parsedWeight));
+                    }}
+                    className="w-full min-h-[48px] px-3 py-2 text-base font-bold rounded-xl border border-white/10 bg-zinc-900 text-white focus:outline-none focus:border-[#00FF87]"
                   />
                 </div>
 
