@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { Play, Pause, X, Plus, Bell, RotateCcw } from 'lucide-react';
+import { Play, Pause, X, Plus, Bell, RotateCcw, GripVertical } from 'lucide-react';
 import { formatStopwatch } from '../utils/timeCalculations';
 import { 
   playTimerFinishBeep, 
@@ -11,6 +11,76 @@ import { useRestTimerBar } from '../hooks/shell/useRestTimerBar';
 import { getRestTimerRemainingMs } from '../utils/restTimer';
 import { shouldPlayLocalRestAlert } from '../utils/restPush';
 import { RestPushPrompt } from './RestPushPrompt';
+
+export interface RestTimerDragPosition {
+  left: number;
+  top: number;
+}
+
+interface RestTimerViewport {
+  width: number;
+  height: number;
+}
+
+interface RestTimerBounds {
+  width: number;
+  height: number;
+}
+
+interface RestTimerSafeAreaInsets {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+interface ActiveRestTimerDrag extends RestTimerBounds, RestTimerSafeAreaInsets {
+  pointerId: number;
+  offsetX: number;
+  offsetY: number;
+}
+
+const DRAG_VIEWPORT_MARGIN = 8;
+
+export function clampRestTimerPosition(
+  position: RestTimerDragPosition,
+  viewport: RestTimerViewport,
+  banner: RestTimerBounds,
+  safeAreaInsets: RestTimerSafeAreaInsets = { top: 0, right: 0, bottom: 0, left: 0 },
+): RestTimerDragPosition {
+  const minLeft = safeAreaInsets.left + DRAG_VIEWPORT_MARGIN;
+  const minTop = safeAreaInsets.top + DRAG_VIEWPORT_MARGIN;
+  const maxLeft = viewport.width - safeAreaInsets.right - banner.width - DRAG_VIEWPORT_MARGIN;
+  const maxTop = viewport.height - safeAreaInsets.bottom - banner.height - DRAG_VIEWPORT_MARGIN;
+
+  return {
+    left: Math.max(minLeft, Math.min(position.left, maxLeft)),
+    top: Math.max(minTop, Math.min(position.top, maxTop)),
+  };
+}
+
+function readRestTimerSafeAreaInsets(): RestTimerSafeAreaInsets {
+  const probe = document.createElement('div');
+  probe.style.cssText = [
+    'position:fixed',
+    'visibility:hidden',
+    'pointer-events:none',
+    'padding-top:env(safe-area-inset-top, 0px)',
+    'padding-right:env(safe-area-inset-right, 0px)',
+    'padding-bottom:env(safe-area-inset-bottom, 0px)',
+    'padding-left:env(safe-area-inset-left, 0px)',
+  ].join(';');
+  document.body.appendChild(probe);
+  const computedStyle = window.getComputedStyle(probe);
+  const insets = {
+    top: Number.parseFloat(computedStyle.paddingTop) || 0,
+    right: Number.parseFloat(computedStyle.paddingRight) || 0,
+    bottom: Number.parseFloat(computedStyle.paddingBottom) || 0,
+    left: Number.parseFloat(computedStyle.paddingLeft) || 0,
+  };
+  probe.remove();
+  return insets;
+}
 
 export const RestTimerBar: React.FC = () => {
   const timer = useRestTimerBar();
@@ -36,6 +106,7 @@ export const RestTimerBar: React.FC = () => {
   const [secondsLeft, setSecondsLeft] = useState<number>(initialRemainingSec);
   const [totalSeconds, setTotalSeconds] = useState<number>(Math.max(initialSeconds, initialRemainingSec));
   const [hasFinished, setHasFinished] = useState<boolean>(initialRemainingSec <= 0);
+  const [dragPosition, setDragPosition] = useState<RestTimerDragPosition | null>(null);
 
   // Synchronous ref to prevent double-firing sound/vibration
   const hasFinishedRef = useRef<boolean>(initialRemainingSec <= 0);
@@ -43,6 +114,69 @@ export const RestTimerBar: React.FC = () => {
   const pendingHiddenAlertRef = useRef(initialRemainingSec <= 0);
 
   const workerRef = useRef<Worker | null>(null);
+  const activeDragRef = useRef<ActiveRestTimerDrag | null>(null);
+
+  const handleDragStart = (event: React.PointerEvent<HTMLButtonElement>) => {
+    const banner = event.currentTarget.closest('[data-rest-timer-banner]');
+    if (!banner) return;
+    const bounds = banner.getBoundingClientRect();
+    const safeAreaInsets = readRestTimerSafeAreaInsets();
+    activeDragRef.current = {
+      pointerId: event.pointerId,
+      offsetX: event.clientX - bounds.left,
+      offsetY: event.clientY - bounds.top,
+      width: bounds.width,
+      height: bounds.height,
+      ...safeAreaInsets,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  };
+
+  const handleDragMove = (event: React.PointerEvent<HTMLButtonElement>) => {
+    const activeDrag = activeDragRef.current;
+    if (!activeDrag || activeDrag.pointerId !== event.pointerId) return;
+    setDragPosition(clampRestTimerPosition(
+      {
+        left: event.clientX - activeDrag.offsetX,
+        top: event.clientY - activeDrag.offsetY,
+      },
+      { width: window.innerWidth, height: window.innerHeight },
+      { width: activeDrag.width, height: activeDrag.height },
+      activeDrag,
+    ));
+  };
+
+  const handleDragEnd = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (activeDragRef.current?.pointerId !== event.pointerId) return;
+    activeDragRef.current = null;
+    event.currentTarget.releasePointerCapture(event.pointerId);
+  };
+
+  const floatingPositionStyle = dragPosition
+    ? {
+      left: `${dragPosition.left}px`,
+      top: `${dragPosition.top}px`,
+      right: 'auto',
+      bottom: 'auto',
+      transform: 'none',
+    }
+    : undefined;
+
+  const dragHandle = (
+    <button
+      type="button"
+      aria-label="Mover temporizador"
+      title="Mover temporizador"
+      onPointerDown={handleDragStart}
+      onPointerMove={handleDragMove}
+      onPointerUp={handleDragEnd}
+      onPointerCancel={handleDragEnd}
+      className="min-h-[48px] min-w-[48px] inline-flex items-center justify-center rounded-xl text-current opacity-70 hover:opacity-100 cursor-grab active:cursor-grabbing touch-none select-none active:scale-[0.97]"
+    >
+      <GripVertical className="w-5 h-5" />
+    </button>
+  );
 
   const playFinishAlert = useCallback(() => {
     if (hasPlayedFinishAlertRef.current) return;
@@ -247,7 +381,11 @@ export const RestTimerBar: React.FC = () => {
     return (
       <div
         id="floating-mini-rest-timer"
-        className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-1.5 transition-all duration-300 animate-slide-up pointer-events-auto max-w-[calc(100%-1.5rem)]"
+        data-rest-timer-banner
+        style={floatingPositionStyle}
+        className={`fixed z-50 flex flex-col items-center gap-1.5 transition-all duration-300 animate-slide-up pointer-events-auto max-w-[calc(100%-1.5rem)] ${
+          dragPosition ? '' : 'bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)] left-1/2 -translate-x-1/2'
+        }`}
       >
         <div
           className={`rounded-full border shadow-2xl px-3.5 sm:px-4 py-2 backdrop-blur-2xl flex items-center gap-2.5 sm:gap-3 transition-all duration-300 ${
@@ -256,6 +394,8 @@ export const RestTimerBar: React.FC = () => {
               : 'bg-[#18181A]/95 text-white border-[#00FF87]/40 shadow-[0_8px_30px_rgba(0,0,0,0.9),0_0_20px_rgba(0,255,135,0.2)]'
           }`}
         >
+          {dragHandle}
+
           {/* Pulsing state dot */}
           <span
             className={`w-2.5 h-2.5 rounded-full shrink-0 ${
@@ -333,7 +473,11 @@ export const RestTimerBar: React.FC = () => {
   return (
     <div
       id="floating-rest-timer"
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] sm:w-[calc(100%-2rem)] max-w-lg z-50 transition-all duration-300 animate-slide-up pointer-events-auto"
+      data-rest-timer-banner
+      style={floatingPositionStyle}
+      className={`fixed w-[calc(100%-1.5rem)] sm:w-[calc(100%-2rem)] max-w-lg z-50 transition-all duration-300 animate-slide-up pointer-events-auto ${
+        dragPosition ? '' : 'bottom-[calc(env(safe-area-inset-bottom,0px)+1.5rem)] left-1/2 -translate-x-1/2'
+      }`}
     >
       <div
         className={`rounded-2xl border shadow-2xl p-3.5 sm:p-5 backdrop-blur-2xl transition-all duration-300 overflow-hidden ${
@@ -344,6 +488,7 @@ export const RestTimerBar: React.FC = () => {
       >
         {/* Header line: Title, subtitle & close/return buttons */}
         <div className="flex items-center justify-between gap-2.5 mb-2">
+          {dragHandle}
           <div className="flex items-center gap-2 min-w-0">
             <span
               className={`w-2.5 h-2.5 rounded-full shrink-0 ${

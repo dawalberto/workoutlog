@@ -50,7 +50,7 @@ Out:
 ## Tasks
 
 - [x] `T1-finish-prompt`: Detect the all-sets-complete transition and show the new finish modal. Route: delegated writer. Risk: medium.
-- [ ] `T2-drag-banner`: Drag both rest-banner modes. Route: delegated writer. Risk: medium.
+- [x] `T2-drag-banner`: Drag both rest-banner modes. Route: delegated writer. Risk: medium.
 - [ ] `T3-decimal-weight`: Shared weight parser and kilogram inputs. Route: delegated writer. Risk: medium.
 - [ ] `T4-hydration-gate`: Account-data loading gate. Route: delegated writer. Risk: high.
 
@@ -75,8 +75,13 @@ Forecast exceeds 400 authored lines. Strategy: `ask-on-risk`, resolved in autopi
 - T1 route: delegated writer. Risk tier: medium.
 - T1 RED: `pnpm test tests/all-sets-complete-finish.test.tsx` — failed as expected before implementation (1 failed suite, 0 tests; the new modal module did not exist).
 - T1 GREEN: `pnpm test tests/all-sets-complete-finish.test.tsx tests/routine-view.test.tsx` — passed (2 files, 7 tests).
-- T1 commit: `a0af29b feat(workout): prompt to finish when every set is complete`.
-- Next step: implement T2 (`T2-drag-banner`).
+- T1 commit: `7f1850a feat(workout): prompt to finish when every set is complete`.
+- T2 implementation: added pointer-captured dragging with a dedicated Spanish-labelled handle, shared in-memory coordinates for both banner layouts, safe-area-aware clamping, and unchanged timer controls.
+- T2 route: delegated writer. Risk tier: medium.
+- T2 RED: `pnpm test tests/rest-timer-bar.test.tsx` — failed as expected before implementation (2 tests failed: the clamp helper was unavailable and the drag handle was absent).
+- T2 GREEN: `pnpm test tests/rest-timer-bar.test.tsx tests/app-shell.test.tsx` — passed (2 files, 7 tests).
+- T2 commit: `9dad702 feat(rest-timer): drag the rest banner anywhere on screen`.
+- Next step: implement T3 (`T3-decimal-weight`).
 
 ## Relevant files
 
