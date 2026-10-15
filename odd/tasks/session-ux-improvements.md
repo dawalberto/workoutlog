@@ -120,7 +120,7 @@ Forecast exceeds 400 authored lines. Strategy: `ask-on-risk`, resolved in autopi
 - T6-hydration-flash route: delegated writer. Risk tier: high.
 - T6-hydration-flash RED: `pnpm test tests/app-shell.test.tsx tests/auth.test.ts tests/sync-wiring.test.tsx tests/store/persistence.test.ts` — failed as expected (3 files failed, 1 passed; 4 tests failed and 39 passed because OAuth loading, initial auth settlement, and deferred guest hydration were not implemented).
 - T6-hydration-flash GREEN: `pnpm test tests/app-shell.test.tsx tests/auth.test.ts tests/sync-wiring.test.tsx tests/store/persistence.test.ts` — passed (4 files, 44 tests).
-- T6-hydration-flash work-unit commit: pending.
+- T6-hydration-flash work-unit commit: `4488c41 fix(auth): hold the loading gate until the session is known`.
 - Final verification: `pnpm test && pnpm lint && pnpm build` — passed (33 files, 231 tests; TypeScript passed; production build passed with the expected >500 kB chunk-size warning).
 - Next step: done, pending parent confirmation.
 
