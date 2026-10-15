@@ -15,6 +15,7 @@ import { RmBadge } from './RmBadge';
 import { DiaryButton } from './DiaryButton';
 import { TimePickerField } from './TimePickerField';
 import { filterExerciseCatalog } from '../utils/exerciseCatalog';
+import { formatWeightInput, parseWeightInput } from '../utils/weightInput';
 import { useAddExerciseModal } from '../hooks/routine/useAddExerciseModal';
 
 interface AddExerciseModalProps {
@@ -482,21 +483,19 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                   <div>
                     <label className="block text-[10px] font-bold text-zinc-400 mb-1">Peso (kg)</label>
                     <input
-                      type="number"
+                      type="text"
                       inputMode="decimal"
                       pattern="[0-9]*[.,]?[0-9]*"
-                      step="0.5"
                       min="0"
                       max="500"
-                      value={customWeight}
+                      value={typeof customWeight === 'string' ? customWeight : formatWeightInput(customWeight)}
                       onFocus={(e) => e.target.select()}
                       onChange={(e) => setCustomWeight(e.target.value)}
-                      onBlur={() => {
-                        if (customWeight === '' || isNaN(Number(customWeight)) || Number(customWeight) < 0) {
-                          setCustomWeight(0);
-                        }
+                      onBlur={(e) => {
+                        const parsedWeight = parseWeightInput(e.currentTarget.value);
+                        setCustomWeight(parsedWeight === null || parsedWeight < 0 ? 0 : parsedWeight);
                       }}
-                      className="w-full min-h-[44px] text-center text-xs font-bold py-1.5 rounded-lg border border-white/10 bg-black/40 text-white focus:outline-none focus:border-[#00FF87]"
+                      className="w-full min-h-[48px] text-center text-base font-bold py-1.5 rounded-lg border border-white/10 bg-black/40 text-white focus:outline-none focus:border-[#00FF87]"
                     />
                   </div>
                   <div>

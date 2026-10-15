@@ -1,5 +1,11 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { Play, Pause, X, Plus, Bell, RotateCcw } from 'lucide-react';
+import { Play, Pause, X, Plus, Bell, RotateCcw, GripVertical } from 'lucide-react';
+import Draggable, {
+  type DraggableBounds,
+  type DraggableData,
+  type DraggableEvent,
+  type DraggableEventHandler,
+} from 'react-draggable';
 import { formatStopwatch } from '../utils/timeCalculations';
 import { 
   playTimerFinishBeep, 
@@ -12,9 +18,75 @@ import { getRestTimerRemainingMs } from '../utils/restTimer';
 import { shouldPlayLocalRestAlert } from '../utils/restPush';
 import { RestPushPrompt } from './RestPushPrompt';
 
+const REST_TIMER_DRAG_HANDLE = '.rest-timer-drag-handle';
+const REST_TIMER_DRAG_CANCEL = 'button, a, input, textarea, select';
+const DRAG_VIEWPORT_MARGIN = 8;
+
+type RestTimerDragPosition = {
+  x: number;
+  y: number;
+};
+
+function readDragViewport() {
+  const viewport = window.visualViewport;
+  return {
+    left: viewport?.offsetLeft ?? 0,
+    top: viewport?.offsetTop ?? 0,
+    width: viewport?.width ?? window.innerWidth,
+    height: viewport?.height ?? window.innerHeight,
+  };
+}
+
+function restTimerDragBounds(
+  node: HTMLElement,
+  position: RestTimerDragPosition,
+): DraggableBounds {
+  const rect = node.getBoundingClientRect();
+  const viewport = readDragViewport();
+  const minX = viewport.left + DRAG_VIEWPORT_MARGIN;
+  const minY = viewport.top + DRAG_VIEWPORT_MARGIN;
+  const maxX = viewport.left + viewport.width - DRAG_VIEWPORT_MARGIN;
+  const maxY = viewport.top + viewport.height - DRAG_VIEWPORT_MARGIN;
+
+  return {
+    left: position.x + minX - rect.left,
+    top: position.y + minY - rect.top,
+    right: position.x + maxX - rect.right,
+    bottom: position.y + maxY - rect.bottom,
+  };
+}
+
+function clampDragPosition(
+  bounds: DraggableBounds | undefined,
+  x: number,
+  y: number,
+): RestTimerDragPosition {
+  if (
+    bounds?.left == null ||
+    bounds.right == null ||
+    bounds.top == null ||
+    bounds.bottom == null
+  ) {
+    return { x, y };
+  }
+
+  return {
+    x: Math.min(bounds.right, Math.max(bounds.left, x)),
+    y: Math.min(bounds.bottom, Math.max(bounds.top, y)),
+  };
+}
+
+type RestTimerBarContentProps = {
+  timer: NonNullable<ReturnType<typeof useRestTimerBar>>;
+};
+
 export const RestTimerBar: React.FC = () => {
   const timer = useRestTimerBar();
   if (!timer) return null;
+  return <RestTimerBarContent timer={timer} />;
+};
+
+const RestTimerBarContent: React.FC<RestTimerBarContentProps> = ({ timer }) => {
   const {
     activeRestTimer,
     isInsideActiveRoutine,
@@ -36,6 +108,8 @@ export const RestTimerBar: React.FC = () => {
   const [secondsLeft, setSecondsLeft] = useState<number>(initialRemainingSec);
   const [totalSeconds, setTotalSeconds] = useState<number>(Math.max(initialSeconds, initialRemainingSec));
   const [hasFinished, setHasFinished] = useState<boolean>(initialRemainingSec <= 0);
+  const [dragPosition, setDragPosition] = useState<RestTimerDragPosition>({ x: 0, y: 0 });
+  const [dragBounds, setDragBounds] = useState<DraggableBounds | undefined>(undefined);
 
   // Synchronous ref to prevent double-firing sound/vibration
   const hasFinishedRef = useRef<boolean>(initialRemainingSec <= 0);
@@ -43,6 +117,59 @@ export const RestTimerBar: React.FC = () => {
   const pendingHiddenAlertRef = useRef(initialRemainingSec <= 0);
 
   const workerRef = useRef<Worker | null>(null);
+  const dragNodeRef = useRef<HTMLDivElement>(null);
+  const dragBoundsRef = useRef<DraggableBounds | undefined>(undefined);
+
+  const handleDragStart: DraggableEventHandler = () => {
+    const node = dragNodeRef.current;
+    if (!node) return;
+    const nextBounds = restTimerDragBounds(node, dragPosition);
+    dragBoundsRef.current = nextBounds;
+    setDragBounds(nextBounds);
+  };
+
+  const handleDrag = (_event: DraggableEvent, data: DraggableData) => {
+    setDragPosition(clampDragPosition(dragBoundsRef.current, data.x, data.y));
+  };
+
+  const dragHandle = (
+    <div
+      aria-label="Mover temporizador"
+      title="Mover temporizador"
+      className="rest-timer-drag-handle min-h-[48px] min-w-[48px] inline-flex items-center justify-center rounded-xl text-current opacity-70 cursor-grab active:cursor-grabbing touch-none"
+    >
+      <GripVertical className="w-5 h-5" aria-hidden="true" />
+    </div>
+  );
+
+  // Centering lives on the outer anchor. react-draggable overwrites transform on its child.
+  const renderDraggableBanner = (
+    bannerId: string,
+    anchorClassName: string,
+    bannerClassName: string,
+    children: React.ReactNode,
+  ) => (
+    <div className={anchorClassName}>
+      <Draggable
+        nodeRef={dragNodeRef}
+        position={dragPosition}
+        bounds={dragBounds}
+        handle={REST_TIMER_DRAG_HANDLE}
+        cancel={REST_TIMER_DRAG_CANCEL}
+        onStart={handleDragStart}
+        onDrag={handleDrag}
+        onStop={handleDrag}
+      >
+        <div
+          ref={dragNodeRef}
+          id={bannerId}
+          className={bannerClassName}
+        >
+          {children}
+        </div>
+      </Draggable>
+    </div>
+  );
 
   const playFinishAlert = useCallback(() => {
     if (hasPlayedFinishAlertRef.current) return;
@@ -244,11 +371,11 @@ export const RestTimerBar: React.FC = () => {
 
   // Mini reduced pill banner when viewing outside active training (e.g. Diario, Historial, Catálogo)
   if (!isInsideActiveRoutine) {
-    return (
-      <div
-        id="floating-mini-rest-timer"
-        className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-1.5 transition-all duration-300 animate-slide-up pointer-events-auto max-w-[calc(100%-1.5rem)]"
-      >
+    return renderDraggableBanner(
+      'floating-mini-rest-timer',
+      'fixed z-50 pointer-events-none left-1/2 -translate-x-1/2 max-w-[calc(100%-1.5rem)] bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)]',
+      'flex flex-col items-center gap-1.5 pointer-events-auto max-w-full touch-none select-none',
+      <>
         <div
           className={`rounded-full border shadow-2xl px-3.5 sm:px-4 py-2 backdrop-blur-2xl flex items-center gap-2.5 sm:gap-3 transition-all duration-300 ${
             hasFinished
@@ -256,6 +383,8 @@ export const RestTimerBar: React.FC = () => {
               : 'bg-[#18181A]/95 text-white border-[#00FF87]/40 shadow-[0_8px_30px_rgba(0,0,0,0.9),0_0_20px_rgba(0,255,135,0.2)]'
           }`}
         >
+          {dragHandle}
+
           {/* Pulsing state dot */}
           <span
             className={`w-2.5 h-2.5 rounded-full shrink-0 ${
@@ -325,16 +454,16 @@ export const RestTimerBar: React.FC = () => {
           </button>
         </div>
         <RestPushPrompt />
-      </div>
+      </>,
     );
   }
 
   // Full detailed banner when inside active routine
-  return (
-    <div
-      id="floating-rest-timer"
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] sm:w-[calc(100%-2rem)] max-w-lg z-50 transition-all duration-300 animate-slide-up pointer-events-auto"
-    >
+  return renderDraggableBanner(
+    'floating-rest-timer',
+    'fixed z-50 pointer-events-none left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] sm:w-[calc(100%-2rem)] max-w-lg bottom-[calc(env(safe-area-inset-bottom,0px)+1.5rem)]',
+    'w-full pointer-events-auto touch-none select-none',
+    <>
       <div
         className={`rounded-2xl border shadow-2xl p-3.5 sm:p-5 backdrop-blur-2xl transition-all duration-300 overflow-hidden ${
           hasFinished
@@ -344,6 +473,7 @@ export const RestTimerBar: React.FC = () => {
       >
         {/* Header line: Title, subtitle & close/return buttons */}
         <div className="flex items-center justify-between gap-2.5 mb-2">
+          {dragHandle}
           <div className="flex items-center gap-2 min-w-0">
             <span
               className={`w-2.5 h-2.5 rounded-full shrink-0 ${
@@ -471,6 +601,6 @@ export const RestTimerBar: React.FC = () => {
           <RestPushPrompt />
         </div>
       </div>
-    </div>
+    </>,
   );
 };

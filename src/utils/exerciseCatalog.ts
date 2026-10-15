@@ -1,5 +1,6 @@
 import type { ExerciseDefinition, Routine } from '../types';
 import { normalizeExerciseTitle } from './backup';
+import { parseWeightInput } from './weightInput';
 
 export interface ExerciseCatalogFormValues {
   name: string;
@@ -40,7 +41,7 @@ export function buildCatalogExercise(
     notes: form.notes.trim(),
     defaultSetsCount: Number(form.defaultSets) || 3,
     defaultReps: Number(form.defaultReps) || 10,
-    defaultWeight: Number(form.defaultWeight) || 0,
+    defaultWeight: parseWeightInput(String(form.defaultWeight)) ?? 0,
     defaultRestSeconds: Number(form.defaultRest) || 60,
     ...(!existing ? { createdAt } : {}),
   };

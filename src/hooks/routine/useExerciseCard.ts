@@ -6,6 +6,7 @@ import {
   formatExerciseSummary,
   getExerciseTotalSeconds,
 } from '../../utils/timeCalculations';
+import { parseWeightInput } from '../../utils/weightInput';
 
 export function useExerciseCard(
   exerciseId: string,
@@ -137,10 +138,8 @@ export function useExerciseCard(
   const handleCommitWeight = (set: WorkoutSet, inputValue: string) => {
     const key = setDraftKey(set.id, 'weight');
     if (!(key in setDrafts)) return;
-    const parsedValue = Number(inputValue);
-    const value = inputValue === '' || isNaN(parsedValue) || parsedValue < 0
-      ? 0
-      : parsedValue;
+    const parsedValue = parseWeightInput(inputValue);
+    const value = parsedValue === null || parsedValue < 0 ? 0 : parsedValue;
     const changed = Number(set.weight) !== value;
     clearSetDraft(key);
     if (!changed) return;

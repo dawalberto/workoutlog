@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { RmRecord } from '../../types';
+import { formatWeightInput } from '../../utils/weightInput';
 
 export interface RmRecordFormState {
   editingRecordId: string | null;
@@ -29,7 +30,7 @@ export function useRmRecordForm(): RmRecordFormState {
     setEditNotes,
     handleStartEditRecord: (record) => {
       setEditingRecordId(record.id);
-      setEditWeight(record.weight.toString());
+      setEditWeight(formatWeightInput(record.weight));
       setEditDate(record.date);
       setEditNotes(record.notes || '');
     },

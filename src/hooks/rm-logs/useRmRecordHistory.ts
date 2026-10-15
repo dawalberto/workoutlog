@@ -4,13 +4,14 @@ import { selectPersistedData } from '../../store/selectors';
 import type { ExerciseRmLog } from '../../types';
 import { deleteRmRecordFromLogs, editRmRecordInLogs } from '../../utils/rmLogs';
 import type { RmRecordFormState } from './useRmRecordForm';
+import { parseWeightInput } from '../../utils/weightInput';
 
 export function useRmRecordHistory(log: ExerciseRmLog, form: RmRecordFormState) {
   const { rmLogs, setRmLogs } = useAppStore(useShallow(selectPersistedData));
 
   const handleSaveEditRecord = (logId: string, recordId: string) => {
-    const weightNum = parseFloat(form.editWeight);
-    if (isNaN(weightNum) || weightNum <= 0) {
+    const weightNum = parseWeightInput(form.editWeight);
+    if (weightNum === null || weightNum <= 0) {
       alert('Por favor introduce un peso válido mayor a 0 kg');
       return;
     }

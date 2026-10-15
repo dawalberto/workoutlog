@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Clock, Flag, Play, RotateCcw } from 'lucide-react';
 import { formatWorkoutDuration } from '../../utils/timeCalculations';
+import { shouldPromptForAllSetsComplete } from '../../utils/routineCompletion';
 import { useWorkoutProgressPanel } from '../../hooks/routine/useWorkoutProgressPanel';
+import { AllSetsCompleteFinishModal } from '../AllSetsCompleteFinishModal';
 import { WorkoutFinishConfirmModal } from '../WorkoutFinishConfirmModal';
 
 interface WorkoutProgressPanelProps {
@@ -10,6 +12,7 @@ interface WorkoutProgressPanelProps {
 
 export const WorkoutProgressPanel: React.FC<WorkoutProgressPanelProps> = ({ elapsedSeconds }) => {
   const [isFinishConfirmOpen, setIsFinishConfirmOpen] = useState(false);
+  const [finishPromptRoutineId, setFinishPromptRoutineId] = useState<string | null>(null);
   const {
     routine,
     session,
@@ -20,6 +23,33 @@ export const WorkoutProgressPanel: React.FC<WorkoutProgressPanelProps> = ({ elap
     onResetSession,
     onConfirmFinish,
   } = useWorkoutProgressPanel();
+  const isAllSetsComplete = totalSetsCount > 0 && completedSetsCount === totalSetsCount;
+  const completionState = useRef({
+    routineId: routine?.id ?? null,
+    isAllSetsComplete,
+  });
+
+  useEffect(() => {
+    if (completionState.current.routineId !== (routine?.id ?? null)) {
+      completionState.current = {
+        routineId: routine?.id ?? null,
+        isAllSetsComplete,
+      };
+      return;
+    }
+
+    if (routine && shouldPromptForAllSetsComplete(
+      completionState.current.isAllSetsComplete,
+      completedSetsCount,
+      totalSetsCount,
+      Boolean(session?.startTime),
+    )) {
+      setFinishPromptRoutineId(routine.id);
+    }
+
+    completionState.current.isAllSetsComplete = isAllSetsComplete;
+  }, [routine?.id, isAllSetsComplete, completedSetsCount, totalSetsCount, session?.startTime]);
+
   if (!routine) return null;
 
   return (
@@ -117,6 +147,14 @@ export const WorkoutProgressPanel: React.FC<WorkoutProgressPanelProps> = ({ elap
       onCancel={() => setIsFinishConfirmOpen(false)}
       onConfirm={() => {
         setIsFinishConfirmOpen(false);
+        onConfirmFinish();
+      }}
+    />
+    <AllSetsCompleteFinishModal
+      isOpen={finishPromptRoutineId === routine.id}
+      onDismiss={() => setFinishPromptRoutineId(null)}
+      onConfirm={() => {
+        setFinishPromptRoutineId(null);
         onConfirmFinish();
       }}
     />

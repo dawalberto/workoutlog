@@ -58,9 +58,12 @@ export function useExerciseCatalog() {
       createCatalogExercise(savedExercise);
     }
 
-    const savedWeight = Number(form.defaultWeight) || 0;
-    if (savedWeight > 0) {
-      checkRmWeight(savedExercise.name, savedWeight, editingExercise?.id);
+    if (savedExercise.defaultWeight !== undefined && savedExercise.defaultWeight > 0) {
+      checkRmWeight(
+        savedExercise.name,
+        savedExercise.defaultWeight,
+        editingExercise?.id,
+      );
     }
 
     setIsEditing(false);

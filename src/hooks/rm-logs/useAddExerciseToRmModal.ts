@@ -4,6 +4,7 @@ import { useAppStore } from '../../store/appStore';
 import { selectPersistedData } from '../../store/selectors';
 import type { ExerciseDefinition } from '../../types';
 import { getTodayDateString } from '../../utils/rmCalculations';
+import { formatWeightInput, parseWeightInput } from '../../utils/weightInput';
 import { createRmLog, createRmRecord, getAvailableRmCatalog } from '../../utils/rmLogs';
 
 export function useAddExerciseToRmModal(onClose: () => void, onAdded: (logId: string) => void) {
@@ -30,15 +31,15 @@ export function useAddExerciseToRmModal(onClose: () => void, onAdded: (logId: st
     setSelectedCatalogExercise(exercise);
     setInitialWeight(
       exercise.defaultWeight && exercise.defaultWeight > 0
-        ? exercise.defaultWeight.toString()
+        ? formatWeightInput(exercise.defaultWeight)
         : '',
     );
   };
 
   const handleConfirm = () => {
     if (!selectedCatalogExercise) return;
-    const weightNum = parseFloat(initialWeight);
-    if (isNaN(weightNum) || weightNum <= 0) {
+    const weightNum = parseWeightInput(initialWeight);
+    if (weightNum === null || weightNum <= 0) {
       alert('Por favor introduce un peso válido mayor a 0 kg');
       return;
     }

@@ -61,4 +61,32 @@ describe('catalog exercise creation', () => {
       createdAt: '2026-01-02T00:00:00.000Z',
     });
   });
+
+  it.each(['53,5', '53.5'])('parses decimal default weight %s', (defaultWeight) => {
+    expect(buildCatalogExercise({
+      name: 'Sentadilla',
+      category: 'Pierna',
+      imageUrl: '',
+      videoUrl: '',
+      notes: '',
+      defaultSets: '',
+      defaultReps: '',
+      defaultWeight,
+      defaultRest: '',
+    }, null, 'exercise-squat', '2026-01-02T00:00:00.000Z').defaultWeight).toBe(53.5);
+  });
+
+  it('uses zero for an invalid default weight', () => {
+    expect(buildCatalogExercise({
+      name: 'Sentadilla',
+      category: 'Pierna',
+      imageUrl: '',
+      videoUrl: '',
+      notes: '',
+      defaultSets: '',
+      defaultReps: '',
+      defaultWeight: 'invalid',
+      defaultRest: '',
+    }, null, 'exercise-squat', '2026-01-02T00:00:00.000Z').defaultWeight).toBe(0);
+  });
 });

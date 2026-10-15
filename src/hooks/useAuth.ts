@@ -77,7 +77,8 @@ export function useAuth(): UseAuthReturn {
     }
 
     let isMounted = true;
-    let authEventReceived = false;
+    let initialSessionResolved = false;
+    let initialAuthUserSession: Awaited<ReturnType<typeof client.auth.getSession>>['data']['session'] = null;
     let sessionKey: string | null | undefined;
     const handleSession = (session: Awaited<ReturnType<typeof client.auth.getSession>>['data']['session']) => {
       if ((isSigningOutRef.current || cleanupOwnerIdRef.current) && !session) return;
@@ -116,14 +117,22 @@ export function useAuth(): UseAuthReturn {
     };
 
     const { data } = client.auth.onAuthStateChange((_event, session) => {
-      authEventReceived = true;
+      if (!initialSessionResolved) {
+        if (session?.user) initialAuthUserSession = session;
+        return;
+      }
       handleSession(session);
     });
 
     void client.auth
       .getSession()
       .then(({ data: sessionData, error: sessionError }) => {
-        if (!isMounted || authEventReceived) return;
+        if (!isMounted) return;
+        initialSessionResolved = true;
+        if (initialAuthUserSession) {
+          handleSession(initialAuthUserSession);
+          return;
+        }
         if (sessionError) {
           setError(getErrorMessage(sessionError));
           setIsLoading(false);
@@ -132,7 +141,12 @@ export function useAuth(): UseAuthReturn {
         handleSession(sessionData.session);
       })
       .catch((sessionError: unknown) => {
-        if (!isMounted || authEventReceived) return;
+        if (!isMounted) return;
+        initialSessionResolved = true;
+        if (initialAuthUserSession) {
+          handleSession(initialAuthUserSession);
+          return;
+        }
         setError(getErrorMessage(sessionError));
         setIsLoading(false);
       });
@@ -196,7 +210,7 @@ export function useAuth(): UseAuthReturn {
         : getOAuthRedirectUrl(window.location.origin, import.meta.env.BASE_URL),
     );
     setError(result.error);
-    setIsSigningIn(false);
+    if (result.error) setIsSigningIn(false);
   };
 
   const signOut = async (
