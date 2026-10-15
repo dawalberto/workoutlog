@@ -120,7 +120,7 @@ Forecast exceeds 400 authored lines. Strategy: `ask-on-risk`, resolved in autopi
 - T5-drag-tracking follow-up RED: `pnpm test tests/rest-timer-bar.test.tsx` — failed as expected (1 file, 2 failed and 3 passed; a simulated timer tick rendered no in-progress position style in either banner mode).
 - T5-drag-tracking follow-up GREEN: `pnpm test tests/rest-timer-bar.test.tsx` — passed (1 file, 5 tests), asserting position and anchor classes during drag and after a timer-driven re-render.
 - T5-drag-tracking follow-up full verification: `pnpm test && pnpm lint && pnpm build` — passed (33 files, 231 tests; TypeScript passed; production build passed with the expected >500 kB chunk-size warning).
-- T5-drag-tracking follow-up work-unit commit: pending.
+- T5-drag-tracking follow-up work-unit commit: `4216bfb fix(rest-timer): keep the banner stuck to the pointer`.
 - T6-hydration-flash revised decision: auth resolution must gate guest paint and guest hydration; a successful OAuth redirect keeps the signing-in gate active.
 - T6-hydration-flash implementation: initial auth listener events are buffered until `getSession()` settles, with a listener user preferred over a null result; later sign-out events still clear the user. Storage hydration now waits for resolved auth, and OAuth redirect startup keeps the loading screen visible.
 - T6-hydration-flash route: delegated writer. Risk tier: high.
