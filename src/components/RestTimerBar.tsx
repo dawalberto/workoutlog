@@ -17,6 +17,11 @@ export interface RestTimerDragPosition {
   top: number;
 }
 
+export interface RestTimerDragOffset {
+  x: number;
+  y: number;
+}
+
 interface RestTimerViewport {
   width: number;
   height: number;
@@ -38,8 +43,10 @@ interface ActiveRestTimerDrag extends RestTimerBounds, RestTimerSafeAreaInsets {
   pointerId: number;
   pointerOriginX: number;
   pointerOriginY: number;
-  positionOriginLeft: number;
-  positionOriginTop: number;
+  positionOriginX: number;
+  positionOriginY: number;
+  boundsOriginLeft: number;
+  boundsOriginTop: number;
   moved: boolean;
 }
 
@@ -48,11 +55,24 @@ const DRAG_VIEWPORT_MARGIN = 8;
 export function restTimerDragOffset(
   client: { x: number; y: number },
   origin: { x: number; y: number },
-): RestTimerDragPosition {
+): RestTimerDragOffset {
   return {
-    left: client.x - origin.x,
-    top: client.y - origin.y,
+    x: client.x - origin.x,
+    y: client.y - origin.y,
   };
+}
+
+export function restTimerDragStyle(offset: RestTimerDragOffset): React.CSSProperties {
+  return {
+    transform: `translate(calc(-50% + ${offset.x}px), ${offset.y}px)`,
+  };
+}
+
+export function isSpuriousPointerPoint(
+  origin: { x: number; y: number },
+  point: { x: number; y: number },
+): boolean {
+  return point.x === 0 && point.y === 0 && (origin.x !== 0 || origin.y !== 0);
 }
 
 export function clampRestTimerPosition(
@@ -69,6 +89,37 @@ export function clampRestTimerPosition(
   return {
     left: Math.max(minLeft, Math.min(position.left, maxLeft)),
     top: Math.max(minTop, Math.min(position.top, maxTop)),
+  };
+}
+
+function getRestTimerViewport(): RestTimerViewport {
+  return {
+    width: window.visualViewport?.width ?? window.innerWidth,
+    height: window.visualViewport?.height ?? window.innerHeight,
+  };
+}
+
+function getClampedDragOffset(
+  activeDrag: ActiveRestTimerDrag,
+  point: { x: number; y: number },
+): RestTimerDragOffset {
+  const pointerDelta = restTimerDragOffset(point, {
+    x: activeDrag.pointerOriginX,
+    y: activeDrag.pointerOriginY,
+  });
+  const position = clampRestTimerPosition(
+    {
+      left: activeDrag.boundsOriginLeft + pointerDelta.x,
+      top: activeDrag.boundsOriginTop + pointerDelta.y,
+    },
+    getRestTimerViewport(),
+    activeDrag,
+    activeDrag,
+  );
+
+  return {
+    x: activeDrag.positionOriginX + position.left - activeDrag.boundsOriginLeft,
+    y: activeDrag.positionOriginY + position.top - activeDrag.boundsOriginTop,
   };
 }
 
@@ -119,7 +170,7 @@ export const RestTimerBar: React.FC = () => {
   const [secondsLeft, setSecondsLeft] = useState<number>(initialRemainingSec);
   const [totalSeconds, setTotalSeconds] = useState<number>(Math.max(initialSeconds, initialRemainingSec));
   const [hasFinished, setHasFinished] = useState<boolean>(initialRemainingSec <= 0);
-  const [dragPosition, setDragPosition] = useState<RestTimerDragPosition | null>(null);
+  const [dragOffset, setDragOffset] = useState<RestTimerDragOffset>({ x: 0, y: 0 });
 
   // Synchronous ref to prevent double-firing sound/vibration
   const hasFinishedRef = useRef<boolean>(initialRemainingSec <= 0);
@@ -130,6 +181,7 @@ export const RestTimerBar: React.FC = () => {
   const activeDragRef = useRef<ActiveRestTimerDrag | null>(null);
 
   const handleDragStart = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!event.isPrimary) return;
     const target = event.target as HTMLElement | null;
     const isDragHandle = target?.closest('[data-rest-timer-drag-handle]');
     if (target?.closest('button, a, input') && !isDragHandle) return;
@@ -141,14 +193,15 @@ export const RestTimerBar: React.FC = () => {
       pointerId: event.pointerId,
       pointerOriginX: event.clientX,
       pointerOriginY: event.clientY,
-      positionOriginLeft: bounds.left,
-      positionOriginTop: bounds.top,
+      positionOriginX: dragOffset.x,
+      positionOriginY: dragOffset.y,
+      boundsOriginLeft: bounds.left,
+      boundsOriginTop: bounds.top,
       width: bounds.width,
       height: bounds.height,
       moved: false,
       ...safeAreaInsets,
     };
-    setDragPosition({ left: bounds.left, top: bounds.top });
     banner.setPointerCapture(event.pointerId);
     event.preventDefault();
   };
@@ -156,56 +209,30 @@ export const RestTimerBar: React.FC = () => {
   const handleDragMove = (event: React.PointerEvent<HTMLDivElement>) => {
     const activeDrag = activeDragRef.current;
     if (!activeDrag || activeDrag.pointerId !== event.pointerId) return;
-    const offset = restTimerDragOffset(
-      { x: event.clientX, y: event.clientY },
+    const point = { x: event.clientX, y: event.clientY };
+    if (isSpuriousPointerPoint(
       { x: activeDrag.pointerOriginX, y: activeDrag.pointerOriginY },
-    );
-    const position = clampRestTimerPosition(
-      {
-        left: activeDrag.positionOriginLeft + offset.left,
-        top: activeDrag.positionOriginTop + offset.top,
-      },
-      { width: window.innerWidth, height: window.innerHeight },
-      { width: activeDrag.width, height: activeDrag.height },
-      activeDrag,
-    );
+      point,
+    )) return;
     activeDrag.moved = true;
-    setDragPosition(position);
+    setDragOffset(getClampedDragOffset(activeDrag, point));
   };
 
   const handleDragEnd = (event: React.PointerEvent<HTMLDivElement>) => {
     const activeDrag = activeDragRef.current;
     if (!activeDrag || activeDrag.pointerId !== event.pointerId) return;
-    activeDragRef.current = null;
-    if (activeDrag.moved) {
-      const offset = restTimerDragOffset(
-        { x: event.clientX, y: event.clientY },
-        { x: activeDrag.pointerOriginX, y: activeDrag.pointerOriginY },
-      );
-      setDragPosition(clampRestTimerPosition(
-        {
-          left: activeDrag.positionOriginLeft + offset.left,
-          top: activeDrag.positionOriginTop + offset.top,
-        },
-        { width: window.innerWidth, height: window.innerHeight },
-        { width: activeDrag.width, height: activeDrag.height },
-        activeDrag,
-      ));
+    const point = { x: event.clientX, y: event.clientY };
+    if (activeDrag.moved && !isSpuriousPointerPoint(
+      { x: activeDrag.pointerOriginX, y: activeDrag.pointerOriginY },
+      point,
+    )) {
+      setDragOffset(getClampedDragOffset(activeDrag, point));
     }
+    activeDragRef.current = null;
     event.currentTarget.releasePointerCapture(event.pointerId);
   };
 
-  const floatingPositionStyle = dragPosition
-    ? {
-      left: `${dragPosition.left}px`,
-      top: `${dragPosition.top}px`,
-      right: 'auto',
-      bottom: 'auto',
-      transform: 'none',
-      transition: 'none',
-      animation: 'none',
-    }
-    : undefined;
+  const floatingPositionStyle = restTimerDragStyle(dragOffset);
 
   const dragHandle = (
     <button
@@ -428,9 +455,7 @@ export const RestTimerBar: React.FC = () => {
         onPointerMove={handleDragMove}
         onPointerUp={handleDragEnd}
         onPointerCancel={handleDragEnd}
-        className={`fixed z-50 flex flex-col items-center gap-1.5 pointer-events-auto max-w-[calc(100%-1.5rem)] touch-none select-none ${
-          dragPosition ? '' : 'bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)] left-1/2 -translate-x-1/2'
-        }`}
+        className="fixed z-50 flex flex-col items-center gap-1.5 pointer-events-auto max-w-[calc(100%-1.5rem)] touch-none select-none bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)] left-1/2"
       >
         <div
           className={`rounded-full border shadow-2xl px-3.5 sm:px-4 py-2 backdrop-blur-2xl flex items-center gap-2.5 sm:gap-3 transition-all duration-300 ${
@@ -524,9 +549,7 @@ export const RestTimerBar: React.FC = () => {
       onPointerMove={handleDragMove}
       onPointerUp={handleDragEnd}
       onPointerCancel={handleDragEnd}
-      className={`fixed w-[calc(100%-1.5rem)] sm:w-[calc(100%-2rem)] max-w-lg z-50 pointer-events-auto touch-none select-none ${
-        dragPosition ? '' : 'bottom-[calc(env(safe-area-inset-bottom,0px)+1.5rem)] left-1/2 -translate-x-1/2'
-      }`}
+      className="fixed w-[calc(100%-1.5rem)] sm:w-[calc(100%-2rem)] max-w-lg z-50 pointer-events-auto touch-none select-none bottom-[calc(env(safe-area-inset-bottom,0px)+1.5rem)] left-1/2"
     >
       <div
         className={`rounded-2xl border shadow-2xl p-3.5 sm:p-5 backdrop-blur-2xl transition-all duration-300 overflow-hidden ${

@@ -2,6 +2,8 @@ import React, { isValidElement, type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   clampRestTimerPosition,
+  isSpuriousPointerPoint,
+  restTimerDragStyle,
   restTimerDragOffset,
 } from '../src/components/RestTimerBar';
 
@@ -98,8 +100,8 @@ async function setupRestTimerBar() {
   }));
   vi.doMock('../src/components/RestPushPrompt', () => ({ RestPushPrompt: () => null }));
   vi.stubGlobal('window', {
-    innerWidth: 400,
-    innerHeight: 700,
+    innerWidth: 600,
+    innerHeight: 900,
     getComputedStyle: () => ({
       paddingTop: '20px',
       paddingRight: '10px',
@@ -130,11 +132,36 @@ afterEach(() => {
 });
 
 describe('rest timer banner dragging', () => {
-  it('calculates pointer movement without easing', () => {
+  it('calculates pointer movement as a pixel delta', () => {
     expect(restTimerDragOffset(
-      { x: 390, y: 690 },
+      { x: 162, y: 332 },
       { x: 150, y: 320 },
-    )).toEqual({ left: 240, top: 370 });
+    )).toEqual({ x: 12, y: 12 });
+  });
+
+  it('styles drag movement as a translate delta without absolute positioning', () => {
+    const style = restTimerDragStyle({ x: 12, y: -4 });
+
+    expect(style).toEqual({
+      transform: 'translate(calc(-50% + 12px), -4px)',
+    });
+    expect(style).not.toHaveProperty('top');
+    expect(style).not.toHaveProperty('left');
+  });
+
+  it('ignores a spurious zero pointer point unless the origin is also zero', () => {
+    expect(isSpuriousPointerPoint(
+      { x: 100, y: 700 },
+      { x: 0, y: 0 },
+    )).toBe(true);
+    expect(isSpuriousPointerPoint(
+      { x: 100, y: 700 },
+      { x: 101, y: 701 },
+    )).toBe(false);
+    expect(isSpuriousPointerPoint(
+      { x: 0, y: 0 },
+      { x: 0, y: 0 },
+    )).toBe(false);
   });
 
   it('clamps the banner inside viewport safe areas', () => {
@@ -177,8 +204,15 @@ describe('rest timer banner dragging', () => {
     expect(handle?.props.className).not.toContain('active:scale-[0.97]');
     expect(banner?.props.className).toContain('touch-none');
     expect(banner?.props.className).toContain('select-none');
+    expect(banner?.props.className).toContain('left-1/2');
+    expect(banner?.props.className).toContain('bottom-[');
+    expect(banner?.props.className).not.toContain('-translate-x-1/2');
     expect(banner?.props.className).not.toContain('transition-all');
     expect(banner?.props.className).not.toContain('animate-slide-up');
+    const initialStyle = banner?.props.style;
+    expect(initialStyle).toEqual({
+      transform: 'translate(calc(-50% + 0px), 0px)',
+    });
 
     const bannerRect = { left: 120, top: 300, width: 280, height: 170 };
     const bannerElement = {
@@ -190,6 +224,7 @@ describe('rest timer banner dragging', () => {
     const preventDefault = vi.fn();
     const pointerEvent = {
       pointerId: 7,
+      isPrimary: true,
       clientX: 150,
       clientY: 320,
       currentTarget: bannerElement,
@@ -204,59 +239,102 @@ describe('rest timer banner dragging', () => {
     expect(bannerElement.setPointerCapture).toHaveBeenCalledWith(7);
     expect(preventDefault).toHaveBeenCalledOnce();
     banner = findBanner(render());
-    expect(banner?.props.style).toMatchObject({
-      left: '120px',
-      top: '300px',
-      right: 'auto',
-      bottom: 'auto',
-      transform: 'none',
-      transition: 'none',
-      animation: 'none',
-    });
-    expect(banner?.props.className).not.toContain('left-1/2');
-    expect(banner?.props.className).not.toContain('-translate-x-1/2');
-    expect(banner?.props.className).not.toContain('bottom-[');
+    expect(banner?.props.style).toEqual(initialStyle);
+    expect(banner?.props.className).toContain('left-1/2');
+    expect(banner?.props.className).toContain('bottom-[');
 
     (banner?.props.onPointerMove as (event: unknown) => void)({
       ...pointerEvent,
-      clientX: 390,
-      clientY: 690,
+      clientX: 162,
+      clientY: 332,
     });
     timerTick(39);
     banner = findBanner(render());
     expect(banner?.props.style).toMatchObject({
-      left: '102px',
-      top: '492px',
-      right: 'auto',
-      bottom: 'auto',
-      transform: 'none',
-      transition: 'none',
-      animation: 'none',
+      transform: 'translate(calc(-50% + 12px), 12px)',
     });
-    expect(banner?.props.className).not.toContain('left-1/2');
-    expect(banner?.props.className).not.toContain('-translate-x-1/2');
-    expect(banner?.props.className).not.toContain('bottom-[');
+    expect(banner?.props.className).toContain('left-1/2');
+    expect(banner?.props.className).toContain('bottom-[');
 
     (banner?.props.onPointerUp as (event: unknown) => void)({
       ...pointerEvent,
-      clientX: 390,
-      clientY: 690,
+      clientX: 162,
+      clientY: 332,
     });
     expect(bannerElement.releasePointerCapture).toHaveBeenCalledWith(7);
     banner = findBanner(render());
-    expect(banner?.props.style).toMatchObject({
-      left: '102px',
-      top: '492px',
-      right: 'auto',
-      bottom: 'auto',
-      transform: 'none',
-      transition: 'none',
-      animation: 'none',
+    expect(banner?.props.style).toEqual({
+      transform: 'translate(calc(-50% + 12px), 12px)',
     });
 
     timer.isInsideActiveRoutine = !isInsideActiveRoutine;
     banner = findBanner(render());
-    expect(banner?.props.style).toMatchObject({ left: '102px', top: '492px' });
+    expect(banner?.props.style).toEqual({
+      transform: 'translate(calc(-50% + 12px), 12px)',
+    });
+  });
+
+  it('leaves taps in place and ignores non-primary and spurious pointer events', async () => {
+    const { render } = await setupRestTimerBar();
+    const findBanner = () =>
+      findElement(render(), (element) => element.props.id === 'floating-rest-timer');
+    let banner = findBanner();
+    const bannerElement = {
+      getBoundingClientRect: () => ({ left: 120, top: 300, width: 280, height: 170 }),
+      setPointerCapture: vi.fn(),
+      releasePointerCapture: vi.fn(),
+    };
+    const preventDefault = vi.fn();
+    const pointerEvent = {
+      pointerId: 11,
+      isPrimary: false,
+      clientX: 150,
+      clientY: 320,
+      currentTarget: bannerElement,
+      target: { closest: vi.fn(() => null) },
+      preventDefault,
+    };
+
+    (banner?.props.onPointerDown as (event: unknown) => void)(pointerEvent);
+    expect(bannerElement.setPointerCapture).not.toHaveBeenCalled();
+    expect(preventDefault).not.toHaveBeenCalled();
+
+    const primaryPointerEvent = { ...pointerEvent, isPrimary: true };
+    (banner?.props.onPointerDown as (event: unknown) => void)(primaryPointerEvent);
+    banner = findBanner();
+    expect(banner?.props.style).toEqual({
+      transform: 'translate(calc(-50% + 0px), 0px)',
+    });
+    (banner?.props.onPointerUp as (event: unknown) => void)(primaryPointerEvent);
+    expect(bannerElement.releasePointerCapture).toHaveBeenCalledWith(11);
+    banner = findBanner();
+    expect(banner?.props.style).toEqual({
+      transform: 'translate(calc(-50% + 0px), 0px)',
+    });
+
+    const nextPointerEvent = {
+      ...primaryPointerEvent,
+      pointerId: 12,
+    };
+    (banner?.props.onPointerDown as (event: unknown) => void)(nextPointerEvent);
+    (banner?.props.onPointerMove as (event: unknown) => void)({
+      ...nextPointerEvent,
+      clientX: 0,
+      clientY: 0,
+    });
+    banner = findBanner();
+    expect(banner?.props.style).toEqual({
+      transform: 'translate(calc(-50% + 0px), 0px)',
+    });
+    (banner?.props.onPointerMove as (event: unknown) => void)({
+      ...nextPointerEvent,
+      clientX: 162,
+      clientY: 332,
+    });
+    banner = findBanner();
+    expect(banner?.props.style).toEqual({
+      transform: 'translate(calc(-50% + 12px), 12px)',
+    });
   });
 
   it('does not capture or prevent pointer events on timer controls', async () => {
@@ -270,6 +348,7 @@ describe('rest timer banner dragging', () => {
 
     (banner?.props.onPointerDown as (event: unknown) => void)({
       pointerId: 9,
+      isPrimary: true,
       clientX: 130,
       clientY: 310,
       currentTarget: bannerElement,
