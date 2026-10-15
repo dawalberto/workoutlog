@@ -1,5 +1,11 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Play, Pause, X, Plus, Bell, RotateCcw, GripVertical } from 'lucide-react';
+import Draggable, {
+  type DraggableBounds,
+  type DraggableData,
+  type DraggableEvent,
+  type DraggableEventHandler,
+} from 'react-draggable';
 import { formatStopwatch } from '../utils/timeCalculations';
 import { 
   playTimerFinishBeep, 
@@ -12,143 +18,75 @@ import { getRestTimerRemainingMs } from '../utils/restTimer';
 import { shouldPlayLocalRestAlert } from '../utils/restPush';
 import { RestPushPrompt } from './RestPushPrompt';
 
-export interface RestTimerDragPosition {
-  left: number;
-  top: number;
-}
-
-export interface RestTimerDragOffset {
-  x: number;
-  y: number;
-}
-
-interface RestTimerViewport {
-  width: number;
-  height: number;
-}
-
-interface RestTimerBounds {
-  width: number;
-  height: number;
-}
-
-interface RestTimerSafeAreaInsets {
-  top: number;
-  right: number;
-  bottom: number;
-  left: number;
-}
-
-interface ActiveRestTimerDrag extends RestTimerBounds, RestTimerSafeAreaInsets {
-  pointerId: number;
-  pointerOriginX: number;
-  pointerOriginY: number;
-  positionOriginX: number;
-  positionOriginY: number;
-  boundsOriginLeft: number;
-  boundsOriginTop: number;
-  moved: boolean;
-}
-
+const REST_TIMER_DRAG_HANDLE = '.rest-timer-drag-handle';
+const REST_TIMER_DRAG_CANCEL = 'button, a, input, textarea, select';
 const DRAG_VIEWPORT_MARGIN = 8;
 
-export function restTimerDragOffset(
-  client: { x: number; y: number },
-  origin: { x: number; y: number },
-): RestTimerDragOffset {
+type RestTimerDragPosition = {
+  x: number;
+  y: number;
+};
+
+function readDragViewport() {
+  const viewport = window.visualViewport;
   return {
-    x: client.x - origin.x,
-    y: client.y - origin.y,
+    left: viewport?.offsetLeft ?? 0,
+    top: viewport?.offsetTop ?? 0,
+    width: viewport?.width ?? window.innerWidth,
+    height: viewport?.height ?? window.innerHeight,
   };
 }
 
-export function restTimerDragStyle(offset: RestTimerDragOffset): React.CSSProperties {
-  return {
-    transform: `translate(calc(-50% + ${offset.x}px), ${offset.y}px)`,
-  };
-}
-
-export function isSpuriousPointerPoint(
-  origin: { x: number; y: number },
-  point: { x: number; y: number },
-): boolean {
-  return point.x === 0 && point.y === 0 && (origin.x !== 0 || origin.y !== 0);
-}
-
-export function clampRestTimerPosition(
+function restTimerDragBounds(
+  node: HTMLElement,
   position: RestTimerDragPosition,
-  viewport: RestTimerViewport,
-  banner: RestTimerBounds,
-  safeAreaInsets: RestTimerSafeAreaInsets = { top: 0, right: 0, bottom: 0, left: 0 },
+): DraggableBounds {
+  const rect = node.getBoundingClientRect();
+  const viewport = readDragViewport();
+  const minX = viewport.left + DRAG_VIEWPORT_MARGIN;
+  const minY = viewport.top + DRAG_VIEWPORT_MARGIN;
+  const maxX = viewport.left + viewport.width - DRAG_VIEWPORT_MARGIN;
+  const maxY = viewport.top + viewport.height - DRAG_VIEWPORT_MARGIN;
+
+  return {
+    left: position.x + minX - rect.left,
+    top: position.y + minY - rect.top,
+    right: position.x + maxX - rect.right,
+    bottom: position.y + maxY - rect.bottom,
+  };
+}
+
+function clampDragPosition(
+  bounds: DraggableBounds | undefined,
+  x: number,
+  y: number,
 ): RestTimerDragPosition {
-  const minLeft = safeAreaInsets.left + DRAG_VIEWPORT_MARGIN;
-  const minTop = safeAreaInsets.top + DRAG_VIEWPORT_MARGIN;
-  const maxLeft = viewport.width - safeAreaInsets.right - banner.width - DRAG_VIEWPORT_MARGIN;
-  const maxTop = viewport.height - safeAreaInsets.bottom - banner.height - DRAG_VIEWPORT_MARGIN;
+  if (
+    bounds?.left == null ||
+    bounds.right == null ||
+    bounds.top == null ||
+    bounds.bottom == null
+  ) {
+    return { x, y };
+  }
 
   return {
-    left: Math.max(minLeft, Math.min(position.left, maxLeft)),
-    top: Math.max(minTop, Math.min(position.top, maxTop)),
+    x: Math.min(bounds.right, Math.max(bounds.left, x)),
+    y: Math.min(bounds.bottom, Math.max(bounds.top, y)),
   };
 }
 
-function getRestTimerViewport(): RestTimerViewport {
-  return {
-    width: window.visualViewport?.width ?? window.innerWidth,
-    height: window.visualViewport?.height ?? window.innerHeight,
-  };
-}
-
-function getClampedDragOffset(
-  activeDrag: ActiveRestTimerDrag,
-  point: { x: number; y: number },
-): RestTimerDragOffset {
-  const pointerDelta = restTimerDragOffset(point, {
-    x: activeDrag.pointerOriginX,
-    y: activeDrag.pointerOriginY,
-  });
-  const position = clampRestTimerPosition(
-    {
-      left: activeDrag.boundsOriginLeft + pointerDelta.x,
-      top: activeDrag.boundsOriginTop + pointerDelta.y,
-    },
-    getRestTimerViewport(),
-    activeDrag,
-    activeDrag,
-  );
-
-  return {
-    x: activeDrag.positionOriginX + position.left - activeDrag.boundsOriginLeft,
-    y: activeDrag.positionOriginY + position.top - activeDrag.boundsOriginTop,
-  };
-}
-
-function readRestTimerSafeAreaInsets(): RestTimerSafeAreaInsets {
-  const probe = document.createElement('div');
-  probe.style.cssText = [
-    'position:fixed',
-    'visibility:hidden',
-    'pointer-events:none',
-    'padding-top:env(safe-area-inset-top, 0px)',
-    'padding-right:env(safe-area-inset-right, 0px)',
-    'padding-bottom:env(safe-area-inset-bottom, 0px)',
-    'padding-left:env(safe-area-inset-left, 0px)',
-  ].join(';');
-  document.body.appendChild(probe);
-  const computedStyle = window.getComputedStyle(probe);
-  const insets = {
-    top: Number.parseFloat(computedStyle.paddingTop) || 0,
-    right: Number.parseFloat(computedStyle.paddingRight) || 0,
-    bottom: Number.parseFloat(computedStyle.paddingBottom) || 0,
-    left: Number.parseFloat(computedStyle.paddingLeft) || 0,
-  };
-  probe.remove();
-  return insets;
-}
+type RestTimerBarContentProps = {
+  timer: NonNullable<ReturnType<typeof useRestTimerBar>>;
+};
 
 export const RestTimerBar: React.FC = () => {
   const timer = useRestTimerBar();
   if (!timer) return null;
+  return <RestTimerBarContent timer={timer} />;
+};
+
+const RestTimerBarContent: React.FC<RestTimerBarContentProps> = ({ timer }) => {
   const {
     activeRestTimer,
     isInsideActiveRoutine,
@@ -170,7 +108,8 @@ export const RestTimerBar: React.FC = () => {
   const [secondsLeft, setSecondsLeft] = useState<number>(initialRemainingSec);
   const [totalSeconds, setTotalSeconds] = useState<number>(Math.max(initialSeconds, initialRemainingSec));
   const [hasFinished, setHasFinished] = useState<boolean>(initialRemainingSec <= 0);
-  const [dragOffset, setDragOffset] = useState<RestTimerDragOffset>({ x: 0, y: 0 });
+  const [dragPosition, setDragPosition] = useState<RestTimerDragPosition>({ x: 0, y: 0 });
+  const [dragBounds, setDragBounds] = useState<DraggableBounds | undefined>(undefined);
 
   // Synchronous ref to prevent double-firing sound/vibration
   const hasFinishedRef = useRef<boolean>(initialRemainingSec <= 0);
@@ -178,72 +117,58 @@ export const RestTimerBar: React.FC = () => {
   const pendingHiddenAlertRef = useRef(initialRemainingSec <= 0);
 
   const workerRef = useRef<Worker | null>(null);
-  const activeDragRef = useRef<ActiveRestTimerDrag | null>(null);
+  const dragNodeRef = useRef<HTMLDivElement>(null);
+  const dragBoundsRef = useRef<DraggableBounds | undefined>(undefined);
 
-  const handleDragStart = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!event.isPrimary) return;
-    const target = event.target as HTMLElement | null;
-    const isDragHandle = target?.closest('[data-rest-timer-drag-handle]');
-    if (target?.closest('button, a, input') && !isDragHandle) return;
-
-    const banner = event.currentTarget;
-    const bounds = banner.getBoundingClientRect();
-    const safeAreaInsets = readRestTimerSafeAreaInsets();
-    activeDragRef.current = {
-      pointerId: event.pointerId,
-      pointerOriginX: event.clientX,
-      pointerOriginY: event.clientY,
-      positionOriginX: dragOffset.x,
-      positionOriginY: dragOffset.y,
-      boundsOriginLeft: bounds.left,
-      boundsOriginTop: bounds.top,
-      width: bounds.width,
-      height: bounds.height,
-      moved: false,
-      ...safeAreaInsets,
-    };
-    banner.setPointerCapture(event.pointerId);
-    event.preventDefault();
+  const handleDragStart: DraggableEventHandler = () => {
+    const node = dragNodeRef.current;
+    if (!node) return;
+    const nextBounds = restTimerDragBounds(node, dragPosition);
+    dragBoundsRef.current = nextBounds;
+    setDragBounds(nextBounds);
   };
 
-  const handleDragMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    const activeDrag = activeDragRef.current;
-    if (!activeDrag || activeDrag.pointerId !== event.pointerId) return;
-    const point = { x: event.clientX, y: event.clientY };
-    if (isSpuriousPointerPoint(
-      { x: activeDrag.pointerOriginX, y: activeDrag.pointerOriginY },
-      point,
-    )) return;
-    activeDrag.moved = true;
-    setDragOffset(getClampedDragOffset(activeDrag, point));
+  const handleDrag = (_event: DraggableEvent, data: DraggableData) => {
+    setDragPosition(clampDragPosition(dragBoundsRef.current, data.x, data.y));
   };
-
-  const handleDragEnd = (event: React.PointerEvent<HTMLDivElement>) => {
-    const activeDrag = activeDragRef.current;
-    if (!activeDrag || activeDrag.pointerId !== event.pointerId) return;
-    const point = { x: event.clientX, y: event.clientY };
-    if (activeDrag.moved && !isSpuriousPointerPoint(
-      { x: activeDrag.pointerOriginX, y: activeDrag.pointerOriginY },
-      point,
-    )) {
-      setDragOffset(getClampedDragOffset(activeDrag, point));
-    }
-    activeDragRef.current = null;
-    event.currentTarget.releasePointerCapture(event.pointerId);
-  };
-
-  const floatingPositionStyle = restTimerDragStyle(dragOffset);
 
   const dragHandle = (
-    <button
-      type="button"
+    <div
       aria-label="Mover temporizador"
       title="Mover temporizador"
-      data-rest-timer-drag-handle
-      className="min-h-[48px] min-w-[48px] inline-flex items-center justify-center rounded-xl text-current opacity-70 hover:opacity-100 cursor-grab active:cursor-grabbing touch-none select-none"
+      className="rest-timer-drag-handle min-h-[48px] min-w-[48px] inline-flex items-center justify-center rounded-xl text-current opacity-70 cursor-grab active:cursor-grabbing touch-none"
     >
-      <GripVertical className="w-5 h-5" />
-    </button>
+      <GripVertical className="w-5 h-5" aria-hidden="true" />
+    </div>
+  );
+
+  // Centering lives on the outer anchor. react-draggable overwrites transform on its child.
+  const renderDraggableBanner = (
+    bannerId: string,
+    anchorClassName: string,
+    bannerClassName: string,
+    children: React.ReactNode,
+  ) => (
+    <div className={anchorClassName}>
+      <Draggable
+        nodeRef={dragNodeRef}
+        position={dragPosition}
+        bounds={dragBounds}
+        handle={REST_TIMER_DRAG_HANDLE}
+        cancel={REST_TIMER_DRAG_CANCEL}
+        onStart={handleDragStart}
+        onDrag={handleDrag}
+        onStop={handleDrag}
+      >
+        <div
+          ref={dragNodeRef}
+          id={bannerId}
+          className={bannerClassName}
+        >
+          {children}
+        </div>
+      </Draggable>
+    </div>
   );
 
   const playFinishAlert = useCallback(() => {
@@ -446,17 +371,11 @@ export const RestTimerBar: React.FC = () => {
 
   // Mini reduced pill banner when viewing outside active training (e.g. Diario, Historial, Catálogo)
   if (!isInsideActiveRoutine) {
-    return (
-      <div
-        id="floating-mini-rest-timer"
-        data-rest-timer-banner
-        style={floatingPositionStyle}
-        onPointerDown={handleDragStart}
-        onPointerMove={handleDragMove}
-        onPointerUp={handleDragEnd}
-        onPointerCancel={handleDragEnd}
-        className="fixed z-50 flex flex-col items-center gap-1.5 pointer-events-auto max-w-[calc(100%-1.5rem)] touch-none select-none bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)] left-1/2"
-      >
+    return renderDraggableBanner(
+      'floating-mini-rest-timer',
+      'fixed z-50 pointer-events-none left-1/2 -translate-x-1/2 max-w-[calc(100%-1.5rem)] bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)]',
+      'flex flex-col items-center gap-1.5 pointer-events-auto max-w-full touch-none select-none',
+      <>
         <div
           className={`rounded-full border shadow-2xl px-3.5 sm:px-4 py-2 backdrop-blur-2xl flex items-center gap-2.5 sm:gap-3 transition-all duration-300 ${
             hasFinished
@@ -535,22 +454,16 @@ export const RestTimerBar: React.FC = () => {
           </button>
         </div>
         <RestPushPrompt />
-      </div>
+      </>,
     );
   }
 
   // Full detailed banner when inside active routine
-  return (
-    <div
-      id="floating-rest-timer"
-      data-rest-timer-banner
-      style={floatingPositionStyle}
-      onPointerDown={handleDragStart}
-      onPointerMove={handleDragMove}
-      onPointerUp={handleDragEnd}
-      onPointerCancel={handleDragEnd}
-      className="fixed w-[calc(100%-1.5rem)] sm:w-[calc(100%-2rem)] max-w-lg z-50 pointer-events-auto touch-none select-none bottom-[calc(env(safe-area-inset-bottom,0px)+1.5rem)] left-1/2"
-    >
+  return renderDraggableBanner(
+    'floating-rest-timer',
+    'fixed z-50 pointer-events-none left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] sm:w-[calc(100%-2rem)] max-w-lg bottom-[calc(env(safe-area-inset-bottom,0px)+1.5rem)]',
+    'w-full pointer-events-auto touch-none select-none',
+    <>
       <div
         className={`rounded-2xl border shadow-2xl p-3.5 sm:p-5 backdrop-blur-2xl transition-all duration-300 overflow-hidden ${
           hasFinished
@@ -688,6 +601,6 @@ export const RestTimerBar: React.FC = () => {
           <RestPushPrompt />
         </div>
       </div>
-    </div>
+    </>,
   );
 };

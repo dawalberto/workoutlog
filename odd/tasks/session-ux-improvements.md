@@ -25,7 +25,7 @@ In:
 Out:
 
 - Schema, RLS, RPC, sync-contract, or IndexedDB version changes.
-- New dependencies.
+- New dependencies other than `react-draggable`, authorized on 2026-10-15 to replace the custom rest-banner drag.
 - Persisting drag position or the dismiss state of the finish prompt.
 - Push, PR, or merge.
 
@@ -34,7 +34,7 @@ Out:
 | Topic | Decision |
 |---|---|
 | Finish prompt | New modal, not a reuse of the manual finish confirm. Show only on the transition to all sets complete, and only when `totalSets > 0` and an active session exists. Confirm calls the existing `finishSession`. Dismiss closes the modal and does not finish. Do not prompt again until some set is unchecked and the routine becomes fully complete again. Rest timer keeps running. Guest and signed-in behavior match. |
-| Drag | No library. Pointer events with capture. The whole banner is the drag surface, with a dedicated 48 px grip as an affordance; timer controls remain clickable. Update the element directly with no position transition, then commit one session-only position shared by normal and compact modes on pointer release. Default stays at the current bottom placement until the first drag. Clamp inside the viewport, including safe areas. Do not write IndexedDB or the sync outbox. |
+| Drag | Use `react-draggable` (not custom pointer math). The whole banner is the drag surface, with a dedicated 48 px grip as an affordance; timer controls remain clickable. The library owns movement via CSS transform from the existing bottom/center anchor. Do not set `top`/`left` from `getBoundingClientRect`. One session-only position is shared by normal and compact modes. Clamp inside the viewport, including safe areas. Do not write IndexedDB or the sync outbox. Position is not persisted. |
 | Weights | Store a finite number. Accept `.` and `,` as the decimal separator. Commit on blur. Display with a comma in the text field. Keep at most two decimal places and strip trailing zeros. Do not round to an integer. Reps stay integers. `inputMode="decimal"`, text input at least 16 px, so a comma is typable. No backup-format version bump; existing numeric backup values already parse. |
 | Hydration gate | Keep `AppLoadingScreen` visible until initial auth resolution finishes, and while signing in or a signed-in owner's scope is not hydrated (`hydratedScopeKey` not equal to the active owner scope, or storage not loaded). Defer guest hydration until auth has resolved; a resolved signed-out guest remains unblocked. Do not clear the outbox or write defaults before hydration. Cover both fresh sign-in and an already-signed-in reload. |
 
@@ -56,6 +56,7 @@ Out:
 - [x] `T5-catalog-weight-save`: Parse catalog default weights consistently on form submit, including Enter. Route: delegated writer. Risk: medium.
 - [x] `T5-drag-tracking`: Track pointer and touch movement directly across the whole rest banner without easing. Route: delegated writer. Risk: medium.
 - [x] `T6-hydration-flash`: Hold the loading gate until initial auth resolves and avoid guest hydration during that interval. Route: delegated writer. Risk: high.
+- [ ] `T7-library-drag`: Replace custom rest-banner pointer math with `react-draggable`. Route: delegated writer (`gpt-6-luna`). Risk: medium. User reported the custom mobile drag still fails; custom coordinate code is retired.
 
 ## Acceptance criteria
 
