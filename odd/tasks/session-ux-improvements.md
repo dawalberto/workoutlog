@@ -51,8 +51,8 @@ Out:
 
 - [x] `T1-finish-prompt`: Detect the all-sets-complete transition and show the new finish modal. Route: delegated writer. Risk: medium.
 - [x] `T2-drag-banner`: Drag both rest-banner modes. Route: delegated writer. Risk: medium.
-- [x] `T3-decimal-weight`: Shared weight parser and kilogram inputs. Route: delegated writer. Risk: medium.
-- [ ] `T4-hydration-gate`: Account-data loading gate. Route: delegated writer. Risk: high.
+- [ ] `T3-decimal-weight`: Shared weight parser and kilogram inputs. Route: delegated writer. Risk: medium; implementation and focused tests are complete, but full-suite snapshots remain blocked outside the authorized edit surface.
+- [x] `T4-hydration-gate`: Account-data loading gate. Route: delegated writer. Risk: high.
 
 ## Acceptance criteria
 
@@ -86,7 +86,17 @@ Forecast exceeds 400 authored lines. Strategy: `ask-on-risk`, resolved in autopi
 - T3 RED: `pnpm test tests/utils/weightInput.test.ts tests/exercise-card.test.tsx tests/rm-logs-characterization.test.tsx` — failed as expected (1 missing utility module plus 4 failing behavior tests; comma weights were rejected or truncated).
 - T3 GREEN: `pnpm test tests/utils/weightInput.test.ts tests/exercise-card.test.tsx tests/rm-logs-characterization.test.tsx` — passed (3 files, 19 tests).
 - T3 typecheck: `pnpm lint` — passed (`tsc --noEmit`).
-- T3 commit: `fc6e190 feat(workout): accept decimal kilogram values`.
+- T3 commit: `48ca033 feat(workout): accept decimal kilogram values`.
+- T4 implementation: reused `selectIsStorageReady` to gate signed-in users until their owner scope is hydrated, with the `Cargando datos...` message. Guests no longer wait on an owner-scope gate; persistence and outbox semantics were not changed.
+- T4 route: delegated writer. Risk tier: high.
+- T4 RED: `pnpm test tests/app-shell.test.tsx tests/store/persistence.test.ts` — failed as expected before implementation (3 app-shell tests failed; existing persistence tests passed).
+- T4 GREEN: `pnpm test tests/app-shell.test.tsx tests/store/persistence.test.ts` — passed (2 files, 19 tests).
+- T4 typecheck: `pnpm lint` — passed (`tsc --noEmit`).
+- T4 commit: `9b2d571 fix(auth): show a loading gate while account data hydrates`.
+- Final `pnpm test && pnpm lint && pnpm build`: failed during `pnpm test` because two characterization snapshots include changed weight-input markup. The chained lint and build steps did not run in that command.
+- Final `pnpm lint && pnpm build`: passed; the build emitted the existing expected chunk-size warning (>500 kB).
+- T3 closure is reopened: the two failing snapshot files are outside the authorized edit surface — `tests/__snapshots__/exercise-catalog.test.tsx.snap` and `tests/__snapshots__/routine-view-characterization.test.tsx.snap`. They were not edited.
+- Next step: obtain authorization for those snapshot paths, update the expected text-input markup, and rerun the full verification gate.
 - Next step: implement T4 (`T4-hydration-gate`).
 
 ## Relevant files

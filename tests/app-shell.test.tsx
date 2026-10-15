@@ -149,4 +149,39 @@ describe('App shell composition', () => {
     expect(renderApp()).not.toContain('Iniciando WorkoutLog...');
     expect(renderApp()).toContain('¿Cerrar sesión?');
   });
+
+  it.each([
+    ['fresh sign-in', { isStorageLoaded: true, activeScopeKey: 'guest', hydratedScopeKey: 'guest' }],
+    ['signed-in reload', { isStorageLoaded: false, activeScopeKey: 'owner:owner-1', hydratedScopeKey: null }],
+  ])('hides guest records while an account hydrates after %s', (_scenario, storageState) => {
+    seedAppStore({
+      routines: [{
+        id: 'guest-routine',
+        name: 'Guest-only routine',
+        exercises: [],
+        createdAt: '2026-10-15T00:00:00.000Z',
+        updatedAt: '2026-10-15T00:00:00.000Z',
+      }],
+      user: { id: 'owner-1', email: 'owner@example.test' },
+      ...storageState,
+    });
+
+    const markup = renderApp();
+    expect(markup).toContain('Cargando datos...');
+    expect(markup).not.toContain('Guest-only routine');
+  });
+
+  it('does not gate guests on signed-in owner hydration', () => {
+    seedAppStore({
+      isStorageLoaded: false,
+      activeScopeKey: 'guest',
+      hydratedScopeKey: null,
+      user: null,
+    });
+
+    const markup = renderApp();
+    expect(markup).not.toContain('Cargando datos...');
+    expect(markup).not.toContain('Iniciando WorkoutLog...');
+    expect(markup).toContain('id="routine-list-page"');
+  });
 });

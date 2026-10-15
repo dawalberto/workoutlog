@@ -6,7 +6,13 @@
 import React from 'react';
 import { Flame } from 'lucide-react';
 
-export const AppLoadingScreen: React.FC = () => {
+interface AppLoadingScreenProps {
+  message?: string;
+}
+
+export const AppLoadingScreen: React.FC<AppLoadingScreenProps> = ({
+  message = 'Iniciando WorkoutLog...',
+}) => {
   return (
     <div className="min-h-screen bg-[#0D0D0D] flex items-center justify-center p-4">
       <div className="flex flex-col items-center gap-4">
@@ -15,7 +21,7 @@ export const AppLoadingScreen: React.FC = () => {
         </div>
         <div className="flex items-center gap-2.5 text-zinc-400 text-xs font-bold tracking-wider uppercase">
           <div className="w-2 h-2 rounded-full bg-[#00FF87] animate-ping" />
-          <span>Iniciando WorkoutLog...</span>
+          <span>{message}</span>
         </div>
       </div>
     </div>

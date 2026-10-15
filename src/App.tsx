@@ -15,13 +15,15 @@ export default function App() {
   useAppBootstrap();
   const cleanupPending = useAppStore((state) => state.cleanupPending);
   const isLoading = useAppStore((state) => state.isLoading);
+  const isSignedIn = useAppStore((state) => Boolean(state.user?.id));
   const isStorageLoaded = useAppStore(selectIsStorageReady);
   const isSigningOut = useAppStore((state) => state.isSigningOut);
   const isSignOutConfirmOpen = useAppStore((state) => state.isSignOutConfirmOpen);
+  const isOwnerStorageLoading = isSignedIn && !isStorageLoaded;
 
   if (cleanupPending) return <LocalCleanupPendingScreen />;
-  if (isLoading || !isStorageLoaded || (isSigningOut && !isSignOutConfirmOpen)) {
-    return <AppLoadingScreen />;
+  if (isLoading || isOwnerStorageLoading || (isSigningOut && !isSignOutConfirmOpen)) {
+    return <AppLoadingScreen message={isOwnerStorageLoading ? 'Cargando datos...' : undefined} />;
   }
 
   return (
