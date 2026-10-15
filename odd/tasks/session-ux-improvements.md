@@ -53,6 +53,7 @@ Out:
 - [x] `T2-drag-banner`: Drag both rest-banner modes. Route: delegated writer. Risk: medium.
 - [x] `T3-decimal-weight`: Shared weight parser and kilogram inputs. Route: delegated writer. Risk: medium; implementation, focused tests, and characterization snapshots are complete.
 - [x] `T4-hydration-gate`: Account-data loading gate. Route: delegated writer. Risk: high.
+- [ ] `T5-catalog-weight-save`: Parse catalog default weights consistently on form submit, including Enter. Route: delegated writer. Risk: medium.
 
 ## Acceptance criteria
 
@@ -99,7 +100,14 @@ Forecast exceeds 400 authored lines. Strategy: `ask-on-risk`, resolved in autopi
 - `pnpm test tests/exercise-catalog.test.tsx tests/routine-view-characterization.test.tsx`: passed (2 files, 7 tests).
 - Final `pnpm test && pnpm lint && pnpm build`: passed (33 files, 218 tests; `tsc --noEmit` passed; production build passed with the expected >500 kB chunk-size warning).
 - T3 closure work-unit commit: `test(workout): update weight input characterization snapshots` (this commit).
-- Next step: independent T4 verification; mark the feature done if it passes.
+- T5 implementation: catalog default weight now uses the shared decimal parser, and the RM check uses the normalized weight from the saved exercise. Enter-submit no longer bypasses comma-decimal parsing.
+- T5 route: delegated writer. Risk tier: medium.
+- T5 RED: `pnpm test tests/utils/exerciseCatalog.test.ts` — failed as expected (1 failed, 4 passed; `53,5` produced `0` instead of `53.5`).
+- T5 GREEN: `pnpm test tests/utils/exerciseCatalog.test.ts` — passed (1 file, 5 tests), covering `53,5`, `53.5`, and invalid weight fallback to `0`.
+- T5 full verification: the first `pnpm test && pnpm lint && pnpm build` run passed all 221 tests but lint caught optional-weight narrowing errors; the guard was corrected.
+- T5 final verification: `pnpm test && pnpm lint && pnpm build` — passed (33 files, 221 tests; `tsc --noEmit` passed; production build passed with the expected >500 kB chunk-size warning).
+- T5 work-unit commit: pending.
+- Next step: commit the verified catalog weight fix, then mark the feature done pending parent confirmation.
 
 ## Relevant files
 
@@ -108,5 +116,7 @@ Forecast exceeds 400 authored lines. Strategy: `ask-on-risk`, resolved in autopi
 - `src/components/routine/WorkoutProgressPanel.tsx` — mounts `WorkoutFinishConfirmModal`
 - `src/components/RestTimerBar.tsx` — normal and compact banners
 - `src/components/ExerciseCard.tsx` — set weight input
+- `src/utils/exerciseCatalog.ts`, `src/hooks/useExerciseCatalog.ts` — catalog weight normalization and RM check on save
+- `tests/utils/exerciseCatalog.test.ts` — catalog default-weight parsing coverage
 - `src/App.tsx`, `src/components/AppLoadingScreen.tsx` — bootstrap loading gate
 - `src/store/persistence.ts` — scope switch clears visible collections before owner hydration
