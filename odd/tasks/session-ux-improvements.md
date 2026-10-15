@@ -53,7 +53,7 @@ Out:
 - [x] `T2-drag-banner`: Drag both rest-banner modes. Route: delegated writer. Risk: medium.
 - [x] `T3-decimal-weight`: Shared weight parser and kilogram inputs. Route: delegated writer. Risk: medium; implementation, focused tests, and characterization snapshots are complete.
 - [x] `T4-hydration-gate`: Account-data loading gate. Route: delegated writer. Risk: high.
-- [ ] `T5-catalog-weight-save`: Parse catalog default weights consistently on form submit, including Enter. Route: delegated writer. Risk: medium.
+- [x] `T5-catalog-weight-save`: Parse catalog default weights consistently on form submit, including Enter. Route: delegated writer. Risk: medium.
 
 ## Acceptance criteria
 
@@ -106,8 +106,8 @@ Forecast exceeds 400 authored lines. Strategy: `ask-on-risk`, resolved in autopi
 - T5 GREEN: `pnpm test tests/utils/exerciseCatalog.test.ts` — passed (1 file, 5 tests), covering `53,5`, `53.5`, and invalid weight fallback to `0`.
 - T5 full verification: the first `pnpm test && pnpm lint && pnpm build` run passed all 221 tests but lint caught optional-weight narrowing errors; the guard was corrected.
 - T5 final verification: `pnpm test && pnpm lint && pnpm build` — passed (33 files, 221 tests; `tsc --noEmit` passed; production build passed with the expected >500 kB chunk-size warning).
-- T5 work-unit commit: pending.
-- Next step: commit the verified catalog weight fix, then mark the feature done pending parent confirmation.
+- T5 work-unit commit: `b4a1273 fix(catalog): parse comma decimals when saving exercise weight`.
+- Next step: done, pending parent confirmation.
 
 ## Relevant files
 
