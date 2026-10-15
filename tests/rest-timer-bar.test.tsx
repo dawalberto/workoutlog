@@ -1,6 +1,9 @@
 import React, { isValidElement, type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { clampRestTimerPosition } from '../src/components/RestTimerBar';
+import {
+  clampRestTimerPosition,
+  restTimerDragOffset,
+} from '../src/components/RestTimerBar';
 
 type ElementProps = {
   children?: ReactNode;
@@ -123,6 +126,13 @@ afterEach(() => {
 });
 
 describe('rest timer banner dragging', () => {
+  it('calculates pointer movement without easing', () => {
+    expect(restTimerDragOffset(
+      { x: 390, y: 690 },
+      { x: 150, y: 320 },
+    )).toEqual({ left: 240, top: 370 });
+  });
+
   it('clamps the banner inside viewport safe areas', () => {
     expect(clampRestTimerPosition(
       { left: 490, top: 790 },
@@ -139,54 +149,134 @@ describe('rest timer banner dragging', () => {
     )).toEqual({ left: 18, top: 28 });
   });
 
-  it('captures drag on the dedicated handle and keeps buttons interactive in both modes', async () => {
+  it.each([
+    ['normal', true, 'floating-rest-timer'],
+    ['compact', false, 'floating-mini-rest-timer'],
+  ] as const)('drags the whole %s banner directly and preserves its position', async (
+    _mode,
+    isInsideActiveRoutine,
+    bannerId,
+  ) => {
     const { timer, render } = await setupRestTimerBar();
     const findHandle = (tree: ReactNode) =>
       findElement(tree, (element) => element.props['aria-label'] === 'Mover temporizador');
+    timer.isInsideActiveRoutine = isInsideActiveRoutine;
     const findBanner = (tree: ReactNode) =>
       findElement(tree, (element) =>
         element.props.id === 'floating-rest-timer' ||
         element.props.id === 'floating-mini-rest-timer',
       );
     let handle = findHandle(render());
+    let banner = findBanner(render());
     expect(handle).toBeDefined();
     expect(handle?.props.className).toContain('min-h-[48px]');
+    expect(handle?.props.className).not.toContain('active:scale-[0.97]');
+    expect(banner?.props.className).toContain('touch-none');
+    expect(banner?.props.className).toContain('select-none');
+    expect(banner?.props.className).not.toContain('transition-all');
+    expect(banner?.props.className).not.toContain('animate-slide-up');
 
     const bannerRect = { left: 120, top: 300, width: 280, height: 170 };
-    const dragTarget = {
+    const bannerElement = {
+      style: {} as Record<string, string>,
+      getBoundingClientRect: () => bannerRect,
       setPointerCapture: vi.fn(),
       releasePointerCapture: vi.fn(),
-      closest: vi.fn(() => ({ getBoundingClientRect: () => bannerRect })),
     };
+    const preventDefault = vi.fn();
     const pointerEvent = {
       pointerId: 7,
       clientX: 150,
       clientY: 320,
-      currentTarget: dragTarget,
-      preventDefault: vi.fn(),
+      currentTarget: bannerElement,
+      target: {
+        closest: vi.fn((selector: string) =>
+          selector === '[data-rest-timer-drag-handle]' ? {} : null,
+        ),
+      },
+      preventDefault,
     };
-    (handle?.props.onPointerDown as (event: unknown) => void)(pointerEvent);
-    expect(dragTarget.setPointerCapture).toHaveBeenCalledWith(7);
+    (banner?.props.onPointerDown as (event: unknown) => void)(pointerEvent);
+    expect(bannerElement.setPointerCapture).toHaveBeenCalledWith(7);
+    expect(preventDefault).toHaveBeenCalledOnce();
 
-    (handle?.props.onPointerMove as (event: unknown) => void)({
+    (banner?.props.onPointerMove as (event: unknown) => void)({
       ...pointerEvent,
       clientX: 390,
       clientY: 690,
     });
-    let banner = findBanner(render());
-    expect(banner?.props.style).toMatchObject({ left: '102px', top: '492px' });
+    expect(bannerElement.style).toMatchObject({
+      left: '0px',
+      top: '0px',
+      right: 'auto',
+      bottom: 'auto',
+      transform: 'translate3d(102px, 492px, 0)',
+      transition: 'none',
+      animation: 'none',
+    });
+    expect(findBanner(render())?.props.style).toBeUndefined();
 
-    timer.isInsideActiveRoutine = false;
-    handle = findHandle(render());
+    (banner?.props.onPointerUp as (event: unknown) => void)({
+      ...pointerEvent,
+      clientX: 390,
+      clientY: 690,
+    });
+    expect(bannerElement.releasePointerCapture).toHaveBeenCalledWith(7);
+    banner = findBanner(render());
+    expect(banner?.props.style).toMatchObject({
+      left: '102px',
+      top: '492px',
+      right: 'auto',
+      bottom: 'auto',
+      transform: 'none',
+      transition: 'none',
+      animation: 'none',
+    });
+
+    timer.isInsideActiveRoutine = !isInsideActiveRoutine;
     banner = findBanner(render());
     expect(banner?.props.style).toMatchObject({ left: '102px', top: '492px' });
-    const closeButton = findElement(banner?.props.children as ReactNode, (element) =>
-      element.props.id === 'btn-mini-close-timer',
-    );
-    (closeButton?.props.onClick as () => void)();
-    expect(timer.onClose).toHaveBeenCalledOnce();
+  });
 
-    (handle?.props.onPointerUp as (event: unknown) => void)(pointerEvent);
-    expect(dragTarget.releasePointerCapture).toHaveBeenCalledWith(7);
+  it('does not capture or prevent pointer events on timer controls', async () => {
+    const { timer, render } = await setupRestTimerBar();
+    const banner = findElement(render(), (element) => element.props.id === 'floating-rest-timer');
+    const bannerElement = {
+      getBoundingClientRect: () => ({ left: 120, top: 300, width: 280, height: 170 }),
+      setPointerCapture: vi.fn(),
+    };
+    const preventDefault = vi.fn();
+
+    (banner?.props.onPointerDown as (event: unknown) => void)({
+      pointerId: 9,
+      clientX: 130,
+      clientY: 310,
+      currentTarget: bannerElement,
+      target: {
+        closest: vi.fn((selector: string) =>
+          selector === 'button, a, input' ? {} : null,
+        ),
+      },
+      preventDefault,
+    });
+
+    expect(bannerElement.setPointerCapture).not.toHaveBeenCalled();
+    expect(preventDefault).not.toHaveBeenCalled();
+
+    const findButton = (id: string) =>
+      findElement(banner?.props.children as ReactNode, (element) =>
+        element.props.id === id,
+      );
+    const activateButton = (id: string) => {
+      const onClick = findButton(id)?.props.onClick as (() => void) | undefined;
+      onClick?.();
+    };
+    activateButton('btn-add-30s-rest');
+    activateButton('btn-pause-rest-timer');
+    activateButton('btn-skip-rest-timer');
+    activateButton('btn-close-rest-timer');
+    expect(timer.onExtend).toHaveBeenCalledWith(30);
+    expect(timer.onPause).toHaveBeenCalledOnce();
+    expect(timer.onClose).toHaveBeenCalledTimes(2);
   });
 });

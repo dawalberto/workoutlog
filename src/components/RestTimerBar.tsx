@@ -36,11 +36,25 @@ interface RestTimerSafeAreaInsets {
 
 interface ActiveRestTimerDrag extends RestTimerBounds, RestTimerSafeAreaInsets {
   pointerId: number;
-  offsetX: number;
-  offsetY: number;
+  pointerOriginX: number;
+  pointerOriginY: number;
+  positionOriginLeft: number;
+  positionOriginTop: number;
+  element: HTMLDivElement;
+  moved: boolean;
 }
 
 const DRAG_VIEWPORT_MARGIN = 8;
+
+export function restTimerDragOffset(
+  client: { x: number; y: number },
+  origin: { x: number; y: number },
+): RestTimerDragPosition {
+  return {
+    left: client.x - origin.x,
+    top: client.y - origin.y,
+  };
+}
 
 export function clampRestTimerPosition(
   position: RestTimerDragPosition,
@@ -116,40 +130,76 @@ export const RestTimerBar: React.FC = () => {
   const workerRef = useRef<Worker | null>(null);
   const activeDragRef = useRef<ActiveRestTimerDrag | null>(null);
 
-  const handleDragStart = (event: React.PointerEvent<HTMLButtonElement>) => {
-    const banner = event.currentTarget.closest('[data-rest-timer-banner]');
-    if (!banner) return;
+  const handleDragStart = (event: React.PointerEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement | null;
+    const isDragHandle = target?.closest('[data-rest-timer-drag-handle]');
+    if (target?.closest('button, a, input') && !isDragHandle) return;
+
+    const banner = event.currentTarget;
     const bounds = banner.getBoundingClientRect();
     const safeAreaInsets = readRestTimerSafeAreaInsets();
     activeDragRef.current = {
       pointerId: event.pointerId,
-      offsetX: event.clientX - bounds.left,
-      offsetY: event.clientY - bounds.top,
+      pointerOriginX: event.clientX,
+      pointerOriginY: event.clientY,
+      positionOriginLeft: bounds.left,
+      positionOriginTop: bounds.top,
       width: bounds.width,
       height: bounds.height,
+      element: banner,
+      moved: false,
       ...safeAreaInsets,
     };
-    event.currentTarget.setPointerCapture(event.pointerId);
+    banner.setPointerCapture(event.pointerId);
     event.preventDefault();
   };
 
-  const handleDragMove = (event: React.PointerEvent<HTMLButtonElement>) => {
+  const handleDragMove = (event: React.PointerEvent<HTMLDivElement>) => {
     const activeDrag = activeDragRef.current;
     if (!activeDrag || activeDrag.pointerId !== event.pointerId) return;
-    setDragPosition(clampRestTimerPosition(
+    const offset = restTimerDragOffset(
+      { x: event.clientX, y: event.clientY },
+      { x: activeDrag.pointerOriginX, y: activeDrag.pointerOriginY },
+    );
+    const position = clampRestTimerPosition(
       {
-        left: event.clientX - activeDrag.offsetX,
-        top: event.clientY - activeDrag.offsetY,
+        left: activeDrag.positionOriginLeft + offset.left,
+        top: activeDrag.positionOriginTop + offset.top,
       },
       { width: window.innerWidth, height: window.innerHeight },
       { width: activeDrag.width, height: activeDrag.height },
       activeDrag,
-    ));
+    );
+    activeDrag.moved = true;
+    activeDrag.element.style.left = '0px';
+    activeDrag.element.style.top = '0px';
+    activeDrag.element.style.right = 'auto';
+    activeDrag.element.style.bottom = 'auto';
+    activeDrag.element.style.transform =
+      `translate3d(${position.left}px, ${position.top}px, 0)`;
+    activeDrag.element.style.transition = 'none';
+    activeDrag.element.style.animation = 'none';
   };
 
-  const handleDragEnd = (event: React.PointerEvent<HTMLButtonElement>) => {
-    if (activeDragRef.current?.pointerId !== event.pointerId) return;
+  const handleDragEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    const activeDrag = activeDragRef.current;
+    if (!activeDrag || activeDrag.pointerId !== event.pointerId) return;
     activeDragRef.current = null;
+    if (activeDrag.moved) {
+      const offset = restTimerDragOffset(
+        { x: event.clientX, y: event.clientY },
+        { x: activeDrag.pointerOriginX, y: activeDrag.pointerOriginY },
+      );
+      setDragPosition(clampRestTimerPosition(
+        {
+          left: activeDrag.positionOriginLeft + offset.left,
+          top: activeDrag.positionOriginTop + offset.top,
+        },
+        { width: window.innerWidth, height: window.innerHeight },
+        { width: activeDrag.width, height: activeDrag.height },
+        activeDrag,
+      ));
+    }
     event.currentTarget.releasePointerCapture(event.pointerId);
   };
 
@@ -160,6 +210,8 @@ export const RestTimerBar: React.FC = () => {
       right: 'auto',
       bottom: 'auto',
       transform: 'none',
+      transition: 'none',
+      animation: 'none',
     }
     : undefined;
 
@@ -168,11 +220,8 @@ export const RestTimerBar: React.FC = () => {
       type="button"
       aria-label="Mover temporizador"
       title="Mover temporizador"
-      onPointerDown={handleDragStart}
-      onPointerMove={handleDragMove}
-      onPointerUp={handleDragEnd}
-      onPointerCancel={handleDragEnd}
-      className="min-h-[48px] min-w-[48px] inline-flex items-center justify-center rounded-xl text-current opacity-70 hover:opacity-100 cursor-grab active:cursor-grabbing touch-none select-none active:scale-[0.97]"
+      data-rest-timer-drag-handle
+      className="min-h-[48px] min-w-[48px] inline-flex items-center justify-center rounded-xl text-current opacity-70 hover:opacity-100 cursor-grab active:cursor-grabbing touch-none select-none"
     >
       <GripVertical className="w-5 h-5" />
     </button>
@@ -383,7 +432,11 @@ export const RestTimerBar: React.FC = () => {
         id="floating-mini-rest-timer"
         data-rest-timer-banner
         style={floatingPositionStyle}
-        className={`fixed z-50 flex flex-col items-center gap-1.5 transition-all duration-300 animate-slide-up pointer-events-auto max-w-[calc(100%-1.5rem)] ${
+        onPointerDown={handleDragStart}
+        onPointerMove={handleDragMove}
+        onPointerUp={handleDragEnd}
+        onPointerCancel={handleDragEnd}
+        className={`fixed z-50 flex flex-col items-center gap-1.5 pointer-events-auto max-w-[calc(100%-1.5rem)] touch-none select-none ${
           dragPosition ? '' : 'bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)] left-1/2 -translate-x-1/2'
         }`}
       >
@@ -475,7 +528,11 @@ export const RestTimerBar: React.FC = () => {
       id="floating-rest-timer"
       data-rest-timer-banner
       style={floatingPositionStyle}
-      className={`fixed w-[calc(100%-1.5rem)] sm:w-[calc(100%-2rem)] max-w-lg z-50 transition-all duration-300 animate-slide-up pointer-events-auto ${
+      onPointerDown={handleDragStart}
+      onPointerMove={handleDragMove}
+      onPointerUp={handleDragEnd}
+      onPointerCancel={handleDragEnd}
+      className={`fixed w-[calc(100%-1.5rem)] sm:w-[calc(100%-2rem)] max-w-lg z-50 pointer-events-auto touch-none select-none ${
         dragPosition ? '' : 'bottom-[calc(env(safe-area-inset-bottom,0px)+1.5rem)] left-1/2 -translate-x-1/2'
       }`}
     >

@@ -34,9 +34,9 @@ Out:
 | Topic | Decision |
 |---|---|
 | Finish prompt | New modal, not a reuse of the manual finish confirm. Show only on the transition to all sets complete, and only when `totalSets > 0` and an active session exists. Confirm calls the existing `finishSession`. Dismiss closes the modal and does not finish. Do not prompt again until some set is unchecked and the routine becomes fully complete again. Rest timer keeps running. Guest and signed-in behavior match. |
-| Drag | No library. Pointer events with capture. One session-only position shared by normal and compact modes. Default stays the current bottom placement until the user drags. Dedicated 48 px handle so timer buttons still click. Clamp inside the viewport, including safe areas. Do not write IndexedDB or the sync outbox. |
+| Drag | No library. Pointer events with capture. The whole banner is the drag surface, with a dedicated 48 px grip as an affordance; timer controls remain clickable. Update the element directly with no position transition, then commit one session-only position shared by normal and compact modes on pointer release. Default stays at the current bottom placement until the first drag. Clamp inside the viewport, including safe areas. Do not write IndexedDB or the sync outbox. |
 | Weights | Store a finite number. Accept `.` and `,` as the decimal separator. Commit on blur. Display with a comma in the text field. Keep at most two decimal places and strip trailing zeros. Do not round to an integer. Reps stay integers. `inputMode="decimal"`, text input at least 16 px, so a comma is typable. No backup-format version bump; existing numeric backup values already parse. |
-| Hydration gate | Reuse `AppLoadingScreen` with Spanish copy `Cargando datos...` while auth has a user and that owner's scope is not hydrated (`hydratedScopeKey` not equal to the active owner scope, or storage not loaded). Do not block guests. Do not clear the outbox or write defaults before hydration. Cover both fresh sign-in and an already-signed-in reload. |
+| Hydration gate | Keep `AppLoadingScreen` visible until initial auth resolution finishes, and while signing in or a signed-in owner's scope is not hydrated (`hydratedScopeKey` not equal to the active owner scope, or storage not loaded). Defer guest hydration until auth has resolved; a resolved signed-out guest remains unblocked. Do not clear the outbox or write defaults before hydration. Cover both fresh sign-in and an already-signed-in reload. |
 
 ## Constraints
 
@@ -54,12 +54,14 @@ Out:
 - [x] `T3-decimal-weight`: Shared weight parser and kilogram inputs. Route: delegated writer. Risk: medium; implementation, focused tests, and characterization snapshots are complete.
 - [x] `T4-hydration-gate`: Account-data loading gate. Route: delegated writer. Risk: high.
 - [x] `T5-catalog-weight-save`: Parse catalog default weights consistently on form submit, including Enter. Route: delegated writer. Risk: medium.
+- [x] `T5-drag-tracking`: Track pointer and touch movement directly across the whole rest banner without easing. Route: delegated writer. Risk: medium.
+- [ ] `T6-hydration-flash`: Hold the loading gate until initial auth resolves and avoid guest hydration during that interval. Route: delegated writer. Risk: high.
 
 ## Acceptance criteria
 
 - Checking the last remaining set opens a Spanish modal. Confirm finishes the routine through the existing action. Dismiss leaves the session active and does not immediately reappear.
 - Empty routines and already-finished sessions do not prompt. Unchecking and recompleting prompts again.
-- Normal and compact rest banners can be dragged with mouse and touch and stay inside the viewport. Buttons on the banner still activate. Position is not persisted.
+- Normal and compact rest banners can be dragged from the whole banner with mouse and touch and stay inside the viewport without position easing. The grip remains a 48 px affordance; buttons on the banner still activate. Position is not persisted.
 - `53,5` and `53.5` commit as `53.5` on set weight, catalog/default weight, and RM weight fields. Integer weights still work.
 - A guest who is not signing in never sees the account loading gate. A signed-in user does not see guest records while the owner scope is hydrating.
 - `pnpm test`, `pnpm lint`, and `pnpm build` pass. No `supabase/` diff.
@@ -107,6 +109,13 @@ Forecast exceeds 400 authored lines. Strategy: `ask-on-risk`, resolved in autopi
 - T5 full verification: the first `pnpm test && pnpm lint && pnpm build` run passed all 221 tests but lint caught optional-weight narrowing errors; the guard was corrected.
 - T5 final verification: `pnpm test && pnpm lint && pnpm build` — passed (33 files, 221 tests; `tsc --noEmit` passed; production build passed with the expected >500 kB chunk-size warning).
 - T5 work-unit commit: `b4a1273 fix(catalog): parse comma decimals when saving exercise weight`.
+- T5-drag-tracking implementation: pointer events now start from the whole banner except interactive controls, move the root element directly with `translate3d` and disabled transitions/animation, and commit the shared position only on pointer release. The session position is still clamped and is not persisted.
+- T5-drag-tracking revised decisions: whole-banner drag, no position transition, and no per-move React state updates.
+- T5-drag-tracking route: delegated writer. Risk tier: medium.
+- T5-drag-tracking RED: `pnpm test tests/rest-timer-bar.test.tsx` — failed as expected (1 file, 4 failed and 1 passed; drag helper, root handlers, and non-animated banner behavior were missing).
+- T5-drag-tracking GREEN: `pnpm test tests/rest-timer-bar.test.tsx tests/app-shell.test.tsx` — passed (2 files, 13 tests).
+- T5-drag-tracking work-unit commit: `488af17 fix(rest-timer): track the pointer while dragging the banner`.
+- T6-hydration-flash revised decision: auth resolution must gate guest paint and guest hydration; a successful OAuth redirect keeps the signing-in gate active.
 - Next step: done, pending parent confirmation.
 
 ## Relevant files
