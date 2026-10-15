@@ -110,11 +110,17 @@ Forecast exceeds 400 authored lines. Strategy: `ask-on-risk`, resolved in autopi
 - T5 final verification: `pnpm test && pnpm lint && pnpm build` — passed (33 files, 221 tests; `tsc --noEmit` passed; production build passed with the expected >500 kB chunk-size warning).
 - T5 work-unit commit: `b4a1273 fix(catalog): parse comma decimals when saving exercise weight`.
 - T5-drag-tracking implementation: pointer events now start from the whole banner except interactive controls, move the root element directly with `translate3d` and disabled transitions/animation, and commit the shared position only on pointer release. The session position is still clamped and is not persisted.
-- T5-drag-tracking revised decisions: whole-banner drag, no position transition, and no per-move React state updates.
+- T5-drag-tracking original decisions: whole-banner drag and no position transition; its no-per-move-state decision was superseded by the pointer-position fix below.
 - T5-drag-tracking route: delegated writer. Risk tier: medium.
 - T5-drag-tracking RED: `pnpm test tests/rest-timer-bar.test.tsx` — failed as expected (1 file, 4 failed and 1 passed; drag helper, root handlers, and non-animated banner behavior were missing).
 - T5-drag-tracking GREEN: `pnpm test tests/rest-timer-bar.test.tsx tests/app-shell.test.tsx` — passed (2 files, 16 tests).
 - T5-drag-tracking work-unit commit: `5d4075a fix(rest-timer): track the pointer while dragging the banner`.
+- T5-drag-tracking follow-up cause: the drag position existed only in React state after pointer-up. During a drag, pointer moves changed inline DOM styles, but a roughly 400 ms timer update re-rendered with `style={undefined}`, so React removed those styles and restored the bottom/center anchor classes, snapping the banner back.
+- T5-drag-tracking follow-up implementation: set the pixel `left`/`top` position in React state at pointer-down and on every pointer move. The rendered style remains the source of truth during timer re-renders; dragging uses `left`/`top` pixels, automatic right/bottom, no transform, transition, or animation, and omits the default anchor classes.
+- T5-drag-tracking follow-up RED: `pnpm test tests/rest-timer-bar.test.tsx` — failed as expected (1 file, 2 failed and 3 passed; a simulated timer tick rendered no in-progress position style in either banner mode).
+- T5-drag-tracking follow-up GREEN: `pnpm test tests/rest-timer-bar.test.tsx` — passed (1 file, 5 tests), asserting position and anchor classes during drag and after a timer-driven re-render.
+- T5-drag-tracking follow-up full verification: `pnpm test && pnpm lint && pnpm build` — passed (33 files, 231 tests; TypeScript passed; production build passed with the expected >500 kB chunk-size warning).
+- T5-drag-tracking follow-up work-unit commit: pending.
 - T6-hydration-flash revised decision: auth resolution must gate guest paint and guest hydration; a successful OAuth redirect keeps the signing-in gate active.
 - T6-hydration-flash implementation: initial auth listener events are buffered until `getSession()` settles, with a listener user preferred over a null result; later sign-out events still clear the user. Storage hydration now waits for resolved auth, and OAuth redirect startup keeps the loading screen visible.
 - T6-hydration-flash route: delegated writer. Risk tier: high.

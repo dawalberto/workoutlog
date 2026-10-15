@@ -53,6 +53,9 @@ function createHarness() {
       if (!slots[index]) slots[index] = { value: { current: initial } };
       return slots[index]!.value as { current: T };
     },
+    updateState(index: number, next: unknown) {
+      slots[index]!.value = next;
+    },
     useEffect() {
       cursor++;
     },
@@ -112,6 +115,7 @@ async function setupRestTimerBar() {
   const { RestTimerBar } = await import('../src/components/RestTimerBar');
   return {
     timer,
+    timerTick: (secondsLeft: number) => harness.updateState(0, secondsLeft),
     render: () => harness.render(() => RestTimerBar({}) as ReactNode),
   };
 }
@@ -157,7 +161,7 @@ describe('rest timer banner dragging', () => {
     isInsideActiveRoutine,
     bannerId,
   ) => {
-    const { timer, render } = await setupRestTimerBar();
+    const { timer, timerTick, render } = await setupRestTimerBar();
     const findHandle = (tree: ReactNode) =>
       findElement(tree, (element) => element.props['aria-label'] === 'Mover temporizador');
     timer.isInsideActiveRoutine = isInsideActiveRoutine;
@@ -199,22 +203,39 @@ describe('rest timer banner dragging', () => {
     (banner?.props.onPointerDown as (event: unknown) => void)(pointerEvent);
     expect(bannerElement.setPointerCapture).toHaveBeenCalledWith(7);
     expect(preventDefault).toHaveBeenCalledOnce();
+    banner = findBanner(render());
+    expect(banner?.props.style).toMatchObject({
+      left: '120px',
+      top: '300px',
+      right: 'auto',
+      bottom: 'auto',
+      transform: 'none',
+      transition: 'none',
+      animation: 'none',
+    });
+    expect(banner?.props.className).not.toContain('left-1/2');
+    expect(banner?.props.className).not.toContain('-translate-x-1/2');
+    expect(banner?.props.className).not.toContain('bottom-[');
 
     (banner?.props.onPointerMove as (event: unknown) => void)({
       ...pointerEvent,
       clientX: 390,
       clientY: 690,
     });
-    expect(bannerElement.style).toMatchObject({
-      left: '0px',
-      top: '0px',
+    timerTick(39);
+    banner = findBanner(render());
+    expect(banner?.props.style).toMatchObject({
+      left: '102px',
+      top: '492px',
       right: 'auto',
       bottom: 'auto',
-      transform: 'translate3d(102px, 492px, 0)',
+      transform: 'none',
       transition: 'none',
       animation: 'none',
     });
-    expect(findBanner(render())?.props.style).toBeUndefined();
+    expect(banner?.props.className).not.toContain('left-1/2');
+    expect(banner?.props.className).not.toContain('-translate-x-1/2');
+    expect(banner?.props.className).not.toContain('bottom-[');
 
     (banner?.props.onPointerUp as (event: unknown) => void)({
       ...pointerEvent,

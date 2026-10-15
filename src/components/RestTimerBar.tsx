@@ -40,7 +40,6 @@ interface ActiveRestTimerDrag extends RestTimerBounds, RestTimerSafeAreaInsets {
   pointerOriginY: number;
   positionOriginLeft: number;
   positionOriginTop: number;
-  element: HTMLDivElement;
   moved: boolean;
 }
 
@@ -146,10 +145,10 @@ export const RestTimerBar: React.FC = () => {
       positionOriginTop: bounds.top,
       width: bounds.width,
       height: bounds.height,
-      element: banner,
       moved: false,
       ...safeAreaInsets,
     };
+    setDragPosition({ left: bounds.left, top: bounds.top });
     banner.setPointerCapture(event.pointerId);
     event.preventDefault();
   };
@@ -171,14 +170,7 @@ export const RestTimerBar: React.FC = () => {
       activeDrag,
     );
     activeDrag.moved = true;
-    activeDrag.element.style.left = '0px';
-    activeDrag.element.style.top = '0px';
-    activeDrag.element.style.right = 'auto';
-    activeDrag.element.style.bottom = 'auto';
-    activeDrag.element.style.transform =
-      `translate3d(${position.left}px, ${position.top}px, 0)`;
-    activeDrag.element.style.transition = 'none';
-    activeDrag.element.style.animation = 'none';
+    setDragPosition(position);
   };
 
   const handleDragEnd = (event: React.PointerEvent<HTMLDivElement>) => {
