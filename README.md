@@ -1,6 +1,6 @@
 # WorkoutLog
 
-Last verified: 2026-10-14
+Last verified: 2026-10-15
 
 WorkoutLog is a browser-first workout tracker. Routines, sessions, records, history, and diary entries remain available in IndexedDB offline. Signed-in users synchronize their private data directly with Supabase through row-level security and database RPCs.
 
@@ -35,6 +35,7 @@ Set only the public browser values in `.env.local`:
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
 - `VITE_VAPID_PUBLIC_KEY` (optional; generate with `pnpm push:vapid` to enable rest-timer push)
+- `VITE_GA_MEASUREMENT_ID` (optional GA4 `G-` ID; leave empty to keep analytics off)
 
 To develop authenticated synchronization, start the local Supabase project from this repository:
 

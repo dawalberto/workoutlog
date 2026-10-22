@@ -5,6 +5,7 @@ import {
   ROUTINE_LIMIT_ERROR_MESSAGE,
 } from '../../utils/backup';
 import { updateRoutinesForCatalogExercise } from '../../utils/exerciseCatalog';
+import { ANALYTICS_EVENTS } from '../../utils/analytics';
 import type { AppState } from '../appStore';
 
 export interface RoutineSlice {
@@ -93,14 +94,20 @@ export const createRoutineSlice: StateCreator<AppState, [], [], RoutineSlice> =
       }));
       get().resetSession(routineId);
     },
-    createCatalogExercise: (exercise) => set((state) => {
+    createCatalogExercise: (exercise) => {
+      const state = get();
       const exists = state.catalog.some((item) => item.id === exercise.id);
-      return {
+      set({
         catalog: exists
           ? state.catalog.map((item) => item.id === exercise.id ? exercise : item)
           : [exercise, ...state.catalog],
-      };
-    }),
+      });
+      if (!exists) {
+        state.recordAnalyticsEvent(ANALYTICS_EVENTS.EXERCISE_CREATE, {
+          ...(exercise.category ? { category: exercise.category } : {}),
+        });
+      }
+    },
     updateCatalogExercise: (exercise) => {
       const state = get();
       const oldDefinition = state.catalog.find((item) => item.id === exercise.id);

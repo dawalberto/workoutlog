@@ -56,6 +56,20 @@ export default defineConfig(() => {
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
           importScripts: ['push-sw.js'],
+          runtimeCaching: [
+            {
+              urlPattern: /^https:\/\/www\.googletagmanager\.com\/.*/i,
+              handler: 'NetworkOnly',
+            },
+            {
+              urlPattern: /^https:\/\/www\.google-analytics\.com\/.*/i,
+              handler: 'NetworkOnly',
+            },
+            {
+              urlPattern: /^https:\/\/region1\.google-analytics\.com\/.*/i,
+              handler: 'NetworkOnly',
+            },
+          ],
         },
         devOptions: {
           enabled: true,

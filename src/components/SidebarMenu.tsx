@@ -6,6 +6,7 @@
 import React from 'react';
 import { Flame, Dumbbell, Trophy, Calendar, BookOpen, ArrowDownUp, X, ChevronRight } from 'lucide-react';
 import { AppTab } from '../types';
+import { AnalyticsPreferenceControl } from './AnalyticsPreferenceControl';
 import { PWAInstallButton } from './PWAInstallButton';
 import { useSidebarMenu } from '../hooks/shell/useSidebarMenu';
 
@@ -347,6 +348,7 @@ export const SidebarMenu: React.FC = () => {
                 : 'Continuar con Google'}
             </button>
           </section>
+          <AnalyticsPreferenceControl />
         </div>
 
         {/* Drawer Footer */}

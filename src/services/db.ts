@@ -45,6 +45,19 @@ export const DB_KEYS = {
   GUEST_TRANSFER_FLAG: 'workout_guest_data_transferred_v1',
 } as const;
 
+/** Device-wide keys include a colon so guest/owner cleanup does not delete them. */
+export const DEVICE_KEY_PREFIX = 'device:' as const;
+
+export const DEVICE_KEYS = {
+  ANALYTICS_CONSENT: 'device:analytics_consent_v1',
+} as const;
+
+function assertDeviceStorageKey(key: string): void {
+  if (!key.startsWith(DEVICE_KEY_PREFIX) || key.startsWith('owner:')) {
+    throw new Error('Device storage keys must start with "device:".');
+  }
+}
+
 export type StorageScope = typeof GUEST_STORAGE_SCOPE | { ownerId: string };
 
 interface RecordMetadata {
@@ -379,6 +392,40 @@ export function setStoredItem<T>(
   scope: StorageScope = GUEST_STORAGE_SCOPE,
 ): Promise<void> {
   return setScopedStoredItem(key, value, scope);
+}
+
+export async function getDeviceStoredItem<T>(key: string, defaultValue: T): Promise<T> {
+  assertDeviceStorageKey(key);
+  try {
+    const db = await getDatabase();
+    const transaction = db.transaction(STORE_NAME, 'readonly');
+    const completed = transactionComplete(transaction);
+    const value = await requestResult(transaction.objectStore(STORE_NAME).get(key));
+    await completed;
+    return value === undefined || value === null ? defaultValue : (value as T);
+  } catch (error) {
+    console.warn(`[WorkoutLogDB] Failed to get device key "${key}":`, error);
+    return defaultValue;
+  }
+}
+
+export function setDeviceStoredItem<T>(key: string, value: T): Promise<void> {
+  assertDeviceStorageKey(key);
+  const queueKey = key;
+  const currentQueue = writeQueues.get(queueKey) ?? Promise.resolve();
+  const next = currentQueue
+    .then(async () => {
+      const db = await getDatabase();
+      const transaction = db.transaction(STORE_NAME, 'readwrite');
+      const completed = transactionComplete(transaction);
+      transaction.objectStore(STORE_NAME).put(value, key);
+      await completed;
+    })
+    .catch((error) => {
+      console.error(`[WorkoutLogDB] Error persisting device key "${key}":`, error);
+    });
+  writeQueues.set(queueKey, next);
+  return next;
 }
 
 export async function flushScopedStorageWrites(

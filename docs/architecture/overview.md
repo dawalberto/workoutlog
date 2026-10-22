@@ -2,7 +2,7 @@
 
 How WorkoutLog's parts fit together: a static React PWA that stores data locally in IndexedDB and, for signed-in users, syncs directly with Supabase.
 
-Last verified: 2026-10-14
+Last verified: 2026-10-15
 
 ## In one paragraph
 
@@ -109,7 +109,7 @@ flowchart LR
 |---|---|
 | Frontend | [`deploy.yml`](../../.github/workflows/deploy.yml) builds on push to `main`, PRs to `main`, and manual dispatch; deploys only when the event is not a PR. |
 | Base path | Vite `base: '/workoutlog/'` ([`vite.config.ts`](../../vite.config.ts)). |
-| Build config | `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` from GitHub repository **variables** (public values). |
+| Build config | `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_VAPID_PUBLIC_KEY`, `VITE_GA_MEASUREMENT_ID` from GitHub repository **variables** (public values). |
 | Database | Migrations are **not** applied by CI; apply production migrations before deploying frontend changes that depend on them. |
 | Client updates | Service worker `registerType: 'autoUpdate'`; deployed clients may run an older bundle until the SW updates — see [evolving the contract](frontend-backend-strategy.md#evolving-without-breaking-clients). |
 

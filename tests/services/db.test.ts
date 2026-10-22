@@ -819,6 +819,25 @@ describe('IndexedDB storage', () => {
     expect(await storage.getScopedStoredItem(storage.DB_KEYS.ROUTINES, [])).toEqual([guestRoutine]);
   });
 
+  it('keeps device analytics consent across guest and owner cleanup', async () => {
+    await storage.setDeviceStoredItem(storage.DEVICE_KEYS.ANALYTICS_CONSENT, 'granted');
+    await storage.setScopedStoredItem(storage.DB_KEYS.STARTER_DATA_FLAG, true);
+    await storage.setScopedStoredItem(
+      storage.DB_KEYS.STARTER_DATA_FLAG,
+      true,
+      { ownerId: 'signout-owner' },
+    );
+
+    await storage.clearGuestLocalData();
+    await storage.clearOwnerLocalData('signout-owner');
+
+    expect(await storage.getDeviceStoredItem(storage.DEVICE_KEYS.ANALYTICS_CONSENT, 'unknown'))
+      .toBe('granted');
+    expect(() => {
+      void storage.setDeviceStoredItem('analytics_consent', 'denied');
+    }).toThrow('Device storage keys must start with "device:".');
+  });
+
   it('clears the guest scope so fresh starter data is restored on hydration', async () => {
     await storage.setScopedStoredItem(storage.DB_KEYS.CATALOG, [
       { id: 'previous-account-exercise', name: 'Private exercise' },
