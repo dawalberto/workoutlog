@@ -2,11 +2,11 @@
 
 How WorkoutLog handles secrets, data ownership, privileged SQL, and personal data.
 
-Last verified: 2026-10-13
+Last verified: 2026-10-15
 
 ## Rules in one screen
 
-- The only frontend config values are **public**: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`.
+- The only frontend config values are **public**: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_VAPID_PUBLIC_KEY`, `VITE_GA_MEASUREMENT_ID`.
 - OAuth and other secrets are read by the Supabase CLI through `env()` only; never in `.env.local`, never committed.
 - Every row is owned by `user_id = auth.uid()` (RLS). There is no DELETE policy; deletes are tombstones.
 - `SECURITY DEFINER` functions pin `search_path`, revoke from `PUBLIC, anon`, grant to `authenticated`, and re-check `auth.uid()`.
@@ -18,13 +18,15 @@ Last verified: 2026-10-13
 |---|---|---|---|
 | `VITE_SUPABASE_URL` | Public | `.env.local` (local), GitHub repo **variable** (deploy) | Bundled into the client |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Public | same | Publishable key; RLS is the protection, not key secrecy |
+| `VITE_VAPID_PUBLIC_KEY` | Public | same | Browser Web Push application server key |
+| `VITE_GA_MEASUREMENT_ID` | Public | same | Optional GA4 `G-` ID; empty disables analytics |
 | `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` | CLI env | Shell env when running `supabase start` | Read via `env()` in [`supabase/config.toml`](../../supabase/config.toml) |
 | `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET` | **Secret** | Shell env / Supabase dashboard (prod) | Never in `.env.local` or git |
 | `OPENAI_API_KEY` | Optional secret | Shell env | Supabase Studio AI only |
 | `SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN` | Secret | Shell env | SMS auth is disabled |
 | `DISABLE_HMR` | Dev flag | Shell env | Intentionally retained for reopening the repo in Google AI Studio |
 
-- [`.env.example`](../../.env.example) documents the two public names. `.env.local` is personal; do not commit or paste its contents.
+- [`.env.example`](../../.env.example) documents the public browser names. `.env.local` is personal; do not commit or paste its contents.
 - The deploy workflow uses `vars.*` (repository variables), not `secrets.*` — correct, because both values are public.
 - Never use a Supabase service-role/secret key in the client or the repo.
 - Future Edge Function secrets belong in Supabase secrets (CLI: `supabase secrets set`, or the dashboard), are read with `Deno.env.get`, and must never be committed. Deploy functions with `supabase functions deploy`; none exist yet.
@@ -83,6 +85,13 @@ GRANT EXECUTE ON FUNCTION public.sync_push(uuid, jsonb, integer) TO authenticate
 - FKs are enforced by Postgres; idempotency by `(user_id, operation_id)` + SHA-256 payload hash.
 
 Client-side validation in [`src/services/cloud-sync.ts`](../../src/services/cloud-sync.ts) and [`src/utils/backup.ts`](../../src/utils/backup.ts) is defensive, not a security boundary.
+
+## Analytics privacy
+
+- GA4 loads when `VITE_GA_MEASUREMENT_ID` is set and valid.
+- Consent Mode v2 runs in Advanced mode: defaults to denied for `analytics_storage` and all advertising storage. Events dispatched while unconsented or rejected travel as cookieless pings without client identifiers, enabling Google's aggregate traffic modeling. Full client-side storage is granted only after explicit user consent.
+- Events never include `user_id`, email, routine names, exercise names, or diary text.
+- The consent flag lives in a device IndexedDB key (`device:analytics_consent_v1`) outside guest/owner scopes and is not synced.
 
 ## Local data privacy
 

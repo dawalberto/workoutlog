@@ -7,6 +7,7 @@ import type {
   WorkoutHistoryLog,
 } from '../../types';
 import { useAppStore } from '../../store/appStore';
+import { ANALYTICS_EVENTS } from '../../utils/analytics';
 import { selectPersistedData } from '../../store/selectors';
 import { useShallow } from 'zustand/react/shallow';
 import {
@@ -73,6 +74,11 @@ export function useDataBackup() {
   const onClose = useAppStore((state) => state.closeBackupModal);
   const isSyncEnabled = useAppStore((state) => state.isSyncEnabled);
   const importBackup = useAppStore((state) => state.importBackup);
+  const recordAnalyticsEvent = useAppStore((state) => state.recordAnalyticsEvent);
+
+  const trackBackup = (name: typeof ANALYTICS_EVENTS.BACKUP_EXPORT | typeof ANALYTICS_EVENTS.BACKUP_IMPORT, backupType: string) => {
+    recordAnalyticsEvent(name, { backup_type: backupType });
+  };
 
   const [activeTab, setActiveTab] = useState<BackupTab>('export');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -127,6 +133,7 @@ export function useDataBackup() {
       routines,
       catalog: associatedCatalog,
     });
+    trackBackup(ANALYTICS_EVENTS.BACKUP_EXPORT, 'routines');
     setExportSuccessMessage(
       `Se han exportado ${routines.length} rutinas y ${associatedCatalog.length} ejercicios asociados.`
     );
@@ -142,6 +149,7 @@ export function useDataBackup() {
       type: 'exercises',
       catalog,
     });
+    trackBackup(ANALYTICS_EVENTS.BACKUP_EXPORT, 'exercises');
     setExportSuccessMessage(`Se han exportado ${catalog.length} ejercicios.`);
     setTimeout(() => setExportSuccessMessage(null), 4000);
   };
@@ -155,6 +163,7 @@ export function useDataBackup() {
       type: 'rms',
       rmLogs,
     });
+    trackBackup(ANALYTICS_EVENTS.BACKUP_EXPORT, 'rms');
     setExportSuccessMessage(`Se han exportado ${rmLogs.length} ejercicios de RMs.`);
     setTimeout(() => setExportSuccessMessage(null), 4000);
   };
@@ -168,6 +177,7 @@ export function useDataBackup() {
       type: 'history',
       workoutHistory,
     });
+    trackBackup(ANALYTICS_EVENTS.BACKUP_EXPORT, 'history');
     setExportSuccessMessage(`Se han exportado ${workoutHistory.length} sesiones del historial.`);
     setTimeout(() => setExportSuccessMessage(null), 4000);
   };
@@ -182,6 +192,7 @@ export function useDataBackup() {
       exerciseDiary,
     });
     const totalEntries = exerciseDiary.reduce((sum, diary) => sum + (diary.entries?.length || 0), 0);
+    trackBackup(ANALYTICS_EVENTS.BACKUP_EXPORT, 'diary');
     setExportSuccessMessage(
       `Se han exportado ${totalEntries} registros del diario (${exerciseDiary.length} ejercicios).`
     );
@@ -202,6 +213,7 @@ export function useDataBackup() {
       exerciseDiary,
     });
     const totalDiaryEntries = exerciseDiary.reduce((sum, diary) => sum + (diary.entries?.length || 0), 0);
+    trackBackup(ANALYTICS_EVENTS.BACKUP_EXPORT, 'all');
     setExportSuccessMessage(
       `Se han exportado ${catalog.length} ejercicios, ${routines.length} rutinas, ${rmLogs.length} RMs, ${workoutHistory.length} sesiones y ${totalDiaryEntries} notas del diario.`
     );
@@ -280,6 +292,7 @@ export function useDataBackup() {
           diaryUpdated: 0,
           mode: 'overwrite',
         });
+        trackBackup(ANALYTICS_EVENTS.BACKUP_IMPORT, 'overwrite');
         onClose();
       } else {
         const catalogMerge = mergeCatalogs(catalog, parsedData.catalog, replaceDuplicateExercises);
@@ -313,6 +326,7 @@ export function useDataBackup() {
           diaryUpdated: diaryMerge.updatedCount,
           mode: 'merge',
         });
+        trackBackup(ANALYTICS_EVENTS.BACKUP_IMPORT, 'merge');
         onClose();
       }
     } catch (error) {

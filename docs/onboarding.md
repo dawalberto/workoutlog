@@ -2,7 +2,7 @@
 
 Get WorkoutLog running locally, verify it, and land your first change.
 
-Last verified: 2026-10-14
+Last verified: 2026-10-15
 
 ## Quick path
 

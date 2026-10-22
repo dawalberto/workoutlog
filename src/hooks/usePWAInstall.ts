@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { appStore } from '../store/appStore';
+import { ANALYTICS_EVENTS } from '../utils/analytics';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -30,6 +32,7 @@ export function usePWAInstall() {
     const handleAppInstalled = () => {
       setIsInstalled(true);
       setDeferredPrompt(null);
+      appStore.getState().recordAnalyticsEvent(ANALYTICS_EVENTS.APP_INSTALL);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -48,6 +51,7 @@ export function usePWAInstall() {
     if (outcome === 'accepted') {
       setIsInstalled(true);
       setDeferredPrompt(null);
+      appStore.getState().recordAnalyticsEvent(ANALYTICS_EVENTS.APP_INSTALL);
       return true;
     }
     return false;

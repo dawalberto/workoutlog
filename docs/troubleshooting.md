@@ -2,7 +2,7 @@
 
 Symptom → cause → fix for common WorkoutLog development and runtime problems.
 
-Last verified: 2026-10-14
+Last verified: 2026-10-15
 
 ## Quick index
 
@@ -22,6 +22,7 @@ Last verified: 2026-10-14
 | `pnpm dev` exits: port 5173 in use | `--strictPort` in the `dev` script ([`package.json`](../package.json)) | Stop the other process on 5173. Keep 5173: Supabase Auth `site_url`/redirects expect it. |
 | No sign-in option works; status "Solo en este dispositivo" | `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` missing or invalid → client is `null` → local-only mode ([`src/services/supabase.ts`](../src/services/supabase.ts)) | Fill `.env.local` from `supabase status`; restart `pnpm dev`. |
 | No rest-timer push prompt appears | `VITE_VAPID_PUBLIC_KEY` is empty or unavailable in the frontend build | Generate a public key with `pnpm push:vapid`, set `VITE_VAPID_PUBLIC_KEY` in `.env.local` (or the deployment environment), and rebuild. Keep the VAPID private key server-side. |
+| No analytics banner or hits in GA4 | `VITE_GA_MEASUREMENT_ID` missing/invalid, or the user rejected consent | Set a `G-` measurement ID in `.env.local` / GitHub repo variables, rebuild, and accept "Estadísticas de uso". Hits stay off until consent is granted. |
 | UI does not reflect code changes / old assets | PWA service worker active in dev (`devOptions.enabled: true`, [`vite.config.ts`](../vite.config.ts)) | DevTools → Application → Service Workers → Unregister; hard reload. |
 | Push worker errors in development | The production Workbox worker uses classic `importScripts`, but the Vite development worker is a module worker | Push notification handling is build/preview-only; use `pnpm build` followed by `pnpm preview` or a deployed PWA to verify it. |
 | `supabase start` fails | Docker not running | Start Docker and retry. |
@@ -71,6 +72,7 @@ All commands require `supabase start` (Docker).
 | CI `frontend` job fails | `pnpm test`, `pnpm lint`, or `pnpm build` failure, or lockfile out of sync (`--frozen-lockfile`) | Reproduce locally with the same commands; run `pnpm install` and commit `pnpm-lock.yaml`. |
 | CI `database` job fails | Migration error on replay, pgTAP failure, or `db lint` finding | Run `supabase start && pnpm db:reset && pnpm db:test && pnpm db:lint` locally. |
 | Deployed site has no sync | GitHub repo variables `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` unset | Set them under repository Settings → Variables; rerun deploy. |
+| Deployed site has no GA4 traffic | `VITE_GA_MEASUREMENT_ID` repo variable unset or consent denied | Set `vars.VITE_GA_MEASUREMENT_ID`, redeploy, and accept analytics in the app. |
 
 ## Runtime on devices
 

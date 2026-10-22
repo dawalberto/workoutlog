@@ -2,7 +2,7 @@
 
 Domain and sync terms with their code identifiers and Spanish UI labels.
 
-Last verified: 2026-10-14
+Last verified: 2026-10-15
 
 UI labels were checked in `src/components/` (file noted when not obvious). "—" means the term has no user-facing label.
 
@@ -37,6 +37,7 @@ UI labels were checked in `src/components/` (file noted when not obvious). "—"
 | Guest | Not signed in; data only on this device | `GUEST_STORAGE_SCOPE = 'guest'` | "Solo en este dispositivo" ([`SyncStatus.tsx`](../../src/components/SyncStatus.tsx)) |
 | Owner | Signed-in user; data synced | scope `owner:<userId>` | — |
 | Sign in / out | Google OAuth via Supabase | `account` store actions, registered by the `useAuth` lifecycle adapter | "Continuar con Google" / "Cerrar sesión" ([`SidebarMenu.tsx`](../../src/components/SidebarMenu.tsx)) |
+| Analytics consent | Device-level GA4 Consent Mode choice; not synced | `analyticsConsent`, `device:analytics_consent_v1` | "Estadísticas de uso"; banner "Aceptar" / "Rechazar" |
 | Entitlement | Server answer on sync eligibility (always eligible when signed in) | `get_sync_entitlement()`, `account.isSyncEnabled` | — |
 | Guest routine limit | Maximum routines for guests | `GUEST_ROUTINE_LIMIT = 3` ([`src/utils/backup.ts`](../../src/utils/backup.ts)) | — |
 | Sync eligibility | Signed-in users can sync; guests stay local-only | `account.isSyncEnabled`, `syncEnabled`, `isSyncEnabled` | "Solo en este dispositivo" ([`SyncStatus.tsx`](../../src/components/SyncStatus.tsx)) |

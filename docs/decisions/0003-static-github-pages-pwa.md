@@ -18,7 +18,7 @@ Accepted.
 - Build with Vite to static files and deploy `dist/` to GitHub Pages via [`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml) on push to `main` (PRs build only).
 - Vite `base: '/workoutlog/'`; OAuth redirects use `import.meta.env.BASE_URL`.
 - `vite-plugin-pwa` with `registerType: 'autoUpdate'`, Workbox precache, Spanish manifest.
-- Build-time config from GitHub repository variables `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`.
+- Build-time config from GitHub repository variables `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_VAPID_PUBLIC_KEY`, and `VITE_GA_MEASUREMENT_ID`.
 
 ## Consequences
 

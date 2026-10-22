@@ -1,4 +1,5 @@
 import React from 'react';
+import { AnalyticsConsentBanner } from './AnalyticsConsentBanner';
 import { DataBackupModal } from './DataBackupModal';
 import { RestTimerBar } from './RestTimerBar';
 import { RmRecordAlertModal } from './RmRecordAlertModal';
@@ -38,6 +39,8 @@ export const GlobalOverlays: React.FC = () => {
 
       {/* Floating Feedback Toast Notification */}
       <ToastNotification />
+
+      <AnalyticsConsentBanner />
     </>
   );
 };

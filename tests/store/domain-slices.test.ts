@@ -181,6 +181,11 @@ describe('routine store slice', () => {
     };
 
     store.getState().createCatalogExercise(newDefinition);
+    expect(store.getState().analyticsEvent).toEqual({
+      sequence: 1,
+      name: 'exercise_create',
+      params: {},
+    });
     store.getState().createCatalogExercise({ ...newDefinition, notes: 'Reemplazada' });
     expect(store.getState().catalog).toEqual([
       { ...newDefinition, notes: 'Reemplazada' },

@@ -2,7 +2,7 @@
 
 Index of the human-facing documentation for WorkoutLog, a local-first workout tracker (React PWA + Supabase).
 
-Last verified: 2026-10-14
+Last verified: 2026-10-15
 
 ## Start here
 
