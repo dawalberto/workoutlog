@@ -19,9 +19,7 @@ Last verified: 2026-10-13
 | `client.from(parentTable).select('id').eq('id', …)` | FK repair lookup | cloud-sync.ts ~137–138 |
 | `client.rpc('get_sync_entitlement')` | Sync eligibility | [`src/services/auth.ts`](../../src/services/auth.ts) line 10 |
 | `client.auth.*` | Google OAuth, session | [`src/services/auth.ts`](../../src/services/auth.ts), [`src/hooks/useAuth.ts`](../../src/hooks/useAuth.ts) |
-
-There is no REST server, no GraphQL, no Realtime subscription. Polling (30 s) plus event triggers replace push from the server.
-
+There is no REST server, no GraphQL, no Realtime subscription. Event triggers (queued local changes, login, reconnect, retry) drive sync without periodic polling.
 ## Auth flow
 
 1. Client is created only if `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` are valid; otherwise `null` → local-only ([`src/services/supabase.ts`](../../src/services/supabase.ts) ~14–35).
@@ -85,10 +83,9 @@ Pull (`pullChanges`, ~197–242): for each of the 12 `SYNC_TABLES` in order, pag
 | `MAX_REQUEST_ATTEMPTS` | 3 | ~39 |
 | `MAX_STALE_CONFLICTS` | 5 | ~40 |
 | `MAX_PUSH_DRAIN_ROUNDS` | 3 | ~41 |
-| Polling interval | 30 s | [`useSync.ts`](../../src/hooks/useSync.ts) ~354–358 |
 | Supabase API `max_rows` | 1000 | [`supabase/config.toml`](../../supabase/config.toml) ~18 |
 
-Triggers ([`useSync`](../../src/hooks/useSync.ts)): local queued change (push), login, reconnect, Retry button, 30 s online polling (pull + push). After a failure, automatic retries are suppressed for the same pending signature until the queue changes or the user presses Retry (useSync.ts 215–244).
+Triggers ([`useSync`](../../src/hooks/useSync.ts)): local queued change (push), login, reconnect, Retry button. After a failure, automatic retries are suppressed for the same pending signature until the queue changes or the user presses Retry (useSync.ts 215–244).
 
 ## Conflict model
 
