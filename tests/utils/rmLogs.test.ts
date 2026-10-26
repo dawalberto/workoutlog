@@ -9,6 +9,7 @@ import {
   filterRmLogs,
   getAvailableRmCatalog,
   sortRmRecordsByDate,
+  updateRmLogsForCatalogExercise,
 } from '../../src/utils/rmLogs';
 
 const exercise: ExerciseDefinition = {
@@ -119,11 +120,69 @@ describe('RM log transformations', () => {
     expect(filterRmLogs([log, rowLog], '')).toEqual([log, rowLog]);
   });
 
-  it('excludes tracked names from catalog choices before applying search', () => {
-    const tracked = { ...exercise, name: 'Press de Banca' };
+  it('excludes tracked names and tracked definition IDs from catalog choices', () => {
+    const trackedByName = { ...exercise, name: 'Press de Banca' };
+    const trackedById = { id: 'exercise-press', name: 'Banca Inclinada', category: 'Pecho' };
     const available = { ...exercise, id: 'exercise-row', name: 'Remo con Barra', category: 'Espalda' };
 
-    expect(getAvailableRmCatalog([tracked, available], [log], 'ESPALDA')).toEqual([available]);
-    expect(getAvailableRmCatalog([tracked, available], [log], '')).toEqual([available]);
+    expect(getAvailableRmCatalog([trackedByName, trackedById, available], [log], '')).toEqual([available]);
+  });
+
+  it('updates matching RM log when catalog exercise is renamed', () => {
+    const renamedExercise: ExerciseDefinition = {
+      id: 'exercise-press',
+      name: 'Press Plano Barra',
+      category: 'Pectoral',
+    };
+
+    const { rmLogs, updatedLogsCount } = updateRmLogsForCatalogExercise(
+      [log],
+      renamedExercise,
+      'Press de Banca',
+    );
+
+    expect(updatedLogsCount).toBe(1);
+    expect(rmLogs[0]).toMatchObject({
+      id: log.id,
+      exerciseId: 'exercise-press',
+      exerciseName: 'Press Plano Barra',
+      category: 'Pectoral',
+      records: log.records,
+    });
+  });
+
+  it('merges duplicate RM logs when both old and new names exist', () => {
+    const oldLog: ExerciseRmLog = {
+      ...log,
+      id: 'rm-log-old',
+      exerciseName: 'push-up',
+      records: [{ id: 'rec-1', weight: 20, date: '2026-01-01' }],
+    };
+    const newLog: ExerciseRmLog = {
+      ...log,
+      id: 'rm-log-new',
+      exerciseName: 'PushUp',
+      records: [{ id: 'rec-2', weight: 25, date: '2026-02-01' }],
+    };
+
+    const updatedDef: ExerciseDefinition = {
+      id: oldLog.exerciseId!,
+      name: 'PushUp',
+      category: 'Calistenia',
+    };
+
+    const { rmLogs, updatedLogsCount } = updateRmLogsForCatalogExercise(
+      [oldLog, newLog],
+      updatedDef,
+      'push-up',
+    );
+
+    expect(updatedLogsCount).toBe(2);
+    expect(rmLogs).toHaveLength(1);
+    expect(rmLogs[0].exerciseName).toBe('PushUp');
+    expect(rmLogs[0].records).toHaveLength(2);
+    expect(rmLogs[0].records[0].weight).toBe(25);
+    expect(rmLogs[0].records[1].weight).toBe(20);
   });
 });
+

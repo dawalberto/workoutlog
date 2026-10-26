@@ -153,7 +153,9 @@ export const RmExerciseList: React.FC<RmExerciseListProps> = ({
           const latestRecord = getLatestRmRecord(log);
           const highestRecord = getHighestRmRecord(log);
           const normName = normalizeExerciseTitle(log.exerciseName);
-          const imageUrl = catalogImageMap.get(normName);
+          const imageUrl =
+            (log.exerciseId && catalogImageMap.get(log.exerciseId)) ||
+            catalogImageMap.get(normName);
           const openQuickLog = () => actions.handleOpenQuickLog(log);
 
           return (

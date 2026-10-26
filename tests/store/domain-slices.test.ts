@@ -8,6 +8,7 @@ import {
 } from '../../src/store/selectors';
 import type {
   ExerciseDefinition,
+  ExerciseDiary,
   ExerciseRmLog,
   Routine,
   WorkoutCompletionSummary,
@@ -162,9 +163,29 @@ describe('routine store slice', () => {
     const store = createAppStore();
     const notify = vi.fn();
     const routine = createRoutine('routine-1');
+    const rmLog: ExerciseRmLog = {
+      id: 'rm-log-1',
+      exerciseId: 'definition-1',
+      exerciseName: 'Sentadilla',
+      category: 'Piernas',
+      records: [{ id: 'rm-rec-1', weight: 100, date: '2026-01-01' }],
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+    const diary: ExerciseDiary = {
+      id: 'diary-1',
+      exerciseId: 'definition-1',
+      exerciseName: 'Sentadilla',
+      category: 'Piernas',
+      entries: [{ id: 'entry-1', date: '2026-01-01', note: 'Buena técnica' }],
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
     store.setState({
       catalog: [{ id: 'definition-1', name: 'Sentadilla' }],
       routines: [routine],
+      rmLogs: [rmLog],
+      exerciseDiary: [diary],
     });
     store.setState({ notify });
     const definition: ExerciseDefinition = {
@@ -200,6 +221,16 @@ describe('routine store slice', () => {
       imageUrl: 'front.png',
       videoUrl: 'front.mp4',
       notes: 'Controlada',
+    });
+    expect(store.getState().rmLogs[0]).toMatchObject({
+      exerciseId: 'definition-1',
+      exerciseName: 'Sentadilla frontal',
+      category: 'Piernas',
+    });
+    expect(store.getState().exerciseDiary[0]).toMatchObject({
+      exerciseId: 'definition-1',
+      exerciseName: 'Sentadilla frontal',
+      category: 'Piernas',
     });
     expect(notify).toHaveBeenCalledWith(
       '"Sentadilla frontal" actualizado en biblioteca y en 1 rutina',

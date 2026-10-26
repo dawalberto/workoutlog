@@ -31,8 +31,8 @@ Out:
 
 - [x] `T1-odd`: Task document and reproduction investigation.
 - [x] `T2-diary-fix`: Guard `normalizeExerciseTitle`, sanitize `openCreateModal`, fix button click handlers, add tests.
-- [ ] `T3-rename-sync`: Propagate catalog updates to `rmLogs` and `exerciseDiary`, deduplicate records, update available catalog filter, add tests.
-- [ ] `T4-verify`: Run full test suite, lint, and build.
+- [x] `T3-rename-sync`: Propagate catalog updates to `rmLogs` and `exerciseDiary`, deduplicate records, update available catalog filter, add tests.
+- [x] `T4-verify`: Run full test suite, lint, and build.
 
 ## Acceptance Criteria
 
