@@ -54,7 +54,7 @@ export const DiaryFilters: React.FC<DiaryFiltersProps> = ({
         <button
           id="btn-new-diary-entry"
           type="button"
-          onClick={onCreate}
+          onClick={() => onCreate()}
           disabled={catalog.length === 0}
           className="inline-flex items-center justify-center gap-2 px-5 min-h-[48px] rounded-2xl bg-[#00FF87] hover:bg-[#00e57a] disabled:bg-zinc-800 disabled:text-zinc-600 text-black font-extrabold text-sm shadow-[0_0_20px_rgba(0,255,135,0.35)] active:scale-[0.97] transition-all shrink-0"
         >

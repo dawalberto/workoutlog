@@ -15,6 +15,7 @@ export function useRmExerciseList(searchTerm: string) {
     const map = new Map<string, string>();
     catalog.forEach((definition) => {
       if (definition.imageUrl) {
+        map.set(definition.id, definition.imageUrl);
         map.set(normalizeExerciseTitle(definition.name), definition.imageUrl);
       }
     });

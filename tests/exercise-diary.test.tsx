@@ -8,6 +8,7 @@ import {
   getAllFlattenedDiaryEntries,
   getDiaryEntriesCount,
   getTotalDiaryEntriesCount,
+  updateDiariesForCatalogExercise,
 } from '../src/utils/diaryCalculations';
 
 const catalog: ExerciseDefinition[] = [
@@ -150,6 +151,36 @@ describe('ExerciseDiaryView characterization', () => {
     ]);
     expect(markup).toMatchSnapshot('diary-modal-open');
   });
+
+  it('handles openCreateModal without arguments or with synthetic event objects safely', async () => {
+    vi.doUnmock('react');
+    vi.resetModules();
+    const storeTestUtils = await import('./store-test-utils');
+    storeTestUtils.seedPersistedAppStore({ catalog, exerciseDiary: diaries });
+    storeTestUtils.useCurrentStateAsServerSnapshot();
+
+    const { useExerciseDiary } = await import('../src/hooks/useExerciseDiary');
+
+    let diaryResult!: ReturnType<typeof useExerciseDiary>;
+    function TestConsumer() {
+      diaryResult = useExerciseDiary();
+      return null;
+    }
+
+    renderToStaticMarkup(<TestConsumer />);
+
+    expect(() => {
+      diaryResult.openCreateModal({ preventDefault: () => {} } as never);
+    }).not.toThrow();
+
+    expect(() => {
+      diaryResult.openCreateModal();
+    }).not.toThrow();
+
+    expect(() => {
+      diaryResult.openCreateModal('Press de Banca');
+    }).not.toThrow();
+  });
 });
 
 describe('diaryCalculations', () => {
@@ -185,4 +216,59 @@ describe('diaryCalculations', () => {
       'entry-invalid-date',
     ]);
   });
+
+  it('updates matching diary when catalog exercise is renamed', () => {
+    const renamedExercise: ExerciseDefinition = {
+      id: 'exercise-press',
+      name: 'Press Plano Barra',
+      category: 'Pectoral',
+    };
+
+    const { diaries: updated, updatedDiariesCount } = updateDiariesForCatalogExercise(
+      diaries,
+      renamedExercise,
+      'Press de Banca',
+    );
+
+    expect(updatedDiariesCount).toBe(1);
+    const target = updated.find((d) => d.id === 'diary-press')!;
+    expect(target.exerciseName).toBe('Press Plano Barra');
+    expect(target.exerciseId).toBe('exercise-press');
+    expect(target.category).toBe('Pectoral');
+  });
+
+  it('merges duplicate diaries when both old and new names exist', () => {
+    const oldDiary: ExerciseDiary = {
+      ...diaries[0],
+      id: 'diary-old',
+      exerciseName: 'push-up',
+      entries: [{ id: 'ent-1', date: '2026-01-01', note: 'Nota 1' }],
+    };
+    const newDiary: ExerciseDiary = {
+      ...diaries[0],
+      id: 'diary-new',
+      exerciseName: 'PushUp',
+      entries: [{ id: 'ent-2', date: '2026-02-01', note: 'Nota 2' }],
+    };
+
+    const updatedDef: ExerciseDefinition = {
+      id: oldDiary.exerciseId!,
+      name: 'PushUp',
+      category: 'Calistenia',
+    };
+
+    const { diaries: updated, updatedDiariesCount } = updateDiariesForCatalogExercise(
+      [oldDiary, newDiary],
+      updatedDef,
+      'push-up',
+    );
+
+    expect(updatedDiariesCount).toBe(2);
+    expect(updated).toHaveLength(1);
+    expect(updated[0].exerciseName).toBe('PushUp');
+    expect(updated[0].entries).toHaveLength(2);
+    expect(updated[0].entries[0].note).toBe('Nota 2');
+    expect(updated[0].entries[1].note).toBe('Nota 1');
+  });
 });
+

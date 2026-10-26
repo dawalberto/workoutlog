@@ -3,9 +3,14 @@ import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '../../store/appStore';
 import { selectPersistedData } from '../../store/selectors';
 import type { ExerciseDefinition } from '../../types';
-import { getTodayDateString } from '../../utils/rmCalculations';
+import { findRmLogForExercise, getTodayDateString } from '../../utils/rmCalculations';
 import { formatWeightInput, parseWeightInput } from '../../utils/weightInput';
-import { createRmLog, createRmRecord, getAvailableRmCatalog } from '../../utils/rmLogs';
+import {
+  addRmRecordToLogs,
+  createRmLog,
+  createRmRecord,
+  getAvailableRmCatalog,
+} from '../../utils/rmLogs';
 
 export function useAddExerciseToRmModal(onClose: () => void, onAdded: (logId: string) => void) {
   const { catalog, rmLogs, setRmLogs } = useAppStore(useShallow(selectPersistedData));
@@ -45,20 +50,34 @@ export function useAddExerciseToRmModal(onClose: () => void, onAdded: (logId: st
     }
 
     const timestamp = new Date().toISOString();
-    const newLog = createRmLog(
-      selectedCatalogExercise,
-      createRmRecord(
-        `rm-rec-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        weightNum,
-        initialDate || getTodayDateString(),
-        initialNotes.trim() ? initialNotes.trim() : undefined,
-      ),
-      `rm-log-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-      timestamp,
-      timestamp,
+    const newRecord = createRmRecord(
+      `rm-rec-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      weightNum,
+      initialDate || getTodayDateString(),
+      initialNotes.trim() ? initialNotes.trim() : undefined,
     );
-    setRmLogs([newLog, ...rmLogs]);
-    onAdded(newLog.id);
+
+    const existingLog = findRmLogForExercise(
+      rmLogs,
+      selectedCatalogExercise.name,
+      selectedCatalogExercise.id,
+    );
+
+    if (existingLog) {
+      const updated = addRmRecordToLogs(rmLogs, existingLog.id, newRecord, timestamp);
+      setRmLogs(updated);
+      onAdded(existingLog.id);
+    } else {
+      const newLog = createRmLog(
+        selectedCatalogExercise,
+        newRecord,
+        `rm-log-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        timestamp,
+        timestamp,
+      );
+      setRmLogs([newLog, ...rmLogs]);
+      onAdded(newLog.id);
+    }
     setSelectedCatalogExercise(null);
     setInitialWeight('');
     setInitialNotes('');

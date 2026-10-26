@@ -16,7 +16,7 @@ export const ExerciseDiaryView: React.FC = () => {
           allEntriesCount={diary.allEntries.length}
           exercisesWithDiary={diary.exercisesWithDiary}
           filters={diary.filters}
-          onCreate={diary.openCreateModal}
+          onCreate={() => diary.openCreateModal()}
           onGoToCatalog={diary.onGoToCatalog}
         />
 
@@ -24,7 +24,7 @@ export const ExerciseDiaryView: React.FC = () => {
           entries={diary.filteredEntries}
           hasCatalog={diary.catalog.length > 0}
           hasActiveFilters={diary.hasActiveFilters}
-          onCreate={diary.openCreateModal}
+          onCreate={() => diary.openCreateModal()}
           onFilterExercise={diary.filters.setSelectedExerciseName}
           onEdit={diary.openEditModal}
           onDelete={diary.handleDeleteEntry}

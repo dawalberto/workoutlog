@@ -5,6 +5,8 @@ import {
   ROUTINE_LIMIT_ERROR_MESSAGE,
 } from '../../utils/backup';
 import { updateRoutinesForCatalogExercise } from '../../utils/exerciseCatalog';
+import { updateRmLogsForCatalogExercise } from '../../utils/rmLogs';
+import { updateDiariesForCatalogExercise } from '../../utils/diaryCalculations';
 import { ANALYTICS_EVENTS } from '../../utils/analytics';
 import type { AppState } from '../appStore';
 
@@ -112,24 +114,42 @@ export const createRoutineSlice: StateCreator<AppState, [], [], RoutineSlice> =
       const state = get();
       const oldDefinition = state.catalog.find((item) => item.id === exercise.id);
 
-      set((current) => ({
-        catalog: current.catalog.map((item) => item.id === exercise.id ? exercise : item),
-      }));
+      const updatedCatalog = state.catalog.map((item) =>
+        item.id === exercise.id ? exercise : item
+      );
 
       const { routines, updatedRoutinesCount } = updateRoutinesForCatalogExercise(
         state.routines,
         exercise,
         oldDefinition?.name,
       );
-      if (updatedRoutinesCount > 0) {
-        set({
-          routines: routines.map((routine, index) =>
-            routine === state.routines[index]
-              ? routine
-              : { ...routine, updatedAt: new Date().toISOString() }
-          ),
-        });
-      }
+
+      const { rmLogs, updatedLogsCount } = updateRmLogsForCatalogExercise(
+        state.rmLogs,
+        exercise,
+        oldDefinition?.name,
+      );
+
+      const { diaries, updatedDiariesCount } = updateDiariesForCatalogExercise(
+        state.exerciseDiary,
+        exercise,
+        oldDefinition?.name,
+      );
+
+      set({
+        catalog: updatedCatalog,
+        ...(updatedRoutinesCount > 0
+          ? {
+              routines: routines.map((routine, index) =>
+                routine === state.routines[index]
+                  ? routine
+                  : { ...routine, updatedAt: new Date().toISOString() }
+              ),
+            }
+          : {}),
+        ...(updatedLogsCount > 0 ? { rmLogs } : {}),
+        ...(updatedDiariesCount > 0 ? { exerciseDiary: diaries } : {}),
+      });
 
       if (updatedRoutinesCount > 0) {
         get().notify(

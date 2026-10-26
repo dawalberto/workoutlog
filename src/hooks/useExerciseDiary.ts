@@ -107,14 +107,19 @@ export function useExerciseDiary() {
   };
 
   const openCreateModal = (targetExerciseName?: string) => {
+    const cleanTargetName =
+      typeof targetExerciseName === 'string' && targetExerciseName.trim()
+        ? targetExerciseName.trim()
+        : undefined;
+
     setEditingEntry(null);
     setFormError(null);
     setFormDate(new Date().toISOString().split('T')[0]);
     setFormNote('');
     setFormFeeling(undefined);
 
-    if (targetExerciseName && catalog.some((c) => normalizeExerciseTitle(c.name) === normalizeExerciseTitle(targetExerciseName))) {
-      setFormExerciseName(targetExerciseName);
+    if (cleanTargetName && catalog.some((c) => normalizeExerciseTitle(c.name) === normalizeExerciseTitle(cleanTargetName))) {
+      setFormExerciseName(cleanTargetName);
     } else if (selectedExerciseName !== 'ALL' && catalog.some((c) => normalizeExerciseTitle(c.name) === normalizeExerciseTitle(selectedExerciseName))) {
       setFormExerciseName(selectedExerciseName);
     } else if (catalog.length > 0) {

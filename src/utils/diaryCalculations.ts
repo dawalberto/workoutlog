@@ -1,4 +1,4 @@
-import { ExerciseDiary, ExerciseDiaryEntry, DiaryFeeling } from '../types';
+import { ExerciseDefinition, ExerciseDiary, ExerciseDiaryEntry, DiaryFeeling } from '../types';
 import { normalizeExerciseTitle } from './backup';
 
 export interface FlattenedDiaryEntry extends ExerciseDiaryEntry {
@@ -166,3 +166,99 @@ export function getFeelingConfig(feeling?: DiaryFeeling): {
       };
   }
 }
+
+export function updateDiariesForCatalogExercise(
+  diaries: ExerciseDiary[],
+  exercise: ExerciseDefinition,
+  previousExerciseName?: string,
+): { diaries: ExerciseDiary[]; updatedDiariesCount: number } {
+  const oldNorm = previousExerciseName ? normalizeExerciseTitle(previousExerciseName) : '';
+  const newNorm = normalizeExerciseTitle(exercise.name);
+
+  const isMatch = (diary: ExerciseDiary) => {
+    if (diary.exerciseId && diary.exerciseId === exercise.id) return true;
+    const diaryNorm = normalizeExerciseTitle(diary.exerciseName);
+    if (oldNorm && diaryNorm === oldNorm) return true;
+    if (newNorm && diaryNorm === newNorm) return true;
+    return false;
+  };
+
+  const matchingDiaries = diaries.filter(isMatch);
+  if (matchingDiaries.length === 0) {
+    return { diaries, updatedDiariesCount: 0 };
+  }
+
+  const needsUpdate =
+    matchingDiaries.length > 1 ||
+    matchingDiaries.some(
+      (d) =>
+        d.exerciseName !== exercise.name ||
+        d.exerciseId !== exercise.id ||
+        (exercise.category && d.category !== exercise.category),
+    );
+
+  if (!needsUpdate) {
+    return { diaries, updatedDiariesCount: 0 };
+  }
+
+  const nowIso = new Date().toISOString();
+
+  // Merge entries from all matching diaries
+  const allEntries: ExerciseDiaryEntry[] = [];
+  const entrySignatures = new Set<string>();
+
+  for (const diary of matchingDiaries) {
+    for (const entry of diary.entries || []) {
+      const sig = entry.id || `${entry.date}_${entry.note}`;
+      if (!entrySignatures.has(sig)) {
+        entrySignatures.add(sig);
+        allEntries.push(entry);
+      }
+    }
+  }
+
+  // Sort descending by date, then by creation
+  allEntries.sort((a, b) => {
+    const timeA = new Date(a.date).getTime();
+    const timeB = new Date(b.date).getTime();
+    if (!isNaN(timeA) && !isNaN(timeB) && timeA !== timeB) {
+      return timeB - timeA;
+    }
+    const createdA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const createdB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return createdB - createdA;
+  });
+
+  const primaryDiary =
+    matchingDiaries.find((d) => d.exerciseId === exercise.id) || matchingDiaries[0];
+
+  const mergedDiary: ExerciseDiary = {
+    id: primaryDiary.id,
+    exerciseId: exercise.id,
+    exerciseName: exercise.name,
+    category: exercise.category || primaryDiary.category,
+    entries: allEntries,
+    createdAt: primaryDiary.createdAt,
+    updatedAt: nowIso,
+  };
+
+  let primaryReplaced = false;
+  const updatedDiaries: ExerciseDiary[] = [];
+
+  for (const diary of diaries) {
+    if (isMatch(diary)) {
+      if (!primaryReplaced) {
+        updatedDiaries.push(mergedDiary);
+        primaryReplaced = true;
+      }
+    } else {
+      updatedDiaries.push(diary);
+    }
+  }
+
+  return {
+    diaries: updatedDiaries,
+    updatedDiariesCount: matchingDiaries.length,
+  };
+}
+
