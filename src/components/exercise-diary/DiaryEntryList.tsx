@@ -40,7 +40,7 @@ export const DiaryEntryList: React.FC<DiaryEntryListProps> = ({
         {hasCatalog && (
           <button
             type="button"
-            onClick={onCreate}
+            onClick={() => onCreate()}
             className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#00FF87] hover:bg-[#00e57a] text-black text-xs sm:text-sm font-extrabold shadow-[0_0_15px_rgba(0,255,135,0.3)] transition-all active:scale-[0.97]"
           >
             <Plus className="w-4 h-4 text-black stroke-[2.5]" />

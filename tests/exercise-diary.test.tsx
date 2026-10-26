@@ -150,6 +150,36 @@ describe('ExerciseDiaryView characterization', () => {
     ]);
     expect(markup).toMatchSnapshot('diary-modal-open');
   });
+
+  it('handles openCreateModal without arguments or with synthetic event objects safely', async () => {
+    vi.doUnmock('react');
+    vi.resetModules();
+    const storeTestUtils = await import('./store-test-utils');
+    storeTestUtils.seedPersistedAppStore({ catalog, exerciseDiary: diaries });
+    storeTestUtils.useCurrentStateAsServerSnapshot();
+
+    const { useExerciseDiary } = await import('../src/hooks/useExerciseDiary');
+
+    let diaryResult!: ReturnType<typeof useExerciseDiary>;
+    function TestConsumer() {
+      diaryResult = useExerciseDiary();
+      return null;
+    }
+
+    renderToStaticMarkup(<TestConsumer />);
+
+    expect(() => {
+      diaryResult.openCreateModal({ preventDefault: () => {} } as never);
+    }).not.toThrow();
+
+    expect(() => {
+      diaryResult.openCreateModal();
+    }).not.toThrow();
+
+    expect(() => {
+      diaryResult.openCreateModal('Press de Banca');
+    }).not.toThrow();
+  });
 });
 
 describe('diaryCalculations', () => {

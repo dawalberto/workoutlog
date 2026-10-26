@@ -105,8 +105,9 @@ export function buildImportSummaryMessage(
  * e.g., "Press de Banca Plana" -> "press de banca plana"
  * e.g., "Extensión Cuádriceps" -> "extension cuadriceps"
  */
-export function normalizeExerciseTitle(title: string): string {
-  return (title || '')
+export function normalizeExerciseTitle(title: string | unknown): string {
+  if (typeof title !== 'string') return '';
+  return title
     .trim()
     .toLowerCase()
     .normalize('NFD')

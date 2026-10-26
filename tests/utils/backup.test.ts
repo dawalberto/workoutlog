@@ -76,3 +76,22 @@ describe('parseImportedData workout history metrics', () => {
     });
   });
 });
+
+describe('normalizeExerciseTitle', () => {
+  it('normalizes accents, spaces, and casing', async () => {
+    const { normalizeExerciseTitle } = await import('../../src/utils/backup');
+    expect(normalizeExerciseTitle('  Press de Banca Plana  ')).toBe('press de banca plana');
+    expect(normalizeExerciseTitle('Extensión Cuádriceps')).toBe('extension cuadriceps');
+  });
+
+  it('safely returns an empty string for non-string inputs', async () => {
+    const { normalizeExerciseTitle } = await import('../../src/utils/backup');
+    expect(normalizeExerciseTitle(undefined as unknown as string)).toBe('');
+    expect(normalizeExerciseTitle(null as unknown as string)).toBe('');
+    expect(normalizeExerciseTitle({} as unknown as string)).toBe('');
+    expect(normalizeExerciseTitle(123 as unknown as string)).toBe('');
+    expect(normalizeExerciseTitle(true as unknown as string)).toBe('');
+    expect(normalizeExerciseTitle(() => {})).toBe('');
+  });
+});
+
