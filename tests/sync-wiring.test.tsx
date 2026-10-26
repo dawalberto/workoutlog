@@ -938,24 +938,24 @@ describe('sync wiring', () => {
       render(); await settle();
       expect(syncCloudData).toHaveBeenCalledTimes(2);
       await vi.advanceTimersByTimeAsync(30_000);
-      expect(syncCloudData).toHaveBeenLastCalledWith(expect.objectContaining({ pull: true }));
-      expect(syncCloudData).toHaveBeenCalledTimes(3);
+      // No periodic background polling while idle
+      expect(syncCloudData).toHaveBeenCalledTimes(2);
       Object.defineProperty(navigator, 'onLine', { configurable: true, value: false });
       target.dispatchEvent(new Event('offline'));
       pending = [{ request: { operationId: 'offline-edit', changes: [{}] } }];
       options.catalog = [{ id: 'local', name: 'Offline edit' }];
       render(); await settle();
-      expect(syncCloudData).toHaveBeenCalledTimes(3);
+      expect(syncCloudData).toHaveBeenCalledTimes(2);
       Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
       target.dispatchEvent(new Event('online')); await settle();
-      expect(syncCloudData).toHaveBeenCalledTimes(4);
+      expect(syncCloudData).toHaveBeenCalledTimes(3);
       expect(syncCloudData).toHaveBeenLastCalledWith(expect.objectContaining({ pull: true }));
       render().retry(); await settle();
-      expect(syncCloudData).toHaveBeenCalledTimes(5);
+      expect(syncCloudData).toHaveBeenCalledTimes(4);
       expect(syncCloudData).toHaveBeenLastCalledWith(expect.objectContaining({ pull: true }));
       options.ownerId = 'owner-2';
       render(); await settle();
-      expect(syncCloudData).toHaveBeenCalledTimes(5);
+      expect(syncCloudData).toHaveBeenCalledTimes(4);
     } finally {
       harness.dispose();
       vi.useRealTimers();

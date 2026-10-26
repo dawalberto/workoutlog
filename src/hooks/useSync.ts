@@ -388,24 +388,6 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
     refreshPendingChanges,
   ]);
 
-  useEffect(() => {
-    if (!options.ownerId || !options.syncEnabled ||
-      !options.isStorageLoaded || !options.isOwnerHydrationComplete) return;
-    const timer = setInterval(() => {
-      if (
-        !isBrowserOnline() ||
-        failedPendingSignatureRef.current !== null ||
-        blockedOwnerIdRef.current === options.ownerId ||
-        updateRequiredOwnerIdRef.current === options.ownerId
-      ) return;
-      pullRequestedRef.current = true;
-      void coordinatorRef.current?.run();
-    }, 30_000);
-    return () => clearInterval(timer);
-  }, [
-    options.ownerId, options.syncEnabled,
-    options.isStorageLoaded, options.isOwnerHydrationComplete,
-  ]);
 
   const retry = () => {
     if (
