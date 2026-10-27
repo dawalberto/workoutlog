@@ -83,7 +83,7 @@ export function useAuth(): UseAuthReturn {
     const handleSession = (session: Awaited<ReturnType<typeof client.auth.getSession>>['data']['session']) => {
       if ((isSigningOutRef.current || cleanupOwnerIdRef.current) && !session) return;
       const nextSessionKey = session
-        ? `${session.user.id}:${session.access_token}`
+        ? `${session.user.id}:${session.user.email ?? ''}`
         : null;
       if (nextSessionKey === sessionKey) return;
       sessionKey = nextSessionKey;
