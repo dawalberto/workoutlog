@@ -331,6 +331,42 @@ describe('sync wiring', () => {
     harness.dispose();
   });
 
+  it('hydrates owner storage with guest transfer enabled once and avoids duplicate hydrations', async () => {
+    const harness = createHookHarness();
+    const store = {};
+    const startPersistence = vi.fn(() => vi.fn());
+    const hydrateStorage = vi.fn(() => vi.fn());
+
+    vi.doMock('react', async (importOriginal) => {
+      const actual = await importOriginal<typeof import('react')>();
+      return {
+        ...actual,
+        useEffect: (callback: () => void | (() => void), deps?: readonly unknown[]) =>
+          activeHarness!.useEffect(callback, deps),
+      };
+    });
+    vi.doMock('../src/store/appStore', () => ({ appStore: store }));
+    vi.doMock('../src/store/persistence', () => ({
+      hydrateStorage,
+      startPersistence,
+    }));
+
+    const { useStorageLifecycle } = await import('../src/hooks/useStorageLifecycle');
+    const render = (ownerId?: string) =>
+      harness.render(() => useStorageLifecycle(ownerId, Boolean(ownerId), true));
+
+    render('owner-1');
+    await harness.runEffects();
+    expect(hydrateStorage).toHaveBeenCalledTimes(1);
+    expect(hydrateStorage).toHaveBeenCalledWith(store, 'owner-1', true);
+
+    // Re-rendering with the same owner does not re-hydrate
+    render('owner-1');
+    await harness.runEffects();
+    expect(hydrateStorage).toHaveBeenCalledTimes(1);
+    harness.dispose();
+  });
+
   it.each(['merge', 'overwrite'] as const)(
     'persists a confirmed %s backup through the owner-scoped outbox',
     async (mode) => {

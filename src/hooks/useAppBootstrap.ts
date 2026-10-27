@@ -11,7 +11,7 @@ import { useShallow } from 'zustand/react/shallow';
 
 export function useAppBootstrap(): void {
   const account = useAuth();
-  useStorageLifecycle(account.user?.id, account.isSyncEnabled, !account.isLoading);
+  useStorageLifecycle(account.user?.id, Boolean(account.user?.id), !account.isLoading);
 
   const persistedData = useAppStore(useShallow(selectPersistedData));
   const isGuestTransferComplete = useAppStore(

@@ -248,6 +248,44 @@ describe('Supabase authentication and sync eligibility', () => {
     harness.dispose();
   });
 
+  it('preserves active user and sync state on token refresh without refetching eligibility', async () => {
+    const ownerSession = {
+      access_token: 'initial-access-token',
+      user: { id: 'owner-1', email: 'owner@example.test' },
+    };
+    const { harness, notifyAuthEvent, render } = await setupAuthHook(
+      Promise.resolve({ data: { session: ownerSession }, error: null }),
+    );
+
+    render();
+    await harness.runEffects();
+    for (let attempt = 0; attempt < 5; attempt += 1) await Promise.resolve();
+
+    expect(render()).toMatchObject({
+      isLoading: false,
+      user: { id: 'owner-1', email: 'owner@example.test' },
+      isSyncEnabled: true,
+    });
+
+    const authService = await import('../src/services/auth');
+    expect(authService.loadSyncEligibility).toHaveBeenCalledTimes(1);
+
+    const refreshedSession = {
+      access_token: 'refreshed-access-token',
+      user: { id: 'owner-1', email: 'owner@example.test' },
+    };
+    notifyAuthEvent('TOKEN_REFRESHED', refreshedSession);
+    await harness.runEffects();
+
+    expect(render()).toMatchObject({
+      isLoading: false,
+      user: { id: 'owner-1', email: 'owner@example.test' },
+      isSyncEnabled: true,
+    });
+    expect(authService.loadSyncEligibility).toHaveBeenCalledTimes(1);
+    harness.dispose();
+  });
+
   it('loads sync eligibility through the typed Supabase RPC', async () => {
     const client = {
       rpc: vi.fn(async () => ({ data: { eligible: true }, error: null })),

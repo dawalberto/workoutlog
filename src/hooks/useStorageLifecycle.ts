@@ -4,7 +4,7 @@ import { hydrateStorage, startPersistence } from '../store/persistence';
 
 export function useStorageLifecycle(
   ownerId?: string,
-  transferGuestData = false,
+  transferGuestData = Boolean(ownerId),
   authResolved = true,
 ): void {
   useEffect(() => startPersistence(appStore), []);
