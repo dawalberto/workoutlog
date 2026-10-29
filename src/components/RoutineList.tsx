@@ -217,7 +217,7 @@ export const RoutineList: React.FC = () => {
                                 name={ex.name}
                                 imageUrl={ex.imageUrl}
                                 className="w-full h-full"
-                                iconClassName="w-4 h-4 text-zinc-500"
+                                iconClassName="w-5 h-5 text-zinc-500"
                                 initialsClassName="text-[9px]"
                               />
                             </div>

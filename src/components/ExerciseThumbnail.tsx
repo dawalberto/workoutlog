@@ -26,7 +26,7 @@ export const ExerciseThumbnail: React.FC<ExerciseThumbnailProps> = ({
   name,
   imageUrl,
   className = '',
-  iconClassName = 'w-5 h-5 text-zinc-500',
+  iconClassName = 'w-6 h-6 text-zinc-500',
   initialsClassName = 'text-[10px]',
   onError,
 }) => {

@@ -104,7 +104,7 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
                   name={form.name}
                   imageUrl={form.imageUrl}
                   className="w-full h-full"
-                  iconClassName="w-5 h-5 text-zinc-600"
+                  iconClassName="w-6 h-6 text-zinc-600"
                   initialsClassName="text-xs"
                   onError={() => form.setImageError(true)}
                 />

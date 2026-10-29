@@ -173,7 +173,7 @@ export const RmExerciseList: React.FC<RmExerciseListProps> = ({
                         name={log.exerciseName}
                         imageUrl={imageUrl}
                         className="w-full h-full"
-                        iconClassName="w-6 h-6 text-zinc-500"
+                        iconClassName="w-7 h-7 text-zinc-500"
                         initialsClassName="text-sm"
                       />
                     </div>

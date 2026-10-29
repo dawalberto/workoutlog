@@ -288,7 +288,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                               name={item.name}
                               imageUrl={item.imageUrl}
                               className="w-full h-full"
-                              iconClassName={`w-5 h-5 ${isJustAdded ? 'text-[#00FF87]' : 'text-zinc-500'}`}
+                              iconClassName={`w-6 h-6 ${isJustAdded ? 'text-[#00FF87]' : 'text-zinc-500'}`}
                               initialsClassName="text-[11px]"
                             />
                           </div>

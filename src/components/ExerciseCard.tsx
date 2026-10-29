@@ -99,7 +99,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                   ? 'bg-[#00FF87]/10 border-[#00FF87]/40'
                   : 'bg-zinc-900 border-white/10'
               }`}
-              iconClassName={`w-5 h-5 ${isAllCompleted ? 'text-[#00FF87]/70' : 'text-zinc-500'}`}
+              iconClassName={`w-6 h-6 ${isAllCompleted ? 'text-[#00FF87]/70' : 'text-zinc-500'}`}
               initialsClassName="text-[11px]"
             />
 

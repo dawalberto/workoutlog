@@ -35,7 +35,7 @@ export const ExerciseCatalogCard: React.FC<ExerciseCatalogCardProps> = ({
             name={ex.name}
             imageUrl={ex.imageUrl}
             className="w-full h-full group-hover:scale-105 transition-transform duration-300"
-            iconClassName="w-6 h-6 text-zinc-600"
+            iconClassName="w-7 h-7 text-zinc-600"
             initialsClassName="text-xs"
           />
           {ex.videoUrl && (

@@ -94,7 +94,7 @@ export const ExercisePreviewModal: React.FC<ExercisePreviewModalProps> = ({
               name={previewExercise.name}
               imageUrl={previewExercise.imageUrl}
               className="w-full h-full"
-              iconClassName="w-12 h-12 text-zinc-600"
+              iconClassName="w-14 h-14 text-zinc-600"
               initialsClassName="text-2xl"
             />
           </div>
