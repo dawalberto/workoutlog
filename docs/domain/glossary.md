@@ -2,7 +2,7 @@
 
 Domain and sync terms with their code identifiers and Spanish UI labels.
 
-Last verified: 2026-10-15
+Last verified: 2026-10-29
 
 UI labels were checked in `src/components/` (file noted when not obvious). "—" means the term has no user-facing label.
 
@@ -13,6 +13,7 @@ UI labels were checked in `src/components/` (file noted when not obvious). "—"
 | Routine | Named workout plan with ordered exercises | `Routine` ([`src/types.ts`](../../src/types.ts)), table `routines` | "Rutinas" (tab, [`BottomTabBar.tsx`](../../src/components/BottomTabBar.tsx)) |
 | Routine exercise | Exercise inside a routine, with its sets; optional link to a catalog entry | `Exercise` (`definitionId?`), table `routine_exercises` | "Ejercicios" (in routine view) |
 | Catalog exercise | Reusable exercise definition with defaults (technique, media) | `ExerciseDefinition`, table `exercise_definitions` | "Ejercicios" (tab); "Catálogo Maestro" ([`ExerciseCatalog.tsx`](../../src/components/ExerciseCatalog.tsx)); "Catálogo y técnica" (sidebar) |
+| Muscle group | One or more muscle groups an exercise targets (e.g. Core, Piernas) | `category` (primary/legacy single value) + `categories` (full list) on `ExerciseDefinition`, `Exercise`, `ExerciseRmLog`, `ExerciseDiary` ([`src/utils/exerciseCategories.ts`](../../src/utils/exerciseCategories.ts)); synced column `categories` | "Grupo Muscular" / "Grupos Musculares" ([`ExerciseFormModal.tsx`](../../src/components/exercise-catalog/ExerciseFormModal.tsx)) |
 | Set | One set: reps, weight (kg), rest (seconds) | `WorkoutSet`, table `workout_sets` | "Serie" ([`ExerciseCard.tsx`](../../src/components/ExerciseCard.tsx)) |
 | Reps | Repetitions in a set | `WorkoutSet.reps` | "Reps" |
 | Weight | Load in kg | `WorkoutSet.weight` | "Peso" |

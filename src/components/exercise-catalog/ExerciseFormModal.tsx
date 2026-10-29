@@ -63,23 +63,31 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
           {/* Category */}
           <div>
             <label className="block text-xs font-extrabold text-zinc-300 uppercase tracking-wider mb-1.5">
-              Grupo Muscular
+              Grupos Musculares
             </label>
             <div className="flex flex-wrap gap-2">
-              {['Pecho', 'Espalda', 'Pierna', 'Hombro', 'Brazos', 'Core', 'Otro'].map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => form.setCategory(cat)}
-                  className={`min-h-[40px] px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all ${
-                    form.category === cat
-                      ? 'bg-[#00FF87] text-black shadow-sm font-black'
-                      : 'bg-zinc-900 text-zinc-400 hover:text-white border border-white/5'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
+              {['Pecho', 'Espalda', 'Pierna', 'Hombro', 'Brazos', 'Core', 'Otro'].map((cat) => {
+                const isSelected = form.categories.includes(cat);
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    aria-pressed={isSelected}
+                    onClick={() => form.setCategories((current) =>
+                      current.includes(cat)
+                        ? current.filter((value) => value !== cat)
+                        : [...current, cat]
+                    )}
+                    className={`min-h-[40px] px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all ${
+                      isSelected
+                        ? 'bg-[#00FF87] text-black shadow-sm font-black'
+                        : 'bg-zinc-900 text-zinc-400 hover:text-white border border-white/5'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

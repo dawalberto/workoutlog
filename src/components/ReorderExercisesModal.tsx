@@ -10,6 +10,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { useReorderExercisesModal } from '../hooks/routine/useReorderExercisesModal';
+import { formatExerciseCategories } from '../utils/exerciseCategories';
 
 interface ReorderExercisesModalProps {
   isOpen: boolean;
@@ -166,10 +167,10 @@ export const ReorderExercisesModal: React.FC<ReorderExercisesModalProps> = ({
                     </h4>
                     <div className="flex items-center gap-2 text-[11px] text-zinc-400 mt-0.5">
                       <span>{ex.sets.length} {ex.sets.length === 1 ? 'serie' : 'series'}</span>
-                      {ex.category && (
+                      {formatExerciseCategories(ex) && (
                         <>
                           <span>•</span>
-                          <span className="text-[#00FF87] font-semibold truncate">{ex.category}</span>
+                          <span className="text-[#00FF87] font-semibold truncate">{formatExerciseCategories(ex)}</span>
                         </>
                       )}
                     </div>

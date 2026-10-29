@@ -2,7 +2,7 @@
 
 The authoritative description of how the WorkoutLog client and Supabase communicate, and the checklist for changing that contract safely.
 
-Last verified: 2026-10-13
+Last verified: 2026-10-29
 
 ## Read this first
 
@@ -122,6 +122,8 @@ Pull pages are 500 rows (below the 1000 `max_rows` cap). A page with fewer than 
 ## Versioning
 
 The client declares `SYNC_CONTRACT_VERSION` in [`src/sync/contract.ts`](../../src/sync/contract.ts) and sends it as `p_contract_version` to `sync_push`. The server checks `private.sync_contract_versions`; `NULL` is temporarily treated as legacy version 1. An unsupported version raises `sync_contract_version_unsupported` (`P0001`) before an idempotency receipt is written, so rejected work remains in the local outbox. The client shows the Spanish notice “Actualiza la app para continuar sincronizando.” and keeps queued changes.
+
+Versions 1 and 2 are accepted during the grace window. Version 2 adds the additive `categories` muscle-group column; `sync_push` keeps a stored `categories` value when a version-1 client upserts without it.
 
 To retire the legacy window, use a forward migration to stop mapping `NULL` to version 1 and mark version 1 unaccepted. Bump the client version and update accepted-version metadata when the wire shape changes. Apply the database migration before deploying the frontend; stale bundles can remain open after deployment.
 

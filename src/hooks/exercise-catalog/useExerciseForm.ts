@@ -1,10 +1,11 @@
 import { useState, type Dispatch, type SetStateAction } from 'react';
 import type { ExerciseDefinition } from '../../types';
 import type { ExerciseCatalogFormValues } from '../../utils/exerciseCatalog';
+import { getExerciseCategories } from '../../utils/exerciseCategories';
 
 export interface ExerciseFormState extends ExerciseCatalogFormValues {
   setName: Dispatch<SetStateAction<string>>;
-  setCategory: Dispatch<SetStateAction<string>>;
+  setCategories: Dispatch<SetStateAction<string[]>>;
   setImageUrl: Dispatch<SetStateAction<string>>;
   setVideoUrl: Dispatch<SetStateAction<string>>;
   setNotes: Dispatch<SetStateAction<string>>;
@@ -18,7 +19,7 @@ export interface ExerciseFormState extends ExerciseCatalogFormValues {
 
 export function useExerciseForm() {
   const [name, setName] = useState('');
-  const [category, setCategory] = useState('Pecho');
+  const [categories, setCategories] = useState<string[]>(['Pecho']);
   const [imageUrl, setImageUrl] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [notes, setNotes] = useState('');
@@ -29,8 +30,9 @@ export function useExerciseForm() {
   const [imageError, setImageError] = useState(false);
 
   const reset = (exercise?: ExerciseDefinition) => {
+    const exerciseCategories = exercise ? getExerciseCategories(exercise) : [];
     setName(exercise?.name ?? '');
-    setCategory(exercise?.category || 'Pecho');
+    setCategories(exerciseCategories.length > 0 ? exerciseCategories : ['Pecho']);
     setImageUrl(exercise?.imageUrl || '');
     setVideoUrl(exercise?.videoUrl || '');
     setNotes(exercise?.notes || '');
@@ -44,8 +46,8 @@ export function useExerciseForm() {
   const form: ExerciseFormState = {
     name,
     setName,
-    category,
-    setCategory,
+    categories,
+    setCategories,
     imageUrl,
     setImageUrl,
     videoUrl,

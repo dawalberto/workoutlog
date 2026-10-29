@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyRemoteSyncChange,
+  diffSyncCollection,
   orderSyncOperations,
   optionalSyncReference,
   type SyncPushChange,
@@ -335,5 +336,70 @@ describe('sync queue ordering', () => {
       operation(7, 'exercise_diaries', 'diary', 'upsert', { id: 'diary' }),
     ];
     expect(orderSyncOperations(unrelated)).toEqual(unrelated);
+  });
+});
+
+describe('exercise muscle groups in the sync payload', () => {
+  it('sends the full category list and derives it from the primary value', () => {
+    const changes = diffSyncCollection('catalog', undefined, [
+      { id: 'definition-multi', name: 'Plancha', category: 'Core', categories: ['Core', 'Piernas'] },
+      { id: 'definition-legacy', name: 'Press', category: 'Pecho' },
+    ]);
+
+    const byId = new Map(changes.map((change) => [change.id, change.record]));
+    expect(byId.get('definition-multi')).toMatchObject({
+      categories: ['Core', 'Piernas'],
+      category: 'Core',
+    });
+    expect(byId.get('definition-legacy')).toMatchObject({ categories: ['Pecho'] });
+  });
+
+  it('applies a remote multi-group array', () => {
+    const result = applyRemoteSyncChange([], {
+      table: 'exercise_definitions',
+      id: 'definition-multi',
+      revision: '1',
+      deletedAt: null,
+      record: { id: 'definition-multi', name: 'Plancha', category: 'Core', categories: ['Core', 'Piernas'] },
+    });
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        id: 'definition-multi',
+        category: 'Core',
+        categories: ['Core', 'Piernas'],
+      }),
+    ]);
+  });
+
+  it('derives the group list from legacy records that only carry a category', () => {
+    const result = applyRemoteSyncChange([], {
+      table: 'rm_logs',
+      id: 'rm-legacy',
+      revision: '1',
+      deletedAt: null,
+      record: { id: 'rm-legacy', exercise_name: 'Press', category: 'Pecho' },
+    });
+
+    expect(result).toEqual([
+      expect.objectContaining({ id: 'rm-legacy', category: 'Pecho', categories: ['Pecho'] }),
+    ]);
+  });
+
+  it('clears groups when the remote record sends an empty list without a category', () => {
+    const current = [
+      { id: 'diary-multi', exerciseName: 'Plancha', category: 'Core', categories: ['Core', 'Piernas'], entries: [] },
+    ];
+
+    const result = applyRemoteSyncChange(current, {
+      table: 'exercise_diaries',
+      id: 'diary-multi',
+      revision: '2',
+      deletedAt: null,
+      record: { id: 'diary-multi', exercise_name: 'Plancha', category: null, categories: [] },
+    }) as Array<Record<string, unknown>>;
+
+    expect(result[0]).toMatchObject({ id: 'diary-multi' });
+    expect(result[0].categories).toBeUndefined();
   });
 });

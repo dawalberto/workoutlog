@@ -3,7 +3,7 @@ BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 SET LOCAL search_path = public, extensions;
 
-SELECT plan(13);
+SELECT plan(14);
 
 INSERT INTO auth.users (
   id,
@@ -48,12 +48,12 @@ SELECT is(
   jsonb_build_array(
     jsonb_build_object('table_name', 'active_session_completed_sets', 'writable_columns', ARRAY['routine_id', 'set_id', 'created_at', 'updated_at'], 'identity_columns', ARRAY['routine_id', 'set_id']),
     jsonb_build_object('table_name', 'active_workout_sessions', 'writable_columns', ARRAY['routine_id', 'started_at', 'created_at', 'updated_at'], 'identity_columns', ARRAY['routine_id']),
-    jsonb_build_object('table_name', 'exercise_definitions', 'writable_columns', ARRAY['id', 'name', 'category', 'image_url', 'video_url', 'notes', 'default_sets', 'default_reps', 'default_weight', 'default_rest_seconds', 'created_at', 'updated_at'], 'identity_columns', ARRAY['id']),
-    jsonb_build_object('table_name', 'exercise_diaries', 'writable_columns', ARRAY['id', 'definition_id', 'exercise_name', 'category', 'created_at', 'updated_at'], 'identity_columns', ARRAY['id']),
+    jsonb_build_object('table_name', 'exercise_definitions', 'writable_columns', ARRAY['id', 'name', 'category', 'categories', 'image_url', 'video_url', 'notes', 'default_sets', 'default_reps', 'default_weight', 'default_rest_seconds', 'created_at', 'updated_at'], 'identity_columns', ARRAY['id']),
+    jsonb_build_object('table_name', 'exercise_diaries', 'writable_columns', ARRAY['id', 'definition_id', 'exercise_name', 'category', 'categories', 'created_at', 'updated_at'], 'identity_columns', ARRAY['id']),
     jsonb_build_object('table_name', 'exercise_diary_entries', 'writable_columns', ARRAY['id', 'diary_id', 'recorded_on', 'note', 'feeling', 'created_at', 'updated_at'], 'identity_columns', ARRAY['id']),
-    jsonb_build_object('table_name', 'rm_logs', 'writable_columns', ARRAY['id', 'definition_id', 'exercise_name', 'category', 'created_at', 'updated_at'], 'identity_columns', ARRAY['id']),
+    jsonb_build_object('table_name', 'rm_logs', 'writable_columns', ARRAY['id', 'definition_id', 'exercise_name', 'category', 'categories', 'created_at', 'updated_at'], 'identity_columns', ARRAY['id']),
     jsonb_build_object('table_name', 'rm_records', 'writable_columns', ARRAY['id', 'log_id', 'weight', 'recorded_on', 'notes', 'created_at', 'updated_at'], 'identity_columns', ARRAY['id']),
-    jsonb_build_object('table_name', 'routine_exercises', 'writable_columns', ARRAY['id', 'routine_id', 'definition_id', 'name', 'category', 'notes', 'image_url', 'video_url', 'position', 'created_at', 'updated_at'], 'identity_columns', ARRAY['id']),
+    jsonb_build_object('table_name', 'routine_exercises', 'writable_columns', ARRAY['id', 'routine_id', 'definition_id', 'name', 'category', 'categories', 'notes', 'image_url', 'video_url', 'position', 'created_at', 'updated_at'], 'identity_columns', ARRAY['id']),
     jsonb_build_object('table_name', 'routines', 'writable_columns', ARRAY['id', 'name', 'notes', 'created_at', 'updated_at'], 'identity_columns', ARRAY['id']),
     jsonb_build_object('table_name', 'workout_history', 'writable_columns', ARRAY['id', 'routine_id', 'routine_name', 'started_at', 'completed_at', 'duration_seconds', 'exercises_completed', 'sets_completed', 'total_sets_count', 'completion_percentage', 'created_at', 'updated_at'], 'identity_columns', ARRAY['id']),
     jsonb_build_object('table_name', 'workout_history_exercises', 'writable_columns', ARRAY['history_id', 'position', 'exercise_name', 'exercises_completed', 'sets_completed', 'sets_total', 'created_at', 'updated_at'], 'identity_columns', ARRAY['history_id', 'position']),
@@ -66,6 +66,12 @@ SELECT is(
   (SELECT accepted FROM private.sync_contract_versions WHERE version = 1),
   true,
   'sync contract version 1 is accepted'
+);
+
+SELECT is(
+  (SELECT accepted FROM private.sync_contract_versions WHERE version = 2),
+  true,
+  'sync contract version 2 is accepted'
 );
 
 SELECT ok(

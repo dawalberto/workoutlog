@@ -71,28 +71,28 @@ isOneToOne: true
                   ]
                 },"exercise_definitions": {
                   Row: {
-                    "category": string | null,"created_at": string,"default_reps": Json | null,"default_rest_seconds": Json | null,"default_sets": Json | null,"default_weight": Json | null,"deleted_at": string | null,"id": string,"image_url": string | null,"name": string,"notes": string | null,"server_revision": number,"server_updated_at": string,"updated_at": string,"user_id": string,"video_url": string | null
+                    "categories": (string)[] | null,"category": string | null,"created_at": string,"default_reps": Json | null,"default_rest_seconds": Json | null,"default_sets": Json | null,"default_weight": Json | null,"deleted_at": string | null,"id": string,"image_url": string | null,"name": string,"notes": string | null,"server_revision": number,"server_updated_at": string,"updated_at": string,"user_id": string,"video_url": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "category"?: string | null,"created_at"?: string,"default_reps"?: Json | null,"default_rest_seconds"?: Json | null,"default_sets"?: Json | null,"default_weight"?: Json | null,"deleted_at"?: string | null,"id": string,"image_url"?: string | null,"name": string,"notes"?: string | null,"server_revision"?: number,"server_updated_at"?: string,"updated_at"?: string,"user_id": string,"video_url"?: string | null
+                    "categories"?: (string)[] | null,"category"?: string | null,"created_at"?: string,"default_reps"?: Json | null,"default_rest_seconds"?: Json | null,"default_sets"?: Json | null,"default_weight"?: Json | null,"deleted_at"?: string | null,"id": string,"image_url"?: string | null,"name": string,"notes"?: string | null,"server_revision"?: number,"server_updated_at"?: string,"updated_at"?: string,"user_id": string,"video_url"?: string | null
                   }
                   Update: {
-                    "category"?: string | null,"created_at"?: string,"default_reps"?: Json | null,"default_rest_seconds"?: Json | null,"default_sets"?: Json | null,"default_weight"?: Json | null,"deleted_at"?: string | null,"id"?: string,"image_url"?: string | null,"name"?: string,"notes"?: string | null,"server_revision"?: number,"server_updated_at"?: string,"updated_at"?: string,"user_id"?: string,"video_url"?: string | null
+                    "categories"?: (string)[] | null,"category"?: string | null,"created_at"?: string,"default_reps"?: Json | null,"default_rest_seconds"?: Json | null,"default_sets"?: Json | null,"default_weight"?: Json | null,"deleted_at"?: string | null,"id"?: string,"image_url"?: string | null,"name"?: string,"notes"?: string | null,"server_revision"?: number,"server_updated_at"?: string,"updated_at"?: string,"user_id"?: string,"video_url"?: string | null
                   }
                   Relationships: [
 
                   ]
                 },"exercise_diaries": {
                   Row: {
-                    "category": string | null,"created_at": string,"definition_id": string | null,"deleted_at": string | null,"exercise_name": string,"id": string,"server_revision": number,"server_updated_at": string,"updated_at": string,"user_id": string
+                    "categories": (string)[] | null,"category": string | null,"created_at": string,"definition_id": string | null,"deleted_at": string | null,"exercise_name": string,"id": string,"server_revision": number,"server_updated_at": string,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "category"?: string | null,"created_at"?: string,"definition_id"?: string | null,"deleted_at"?: string | null,"exercise_name": string,"id": string,"server_revision"?: number,"server_updated_at"?: string,"updated_at"?: string,"user_id": string
+                    "categories"?: (string)[] | null,"category"?: string | null,"created_at"?: string,"definition_id"?: string | null,"deleted_at"?: string | null,"exercise_name": string,"id": string,"server_revision"?: number,"server_updated_at"?: string,"updated_at"?: string,"user_id": string
                   }
                   Update: {
-                    "category"?: string | null,"created_at"?: string,"definition_id"?: string | null,"deleted_at"?: string | null,"exercise_name"?: string,"id"?: string,"server_revision"?: number,"server_updated_at"?: string,"updated_at"?: string,"user_id"?: string
+                    "categories"?: (string)[] | null,"category"?: string | null,"created_at"?: string,"definition_id"?: string | null,"deleted_at"?: string | null,"exercise_name"?: string,"id"?: string,"server_revision"?: number,"server_updated_at"?: string,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -159,14 +159,14 @@ isOneToOne: false
                   ]
                 },"rm_logs": {
                   Row: {
-                    "category": string | null,"created_at": string,"definition_id": string | null,"deleted_at": string | null,"exercise_name": string,"id": string,"server_revision": number,"server_updated_at": string,"updated_at": string,"user_id": string
+                    "categories": (string)[] | null,"category": string | null,"created_at": string,"definition_id": string | null,"deleted_at": string | null,"exercise_name": string,"id": string,"server_revision": number,"server_updated_at": string,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "category"?: string | null,"created_at"?: string,"definition_id"?: string | null,"deleted_at"?: string | null,"exercise_name": string,"id": string,"server_revision"?: number,"server_updated_at"?: string,"updated_at"?: string,"user_id": string
+                    "categories"?: (string)[] | null,"category"?: string | null,"created_at"?: string,"definition_id"?: string | null,"deleted_at"?: string | null,"exercise_name": string,"id": string,"server_revision"?: number,"server_updated_at"?: string,"updated_at"?: string,"user_id": string
                   }
                   Update: {
-                    "category"?: string | null,"created_at"?: string,"definition_id"?: string | null,"deleted_at"?: string | null,"exercise_name"?: string,"id"?: string,"server_revision"?: number,"server_updated_at"?: string,"updated_at"?: string,"user_id"?: string
+                    "categories"?: (string)[] | null,"category"?: string | null,"created_at"?: string,"definition_id"?: string | null,"deleted_at"?: string | null,"exercise_name"?: string,"id"?: string,"server_revision"?: number,"server_updated_at"?: string,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -199,14 +199,14 @@ isOneToOne: false
                   ]
                 },"routine_exercises": {
                   Row: {
-                    "category": string | null,"created_at": string,"definition_id": string | null,"deleted_at": string | null,"id": string,"image_url": string | null,"name": string,"notes": string | null,"position": number,"routine_id": string,"server_revision": number,"server_updated_at": string,"updated_at": string,"user_id": string,"video_url": string | null
+                    "categories": (string)[] | null,"category": string | null,"created_at": string,"definition_id": string | null,"deleted_at": string | null,"id": string,"image_url": string | null,"name": string,"notes": string | null,"position": number,"routine_id": string,"server_revision": number,"server_updated_at": string,"updated_at": string,"user_id": string,"video_url": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "category"?: string | null,"created_at"?: string,"definition_id"?: string | null,"deleted_at"?: string | null,"id": string,"image_url"?: string | null,"name": string,"notes"?: string | null,"position": number,"routine_id": string,"server_revision"?: number,"server_updated_at"?: string,"updated_at"?: string,"user_id": string,"video_url"?: string | null
+                    "categories"?: (string)[] | null,"category"?: string | null,"created_at"?: string,"definition_id"?: string | null,"deleted_at"?: string | null,"id": string,"image_url"?: string | null,"name": string,"notes"?: string | null,"position": number,"routine_id": string,"server_revision"?: number,"server_updated_at"?: string,"updated_at"?: string,"user_id": string,"video_url"?: string | null
                   }
                   Update: {
-                    "category"?: string | null,"created_at"?: string,"definition_id"?: string | null,"deleted_at"?: string | null,"id"?: string,"image_url"?: string | null,"name"?: string,"notes"?: string | null,"position"?: number,"routine_id"?: string,"server_revision"?: number,"server_updated_at"?: string,"updated_at"?: string,"user_id"?: string,"video_url"?: string | null
+                    "categories"?: (string)[] | null,"category"?: string | null,"created_at"?: string,"definition_id"?: string | null,"deleted_at"?: string | null,"id"?: string,"image_url"?: string | null,"name"?: string,"notes"?: string | null,"position"?: number,"routine_id"?: string,"server_revision"?: number,"server_updated_at"?: string,"updated_at"?: string,"user_id"?: string,"video_url"?: string | null
                   }
                   Relationships: [
                     {

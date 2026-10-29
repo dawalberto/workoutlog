@@ -112,6 +112,7 @@ export function useDataBackup() {
             id: 'def-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
             name: exercise.name.trim(),
             category: exercise.category || 'Otros',
+            categories: exercise.categories,
             imageUrl: exercise.imageUrl || '',
             videoUrl: exercise.videoUrl || '',
             notes: exercise.notes || '',

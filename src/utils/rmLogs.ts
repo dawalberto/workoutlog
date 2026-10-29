@@ -1,12 +1,15 @@
 import type { ExerciseDefinition, ExerciseRmLog, RmRecord } from '../types';
 import { normalizeExerciseTitle } from './backup';
+import { getExerciseCategories, sameExerciseCategories } from './exerciseCategories';
 
 export function filterRmLogs(logs: ExerciseRmLog[], searchTerm: string): ExerciseRmLog[] {
   const term = normalizeExerciseTitle(searchTerm);
   if (!term) return logs;
   return logs.filter((log) =>
     normalizeExerciseTitle(log.exerciseName).includes(term) ||
-    Boolean(log.category && normalizeExerciseTitle(log.category).includes(term))
+    getExerciseCategories(log).some((group) =>
+      normalizeExerciseTitle(group).includes(term)
+    )
   );
 }
 
@@ -24,7 +27,9 @@ export function getAvailableRmCatalog(
     if (trackedNames.has(normalizedName)) return false;
     if (!term) return true;
     return normalizedName.includes(term) ||
-      Boolean(definition.category && normalizeExerciseTitle(definition.category).includes(term));
+      getExerciseCategories(definition).some((group) =>
+        normalizeExerciseTitle(group).includes(term)
+      );
   });
 }
 
@@ -49,6 +54,7 @@ export function createRmLog(
     exerciseId: exercise.id,
     exerciseName: exercise.name,
     category: exercise.category,
+    categories: exercise.categories,
     records: [record],
     createdAt,
     updatedAt,
@@ -146,7 +152,8 @@ export function updateRmLogsForCatalogExercise(
       (log) =>
         log.exerciseName !== exercise.name ||
         log.exerciseId !== exercise.id ||
-        (exercise.category && log.category !== exercise.category),
+        (getExerciseCategories(exercise).length > 0 &&
+          !sameExerciseCategories(log, exercise)),
     );
 
   if (!needsUpdate) {
@@ -179,6 +186,9 @@ export function updateRmLogsForCatalogExercise(
     exerciseId: exercise.id,
     exerciseName: exercise.name,
     category: exercise.category || primaryLog.category,
+    categories: getExerciseCategories(exercise).length > 0
+      ? getExerciseCategories(exercise)
+      : primaryLog.categories,
     records: sortedRecords,
     createdAt: primaryLog.createdAt,
     updatedAt: nowIso,

@@ -114,6 +114,12 @@ Details: [git workflow](docs/standards/git-workflow.md).
 - No AI attribution and no `Co-authored-by` trailers (maintainer preference).
 - Substantial work (2+ meaningful steps) gets an ODD task doc in `odd/tasks/<feature>.md` before the first source write; one work-unit commit per task with its tests and docs ([ODD workflow](docs/agents-guide.md#odd-workflow)).
 - Push, PR creation, and merge are human decisions.
+- **Mandatory working branches:** Never implement changes directly on `develop` or `main`. Before the first source or project-file modification for a new task, inspect `git status` and the current branch, then create and switch to a dedicated working branch based on `develop`. This applies to features, bug fixes, refactoring, tests, documentation, and other development tasks.
+- **Branch naming convention:** Use `<type>/<short-description>` with lowercase kebab-case descriptions. Supported types: `feature/`, `fix/`, `hotfix/`, `refactor/`, `test/`, `docs/`, and `chore/`. Include an issue identifier when required by the project's existing conventions. Examples: `feature/user-authentication`, `fix/sync-conflict`, `refactor/payment-service`.
+- **Branch lifecycle:** Reuse the current working branch for follow-up requests belonging to the same task, provided it is not `develop`, `main`, or another protected branch. Create a new branch for an unrelated task. Check that the target branch does not already exist before creating it.
+- **Safe Git operations:** Preserve all existing uncommitted changes. Never discard, overwrite, or accidentally include unrelated work. If the repository state prevents safely creating or switching branches, stop and explain the issue before editing files.
+- **Verification:** Confirm the active branch after switching and before modifying project files. All implementation work must remain on the task-specific branch.
+- **Integration restrictions:** Follow the existing ODD workflow and commit conventions. Do not push, create PRs, merge branches, or integrate changes into `develop` or `main` without explicit authorization. Push, PR creation, and merge remain human decisions.
 
 ### Definition of Done
 

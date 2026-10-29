@@ -15,6 +15,7 @@ import { RmBadge } from './RmBadge';
 import { DiaryButton } from './DiaryButton';
 import { TimePickerField } from './TimePickerField';
 import { filterExerciseCatalog } from '../utils/exerciseCatalog';
+import { formatExerciseCategories } from '../utils/exerciseCategories';
 import { formatWeightInput, parseWeightInput } from '../utils/weightInput';
 import { useAddExerciseModal } from '../hooks/routine/useAddExerciseModal';
 
@@ -43,7 +44,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
 
   // Custom in-the-moment form state
   const [customName, setCustomName] = useState('');
-  const [customCategory, setCustomCategory] = useState('Pecho');
+  const [customCategories, setCustomCategories] = useState<string[]>(['Pecho']);
   const [customImageUrl, setCustomImageUrl] = useState('');
   const [customVideoUrl, setCustomVideoUrl] = useState('');
   const [customNotes, setCustomNotes] = useState('');
@@ -95,7 +96,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
     e.preventDefault();
     const createdName = addCustomExercise({
       name: customName,
-      category: customCategory,
+      categories: customCategories,
       imageUrl: customImageUrl,
       videoUrl: customVideoUrl,
       notes: customNotes,
@@ -303,7 +304,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                                   isJustAdded ? 'bg-[#00FF87] text-black' : 'bg-white/[0.06] text-zinc-400 border border-white/5'
                                 }`}
                               >
-                                {item.category || 'General'}
+                                {formatExerciseCategories(item) || 'General'}
                               </span>
                               <RmBadge rmLogs={rmLogs} exerciseName={item.name} exerciseId={item.id} size="xs" />
                               {onOpenDiary && (
@@ -434,6 +435,37 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                   placeholder="Consejos sobre agarre, colocación..."
                   className="w-full min-h-[48px] px-3.5 py-2.5 text-xs rounded-xl border border-white/10 bg-black/40 text-white placeholder-zinc-500 focus:outline-none focus:border-[#00FF87] focus:ring-1 focus:ring-[#00FF87] transition-all"
                 />
+              </div>
+
+              {/* Muscle groups (multiple) */}
+              <div>
+                <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wide mb-1.5">
+                  Grupos Musculares
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {['Pecho', 'Espalda', 'Pierna', 'Hombro', 'Brazos', 'Core', 'Otro'].map((cat) => {
+                    const isSelected = customCategories.includes(cat);
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        aria-pressed={isSelected}
+                        onClick={() => setCustomCategories((current) =>
+                          current.includes(cat)
+                            ? current.filter((value) => value !== cat)
+                            : [...current, cat]
+                        )}
+                        className={`min-h-[40px] px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                          isSelected
+                            ? 'bg-[#00FF87] text-black font-black shadow-[0_0_10px_rgba(0,255,135,0.3)]'
+                            : 'bg-black/40 border border-white/[0.08] text-zinc-400 hover:text-white'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Initial Sets config */}

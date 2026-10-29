@@ -17,6 +17,7 @@ import {
   formatRmDate,
 } from '../../utils/rmCalculations';
 import { normalizeExerciseTitle } from '../../utils/backup';
+import { formatExerciseCategories } from '../../utils/exerciseCategories';
 import { RmRecordHistory } from './RmRecordHistory';
 import type { useRmLogActions } from '../../hooks/useRmLogActions';
 import { useRmExerciseList } from '../../hooks/rm-logs/useRmExerciseList';
@@ -181,9 +182,9 @@ export const RmExerciseList: React.FC<RmExerciseListProps> = ({
 
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                        {log.category && (
+                        {formatExerciseCategories(log) && (
                           <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-zinc-800 text-zinc-400 border border-white/5">
-                            {log.category}
+                            {formatExerciseCategories(log)}
                           </span>
                         )}
                         <span className="text-[11px] text-[#A1A1AA] font-medium">

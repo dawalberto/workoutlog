@@ -10,7 +10,7 @@ const expectedTables = [
   {
     name: 'exercise_definitions',
     writableColumns: [
-      'id', 'name', 'category', 'image_url', 'video_url', 'notes', 'default_sets',
+      'id', 'name', 'category', 'categories', 'image_url', 'video_url', 'notes', 'default_sets',
       'default_reps', 'default_weight', 'default_rest_seconds', 'created_at', 'updated_at',
     ],
     identity: ['id'],
@@ -23,7 +23,7 @@ const expectedTables = [
   {
     name: 'routine_exercises',
     writableColumns: [
-      'id', 'routine_id', 'definition_id', 'name', 'category', 'notes', 'image_url',
+      'id', 'routine_id', 'definition_id', 'name', 'category', 'categories', 'notes', 'image_url',
       'video_url', 'position', 'created_at', 'updated_at',
     ],
     identity: ['id'],
@@ -49,7 +49,7 @@ const expectedTables = [
   {
     name: 'rm_logs',
     writableColumns: [
-      'id', 'definition_id', 'exercise_name', 'category', 'created_at', 'updated_at',
+      'id', 'definition_id', 'exercise_name', 'category', 'categories', 'created_at', 'updated_at',
     ],
     identity: ['id'],
   },
@@ -80,7 +80,7 @@ const expectedTables = [
   {
     name: 'exercise_diaries',
     writableColumns: [
-      'id', 'definition_id', 'exercise_name', 'category', 'created_at', 'updated_at',
+      'id', 'definition_id', 'exercise_name', 'category', 'categories', 'created_at', 'updated_at',
     ],
     identity: ['id'],
   },
@@ -95,7 +95,7 @@ const expectedTables = [
 
 describe('sync contract', () => {
   it('lists all twelve tables in pull order with the exact writable columns and identities', () => {
-    expect(SYNC_CONTRACT_VERSION).toBe(1);
+    expect(SYNC_CONTRACT_VERSION).toBe(2);
     expect(
       SYNC_CONTRACT_TABLES.map(({ name, writableColumns, identity }) => ({
         name,
@@ -121,7 +121,7 @@ describe('sync contract', () => {
     const snapshot = getSyncContractSnapshot();
 
     expect(JSON.parse(JSON.stringify(snapshot))).toEqual({
-      version: 1,
+      version: 2,
       tables: expectedTables,
     });
   });
