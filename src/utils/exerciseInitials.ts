@@ -15,10 +15,11 @@ const STOPWORDS = new Set([
 ]);
 
 /**
- * Builds a short two-letter tag from an exercise name, used as a visual
- * placeholder when no image (or a broken image) is available.
+ * Builds a short tag (at most two letters, one per word) from an exercise
+ * name, used as a visual placeholder when no image (or a broken image) is
+ * available.
  *
- * "Push up" -> "PU", "Remo con Barra" -> "RB", "Sentadilla" -> "SE".
+ * "Push up" -> "PU", "Remo con Barra" -> "RB", "Sentadilla" -> "S".
  */
 export function getExerciseInitials(name: string): string {
   const words = name
@@ -31,6 +32,6 @@ export function getExerciseInitials(name: string): string {
   const source = meaningful.length > 0 ? meaningful : words;
 
   if (source.length === 0) return '';
-  if (source.length === 1) return source[0].slice(0, 2).toUpperCase();
+  if (source.length === 1) return source[0][0].toUpperCase();
   return (source[0][0] + source[1][0]).toUpperCase();
 }

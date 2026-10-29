@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { getExerciseInitials } from '../src/utils/exerciseInitials';
 
 describe('getExerciseInitials', () => {
-  it('uses the first two letters of a single word', () => {
-    expect(getExerciseInitials('Sentadilla')).toBe('SE');
+  it('uses a single letter for a single word', () => {
+    expect(getExerciseInitials('Sentadilla')).toBe('S');
+    expect(getExerciseInitials('Test')).toBe('T');
   });
 
   it('uses the first letter of the first two words', () => {
