@@ -123,11 +123,6 @@ export const RoutineList: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="flex items-center justify-between text-xs text-[#A1A1AA] px-1 font-semibold">
-              <span>{routines.length} {routines.length === 1 ? 'rutina configurada' : 'rutinas configuradas'}</span>
-              <span>Disposición Bento</span>
-            </div>
-
             {/* Bento Grid Routine Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
               {routines.map((routine) => {

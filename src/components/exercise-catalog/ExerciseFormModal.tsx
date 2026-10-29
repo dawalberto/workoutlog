@@ -44,7 +44,7 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={onSubmit} className="flex-1 overflow-y-auto px-5 sm:px-6 py-5 space-y-4 overscroll-contain">
+        <form onSubmit={onSubmit} className="flex-1 overflow-y-auto px-5 sm:px-6 py-5 pb-0 space-y-4 overscroll-contain">
           {/* Exercise Name */}
           <div>
             <label className="block text-xs font-extrabold text-zinc-300 uppercase tracking-wider mb-1.5">
@@ -226,7 +226,7 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
           </div>
 
           {/* Submit Buttons */}
-          <div className="sticky bottom-0 bg-[#18181A]/95 backdrop-blur-md pt-3 pb-1 flex items-center justify-end gap-2 border-t border-white/[0.08] -mx-1 px-1 mt-2">
+          <div className="sticky bottom-0 bg-[#18181A]/95 backdrop-blur-md py-3 flex items-center justify-end gap-2 border-t border-white/[0.08] -mx-1 px-1 mt-2">
             <button
               type="button"
               onClick={onClose}

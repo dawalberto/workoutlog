@@ -174,7 +174,7 @@ export const DiaryEntryModal: React.FC<DiaryEntryModalProps> = ({
                     onSave();
                   }
                 }}
-                placeholder="Ej: Hoy ha tocado en la parte de fuera 6s x 4r al 80% del RM y me he puesto 55kg y casi peto. Muy buena congestión pero vigilar el agarre..."
+                placeholder="Ej: Hoy ha tocado en la parte de fuera 6s x 4r al 80% del RM y me he puesto 55kg y casi peto..."
                 className="w-full p-3.5 text-xs sm:text-sm rounded-xl border border-white/10 bg-black/40 text-white focus:outline-none focus:border-[#00FF87] focus:ring-1 focus:ring-[#00FF87] resize-y min-h-[140px] leading-relaxed placeholder-zinc-500 transition-all selection:bg-[#00FF87]/20"
               />
               <div className="flex items-center justify-between text-[11px] text-zinc-500 mt-1">
