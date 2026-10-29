@@ -1,8 +1,9 @@
 import React from 'react';
-import { Dumbbell, Plus, Search, Trophy, X } from 'lucide-react';
+import { Plus, Search, Trophy, X } from 'lucide-react';
 import type { useAddExerciseToRmModal } from '../../hooks/rm-logs/useAddExerciseToRmModal';
 import { formatWeightInput, parseWeightInput } from '../../utils/weightInput';
 import { formatExerciseCategories } from '../../utils/exerciseCategories';
+import { ExerciseThumbnail } from '../ExerciseThumbnail';
 
 interface AddExerciseToRmModalProps {
   isOpen: boolean;
@@ -82,16 +83,14 @@ export const AddExerciseToRmModal: React.FC<AddExerciseToRmModalProps> = ({
                       className="w-full flex items-center justify-between p-3 rounded-2xl border border-white/10 hover:border-[#00FF87] hover:bg-[#00FF87]/10 text-left transition-all group active:scale-[0.98]"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-white/10 overflow-hidden shrink-0 flex items-center justify-center">
-                          {exercise.imageUrl ? (
-                            <img
-                              src={exercise.imageUrl}
-                              alt={exercise.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <Dumbbell className="w-5 h-5 text-zinc-500" />
-                          )}
+                        <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-white/10 overflow-hidden shrink-0">
+                          <ExerciseThumbnail
+                            name={exercise.name}
+                            imageUrl={exercise.imageUrl}
+                            className="w-full h-full"
+                            iconClassName="w-6 h-6 text-zinc-500"
+                            initialsClassName="text-[10px]"
+                          />
                         </div>
                         <div className="min-w-0">
                           <span className="block font-bold text-xs sm:text-sm text-white truncate group-hover:text-[#00FF87]">
@@ -116,16 +115,14 @@ export const AddExerciseToRmModal: React.FC<AddExerciseToRmModalProps> = ({
             <div className="space-y-4 animate-in fade-in duration-150">
               <div className="flex items-center justify-between p-3 rounded-2xl bg-zinc-900 border border-white/10">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-9 h-9 rounded-xl bg-black border border-white/10 overflow-hidden shrink-0 flex items-center justify-center">
-                    {form.selectedCatalogExercise.imageUrl ? (
-                      <img
-                        src={form.selectedCatalogExercise.imageUrl}
-                        alt={form.selectedCatalogExercise.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <Dumbbell className="w-4 h-4 text-zinc-500" />
-                    )}
+                  <div className="w-9 h-9 rounded-xl bg-black border border-white/10 overflow-hidden shrink-0">
+                    <ExerciseThumbnail
+                      name={form.selectedCatalogExercise.name}
+                      imageUrl={form.selectedCatalogExercise.imageUrl}
+                      className="w-full h-full"
+                      iconClassName="w-5 h-5 text-zinc-500"
+                      initialsClassName="text-[10px]"
+                    />
                   </div>
                   <div className="min-w-0">
                     <span className="text-xs font-bold text-white block truncate">

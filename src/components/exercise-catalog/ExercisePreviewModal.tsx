@@ -87,15 +87,16 @@ export const ExercisePreviewModal: React.FC<ExercisePreviewModalProps> = ({
 
         {/* Modal Content */}
         <div className="p-5 sm:p-6 overflow-y-auto space-y-4">
-          {/* Media Image */}
+          {/* Media Image (only when the exercise has an image) */}
           {previewExercise.imageUrl && (
-            <div className="rounded-2xl overflow-hidden border border-white/10 bg-zinc-900 max-h-60 flex items-center justify-center shadow-md">
+            <div className="rounded-2xl overflow-hidden border border-white/10 bg-zinc-900 max-h-60 shadow-md">
               <img
                 src={previewExercise.imageUrl}
                 alt={previewExercise.name}
                 className="w-full h-full object-cover max-h-60"
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = 'none';
+                onError={(event) => {
+                  const container = event.currentTarget.parentElement;
+                  if (container) container.style.display = 'none';
                 }}
               />
             </div>

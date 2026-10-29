@@ -13,6 +13,7 @@ import {
 import type { ExerciseDefinition } from '../types';
 import { RmBadge } from './RmBadge';
 import { DiaryButton } from './DiaryButton';
+import { ExerciseThumbnail } from './ExerciseThumbnail';
 import { TimePickerField } from './TimePickerField';
 import { filterExerciseCatalog } from '../utils/exerciseCatalog';
 import { formatExerciseCategories } from '../utils/exerciseCategories';
@@ -279,22 +280,17 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                         <div className="flex items-center gap-3 min-w-0 flex-1">
                           {/* Thumbnail */}
                           <div
-                            className={`w-12 h-12 rounded-lg border overflow-hidden shrink-0 flex items-center justify-center transition-colors ${
+                            className={`w-12 h-12 rounded-lg border overflow-hidden shrink-0 transition-colors ${
                               isJustAdded ? 'bg-[#00FF87]/20 border-[#00FF87]/40' : 'bg-black/40 border-white/10'
                             }`}
                           >
-                            {item.imageUrl ? (
-                              <img
-                                src={item.imageUrl}
-                                alt={item.name}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  (e.target as HTMLElement).style.display = 'none';
-                                }}
-                              />
-                            ) : (
-                              <Dumbbell className={`w-5 h-5 ${isJustAdded ? 'text-[#00FF87]' : 'text-zinc-500'}`} />
-                            )}
+                            <ExerciseThumbnail
+                              name={item.name}
+                              imageUrl={item.imageUrl}
+                              className="w-full h-full"
+                              iconClassName={`w-6 h-6 ${isJustAdded ? 'text-[#00FF87]' : 'text-zinc-500'}`}
+                              initialsClassName="text-[11px]"
+                            />
                           </div>
 
                           <div className="min-w-0 flex-1">

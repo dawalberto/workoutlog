@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { getRoutineTotalSeconds, formatSecondsToTime } from '../utils/timeCalculations';
 import { useRoutineList } from '../hooks/routine/useRoutineList';
+import { ExerciseThumbnail } from './ExerciseThumbnail';
 
 export const RoutineList: React.FC = () => {
   const {
@@ -38,13 +39,10 @@ export const RoutineList: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/[0.08]">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-widest text-[#00FF87]">
-                <Zap className="w-3.5 h-3.5" /> Performance Hub
-              </span>
+              <h1 className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-widest text-[#00FF87]">
+                <Zap className="w-3.5 h-3.5" /> Mis rutinas
+              </h1>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              Mis Rutinas
-            </h1>
             <p className="text-xs sm:text-sm text-[#A1A1AA] mt-0.5">
               Planifica tus series, controla descansos y supera tus récords en tiempo real.
             </p>
@@ -123,11 +121,6 @@ export const RoutineList: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="flex items-center justify-between text-xs text-[#A1A1AA] px-1 font-semibold">
-              <span>{routines.length} {routines.length === 1 ? 'rutina configurada' : 'rutinas configuradas'}</span>
-              <span>Disposición Bento</span>
-            </div>
-
             {/* Bento Grid Routine Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
               {routines.map((routine) => {
@@ -215,20 +208,15 @@ export const RoutineList: React.FC = () => {
                             <div
                               key={ex.id || idx}
                               title={ex.name}
-                              className="w-9 h-9 rounded-xl border border-white/10 bg-zinc-900 overflow-hidden shrink-0 flex items-center justify-center relative shadow-sm"
+                              className="w-9 h-9 rounded-xl border border-white/10 bg-zinc-900 overflow-hidden shrink-0 shadow-sm"
                             >
-                              {ex.imageUrl ? (
-                                <img
-                                  src={ex.imageUrl}
-                                  alt={ex.name}
-                                  className="w-full h-full object-cover"
-                                  onError={(ev) => {
-                                    (ev.target as HTMLElement).style.display = 'none';
-                                  }}
-                                />
-                              ) : (
-                                <Dumbbell className="w-4 h-4 text-zinc-500" />
-                              )}
+                              <ExerciseThumbnail
+                                name={ex.name}
+                                imageUrl={ex.imageUrl}
+                                className="w-full h-full"
+                                iconClassName="w-5 h-5 text-zinc-500"
+                                initialsClassName="text-[9px]"
+                              />
                             </div>
                           ))}
                           {routine.exercises.length > 5 && (

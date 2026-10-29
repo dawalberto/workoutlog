@@ -99,7 +99,7 @@ export const WorkoutProgressPanel: React.FC<WorkoutProgressPanelProps> = ({ elap
               id="btn-start-workout-session"
               type="button"
               onClick={onStartSession}
-              className="min-h-[48px] inline-flex items-center gap-2 px-6 text-sm font-extrabold rounded-2xl bg-[#00FF87] hover:bg-[#00e57a] text-black shadow-[0_0_20px_rgba(0,255,135,0.35)] transition-all active:scale-[0.97]"
+              className="min-h-[48px] w-full inline-flex items-center justify-center gap-2 px-6 text-sm font-extrabold rounded-2xl bg-[#00FF87] hover:bg-[#00e57a] text-black shadow-[0_0_20px_rgba(0,255,135,0.35)] transition-all active:scale-[0.97]"
             >
               <Play className="w-4 h-4 fill-current" />
               <span>Iniciar Rutina</span>

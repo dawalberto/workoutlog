@@ -270,7 +270,7 @@ export const TimeWheelPickerModal: React.FC<TimeWheelPickerModalProps> = ({
             className="flex-2 min-h-[48px] px-6 rounded-xl text-xs sm:text-sm font-black text-black bg-[#00FF87] hover:bg-[#00e57a] transition-all shadow-[0_0_20px_rgba(0,255,135,0.35)] active:scale-[0.98] flex items-center justify-center gap-2"
           >
             <Check className="w-4 h-4 stroke-[3]" />
-            <span>Guardar {totalCalculatedSeconds > 0 ? `(${totalCalculatedSeconds}s)` : '0s'}</span>
+            <span>Guardar</span>
           </button>
         </div>
       </div>

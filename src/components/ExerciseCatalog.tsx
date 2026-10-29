@@ -21,13 +21,10 @@ export const ExerciseCatalog: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/[0.08]">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-widest text-[#00FF87]">
-                <Dumbbell className="w-3.5 h-3.5" /> Catálogo Maestro
-              </span>
+              <h1 className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-widest text-[#00FF87]">
+                <Dumbbell className="w-3.5 h-3.5" /> Biblioteca de Ejercicios
+              </h1>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              Biblioteca de Ejercicios
-            </h1>
             <p className="text-xs sm:text-sm text-[#A1A1AA] mt-0.5">
               Crea tus movimientos con imagen, video de técnica y series preconfiguradas.
             </p>

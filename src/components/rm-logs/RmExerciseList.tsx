@@ -3,7 +3,6 @@ import {
   ArrowRight,
   ChevronDown,
   ChevronUp,
-  Dumbbell,
   Plus,
   Search,
   Sparkles,
@@ -19,6 +18,7 @@ import {
 import { normalizeExerciseTitle } from '../../utils/backup';
 import { formatExerciseCategories } from '../../utils/exerciseCategories';
 import { RmRecordHistory } from './RmRecordHistory';
+import { ExerciseThumbnail } from '../ExerciseThumbnail';
 import type { useRmLogActions } from '../../hooks/useRmLogActions';
 import { useRmExerciseList } from '../../hooks/rm-logs/useRmExerciseList';
 import { AddExerciseToRmModal } from './AddExerciseToRmModal';
@@ -168,16 +168,14 @@ export const RmExerciseList: React.FC<RmExerciseListProps> = ({
               <div className="p-4 sm:p-5">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-zinc-900 border border-white/10 overflow-hidden shrink-0 flex items-center justify-center">
-                      {imageUrl ? (
-                        <img
-                          src={imageUrl}
-                          alt={log.exerciseName}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <Dumbbell className="w-6 h-6 text-zinc-500" />
-                      )}
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-zinc-900 border border-white/10 overflow-hidden shrink-0">
+                      <ExerciseThumbnail
+                        name={log.exerciseName}
+                        imageUrl={imageUrl}
+                        className="w-full h-full"
+                        iconClassName="w-7 h-7 text-zinc-500"
+                        initialsClassName="text-sm"
+                      />
                     </div>
 
                     <div className="min-w-0">

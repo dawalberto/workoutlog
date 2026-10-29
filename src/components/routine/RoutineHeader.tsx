@@ -115,7 +115,7 @@ export const RoutineHeader: React.FC<RoutineHeaderProps> = ({
               </div>
             ) : (
               <div>
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center justify-center gap-2 mb-2">
                   <span className="px-2.5 py-0.5 text-[10px] font-black rounded-lg bg-[#00FF87]/15 text-[#00FF87] border border-[#00FF87]/30 uppercase tracking-wider">
                     Modo Entrenamiento
                   </span>

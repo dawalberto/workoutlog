@@ -1,7 +1,8 @@
 import React from 'react';
-import { Dumbbell, Image as ImageIcon, X } from 'lucide-react';
+import { Dumbbell, X } from 'lucide-react';
 import type { ExerciseDefinition } from '../../types';
 import { TimePickerField } from '../TimePickerField';
+import { ExerciseThumbnail } from '../ExerciseThumbnail';
 import { formatWeightInput, parseWeightInput } from '../../utils/weightInput';
 import type { ExerciseFormState } from '../../hooks/exercise-catalog/useExerciseForm';
 
@@ -44,7 +45,7 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={onSubmit} className="flex-1 overflow-y-auto px-5 sm:px-6 py-5 space-y-4 overscroll-contain">
+        <form onSubmit={onSubmit} className="flex-1 overflow-y-auto px-5 sm:px-6 py-5 pb-0 space-y-4 overscroll-contain">
           {/* Exercise Name */}
           <div>
             <label className="block text-xs font-extrabold text-zinc-300 uppercase tracking-wider mb-1.5">
@@ -98,18 +99,15 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
               <span className="text-[10px] font-normal text-zinc-500">Miniatura visual</span>
             </label>
             <div className="flex items-center gap-3">
-              <div className="w-14 h-14 rounded-2xl border border-white/10 bg-zinc-900 shrink-0 overflow-hidden flex items-center justify-center relative shadow-inner">
-                {form.imageUrl && !form.imageError ? (
-                  <img
-                    src={form.imageUrl}
-                    alt="Vista previa"
-                    className="w-full h-full object-cover"
-                    onError={() => form.setImageError(true)}
-                    onLoad={() => form.setImageError(false)}
-                  />
-                ) : (
-                  <ImageIcon className="w-5 h-5 text-zinc-600" />
-                )}
+              <div className="w-14 h-14 rounded-2xl border border-white/10 bg-zinc-900 shrink-0 overflow-hidden shadow-inner">
+                <ExerciseThumbnail
+                  name={form.name}
+                  imageUrl={form.imageUrl}
+                  className="w-full h-full"
+                  iconClassName="w-6 h-6 text-zinc-600"
+                  initialsClassName="text-xs"
+                  onError={() => form.setImageError(true)}
+                />
               </div>
               <div className="flex-1">
                 <input
@@ -226,7 +224,7 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
           </div>
 
           {/* Submit Buttons */}
-          <div className="sticky bottom-0 bg-[#18181A]/95 backdrop-blur-md pt-3 pb-1 flex items-center justify-end gap-2 border-t border-white/[0.08] -mx-1 px-1 mt-2">
+          <div className="sticky bottom-0 bg-[#18181A]/95 backdrop-blur-md py-3 flex items-center justify-end gap-2 border-t border-white/[0.08] -mx-1 px-1 mt-2">
             <button
               type="button"
               onClick={onClose}
