@@ -1,6 +1,6 @@
 import type { Database } from '../types/database.types';
 
-export const SYNC_CONTRACT_VERSION = 1;
+export const SYNC_CONTRACT_VERSION = 2;
 
 export type SyncCollection =
   | 'routines'
@@ -34,7 +34,7 @@ export const SYNC_CONTRACT_TABLES = [
   {
     name: 'exercise_definitions',
     writableColumns: [
-      'id', 'name', 'category', 'image_url', 'video_url', 'notes', 'default_sets',
+      'id', 'name', 'category', 'categories', 'image_url', 'video_url', 'notes', 'default_sets',
       'default_reps', 'default_weight', 'default_rest_seconds', 'created_at', 'updated_at',
     ],
     identity: ['id'],
@@ -51,7 +51,7 @@ export const SYNC_CONTRACT_TABLES = [
   {
     name: 'routine_exercises',
     writableColumns: [
-      'id', 'routine_id', 'definition_id', 'name', 'category', 'notes', 'image_url',
+      'id', 'routine_id', 'definition_id', 'name', 'category', 'categories', 'notes', 'image_url',
       'video_url', 'position', 'created_at', 'updated_at',
     ],
     identity: ['id'],
@@ -85,7 +85,7 @@ export const SYNC_CONTRACT_TABLES = [
   {
     name: 'rm_logs',
     writableColumns: [
-      'id', 'definition_id', 'exercise_name', 'category', 'created_at', 'updated_at',
+      'id', 'definition_id', 'exercise_name', 'category', 'categories', 'created_at', 'updated_at',
     ],
     identity: ['id'],
     collection: 'rmLogs',
@@ -124,7 +124,7 @@ export const SYNC_CONTRACT_TABLES = [
   {
     name: 'exercise_diaries',
     writableColumns: [
-      'id', 'definition_id', 'exercise_name', 'category', 'created_at', 'updated_at',
+      'id', 'definition_id', 'exercise_name', 'category', 'categories', 'created_at', 'updated_at',
     ],
     identity: ['id'],
     collection: 'exerciseDiary',

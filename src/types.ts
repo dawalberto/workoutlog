@@ -11,6 +11,7 @@ export interface Exercise {
   definitionId?: string;
   name: string;
   category?: string;
+  categories?: string[];
   notes?: string;
   imageUrl?: string;
   videoUrl?: string;
@@ -21,6 +22,7 @@ export interface ExerciseDefinition {
   id: string;
   name: string;
   category?: string;
+  categories?: string[];
   imageUrl?: string;
   videoUrl?: string;
   notes?: string;
@@ -64,6 +66,7 @@ export interface ExerciseDiary {
   exerciseId?: string; // ExerciseDefinition ID from catalog
   exerciseName: string; // Name in catalog
   category?: string;
+  categories?: string[];
   entries: ExerciseDiaryEntry[];
   createdAt: string;
   updatedAt: string;
@@ -81,6 +84,7 @@ export interface ExerciseRmLog {
   exerciseId?: string; // ID of ExerciseDefinition if linked
   exerciseName: string; // name in catalog
   category?: string;
+  categories?: string[];
   records: RmRecord[];
   createdAt: string;
   updatedAt: string;

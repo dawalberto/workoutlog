@@ -17,6 +17,7 @@ import {
   type FlattenedDiaryEntry,
 } from '../utils/diaryCalculations';
 import { normalizeExerciseTitle } from '../utils/backup';
+import { getExerciseCategories } from '../utils/exerciseCategories';
 
 export interface DiaryFiltersState {
   searchQuery: string;
@@ -91,7 +92,9 @@ export function useExerciseDiary() {
         const q = normalizeExerciseTitle(searchQuery);
         const inNote = normalizeExerciseTitle(item.note).includes(q);
         const inName = normalizeExerciseTitle(item.exerciseName).includes(q);
-        const inCategory = item.category ? normalizeExerciseTitle(item.category).includes(q) : false;
+        const inCategory = getExerciseCategories(item).some((group) =>
+          normalizeExerciseTitle(group).includes(q)
+        );
         const inDate = item.date.includes(searchQuery.trim());
         if (!inNote && !inName && !inCategory && !inDate) return false;
       }
@@ -227,6 +230,7 @@ export function useExerciseDiary() {
               exerciseId: matchedDef?.id || d.exerciseId,
               exerciseName: matchedDef?.name || d.exerciseName,
               category: matchedDef?.category || d.category,
+              categories: matchedDef?.categories || d.categories,
               entries: [newEntry, ...d.entries],
               updatedAt: nowIso,
             };
@@ -239,6 +243,7 @@ export function useExerciseDiary() {
           exerciseId: matchedDef?.id,
           exerciseName: matchedDef?.name || formExerciseName.trim(),
           category: matchedDef?.category || 'General',
+          categories: matchedDef?.categories,
           entries: [newEntry],
           createdAt: nowIso,
           updatedAt: nowIso,

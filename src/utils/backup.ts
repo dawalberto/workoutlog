@@ -115,6 +115,19 @@ export function normalizeExerciseTitle(title: string | unknown): string {
 }
 
 /**
+ * Reads a muscle-group array from an imported/legacy record. Returns undefined
+ * when absent so `category` keeps acting as the single-value fallback.
+ */
+function sanitizeCategories(raw: unknown): string[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const values = raw
+    .filter((value): value is string => typeof value === 'string')
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+  return values.length > 0 ? values : undefined;
+}
+
+/**
  * Parses and sanitizes imported JSON content, handling multiple formats.
  */
 export function parseImportedData(rawJson: string): ParsedBackupData {
@@ -195,6 +208,7 @@ export function parseImportedData(rawJson: string): ParsedBackupData {
             id: 'def-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
             name: ex.name.trim(),
             category: ex.category || 'Otros',
+            categories: sanitizeCategories(ex.categories),
             imageUrl: ex.imageUrl || '',
             videoUrl: ex.videoUrl || '',
             notes: ex.notes || '',
@@ -250,6 +264,7 @@ export function sanitizeExerciseDiary(items: unknown[]): ExerciseDiary[] {
         exerciseId: typeof item.exerciseId === 'string' ? item.exerciseId : undefined,
         exerciseName: String(item.exerciseName || '').trim(),
         category: typeof item.category === 'string' ? item.category : undefined,
+        categories: sanitizeCategories(item.categories),
         entries,
         createdAt: typeof item.createdAt === 'string' ? item.createdAt : new Date().toISOString(),
         updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : new Date().toISOString(),
@@ -303,6 +318,7 @@ export function mergeExerciseDiary(
         result[targetIndex] = {
           ...target,
           category: importedDiary.category || target.category,
+          categories: importedDiary.categories || target.categories,
           exerciseId: importedDiary.exerciseId || target.exerciseId,
           entries: newEntries,
           updatedAt: new Date().toISOString(),
@@ -346,6 +362,7 @@ export function sanitizeRmLogs(items: unknown[]): ExerciseRmLog[] {
         exerciseId: typeof item.exerciseId === 'string' ? item.exerciseId : undefined,
         exerciseName: String(item.exerciseName || '').trim(),
         category: typeof item.category === 'string' ? item.category : undefined,
+        categories: sanitizeCategories(item.categories),
         records,
         createdAt: typeof item.createdAt === 'string' ? item.createdAt : new Date().toISOString(),
         updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : new Date().toISOString(),
@@ -393,6 +410,7 @@ function sanitizeCatalog(items: unknown[]): ExerciseDefinition[] {
       id: typeof item.id === 'string' && item.id.trim() ? item.id : 'def-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
       name: String(item.name || '').trim(),
       category: typeof item.category === 'string' ? item.category : 'General',
+      categories: sanitizeCategories(item.categories),
       imageUrl: typeof item.imageUrl === 'string' ? item.imageUrl : '',
       videoUrl: typeof item.videoUrl === 'string' ? item.videoUrl : '',
       notes: typeof item.notes === 'string' ? item.notes : '',
@@ -420,6 +438,7 @@ function sanitizeRoutines(items: unknown[]): Routine[] {
               id: typeof exObj?.id === 'string' ? exObj.id : `ex-${Date.now()}-${exIdx}-${Math.random().toString(36).substring(2, 6)}`,
               name: String(exObj?.name || 'Ejercicio').trim(),
               category: typeof exObj?.category === 'string' ? exObj.category : undefined,
+              categories: sanitizeCategories(exObj?.categories),
               imageUrl: typeof exObj?.imageUrl === 'string' ? exObj.imageUrl : undefined,
               videoUrl: typeof exObj?.videoUrl === 'string' ? exObj.videoUrl : undefined,
               notes: typeof exObj?.notes === 'string' ? exObj.notes : undefined,
@@ -521,6 +540,7 @@ export function syncRoutinesWithCatalog(routines: Routine[], catalog: ExerciseDe
         ...ex,
         name: match.name || ex.name,
         category: match.category && match.category.trim() ? match.category : ex.category,
+        categories: match.categories && match.categories.length > 0 ? match.categories : ex.categories,
         imageUrl: match.imageUrl !== undefined && match.imageUrl !== '' ? match.imageUrl : ex.imageUrl,
         videoUrl: match.videoUrl !== undefined && match.videoUrl !== '' ? match.videoUrl : ex.videoUrl,
         notes: match.notes !== undefined && match.notes !== '' ? match.notes : ex.notes,
@@ -550,6 +570,7 @@ export function mergeRoutines(
   const importedExMap = new Map<string, {
     name: string;
     category?: string;
+    categories?: string[];
     imageUrl?: string;
     videoUrl?: string;
     notes?: string;
@@ -563,6 +584,7 @@ export function mergeRoutines(
         importedExMap.set(norm, {
           name: ex.name,
           category: ex.category,
+          categories: ex.categories,
           imageUrl: ex.imageUrl,
           videoUrl: ex.videoUrl,
           notes: ex.notes,
@@ -578,6 +600,7 @@ export function mergeRoutines(
       importedExMap.set(norm, {
         name: def.name,
         category: def.category,
+        categories: def.categories,
         imageUrl: def.imageUrl,
         videoUrl: def.videoUrl,
         notes: def.notes,
@@ -589,6 +612,7 @@ export function mergeRoutines(
   const existingExMap = new Map<string, {
     name: string;
     category?: string;
+    categories?: string[];
     imageUrl?: string;
     videoUrl?: string;
     notes?: string;
@@ -601,6 +625,7 @@ export function mergeRoutines(
         existingExMap.set(norm, {
           name: ex.name,
           category: ex.category,
+          categories: ex.categories,
           imageUrl: ex.imageUrl,
           videoUrl: ex.videoUrl,
           notes: ex.notes,
@@ -615,6 +640,7 @@ export function mergeRoutines(
       existingExMap.set(norm, {
         name: def.name,
         category: def.category,
+        categories: def.categories,
         imageUrl: def.imageUrl,
         videoUrl: def.videoUrl,
         notes: def.notes,
@@ -636,6 +662,7 @@ export function mergeRoutines(
           ...ex,
           name: match.name || ex.name,
           category: match.category && match.category.trim() ? match.category : ex.category,
+          categories: match.categories && match.categories.length > 0 ? match.categories : ex.categories,
           imageUrl: match.imageUrl !== undefined && match.imageUrl !== '' ? match.imageUrl : ex.imageUrl,
           videoUrl: match.videoUrl !== undefined && match.videoUrl !== '' ? match.videoUrl : ex.videoUrl,
           notes: match.notes !== undefined && match.notes !== '' ? match.notes : ex.notes,
@@ -670,6 +697,7 @@ export function mergeRoutines(
         let finalMeta = {
           name: ex.name,
           category: ex.category,
+          categories: ex.categories,
           imageUrl: ex.imageUrl,
           videoUrl: ex.videoUrl,
           notes: ex.notes,
@@ -681,6 +709,7 @@ export function mergeRoutines(
           finalMeta = {
             name: match.name || ex.name,
             category: match.category && match.category.trim() ? match.category : ex.category,
+            categories: match.categories && match.categories.length > 0 ? match.categories : ex.categories,
             imageUrl: match.imageUrl !== undefined && match.imageUrl !== '' ? match.imageUrl : ex.imageUrl,
             videoUrl: match.videoUrl !== undefined && match.videoUrl !== '' ? match.videoUrl : ex.videoUrl,
             notes: match.notes !== undefined && match.notes !== '' ? match.notes : ex.notes,
@@ -691,6 +720,7 @@ export function mergeRoutines(
           finalMeta = {
             name: match.name || ex.name,
             category: match.category && match.category.trim() ? match.category : ex.category,
+            categories: match.categories && match.categories.length > 0 ? match.categories : ex.categories,
             imageUrl: match.imageUrl !== undefined && match.imageUrl !== '' ? match.imageUrl : ex.imageUrl,
             videoUrl: match.videoUrl !== undefined && match.videoUrl !== '' ? match.videoUrl : ex.videoUrl,
             notes: match.notes !== undefined && match.notes !== '' ? match.notes : ex.notes,
@@ -702,6 +732,7 @@ export function mergeRoutines(
           id: `ex-${Date.now()}-${exIdx}-${Math.random().toString(36).substring(2, 6)}`,
           name: finalMeta.name,
           category: finalMeta.category,
+          categories: finalMeta.categories,
           imageUrl: finalMeta.imageUrl,
           videoUrl: finalMeta.videoUrl,
           notes: finalMeta.notes,
@@ -767,6 +798,7 @@ export function mergeRmLogs(
         result[targetIndex] = {
           ...target,
           category: importedLog.category || target.category,
+          categories: importedLog.categories || target.categories,
           exerciseId: importedLog.exerciseId || target.exerciseId,
           records: newRecords,
           updatedAt: new Date().toISOString(),

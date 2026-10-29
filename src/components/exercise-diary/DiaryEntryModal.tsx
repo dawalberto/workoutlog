@@ -2,6 +2,7 @@ import React from 'react';
 import { BookOpen, Check, X } from 'lucide-react';
 import type { ExerciseDefinition, ExerciseDiaryEntry } from '../../types';
 import type { DiaryEntryFormState } from '../../hooks/useExerciseDiary';
+import { formatExerciseCategories } from '../../utils/exerciseCategories';
 
 interface DiaryEntryModalProps {
   isOpen: boolean;
@@ -80,7 +81,7 @@ export const DiaryEntryModal: React.FC<DiaryEntryModalProps> = ({
               >
                 {catalog.map((c) => (
                   <option key={c.id} value={c.name} className="bg-[#1C1C1E] text-white">
-                    {c.name} {c.category ? `(${c.category})` : ''}
+                    {c.name} {formatExerciseCategories(c) ? `(${formatExerciseCategories(c)})` : ''}
                   </option>
                 ))}
               </select>

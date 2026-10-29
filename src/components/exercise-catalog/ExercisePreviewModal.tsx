@@ -6,6 +6,7 @@ import { DiaryButton } from '../DiaryButton';
 import { RmBadge } from '../RmBadge';
 import { VideoPreview } from '../VideoPreview';
 import { useExercisePreviewModal } from '../../hooks/exercise-catalog/useExercisePreviewModal';
+import { formatExerciseCategories } from '../../utils/exerciseCategories';
 
 interface ExercisePreviewModalProps {
   exercise: ExerciseDefinition | null;
@@ -36,7 +37,7 @@ export const ExercisePreviewModal: React.FC<ExercisePreviewModalProps> = ({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black bg-zinc-800 text-zinc-300 uppercase tracking-wider">
-                {previewExercise.category || 'General'}
+                {formatExerciseCategories(previewExercise) || 'General'}
               </span>
               <RmBadge rmLogs={rmLogs} exerciseName={previewExercise.name} exerciseId={previewExercise.id} size="sm" />
             </div>

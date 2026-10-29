@@ -4,6 +4,7 @@ import type { ExerciseDefinition } from '../../types';
 import { DiaryButton } from '../DiaryButton';
 import { RmBadge } from '../RmBadge';
 import { useExerciseCatalogCard } from '../../hooks/exercise-catalog/useExerciseCatalogCard';
+import { formatExerciseCategories } from '../../utils/exerciseCategories';
 
 interface ExerciseCatalogCardProps {
   exercise: ExerciseDefinition;
@@ -52,7 +53,7 @@ export const ExerciseCatalogCard: React.FC<ExerciseCatalogCardProps> = ({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="px-2 py-0.5 rounded-lg text-[10px] font-black bg-zinc-800 text-zinc-300 border border-white/5 uppercase tracking-wider">
-              {ex.category || 'General'}
+              {formatExerciseCategories(ex) || 'General'}
             </span>
             <RmBadge rmLogs={rmLogs} exerciseName={ex.name} exerciseId={ex.id} />
           </div>

@@ -1,10 +1,11 @@
 import type { ExerciseDefinition, Routine } from '../types';
 import { normalizeExerciseTitle } from './backup';
+import { getExerciseCategories, normalizeExerciseCategories, primaryExerciseCategory } from './exerciseCategories';
 import { parseWeightInput } from './weightInput';
 
 export interface ExerciseCatalogFormValues {
   name: string;
-  category: string;
+  categories: string[];
   imageUrl: string;
   videoUrl: string;
   notes: string;
@@ -21,7 +22,8 @@ export const filterExerciseCatalog = (
 ): ExerciseDefinition[] => exercises.filter((ex) => {
   const matchesSearch = ex.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (ex.notes && ex.notes.toLowerCase().includes(searchTerm.toLowerCase()));
-  const matchesCat = selectedCategory === 'Todos' || ex.category === selectedCategory;
+  const matchesCat = selectedCategory === 'Todos' ||
+    getExerciseCategories(ex).includes(selectedCategory);
   return matchesSearch && matchesCat;
 });
 
@@ -31,11 +33,13 @@ export function buildCatalogExercise(
   id: string,
   createdAt: string,
 ): ExerciseDefinition {
+  const categories = normalizeExerciseCategories(form.categories);
   return {
     ...(existing ?? {}),
     id: existing?.id ?? id,
     name: form.name.trim(),
-    category: form.category,
+    category: primaryExerciseCategory({ categories }),
+    categories,
     imageUrl: form.imageUrl.trim(),
     videoUrl: form.videoUrl.trim(),
     notes: form.notes.trim(),
@@ -81,6 +85,7 @@ export function updateRoutinesForCatalogExercise(
         definitionId: exercise.id,
         name: exercise.name,
         category: exercise.category,
+        categories: exercise.categories,
         imageUrl: exercise.imageUrl || '',
         videoUrl: exercise.videoUrl || '',
         notes: exercise.notes || '',

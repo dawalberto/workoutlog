@@ -14,7 +14,7 @@ describe('catalog exercise creation', () => {
 
     expect(buildCatalogExercise({
       name: '  Press de Banca  ',
-      category: 'Pecho',
+      categories: ['Pecho'],
       imageUrl: ' https://example.test/press.jpg ',
       videoUrl: '',
       notes: '  Control  ',
@@ -26,6 +26,7 @@ describe('catalog exercise creation', () => {
       ...existing,
       name: 'Press de Banca',
       category: 'Pecho',
+      categories: ['Pecho'],
       imageUrl: 'https://example.test/press.jpg',
       videoUrl: '',
       notes: 'Control',
@@ -39,7 +40,7 @@ describe('catalog exercise creation', () => {
   it('applies create defaults and supplied identity values', () => {
     expect(buildCatalogExercise({
       name: 'Sentadilla',
-      category: 'Pierna',
+      categories: ['Pierna'],
       imageUrl: '',
       videoUrl: '',
       notes: '',
@@ -51,6 +52,7 @@ describe('catalog exercise creation', () => {
       id: 'exercise-squat',
       name: 'Sentadilla',
       category: 'Pierna',
+      categories: ['Pierna'],
       imageUrl: '',
       videoUrl: '',
       notes: '',
@@ -62,10 +64,26 @@ describe('catalog exercise creation', () => {
     });
   });
 
+  it('keeps multiple muscle groups and uses the first as the primary value', () => {
+    const definition = buildCatalogExercise({
+      name: 'Plancha',
+      categories: ['Core', 'Piernas'],
+      imageUrl: '',
+      videoUrl: '',
+      notes: '',
+      defaultSets: '',
+      defaultReps: '',
+      defaultWeight: '',
+      defaultRest: '',
+    }, null, 'exercise-plank', '2026-01-02T00:00:00.000Z');
+    expect(definition.category).toBe('Core');
+    expect(definition.categories).toEqual(['Core', 'Piernas']);
+  });
+
   it.each(['53,5', '53.5'])('parses decimal default weight %s', (defaultWeight) => {
     expect(buildCatalogExercise({
       name: 'Sentadilla',
-      category: 'Pierna',
+      categories: ['Pierna'],
       imageUrl: '',
       videoUrl: '',
       notes: '',
@@ -79,7 +97,7 @@ describe('catalog exercise creation', () => {
   it('uses zero for an invalid default weight', () => {
     expect(buildCatalogExercise({
       name: 'Sentadilla',
-      category: 'Pierna',
+      categories: ['Pierna'],
       imageUrl: '',
       videoUrl: '',
       notes: '',

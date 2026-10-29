@@ -17,6 +17,7 @@ import {
   type SyncCollection,
   type SyncTable,
 } from '../sync/contract';
+import { getExerciseCategories } from '../utils/exerciseCategories';
 
 export type { SyncCollection, SyncTable } from '../sync/contract';
 
@@ -323,6 +324,7 @@ function flattenCatalog(value: unknown): SyncRecord[] {
       id: definition.id,
       name: definition.name,
       category: definition.category,
+      categories: getExerciseCategories(definition),
       image_url: definition.imageUrl,
       video_url: definition.videoUrl,
       notes: definition.notes,
@@ -364,6 +366,7 @@ function flattenRoutines(value: unknown): SyncRecord[] {
             definition_id: exercise.definitionId,
             name: exercise.name,
             category: exercise.category,
+            categories: getExerciseCategories(exercise),
             notes: exercise.notes,
             image_url: exercise.imageUrl,
             video_url: exercise.videoUrl,
@@ -442,6 +445,7 @@ function flattenRmLogs(value: unknown): SyncRecord[] {
           definition_id: log.exerciseId,
           exercise_name: log.exerciseName,
           category: log.category,
+          categories: getExerciseCategories(log),
           created_at: log.createdAt,
           updated_at: log.updatedAt,
         }),
@@ -535,6 +539,7 @@ function flattenExerciseDiary(value: unknown): SyncRecord[] {
           definition_id: diary.exerciseId,
           exercise_name: diary.exerciseName,
           category: diary.category,
+          categories: getExerciseCategories(diary),
           created_at: diary.createdAt,
           updated_at: diary.updatedAt,
         }),
@@ -675,6 +680,7 @@ export function applyRemoteSyncChange(
         id: change.id,
         name: stringValue(record, 'name', current?.name ?? ''),
         category: nullableString(record, 'category', current?.category),
+        categories: remoteCategories(record, current),
         imageUrl: nullableString(record, 'image_url', current?.imageUrl),
         videoUrl: nullableString(record, 'video_url', current?.videoUrl),
         notes: nullableString(record, 'notes', current?.notes),
@@ -759,6 +765,7 @@ function applyRoutineExerciseChange(value: unknown, change: SyncRemoteChange): R
       definitionId: nullableString(change.record, 'definition_id', current?.definitionId),
       name: stringValue(change.record, 'name', current?.name ?? ''),
       category: nullableString(change.record, 'category', current?.category),
+      categories: remoteCategories(change.record, current),
       notes: nullableString(change.record, 'notes', current?.notes),
       imageUrl: nullableString(change.record, 'image_url', current?.imageUrl),
       videoUrl: nullableString(change.record, 'video_url', current?.videoUrl),
@@ -864,6 +871,7 @@ function applyRmLogChange(value: unknown, change: SyncRemoteChange): ExerciseRmL
       current?.exerciseName ?? '',
     ),
     category: nullableString(change.record, 'category', current?.category),
+    categories: remoteCategories(change.record, current),
     createdAt: stringValue(
       change.record,
       'created_at',
@@ -1012,6 +1020,7 @@ function applyExerciseDiaryChange(value: unknown, change: SyncRemoteChange): Exe
       current?.exerciseName ?? '',
     ),
     category: nullableString(change.record, 'category', current?.category),
+    categories: remoteCategories(change.record, current),
     createdAt: stringValue(
       change.record,
       'created_at',
@@ -1157,6 +1166,28 @@ function nullableString(
   const value = record[key];
   if (typeof value === 'string') return value;
   return value === null ? undefined : fallback;
+}
+
+/**
+ * Resolves muscle groups from a synced record. A non-empty `categories` array
+ * wins; a null/empty value or a legacy record without the field derives the
+ * one-element list from `category`, preserving records written by old clients.
+ */
+function remoteCategories(
+  record: Record<string, unknown>,
+  current: { category?: string; categories?: string[] } | undefined,
+): string[] | undefined {
+  const raw = record['categories'];
+  if (Array.isArray(raw)) {
+    const values = raw.filter(
+      (value): value is string => typeof value === 'string' && value.length > 0,
+    );
+    if (values.length > 0) return values;
+  } else if (raw === undefined && current?.categories && current.categories.length > 0) {
+    return current.categories;
+  }
+  const category = nullableString(record, 'category', current?.category);
+  return category ? [category] : undefined;
 }
 
 function diaryFeeling(

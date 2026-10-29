@@ -120,6 +120,38 @@ describe('RM log transformations', () => {
     expect(filterRmLogs([log, rowLog], '')).toEqual([log, rowLog]);
   });
 
+  it('matches any group in a multi-group RM log', () => {
+    const multiLog = {
+      ...log,
+      id: 'rm-log-multi',
+      exerciseId: 'exercise-plank',
+      exerciseName: 'Plancha',
+      category: 'Core',
+      categories: ['Core', 'Piernas'],
+    };
+
+    expect(filterRmLogs([multiLog], 'piernas')).toEqual([multiLog]);
+    expect(filterRmLogs([multiLog], 'core')).toEqual([multiLog]);
+    expect(filterRmLogs([multiLog], 'pecho')).toEqual([]);
+  });
+
+  it('propagates multiple groups from a catalog edit into the RM log', () => {
+    const updatedDefinition: ExerciseDefinition = {
+      id: 'exercise-press',
+      name: 'Press de Banca',
+      category: 'Core',
+      categories: ['Core', 'Piernas'],
+    };
+
+    const { rmLogs, updatedLogsCount } = updateRmLogsForCatalogExercise(
+      [log],
+      updatedDefinition,
+    );
+
+    expect(updatedLogsCount).toBe(1);
+    expect(rmLogs[0]).toMatchObject({ categories: ['Core', 'Piernas'] });
+  });
+
   it('excludes tracked names and tracked definition IDs from catalog choices', () => {
     const trackedByName = { ...exercise, name: 'Press de Banca' };
     const trackedById = { id: 'exercise-press', name: 'Banca Inclinada', category: 'Pecho' };

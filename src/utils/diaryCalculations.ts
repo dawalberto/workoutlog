@@ -1,11 +1,13 @@
 import { ExerciseDefinition, ExerciseDiary, ExerciseDiaryEntry, DiaryFeeling } from '../types';
 import { normalizeExerciseTitle } from './backup';
+import { getExerciseCategories, sameExerciseCategories } from './exerciseCategories';
 
 export interface FlattenedDiaryEntry extends ExerciseDiaryEntry {
   diaryId: string;
   exerciseId?: string;
   exerciseName: string;
   category?: string;
+  categories?: string[];
 }
 
 export function formatDiaryDateDisplay(dateString: string): { formatted: string; tag: string | null } {
@@ -107,6 +109,7 @@ export function getAllFlattenedDiaryEntries(diaries: ExerciseDiary[]): Flattened
         exerciseId: d.exerciseId,
         exerciseName: d.exerciseName,
         category: d.category,
+        categories: d.categories,
       });
     });
   });
@@ -194,7 +197,8 @@ export function updateDiariesForCatalogExercise(
       (d) =>
         d.exerciseName !== exercise.name ||
         d.exerciseId !== exercise.id ||
-        (exercise.category && d.category !== exercise.category),
+        (getExerciseCategories(exercise).length > 0 &&
+          !sameExerciseCategories(d, exercise)),
     );
 
   if (!needsUpdate) {
@@ -237,6 +241,9 @@ export function updateDiariesForCatalogExercise(
     exerciseId: exercise.id,
     exerciseName: exercise.name,
     category: exercise.category || primaryDiary.category,
+    categories: getExerciseCategories(exercise).length > 0
+      ? getExerciseCategories(exercise)
+      : primaryDiary.categories,
     entries: allEntries,
     createdAt: primaryDiary.createdAt,
     updatedAt: nowIso,

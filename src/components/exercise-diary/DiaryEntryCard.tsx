@@ -2,6 +2,7 @@ import React from 'react';
 import { Calendar, Dumbbell, Edit3, Trash2 } from 'lucide-react';
 import type { FlattenedDiaryEntry } from '../../utils/diaryCalculations';
 import { formatDiaryDateDisplay, getFeelingConfig } from '../../utils/diaryCalculations';
+import { formatExerciseCategories } from '../../utils/exerciseCategories';
 
 interface DiaryEntryCardProps {
   item: FlattenedDiaryEntry;
@@ -32,9 +33,9 @@ export const DiaryEntryCard: React.FC<DiaryEntryCardProps> = ({
             {item.exerciseName}
           </span>
 
-          {item.category && (
+          {formatExerciseCategories(item) && (
             <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-white/[0.06] text-zinc-400 uppercase tracking-wider border border-white/5">
-              {item.category}
+              {formatExerciseCategories(item)}
             </span>
           )}
 

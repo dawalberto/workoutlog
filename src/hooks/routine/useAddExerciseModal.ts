@@ -2,10 +2,15 @@ import type { Exercise, ExerciseDefinition, WorkoutSet } from '../../types';
 import { useAppStore } from '../../store/appStore';
 import { selectActiveRoutine } from '../../store/selectors';
 import { parseWeightInput } from '../../utils/weightInput';
+import {
+  getExerciseCategories,
+  normalizeExerciseCategories,
+  primaryExerciseCategory,
+} from '../../utils/exerciseCategories';
 
 export interface CustomExerciseInput {
   name: string;
-  category: string;
+  categories: string[];
   imageUrl: string;
   videoUrl: string;
   notes: string;
@@ -59,11 +64,13 @@ export function useAddExerciseModal() {
       item.defaultWeight || 0,
       item.defaultRestSeconds || 90,
     );
+    const categories = getExerciseCategories(item);
     const exercise: Exercise = {
       id: `ex-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       definitionId: item.id,
       name: item.name,
-      category: item.category,
+      category: primaryExerciseCategory(item),
+      categories,
       imageUrl: item.imageUrl || '',
       videoUrl: item.videoUrl || '',
       notes: item.notes || '',
@@ -83,6 +90,8 @@ export function useAddExerciseModal() {
       ? `def-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
       : undefined;
     const name = input.name.trim();
+    const categories = normalizeExerciseCategories(input.categories);
+    const primaryCategory = primaryExerciseCategory({ categories });
     const imageUrl = input.imageUrl.trim();
     const videoUrl = input.videoUrl.trim();
     const notes = input.notes.trim();
@@ -90,7 +99,8 @@ export function useAddExerciseModal() {
       id: `ex-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       definitionId,
       name,
-      category: input.category,
+      category: primaryCategory,
+      categories,
       imageUrl,
       videoUrl,
       notes,
@@ -100,7 +110,8 @@ export function useAddExerciseModal() {
       ? {
           id: definitionId,
           name,
-          category: input.category,
+          category: primaryCategory,
+          categories,
           imageUrl,
           videoUrl,
           notes,

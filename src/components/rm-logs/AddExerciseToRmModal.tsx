@@ -2,6 +2,7 @@ import React from 'react';
 import { Dumbbell, Plus, Search, Trophy, X } from 'lucide-react';
 import type { useAddExerciseToRmModal } from '../../hooks/rm-logs/useAddExerciseToRmModal';
 import { formatWeightInput, parseWeightInput } from '../../utils/weightInput';
+import { formatExerciseCategories } from '../../utils/exerciseCategories';
 
 interface AddExerciseToRmModalProps {
   isOpen: boolean;
@@ -96,9 +97,9 @@ export const AddExerciseToRmModal: React.FC<AddExerciseToRmModalProps> = ({
                           <span className="block font-bold text-xs sm:text-sm text-white truncate group-hover:text-[#00FF87]">
                             {exercise.name}
                           </span>
-                          {exercise.category && (
+                          {formatExerciseCategories(exercise) && (
                             <span className="text-[10px] text-zinc-400 font-semibold">
-                              {exercise.category}
+                              {formatExerciseCategories(exercise)}
                             </span>
                           )}
                         </div>
@@ -131,7 +132,7 @@ export const AddExerciseToRmModal: React.FC<AddExerciseToRmModalProps> = ({
                       {form.selectedCatalogExercise.name}
                     </span>
                     <span className="text-[10px] text-zinc-400 font-medium">
-                      {form.selectedCatalogExercise.category || 'General'}
+                      {formatExerciseCategories(form.selectedCatalogExercise) || 'General'}
                     </span>
                   </div>
                 </div>

@@ -77,6 +77,40 @@ describe('parseImportedData workout history metrics', () => {
   });
 });
 
+describe('parseImportedData muscle groups', () => {
+  it('reads an explicit categories array', () => {
+    const imported = parseImportedData(JSON.stringify({
+      catalog: [{
+        id: 'def-plank',
+        name: 'Plancha',
+        category: 'Core',
+        categories: ['Core', 'Piernas'],
+      }],
+    }));
+
+    expect(imported.catalog[0]).toMatchObject({
+      category: 'Core',
+      categories: ['Core', 'Piernas'],
+    });
+  });
+
+  it('keeps legacy records without a categories array', () => {
+    const imported = parseImportedData(JSON.stringify({
+      catalog: [{ id: 'def-press', name: 'Press', category: 'Pecho' }],
+      routines: [{
+        id: 'routine-1',
+        name: 'Fuerza',
+        exercises: [{ id: 'ex-1', name: 'Press', category: 'Pecho' }],
+      }],
+    }));
+
+    expect(imported.catalog[0]).toMatchObject({ category: 'Pecho' });
+    expect(imported.catalog[0].categories).toBeUndefined();
+    expect(imported.routines[0].exercises[0]).toMatchObject({ category: 'Pecho' });
+    expect(imported.routines[0].exercises[0].categories).toBeUndefined();
+  });
+});
+
 describe('normalizeExerciseTitle', () => {
   it('normalizes accents, spaces, and casing', async () => {
     const { normalizeExerciseTitle } = await import('../../src/utils/backup');
