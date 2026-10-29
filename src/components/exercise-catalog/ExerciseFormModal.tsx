@@ -1,7 +1,8 @@
 import React from 'react';
-import { Dumbbell, Image as ImageIcon, X } from 'lucide-react';
+import { Dumbbell, X } from 'lucide-react';
 import type { ExerciseDefinition } from '../../types';
 import { TimePickerField } from '../TimePickerField';
+import { ExerciseThumbnail } from '../ExerciseThumbnail';
 import { formatWeightInput, parseWeightInput } from '../../utils/weightInput';
 import type { ExerciseFormState } from '../../hooks/exercise-catalog/useExerciseForm';
 
@@ -98,18 +99,15 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
               <span className="text-[10px] font-normal text-zinc-500">Miniatura visual</span>
             </label>
             <div className="flex items-center gap-3">
-              <div className="w-14 h-14 rounded-2xl border border-white/10 bg-zinc-900 shrink-0 overflow-hidden flex items-center justify-center relative shadow-inner">
-                {form.imageUrl && !form.imageError ? (
-                  <img
-                    src={form.imageUrl}
-                    alt="Vista previa"
-                    className="w-full h-full object-cover"
-                    onError={() => form.setImageError(true)}
-                    onLoad={() => form.setImageError(false)}
-                  />
-                ) : (
-                  <ImageIcon className="w-5 h-5 text-zinc-600" />
-                )}
+              <div className="w-14 h-14 rounded-2xl border border-white/10 bg-zinc-900 shrink-0 overflow-hidden shadow-inner">
+                <ExerciseThumbnail
+                  name={form.name}
+                  imageUrl={form.imageUrl}
+                  className="w-full h-full"
+                  iconClassName="w-5 h-5 text-zinc-600"
+                  initialsClassName="text-xs"
+                  onError={() => form.setImageError(true)}
+                />
               </div>
               <div className="flex-1">
                 <input

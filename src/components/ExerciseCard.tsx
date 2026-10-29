@@ -13,7 +13,6 @@ import {
   ChevronDown, 
   ChevronUp, 
   CheckCircle2, 
-  Dumbbell, 
   Video, 
   FileText, 
   Image as ImageIcon 
@@ -23,6 +22,7 @@ import {
   formatSecondsToTime,
 } from '../utils/timeCalculations';
 import { VideoPreview } from './VideoPreview';
+import { ExerciseThumbnail } from './ExerciseThumbnail';
 import { RmBadge } from './RmBadge';
 import { DiaryButton } from './DiaryButton';
 import { TimePickerField } from './TimePickerField';
@@ -44,7 +44,6 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
 }) => {
   const {
     exercise,
-    exerciseIndex,
     isExecutionMode,
     completedSetIds,
     rmLogs,
@@ -91,29 +90,18 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
       <div className="p-4 sm:p-5 border-b border-white/[0.06] bg-[#18181A]/50">
         <div className="flex items-start sm:items-center justify-between gap-2.5 sm:gap-3">
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            {/* Exercise Thumbnail or Index Badge */}
-            {exercise.imageUrl ? (
-              <div className="w-12 h-12 rounded-xl overflow-hidden border border-white/10 shrink-0 bg-zinc-900 relative shadow-sm">
-                <img
-                  src={exercise.imageUrl}
-                  alt={exercise.name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = 'none';
-                  }}
-                />
-              </div>
-            ) : (
-              <div
-                className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shrink-0 border ${
-                  isAllCompleted
-                    ? 'bg-[#00FF87] text-black border-[#00FF87] shadow-[0_0_12px_rgba(0,255,135,0.4)]'
-                    : 'bg-zinc-900 border-white/10 text-white'
-                }`}
-              >
-                {exerciseIndex + 1}
-              </div>
-            )}
+            {/* Exercise Thumbnail */}
+            <ExerciseThumbnail
+              name={exercise.name}
+              imageUrl={exercise.imageUrl}
+              className={`w-12 h-12 rounded-xl shrink-0 border shadow-sm ${
+                isAllCompleted
+                  ? 'bg-[#00FF87]/10 border-[#00FF87]/40'
+                  : 'bg-zinc-900 border-white/10'
+              }`}
+              iconClassName={`w-5 h-5 ${isAllCompleted ? 'text-[#00FF87]/70' : 'text-zinc-500'}`}
+              initialsClassName="text-[11px]"
+            />
 
             {/* Exercise Title & Badges */}
             <div className="min-w-0 flex-1">

@@ -5,12 +5,12 @@ import {
   GripVertical,
   ChevronUp,
   ChevronDown,
-  Dumbbell,
   Check,
   RotateCcw
 } from 'lucide-react';
 import { useReorderExercisesModal } from '../hooks/routine/useReorderExercisesModal';
 import { formatExerciseCategories } from '../utils/exerciseCategories';
+import { ExerciseThumbnail } from './ExerciseThumbnail';
 
 interface ReorderExercisesModalProps {
   isOpen: boolean;
@@ -145,19 +145,14 @@ export const ReorderExercisesModal: React.FC<ReorderExercisesModalProps> = ({
                   </div>
 
                   {/* Thumbnail / Icon */}
-                  <div className="w-10 h-10 rounded-lg border border-white/10 bg-black/40 overflow-hidden shrink-0 flex items-center justify-center">
-                    {ex.imageUrl ? (
-                      <img
-                        src={ex.imageUrl}
-                        alt={ex.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLElement).style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <Dumbbell className="w-4 h-4 text-zinc-500" />
-                    )}
+                  <div className="w-10 h-10 rounded-lg border border-white/10 bg-black/40 overflow-hidden shrink-0">
+                    <ExerciseThumbnail
+                      name={ex.name}
+                      imageUrl={ex.imageUrl}
+                      className="w-full h-full"
+                      iconClassName="w-4 h-4 text-zinc-500"
+                      initialsClassName="text-[10px]"
+                    />
                   </div>
 
                   {/* Exercise Title and Sets Info */}

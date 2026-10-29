@@ -1,7 +1,8 @@
 import React from 'react';
-import { Clock, Dumbbell, Edit3, Eye, Layers, Trash2, Video } from 'lucide-react';
+import { Clock, Edit3, Eye, Layers, Trash2, Video } from 'lucide-react';
 import type { ExerciseDefinition } from '../../types';
 import { DiaryButton } from '../DiaryButton';
+import { ExerciseThumbnail } from '../ExerciseThumbnail';
 import { RmBadge } from '../RmBadge';
 import { useExerciseCatalogCard } from '../../hooks/exercise-catalog/useExerciseCatalogCard';
 import { formatExerciseCategories } from '../../utils/exerciseCategories';
@@ -29,20 +30,14 @@ export const ExerciseCatalogCard: React.FC<ExerciseCatalogCardProps> = ({
     <div>
       <div className="flex items-start gap-3.5">
         {/* Cover Preview Image */}
-        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden bg-zinc-900 shrink-0 border border-white/10 flex items-center justify-center relative shadow-sm">
-          {ex.imageUrl ? (
-            <img
-              src={ex.imageUrl}
-              alt={ex.name}
-              loading="lazy"
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              onError={(e) => {
-                (e.target as HTMLElement).style.display = 'none';
-              }}
-            />
-          ) : (
-            <Dumbbell className="w-6 h-6 text-zinc-600" />
-          )}
+        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden bg-zinc-900 shrink-0 border border-white/10 relative shadow-sm">
+          <ExerciseThumbnail
+            name={ex.name}
+            imageUrl={ex.imageUrl}
+            className="w-full h-full group-hover:scale-105 transition-transform duration-300"
+            iconClassName="w-6 h-6 text-zinc-600"
+            initialsClassName="text-xs"
+          />
           {ex.videoUrl && (
             <span className="absolute bottom-1 right-1 p-1 rounded-lg bg-black/80 text-[#00E5FF] shadow-sm">
               <Video className="w-3 h-3" />
