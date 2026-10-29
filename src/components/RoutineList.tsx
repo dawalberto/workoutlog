@@ -39,13 +39,10 @@ export const RoutineList: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/[0.08]">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-widest text-[#00FF87]">
-                <Zap className="w-3.5 h-3.5" /> Performance Hub
-              </span>
+              <h1 className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-widest text-[#00FF87]">
+                <Zap className="w-3.5 h-3.5" /> Mis rutinas
+              </h1>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              Mis Rutinas
-            </h1>
             <p className="text-xs sm:text-sm text-[#A1A1AA] mt-0.5">
               Planifica tus series, controla descansos y supera tus récords en tiempo real.
             </p>

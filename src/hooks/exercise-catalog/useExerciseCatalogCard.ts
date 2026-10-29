@@ -3,7 +3,6 @@ import { useAppStore } from '../../store/appStore';
 import { selectPersistedData } from '../../store/selectors';
 
 export function useExerciseCatalogCard() {
-  const { rmLogs, exerciseDiary } = useAppStore(useShallow(selectPersistedData));
-  const openExerciseDiary = useAppStore((state) => state.openExerciseDiary);
-  return { rmLogs, exerciseDiary, openExerciseDiary };
+  const { rmLogs } = useAppStore(useShallow(selectPersistedData));
+  return { rmLogs };
 }

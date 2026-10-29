@@ -1,7 +1,6 @@
 import React from 'react';
 import { Clock, Edit3, Eye, Layers, Trash2, Video } from 'lucide-react';
 import type { ExerciseDefinition } from '../../types';
-import { DiaryButton } from '../DiaryButton';
 import { ExerciseThumbnail } from '../ExerciseThumbnail';
 import { RmBadge } from '../RmBadge';
 import { useExerciseCatalogCard } from '../../hooks/exercise-catalog/useExerciseCatalogCard';
@@ -20,7 +19,7 @@ export const ExerciseCatalogCard: React.FC<ExerciseCatalogCardProps> = ({
   onEdit,
   onDelete,
 }) => {
-  const { rmLogs, exerciseDiary, openExerciseDiary } = useExerciseCatalogCard();
+  const { rmLogs } = useExerciseCatalogCard();
   return (
   <div
     id={`catalog-card-${ex.id}`}
@@ -87,16 +86,6 @@ export const ExerciseCatalogCard: React.FC<ExerciseCatalogCardProps> = ({
       </span>
 
       <div className="flex items-center gap-1.5">
-        {openExerciseDiary && (
-          <DiaryButton
-            exerciseName={ex.name}
-            exerciseId={ex.id}
-            diaries={exerciseDiary}
-            onOpenDiary={openExerciseDiary}
-            variant="compact"
-          />
-        )}
-
         <button
           id={`btn-edit-exercise-${ex.id}`}
           type="button"
