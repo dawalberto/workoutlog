@@ -65,6 +65,27 @@ export function sortRmRecordsByDate(records: RmRecord[]): RmRecord[] {
   return [...records].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
 
+/**
+ * Returns the time of the most recent record in an RM log, or 0 when it has none.
+ */
+export function getLatestRmLogRecordTime(log: ExerciseRmLog): number {
+  if (!log.records || log.records.length === 0) return 0;
+  return log.records.reduce((latest, record) => {
+    const time = new Date(record.date).getTime();
+    return Number.isNaN(time) ? latest : Math.max(latest, time);
+  }, 0);
+}
+
+/**
+ * Orders RM logs from most to least recent by their latest record date.
+ * The input array is not mutated.
+ */
+export function sortRmLogsByLatestRecord(logs: ExerciseRmLog[]): ExerciseRmLog[] {
+  return [...logs].sort(
+    (a, b) => getLatestRmLogRecordTime(b) - getLatestRmLogRecordTime(a),
+  );
+}
+
 export function addRmRecordToLogs(
   logs: ExerciseRmLog[],
   logId: string,

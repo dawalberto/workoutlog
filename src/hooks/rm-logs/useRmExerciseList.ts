@@ -2,13 +2,13 @@ import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '../../store/appStore';
 import { selectPersistedData } from '../../store/selectors';
-import { filterRmLogs } from '../../utils/rmLogs';
+import { filterRmLogs, sortRmLogsByLatestRecord } from '../../utils/rmLogs';
 import { normalizeExerciseTitle } from '../../utils/backup';
 
 export function useRmExerciseList(searchTerm: string) {
   const { catalog, rmLogs } = useAppStore(useShallow(selectPersistedData));
   const filteredRmLogs = useMemo(
-    () => filterRmLogs(rmLogs, searchTerm),
+    () => sortRmLogsByLatestRecord(filterRmLogs(rmLogs, searchTerm)),
     [rmLogs, searchTerm],
   );
   const catalogImageMap = useMemo(() => {
