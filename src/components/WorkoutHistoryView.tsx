@@ -55,95 +55,88 @@ export const WorkoutHistoryView: React.FC = () => {
   return (
     <div id="workout-history-container" className="min-h-screen bg-[#0D0D0D] text-white pb-28 pt-4 sm:pt-6">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
-        {/* Top Header Card with Bento Summary Metrics */}
-        <div className="bg-[#1C1C1E] rounded-2xl border border-white/[0.08] p-5 sm:p-6 shadow-xl mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-white/10 text-[#00FF87] flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(0,255,135,0.2)]">
-                <CalendarIcon className="w-6 h-6" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                    Historial de Entrenamientos
-                  </h1>
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-[#00FF87]/15 text-[#00FF87] border border-[#00FF87]/30">
-                    {totalCount} {totalCount === 1 ? 'sesión' : 'sesiones'}
-                  </span>
-                </div>
-                <p className="text-xs sm:text-sm text-[#A1A1AA] mt-0.5">
-                  Calendario de rutinas completadas y desglose de cada sesión.
-                </p>
-              </div>
+        {/* Page Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/[0.08]">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <h1 className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-widest text-[#00FF87]">
+                <CalendarIcon className="w-3.5 h-3.5" /> Historial de Entrenamientos
+              </h1>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#00FF87]/15 text-[#00FF87] border border-[#00FF87]/30">
+                {totalCount} {totalCount === 1 ? 'sesión' : 'sesiones'}
+              </span>
             </div>
+            <p className="text-xs sm:text-sm text-[#A1A1AA] mt-0.5">
+              Calendario de rutinas completadas y desglose de cada sesión.
+            </p>
+          </div>
 
-            <div className="flex items-center gap-2 self-start sm:self-auto">
-              {!isViewingCurrentMonth && (
-                <button
-                  type="button"
-                  onClick={handleGoToday}
-                  className="px-4 min-h-[44px] rounded-xl border border-white/10 bg-zinc-900 hover:bg-zinc-800 text-xs font-bold text-white transition active:scale-95 shadow-inner"
-                >
-                  Volver a Hoy
-                </button>
-              )}
+          <div className="flex items-center gap-2">
+            {!isViewingCurrentMonth && (
+              <button
+                type="button"
+                onClick={handleGoToday}
+                className="px-4 min-h-[48px] rounded-xl border border-white/10 bg-zinc-900 hover:bg-zinc-800 text-xs font-bold text-white transition active:scale-[0.97] shadow-inner"
+              >
+                Volver a Hoy
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Bento stats: Semana actual & Mes actual */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 my-6">
+          {/* Stat 1: Semana Actual */}
+          <div className="p-4 rounded-2xl bg-zinc-900/90 border border-[#00FF87]/30 flex items-center gap-3 shadow-inner">
+            <div className="w-10 h-10 rounded-xl bg-[#00FF87]/15 text-[#00FF87] flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(0,255,135,0.2)]">
+              <Flame className="w-5 h-5 fill-current" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#00FF87] block truncate">
+                Esta semana
+              </span>
+              <span className="text-xl sm:text-2xl font-black text-white font-mono leading-none block">
+                {currentWeekCount}
+              </span>
+              <span className="text-[10px] text-zinc-400 font-semibold truncate block mt-0.5">
+                {currentWeekCount === 1 ? 'rutina completada' : 'rutinas completadas'}
+              </span>
             </div>
           </div>
 
-          {/* Bento stats: Semana actual & Mes actual */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {/* Stat 1: Semana Actual */}
-            <div className="p-4 rounded-2xl bg-zinc-900/90 border border-[#00FF87]/30 flex items-center gap-3 shadow-inner">
-              <div className="w-10 h-10 rounded-xl bg-[#00FF87]/15 text-[#00FF87] flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(0,255,135,0.2)]">
-                <Flame className="w-5 h-5 fill-current" />
-              </div>
-              <div className="min-w-0">
-                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#00FF87] block truncate">
-                  Esta semana
-                </span>
-                <span className="text-xl sm:text-2xl font-black text-white font-mono leading-none block">
-                  {currentWeekCount}
-                </span>
-                <span className="text-[10px] text-zinc-400 font-semibold truncate block mt-0.5">
-                  {currentWeekCount === 1 ? 'rutina completada' : 'rutinas completadas'}
-                </span>
-              </div>
+          {/* Stat 2: Mes Actual */}
+          <div className="p-4 rounded-2xl bg-zinc-900/90 border border-[#00E5FF]/30 flex items-center gap-3 shadow-inner">
+            <div className="w-10 h-10 rounded-xl bg-[#00E5FF]/15 text-[#00E5FF] flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(0,229,255,0.2)]">
+              <Trophy className="w-5 h-5" />
             </div>
-
-            {/* Stat 2: Mes Actual */}
-            <div className="p-4 rounded-2xl bg-zinc-900/90 border border-[#00E5FF]/30 flex items-center gap-3 shadow-inner">
-              <div className="w-10 h-10 rounded-xl bg-[#00E5FF]/15 text-[#00E5FF] flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(0,229,255,0.2)]">
-                <Trophy className="w-5 h-5" />
-              </div>
-              <div className="min-w-0">
-                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#00E5FF] block truncate">
-                  Este mes ({MONTH_NAMES[today.getMonth()]})
-                </span>
-                <span className="text-xl sm:text-2xl font-black text-white font-mono leading-none block">
-                  {currentMonthCount}
-                </span>
-                <span className="text-[10px] text-zinc-400 font-semibold truncate block mt-0.5">
-                  {currentMonthCount === 1 ? 'rutina completada' : 'rutinas completadas'}
-                </span>
-              </div>
+            <div className="min-w-0">
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#00E5FF] block truncate">
+                Este mes ({MONTH_NAMES[today.getMonth()]})
+              </span>
+              <span className="text-xl sm:text-2xl font-black text-white font-mono leading-none block">
+                {currentMonthCount}
+              </span>
+              <span className="text-[10px] text-zinc-400 font-semibold truncate block mt-0.5">
+                {currentMonthCount === 1 ? 'rutina completada' : 'rutinas completadas'}
+              </span>
             </div>
+          </div>
 
-            {/* Stat 3: Total Histórico */}
-            <div className="p-4 rounded-2xl bg-zinc-900/90 border border-white/10 hidden sm:flex items-center gap-3 shadow-inner">
-              <div className="w-10 h-10 rounded-xl bg-zinc-800 text-zinc-400 flex items-center justify-center shrink-0">
-                <Sparkles className="w-5 h-5 text-[#00FF87]" />
-              </div>
-              <div className="min-w-0">
-                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-zinc-400 block truncate">
-                  Total registrado
-                </span>
-                <span className="text-xl sm:text-2xl font-black text-white font-mono leading-none block">
-                  {totalCount}
-                </span>
-                <span className="text-[10px] text-zinc-400 font-semibold truncate block mt-0.5">
-                  sesiones en histórico
-                </span>
-              </div>
+          {/* Stat 3: Total Histórico */}
+          <div className="p-4 rounded-2xl bg-zinc-900/90 border border-white/10 hidden sm:flex items-center gap-3 shadow-inner">
+            <div className="w-10 h-10 rounded-xl bg-zinc-800 text-zinc-400 flex items-center justify-center shrink-0">
+              <Sparkles className="w-5 h-5 text-[#00FF87]" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-zinc-400 block truncate">
+                Total registrado
+              </span>
+              <span className="text-xl sm:text-2xl font-black text-white font-mono leading-none block">
+                {totalCount}
+              </span>
+              <span className="text-[10px] text-zinc-400 font-semibold truncate block mt-0.5">
+                sesiones en histórico
+              </span>
             </div>
           </div>
         </div>
