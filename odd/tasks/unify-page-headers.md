@@ -23,6 +23,7 @@ Rutinas and Ejercicios render a flat page header: an uppercase neon-green kicker
 - [x] `history-header-flat`: Convert the history header to the flat kicker style and lift the summary metrics out of the header card into standalone Bento cards.
 - [x] `diary-header-flat`: Convert the diary header to the flat kicker style and lift the catalog warning and search/filter bar out of the header card.
 - [x] Re-approve affected characterization snapshots and run `pnpm test`, `pnpm lint`, `pnpm build`.
+- [x] `catalog-header-badge`: Move the exercise count from the standalone "N ejercicios registrados" line into the header badge, matching the RMs/Historial/Diario headers.
 
 ## Acceptance criteria and checks
 
@@ -40,3 +41,4 @@ Rutinas and Ejercicios render a flat page header: an uppercase neon-green kicker
 - Intentional snapshot re-approval: `tests/__snapshots__/rm-logs-characterization.test.tsx.snap` (5 snapshots) and `tests/__snapshots__/exercise-diary.test.tsx.snap` (3 snapshots) updated for the new header markup. No non-snapshot assertions changed; every id and `aria-label` used by the tests is preserved.
 - Verification: `pnpm test` passed (40 files, 279 tests) after re-approval, `pnpm lint` passed, and `pnpm build` passed with the expected large-chunk warning.
 - No test exists for `WorkoutHistoryView`; its header change is visual-only and covered by the shared header structure and by `pnpm lint`/`pnpm build`.
+- `catalog-header-badge` (follow-up): `ExerciseCatalog` now renders `{filteredExercises.length} ejercicio(s)` as a header badge and the previous standalone "N ejercicios registrados" line under the search bar was removed. The count still reflects the active search/category filters. Benefit: all five main views now show their live count in the header badge. Snapshot `tests/__snapshots__/exercise-catalog.test.tsx.snap` re-approved (2 snapshots); `pnpm test` (40 files, 279 tests), `pnpm lint`, and `pnpm build` pass.
