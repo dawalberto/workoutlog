@@ -24,6 +24,9 @@ export const ExerciseCatalog: React.FC = () => {
               <h1 className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-widest text-[#00FF87]">
                 <Dumbbell className="w-3.5 h-3.5" /> Biblioteca de Ejercicios
               </h1>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#00FF87]/15 text-[#00FF87] border border-[#00FF87]/30">
+                {catalog.filteredExercises.length} {catalog.filteredExercises.length === 1 ? 'ejercicio' : 'ejercicios'}
+              </span>
             </div>
             <p className="text-xs sm:text-sm text-[#A1A1AA] mt-0.5">
               Crea tus movimientos con imagen, video de técnica y series preconfiguradas.
@@ -82,11 +85,6 @@ export const ExerciseCatalog: React.FC = () => {
               </button>
             ))}
           </div>
-        </div>
-
-        {/* Main List Info */}
-        <div className="flex items-center justify-between text-xs font-semibold text-[#A1A1AA] px-1 mb-4">
-          <span>{catalog.filteredExercises.length} {catalog.filteredExercises.length === 1 ? 'ejercicio registrado' : 'ejercicios registrados'}</span>
         </div>
 
         {/* Cards Grid */}
