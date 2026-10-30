@@ -56,7 +56,7 @@ export const WorkoutHistoryView: React.FC = () => {
     <div id="workout-history-container" className="min-h-screen bg-[#0D0D0D] text-white pb-28 pt-4 sm:pt-6">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/[0.08]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.08]">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <h1 className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-widest text-[#00FF87]">
@@ -70,24 +70,12 @@ export const WorkoutHistoryView: React.FC = () => {
               Calendario de rutinas completadas y desglose de cada sesión.
             </p>
           </div>
-
-          <div className="flex items-center gap-2">
-            {!isViewingCurrentMonth && (
-              <button
-                type="button"
-                onClick={handleGoToday}
-                className="px-4 min-h-[48px] rounded-xl border border-white/10 bg-zinc-900 hover:bg-zinc-800 text-xs font-bold text-white transition active:scale-[0.97] shadow-inner"
-              >
-                Volver a Hoy
-              </button>
-            )}
-          </div>
         </div>
 
         {/* Bento stats: Semana actual & Mes actual */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 my-6">
           {/* Stat 1: Semana Actual */}
-          <div className="p-4 rounded-2xl bg-zinc-900/90 border border-[#00FF87]/30 flex items-center gap-3 shadow-inner">
+          <div className="p-2 rounded-2xl bg-zinc-900/90 border border-[#00FF87]/30 flex items-center gap-3 shadow-inner">
             <div className="w-10 h-10 rounded-xl bg-[#00FF87]/15 text-[#00FF87] flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(0,255,135,0.2)]">
               <Flame className="w-5 h-5 fill-current" />
             </div>
@@ -105,7 +93,7 @@ export const WorkoutHistoryView: React.FC = () => {
           </div>
 
           {/* Stat 2: Mes Actual */}
-          <div className="p-4 rounded-2xl bg-zinc-900/90 border border-[#00E5FF]/30 flex items-center gap-3 shadow-inner">
+          <div className="p-2 rounded-2xl bg-zinc-900/90 border border-[#00E5FF]/30 flex items-center gap-3 shadow-inner">
             <div className="w-10 h-10 rounded-xl bg-[#00E5FF]/15 text-[#00E5FF] flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(0,229,255,0.2)]">
               <Trophy className="w-5 h-5" />
             </div>
@@ -152,6 +140,17 @@ export const WorkoutHistoryView: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
+                {!isViewingCurrentMonth && (
+                  <button
+                    type="button"
+                    onClick={handleGoToday}
+                    className="px-4 min-h-[44px] rounded-xl border border-white/10 bg-zinc-900 hover:bg-zinc-800 text-xs font-bold text-white transition active:scale-[0.97] shadow-inner"
+                  >
+                    Hoy
+                  </button>
+                )}
+              </div>
               <button
                 id="btn-prev-month"
                 type="button"
