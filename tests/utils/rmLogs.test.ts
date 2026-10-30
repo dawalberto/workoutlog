@@ -8,6 +8,8 @@ import {
   editRmRecordInLogs,
   filterRmLogs,
   getAvailableRmCatalog,
+  getLatestRmLogRecordTime,
+  sortRmLogsByLatestRecord,
   sortRmRecordsByDate,
   updateRmLogsForCatalogExercise,
 } from '../../src/utils/rmLogs';
@@ -67,6 +69,51 @@ describe('RM log transformations', () => {
 
     expect(sortRmRecordsByDate(records)).toEqual([newestRecord, olderRecord]);
     expect(records).toEqual([olderRecord, newestRecord]);
+  });
+
+  it('sorts RM logs by latest record date, most recent first without mutating input', () => {
+    const recentLog: ExerciseRmLog = {
+      ...log,
+      id: 'rm-log-recent',
+      exerciseId: 'exercise-squat',
+      exerciseName: 'Sentadilla',
+      records: [createRmRecord('record-squat', 120, '2026-08-01')],
+    };
+    const oldLog: ExerciseRmLog = {
+      ...log,
+      id: 'rm-log-old',
+      exerciseId: 'exercise-deadlift',
+      exerciseName: 'Peso Muerto',
+      records: [createRmRecord('record-deadlift', 140, '2026-01-15')],
+    };
+    const input = [log, oldLog, recentLog];
+
+    expect(sortRmLogsByLatestRecord(input).map((entry) => entry.id)).toEqual([
+      'rm-log-recent',
+      'rm-log-press',
+      'rm-log-old',
+    ]);
+    expect(input.map((entry) => entry.id)).toEqual([
+      'rm-log-press',
+      'rm-log-old',
+      'rm-log-recent',
+    ]);
+  });
+
+  it('treats an empty RM log as the oldest when ordering by latest record', () => {
+    const emptyLog: ExerciseRmLog = {
+      ...log,
+      id: 'rm-log-empty',
+      exerciseId: 'exercise-empty',
+      exerciseName: 'Dominadas',
+      records: [],
+    };
+
+    expect(getLatestRmLogRecordTime(emptyLog)).toBe(0);
+    expect(sortRmLogsByLatestRecord([emptyLog, log]).map((entry) => entry.id)).toEqual([
+      'rm-log-press',
+      'rm-log-empty',
+    ]);
   });
 
   it('adds a record and sorts the updated history by date', () => {
