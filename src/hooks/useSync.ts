@@ -91,6 +91,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
   const mountedRef = useRef(true);
   const [status, setStatus] = useState<UseSyncStatus>(initialStatus);
   const [isOnline, setIsOnline] = useState(isBrowserOnline);
+  const [initialSyncSettledOwnerId, setInitialSyncSettledOwnerId] = useState<string | null>(null);
   const [pendingState, setPendingState] = useState<{
     ownerId: string | null;
     count: number;
@@ -105,6 +106,21 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
     options.workoutHistory,
     options.exerciseDiary,
   ]);
+
+  const settleInitialSync = useCallback((ownerId: string) => {
+    setInitialSyncSettledOwnerId((current) => {
+      if (optionsRef.current.ownerId !== ownerId) return current;
+      return current === ownerId ? current : ownerId;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!options.ownerId) {
+      setInitialSyncSettledOwnerId(null);
+      return;
+    }
+    if (!isOnline) setInitialSyncSettledOwnerId(options.ownerId);
+  }, [isOnline, options.ownerId]);
 
   const refreshPendingChanges = useCallback(async (ownerId: string) => {
     try {
@@ -245,6 +261,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
           const client = getSupabaseBrowserClient();
           if (!client) {
             if (mountedRef.current) setStatus(initialStatus);
+            settleInitialSync(syncOwnerId);
             return;
           }
           const { data, error } = await client.auth.getSession();
@@ -252,6 +269,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
           const session = data.session;
           if (!session || session.user.id !== latest.ownerId) {
             if (mountedRef.current) setStatus(initialStatus);
+            settleInitialSync(syncOwnerId);
             return;
           }
           if (optionsRef.current.ownerId !== latest.ownerId) return;
@@ -281,10 +299,12 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
           });
           if (!isCurrentSync()) {
             if (mountedRef.current) setStatus(initialStatus);
+            settleInitialSync(syncOwnerId);
             return;
           }
           if (result.status === 'skipped') {
             if (mountedRef.current) setStatus(initialStatus);
+            settleInitialSync(syncOwnerId);
             return;
           }
           failedPendingSignatureRef.current = null;
@@ -298,6 +318,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
               updateRequired: false,
             });
           }
+          settleInitialSync(syncOwnerId);
         } catch (error) {
           if (mountedRef.current) {
             const current = optionsRef.current;
@@ -332,6 +353,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
               error: errorMessage(error),
               updateRequired,
             }));
+            settleInitialSync(syncOwnerId);
           }
         }
       };
@@ -386,6 +408,7 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
     options.isOwnerHydrationComplete,
     collectionContentsSignature,
     refreshPendingChanges,
+    settleInitialSync,
   ]);
 
 
@@ -448,9 +471,11 @@ export function useSync(options: UseSyncOptions): UseSyncResult {
       pendingCount: pendingChanges,
       lastSyncedAt: status.lastSyncedAt,
       updateRequired: status.updateRequired ?? false,
+      initialSyncSettledOwnerId,
     };
     publishSyncState(snapshot);
   }, [
+    initialSyncSettledOwnerId,
     isOnline,
     pendingChanges,
     publishSyncState,

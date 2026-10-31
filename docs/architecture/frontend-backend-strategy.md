@@ -2,7 +2,7 @@
 
 The authoritative description of how the WorkoutLog client and Supabase communicate, and the checklist for changing that contract safely.
 
-Last verified: 2026-10-29
+Last verified: 2026-10-31
 
 ## Read this first
 
@@ -85,7 +85,7 @@ Pull (`pullChanges`, ~197–242): for each of the 12 `SYNC_TABLES` in order, pag
 | `MAX_PUSH_DRAIN_ROUNDS` | 3 | ~41 |
 | Supabase API `max_rows` | 1000 | [`supabase/config.toml`](../../supabase/config.toml) ~18 |
 
-Triggers ([`useSync`](../../src/hooks/useSync.ts)): local queued change (push), login, reconnect, Retry button. After a failure, automatic retries are suppressed for the same pending signature until the queue changes or the user presses Retry (useSync.ts 215–244).
+Triggers ([`useSync`](../../src/hooks/useSync.ts)): local queued change (push), login, reconnect, Retry button. After a failure, automatic retries are suppressed for the same pending signature until the queue changes or the user presses Retry (useSync.ts 215–244). While signed in and online, [`App.tsx`](../../src/App.tsx) holds the `Cargando datos...` gate until eligibility resolves and the first sync pass for the owner settles (`initialSyncSettledOwnerId`), so transferred guest data never renders before the server collections; offline and error outcomes release it.
 
 ## Conflict model
 
