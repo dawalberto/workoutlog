@@ -6,7 +6,6 @@
 import React from 'react';
 import { 
   Play, 
-  Edit3, 
   Trash2, 
   Copy, 
   Plus, 
@@ -235,19 +234,6 @@ export const RoutineList: React.FC = () => {
                     >
                       <div className="flex items-center gap-2">
                         <button
-                          id={`btn-edit-routine-${routine.id}`}
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSelectRoutine(routine.id, 'edit');
-                          }}
-                          className="min-h-[44px] px-3.5 inline-flex items-center gap-1.5 text-xs font-bold rounded-xl text-zinc-200 bg-zinc-800/80 hover:bg-zinc-700/80 hover:text-white border border-white/5 transition-all active:scale-[0.97]"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                          <span>Editar</span>
-                        </button>
-
-                        <button
                           id={`btn-duplicate-routine-${routine.id}`}
                           type="button"
                           onClick={(e) => {
@@ -276,8 +262,21 @@ export const RoutineList: React.FC = () => {
                         </button>
                       </div>
 
-                      {/* Right Indicator: Clean status / chevron */}
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-[#A1A1AA] group-hover:text-[#00FF87] transition-colors">
+                      {/* Right Indicator: opens the routine like the rest of the card */}
+                      <button
+                        id={`btn-open-routine-${routine.id}`}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectRoutine(routine.id, 'execute');
+                        }}
+                        aria-label={
+                          isSessionActive
+                            ? `Continuar ${routine.name || 'rutina'}`
+                            : `Ver rutina ${routine.name || ''}`.trim()
+                        }
+                        className="inline-flex items-center gap-1.5 min-h-[44px] px-2 text-xs font-bold text-[#A1A1AA] group-hover:text-[#00FF87] transition-colors active:scale-[0.97]"
+                      >
                         {isSessionActive ? (
                           <span className="inline-flex items-center gap-1.5 text-xs font-black text-[#00FF87]">
                             <span className="w-1.5 h-1.5 rounded-full bg-[#00FF87] animate-ping" />
@@ -289,7 +288,7 @@ export const RoutineList: React.FC = () => {
                             <Play className="w-3 h-3 fill-current ml-0.5" />
                           </span>
                         )}
-                      </div>
+                      </button>
                     </div>
                   </div>
                 );
