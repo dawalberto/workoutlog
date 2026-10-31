@@ -179,6 +179,101 @@ describe('App shell composition', () => {
     expect(markup).not.toContain('Guest-only routine');
   });
 
+  it('keeps the loading gate until the first cloud sync for the owner settles', () => {
+    seedAppStore({
+      routines: [guestRoutine],
+      user: { id: 'owner-1', email: 'owner@example.test' },
+      isLoading: false,
+      isStorageLoaded: true,
+      activeScopeKey: 'owner:owner-1',
+      hydratedScopeKey: 'owner:owner-1',
+      isSyncEnabled: true,
+      isSyncEligibilityLoading: false,
+      isOnline: true,
+      initialSyncSettledOwnerId: null,
+    });
+
+    const pendingMarkup = renderApp();
+    expect(pendingMarkup).toContain('Cargando datos...');
+    expect(pendingMarkup).not.toContain('Guest-only routine');
+
+    seedAppStore({ initialSyncSettledOwnerId: 'owner-1' });
+    const settledMarkup = renderApp();
+    expect(settledMarkup).not.toContain('Cargando datos...');
+    expect(settledMarkup).toContain('Guest-only routine');
+  });
+
+  it('keeps the loading gate while sync eligibility is still resolving', () => {
+    seedAppStore({
+      routines: [guestRoutine],
+      user: { id: 'owner-1', email: 'owner@example.test' },
+      isLoading: false,
+      isStorageLoaded: true,
+      activeScopeKey: 'owner:owner-1',
+      hydratedScopeKey: 'owner:owner-1',
+      isSyncEnabled: false,
+      isSyncEligibilityLoading: true,
+      isOnline: true,
+      initialSyncSettledOwnerId: null,
+    });
+
+    const markup = renderApp();
+    expect(markup).toContain('Cargando datos...');
+    expect(markup).not.toContain('Guest-only routine');
+  });
+
+  it.each([
+    ['offline', { isOnline: false, isSyncEnabled: true, isSyncEligibilityLoading: false }],
+    ['sync disabled', { isOnline: true, isSyncEnabled: false, isSyncEligibilityLoading: false }],
+    ['owner hydration incomplete', {
+      isOnline: true,
+      isSyncEnabled: true,
+      isSyncEligibilityLoading: false,
+      isGuestTransferComplete: false,
+    }],
+  ])('releases the signed-in gate when %s so local data stays usable', (_scenario, syncState) => {
+    seedAppStore({
+      routines: [guestRoutine],
+      user: { id: 'owner-1', email: 'owner@example.test' },
+      isLoading: false,
+      isStorageLoaded: true,
+      activeScopeKey: 'owner:owner-1',
+      hydratedScopeKey: 'owner:owner-1',
+      initialSyncSettledOwnerId: null,
+      ...syncState,
+    });
+
+    const markup = renderApp();
+    expect(markup).not.toContain('Cargando datos...');
+    expect(markup).toContain('Guest-only routine');
+  });
+
+  it('gates a signed-in account when the initial sync marker was reset', () => {
+    seedAppStore({
+      routines: [guestRoutine],
+      user: null,
+      isLoading: false,
+      isStorageLoaded: true,
+      activeScopeKey: 'guest',
+      hydratedScopeKey: 'guest',
+      isSyncEnabled: true,
+      isSyncEligibilityLoading: false,
+      isOnline: true,
+      initialSyncSettledOwnerId: 'owner-1',
+    });
+    expect(renderApp()).not.toContain('Cargando datos...');
+
+    seedAppStore({
+      user: { id: 'owner-1', email: 'owner@example.test' },
+      activeScopeKey: 'owner:owner-1',
+      hydratedScopeKey: 'owner:owner-1',
+      initialSyncSettledOwnerId: null,
+    });
+    const markup = renderApp();
+    expect(markup).toContain('Cargando datos...');
+    expect(markup).not.toContain('Guest-only routine');
+  });
+
   it('does not gate guests on signed-in owner hydration', () => {
     seedAppStore({
       isStorageLoaded: false,

@@ -20,6 +20,11 @@ export function selectIsStorageReady(state: AppState): boolean {
     state.hydratedScopeKey === expectedScopeKey;
 }
 
+export function selectIsInitialSyncSettled(state: AppState): boolean {
+  const ownerId = state.user?.id;
+  return Boolean(ownerId) && state.initialSyncSettledOwnerId === ownerId;
+}
+
 export function selectPersistedData(state: AppState) {
   const isStorageLoaded = selectIsStorageReady(state);
   return {

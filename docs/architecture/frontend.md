@@ -2,7 +2,7 @@
 
 Structure and conventions of the React PWA in `src/`, and where to extend it.
 
-Last verified: 2026-10-15
+Last verified: 2026-10-31
 
 ## At a glance
 
@@ -34,7 +34,7 @@ Last verified: 2026-10-15
 - [`BottomTabBar`](../../src/components/BottomTabBar.tsx) renders the tabs ("Rutinas", "Ejercicios", "RMs", "Historial", "Diario").
 - Selecting a routine replaces the tab content with [`RoutineView`](../../src/components/RoutineView.tsx), in edit ("Editar") or execute ("Entrenar") mode.
 - [`TabContent`](../../src/components/TabContent.tsx) selects the active view; [`AppShell`](../../src/components/AppShell.tsx) composes navigation and shell UI, and [`GlobalOverlays`](../../src/components/GlobalOverlays.tsx) mounts app-wide overlays.
-- `App.tsx` has readiness gates and no router. Auth and sign-out orchestration are published by lifecycle adapters and store actions.
+- `App.tsx` has readiness gates and no router. Auth and sign-out orchestration are published by lifecycle adapters and store actions. While signed in and online, the gate keeps `Cargando datos...` until sync eligibility resolves and the first cloud sync pass for the owner settles, so transferred guest data never renders before the account's server collections; offline, sync-disabled, and sync-error outcomes release the gate.
 - `GlobalOverlays` includes `SidebarMenu`, `RmRecordAlertModal`, `WorkoutSummaryModal`, `DataBackupModal`, `RestTimerBar`, `ToastNotification`, `SignOutConfirmDialog`, and `AnalyticsConsentBanner`.
 - There are no URLs per screen; browser back/forward does not navigate tabs.
 

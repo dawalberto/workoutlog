@@ -10,6 +10,7 @@ export interface SyncSnapshot {
   pendingCount: number;
   lastSyncedAt: number | null;
   updateRequired: boolean;
+  initialSyncSettledOwnerId: string | null;
 }
 
 export interface SyncControls {
@@ -26,6 +27,7 @@ export interface SyncSlice {
   pendingCount: number;
   lastSyncedAt: number | null;
   updateRequired: boolean;
+  initialSyncSettledOwnerId: string | null;
   publishSyncState: (snapshot: SyncSnapshot) => void;
   registerSyncControls: (controls: SyncControls | null) => void;
   retrySync: () => void;
@@ -44,6 +46,7 @@ export const createSyncSlice: StateCreator<AppState, [], [], SyncSlice> = (set) 
     pendingCount: 0,
     lastSyncedAt: null,
     updateRequired: false,
+    initialSyncSettledOwnerId: null,
     publishSyncState: (snapshot) => set({
       syncStatus: snapshot.status,
       syncError: snapshot.error,
@@ -51,6 +54,7 @@ export const createSyncSlice: StateCreator<AppState, [], [], SyncSlice> = (set) 
       pendingCount: snapshot.pendingCount,
       lastSyncedAt: snapshot.lastSyncedAt,
       updateRequired: snapshot.updateRequired,
+      initialSyncSettledOwnerId: snapshot.initialSyncSettledOwnerId,
     }),
     registerSyncControls: (nextControls) => {
       controls = nextControls;

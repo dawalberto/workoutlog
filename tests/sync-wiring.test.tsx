@@ -140,7 +140,7 @@ function createLocalStorage() {
   };
 }
 
-function mockSyncStore(): void {
+function mockSyncStore() {
   const state = {
     publishSyncState: vi.fn(),
     registerSyncControls: vi.fn(),
@@ -148,6 +148,7 @@ function mockSyncStore(): void {
   vi.doMock('../src/store/appStore', () => ({
     useAppStore: (selector: (value: typeof state) => unknown) => selector(state),
   }));
+  return state;
 }
 
 function createBaseline() {
@@ -754,6 +755,97 @@ describe('sync wiring', () => {
     render().retry();
     for (let attempt = 0; attempt < 5; attempt += 1) await Promise.resolve();
     expect(syncCloudData).toHaveBeenCalledOnce();
+    hookHarness.dispose();
+  });
+
+  it.each([
+    ['successful', async () => ({ status: 'synced' as const, pulled: 1, pushed: 0 })],
+    ['failed', async () => {
+      throw new Error('RPC unavailable');
+    }],
+  ])('publishes the initial sync owner marker after a %s first pass', async (_scenario, syncResult) => {
+    const hookHarness = createHookHarness();
+    const syncCloudData = vi.fn(syncResult);
+    vi.doMock('react', async (importOriginal) => ({
+      ...await importOriginal<typeof import('react')>(),
+      useState: (initial: unknown) => activeHarness!.useState(initial),
+      useRef: (initial: unknown) => activeHarness!.useRef(initial),
+      useMemo: (factory: () => unknown, deps: readonly unknown[]) =>
+        activeHarness!.useMemo(factory, deps),
+      useCallback: (callback: (...args: never[]) => unknown, deps: readonly unknown[]) =>
+        activeHarness!.useMemo(() => callback, deps),
+      useEffect: (callback: () => void | (() => void), deps?: readonly unknown[]) =>
+        activeHarness!.useEffect(callback, deps),
+      useLayoutEffect: (callback: () => void | (() => void), deps?: readonly unknown[]) =>
+        activeHarness!.useEffect(callback, deps),
+    }));
+    vi.doMock('../src/services/db', () => ({
+      flushScopedStorageWrites: vi.fn(async () => undefined),
+      getPendingSyncOperations: vi.fn(async () => []),
+    }));
+    vi.doMock('../src/services/cloud-sync', () => ({
+      createSyncCoordinator: (run: () => Promise<void>) => ({
+        run,
+        dispose: vi.fn(),
+      }),
+      syncCloudData,
+    }));
+    vi.doMock('../src/services/supabase', () => ({
+      getSupabaseBrowserClient: () => ({
+        auth: {
+          getSession: async () => ({
+            data: { session: { user: { id: 'owner-1' } } },
+            error: null,
+          }),
+        },
+      }),
+    }));
+    Object.assign(window, {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    });
+    Object.defineProperty(navigator, 'onLine', {
+      configurable: true,
+      value: true,
+    });
+
+    const store = mockSyncStore();
+    const { useSync } = await import('../src/hooks/useSync');
+    const options: UseSyncOptions = {
+      ownerId: 'owner-1',
+      syncEnabled: true,
+      isStorageLoaded: true,
+      isOwnerHydrationComplete: true,
+      onSynced: vi.fn(async () => undefined),
+      routines: [],
+      catalog: [],
+      activeSessions: {},
+      rmLogs: [],
+      workoutHistory: [],
+      exerciseDiary: [],
+    };
+    const render = () => hookHarness.render(() => useSync(options));
+
+    render();
+    await hookHarness.runEffects();
+    for (let attempt = 0; attempt < 20; attempt += 1) await Promise.resolve();
+    render();
+    await hookHarness.runEffects();
+
+    const snapshots = store.publishSyncState.mock.calls.map(
+      (call) => call[0] as { initialSyncSettledOwnerId: string | null },
+    );
+    expect(snapshots.at(-1)?.initialSyncSettledOwnerId).toBe('owner-1');
+
+    options.ownerId = null;
+    render();
+    await hookHarness.runEffects();
+    render();
+    await hookHarness.runEffects();
+    const clearedSnapshots = store.publishSyncState.mock.calls.map(
+      (call) => call[0] as { initialSyncSettledOwnerId: string | null },
+    );
+    expect(clearedSnapshots.at(-1)?.initialSyncSettledOwnerId).toBeNull();
     hookHarness.dispose();
   });
 

@@ -9,7 +9,7 @@ import { GlobalOverlays } from './components/GlobalOverlays';
 import { LocalCleanupPendingScreen } from './components/LocalCleanupPendingScreen';
 import { useAppBootstrap } from './hooks/useAppBootstrap';
 import { useAppStore } from './store/appStore';
-import { selectIsStorageReady } from './store/selectors';
+import { selectIsInitialSyncSettled, selectIsStorageReady } from './store/selectors';
 
 export default function App() {
   useAppBootstrap();
@@ -20,13 +20,23 @@ export default function App() {
   const isSigningIn = useAppStore((state) => state.isSigningIn);
   const isSigningOut = useAppStore((state) => state.isSigningOut);
   const isSignOutConfirmOpen = useAppStore((state) => state.isSignOutConfirmOpen);
-  const isOwnerStorageLoading = isSignedIn && !isStorageLoaded;
+  const isOnline = useAppStore((state) => state.isOnline);
+  const isSyncEnabled = useAppStore((state) => state.isSyncEnabled);
+  const isSyncEligibilityLoading = useAppStore((state) => state.isSyncEligibilityLoading);
+  const isOwnerHydrationComplete = useAppStore((state) => state.isGuestTransferComplete);
+  const isInitialSyncSettled = useAppStore(selectIsInitialSyncSettled);
+  const isAwaitingCloudData =
+    isSignedIn &&
+    isOnline &&
+    (isSyncEligibilityLoading ||
+      (isSyncEnabled && isOwnerHydrationComplete && !isInitialSyncSettled));
+  const isOwnerLoading = isSignedIn && (!isStorageLoaded || isAwaitingCloudData);
 
   if (cleanupPending) return <LocalCleanupPendingScreen />;
-  if (isLoading || isSigningIn || isOwnerStorageLoading || (isSigningOut && !isSignOutConfirmOpen)) {
+  if (isLoading || isSigningIn || isOwnerLoading || (isSigningOut && !isSignOutConfirmOpen)) {
     return (
       <AppLoadingScreen
-        message={isOwnerStorageLoading || isSigningIn ? 'Cargando datos...' : undefined}
+        message={isOwnerLoading || isSigningIn ? 'Cargando datos...' : undefined}
       />
     );
   }
