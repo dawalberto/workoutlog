@@ -3,7 +3,7 @@ BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 SET LOCAL search_path = public, extensions;
 
-SELECT plan(14);
+SELECT plan(15);
 
 INSERT INTO auth.users (
   id,
@@ -52,7 +52,7 @@ SELECT is(
     jsonb_build_object('table_name', 'exercise_diaries', 'writable_columns', ARRAY['id', 'definition_id', 'exercise_name', 'category', 'categories', 'created_at', 'updated_at'], 'identity_columns', ARRAY['id']),
     jsonb_build_object('table_name', 'exercise_diary_entries', 'writable_columns', ARRAY['id', 'diary_id', 'recorded_on', 'note', 'feeling', 'created_at', 'updated_at'], 'identity_columns', ARRAY['id']),
     jsonb_build_object('table_name', 'rm_logs', 'writable_columns', ARRAY['id', 'definition_id', 'exercise_name', 'category', 'categories', 'created_at', 'updated_at'], 'identity_columns', ARRAY['id']),
-    jsonb_build_object('table_name', 'rm_records', 'writable_columns', ARRAY['id', 'log_id', 'weight', 'recorded_on', 'notes', 'created_at', 'updated_at'], 'identity_columns', ARRAY['id']),
+    jsonb_build_object('table_name', 'rm_records', 'writable_columns', ARRAY['id', 'log_id', 'weight', 'metric', 'recorded_on', 'notes', 'created_at', 'updated_at'], 'identity_columns', ARRAY['id']),
     jsonb_build_object('table_name', 'routine_exercises', 'writable_columns', ARRAY['id', 'routine_id', 'definition_id', 'name', 'category', 'categories', 'notes', 'image_url', 'video_url', 'position', 'created_at', 'updated_at'], 'identity_columns', ARRAY['id']),
     jsonb_build_object('table_name', 'routines', 'writable_columns', ARRAY['id', 'name', 'notes', 'created_at', 'updated_at'], 'identity_columns', ARRAY['id']),
     jsonb_build_object('table_name', 'workout_history', 'writable_columns', ARRAY['id', 'routine_id', 'routine_name', 'started_at', 'completed_at', 'duration_seconds', 'exercises_completed', 'sets_completed', 'total_sets_count', 'completion_percentage', 'created_at', 'updated_at'], 'identity_columns', ARRAY['id']),
@@ -72,6 +72,12 @@ SELECT is(
   (SELECT accepted FROM private.sync_contract_versions WHERE version = 2),
   true,
   'sync contract version 2 is accepted'
+);
+
+SELECT is(
+  (SELECT accepted FROM private.sync_contract_versions WHERE version = 3),
+  true,
+  'sync contract version 3 is accepted'
 );
 
 SELECT ok(

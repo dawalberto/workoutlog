@@ -72,9 +72,12 @@ export interface ExerciseDiary {
   updatedAt: string;
 }
 
+export type RmMetric = 'weight' | 'reps';
+
 export interface RmRecord {
   id: string;
-  weight: number; // in kg
+  weight: number; // value in kg when metric is 'weight', repetition count when 'reps'
+  metric?: RmMetric; // defaults to 'weight' for legacy records
   date: string; // YYYY-MM-DD
   notes?: string;
 }

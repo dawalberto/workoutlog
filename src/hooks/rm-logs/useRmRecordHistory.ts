@@ -10,19 +10,24 @@ export function useRmRecordHistory(log: ExerciseRmLog, form: RmRecordFormState) 
   const { rmLogs, setRmLogs } = useAppStore(useShallow(selectPersistedData));
 
   const handleSaveEditRecord = (logId: string, recordId: string) => {
-    const weightNum = parseWeightInput(form.editWeight);
-    if (weightNum === null || weightNum <= 0) {
-      alert('Por favor introduce un peso válido mayor a 0 kg');
+    const valueNum = parseWeightInput(form.editWeight);
+    if (valueNum === null || valueNum <= 0) {
+      alert(
+        form.editMetric === 'reps'
+          ? 'Por favor introduce un número de repeticiones válido mayor a 0'
+          : 'Por favor introduce un peso válido mayor a 0 kg',
+      );
       return;
     }
     setRmLogs(editRmRecordInLogs(
       rmLogs,
       logId,
       recordId,
-      weightNum,
+      valueNum,
       form.editDate,
       form.editNotes.trim() ? form.editNotes.trim() : undefined,
       new Date().toISOString(),
+      form.editMetric,
     ));
     form.handleCancelEdit();
   };

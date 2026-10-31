@@ -25,8 +25,8 @@ UI labels were checked in `src/components/` (file noted when not obvious). "—"
 | Finish workout | End the session and save to history | `finishSession` store action | "Finalizar" |
 | Workout history | Saved completed sessions with metrics | `WorkoutHistoryLog`, tables `workout_history`, `workout_history_exercises` | "Historial" (tab); "Historial de Entrenamientos" |
 | Workout summary | Post-session summary | `WorkoutCompletionSummary`, `WorkoutSummaryModal` | "Resumen" |
-| RM | Repetition maximum (e.g. 1RM) tracked per exercise | `ExerciseRmLog`, `RmRecord`, tables `rm_logs`, `rm_records` | "RMs" (tab); "1RM" |
-| Personal record | New best RM | `pendingRmAlert` store state and `checkRmWeight` action | "Nuevo récord!", "Récord personal" |
+| RM | Best mark tracked per exercise, as a lifted weight (`weight`) or a repetition count (`reps`) | `ExerciseRmLog`, `RmRecord` (`metric`), tables `rm_logs`, `rm_records` | "RMs" (tab); "1RM"; "Peso (kg)"; "Repeticiones" |
+| Personal record | New best weight RM detected while logging a set (reps RMs never alert) | `pendingRmAlert` store state and `checkRmWeight` action | "Nuevo récord!", "Récord personal" |
 | Diary | Dated notes per exercise | `ExerciseDiary`, `ExerciseDiaryEntry`, tables `exercise_diaries`, `exercise_diary_entries` | "Diario" (tab); "Diario de Ejercicios" |
 | Feeling | Diary entry mood: `good` / `neutral` / `bad` | `DiaryFeeling` | "Sensación en la sesión" ([`ExerciseDiaryView.tsx`](../../src/components/ExerciseDiaryView.tsx)) |
 | Starter data | Initial routines/exercises created as private user records | [`src/data/initialData.ts`](../../src/data/initialData.ts) | — |

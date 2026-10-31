@@ -1,6 +1,6 @@
 import type { Database } from '../types/database.types';
 
-export const SYNC_CONTRACT_VERSION = 2;
+export const SYNC_CONTRACT_VERSION = 3;
 
 export type SyncCollection =
   | 'routines'
@@ -94,7 +94,7 @@ export const SYNC_CONTRACT_TABLES = [
   {
     name: 'rm_records',
     writableColumns: [
-      'id', 'log_id', 'weight', 'recorded_on', 'notes', 'created_at', 'updated_at',
+      'id', 'log_id', 'weight', 'metric', 'recorded_on', 'notes', 'created_at', 'updated_at',
     ],
     identity: ['id'],
     collection: 'rmLogs',

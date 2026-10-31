@@ -1,6 +1,7 @@
-import type { ExerciseDefinition, ExerciseRmLog, RmRecord } from '../types';
+import type { ExerciseDefinition, ExerciseRmLog, RmMetric, RmRecord } from '../types';
 import { normalizeExerciseTitle } from './backup';
 import { getExerciseCategories, sameExerciseCategories } from './exerciseCategories';
+import { getRmRecordMetric } from './rmCalculations';
 
 export function filterRmLogs(logs: ExerciseRmLog[], searchTerm: string): ExerciseRmLog[] {
   const term = normalizeExerciseTitle(searchTerm);
@@ -38,8 +39,9 @@ export function createRmRecord(
   weight: number,
   date: string,
   notes?: string,
+  metric: RmMetric = 'weight',
 ): RmRecord {
-  return { id, weight, date, notes };
+  return { id, weight, metric, date, notes };
 }
 
 export function createRmLog(
@@ -110,6 +112,7 @@ export function editRmRecordInLogs(
   date: string,
   notes?: string,
   updatedAt?: string,
+  metric: RmMetric = 'weight',
 ): ExerciseRmLog[] {
   return logs.map((log) => {
     if (log.id !== logId) return log;
@@ -118,6 +121,7 @@ export function editRmRecordInLogs(
       return {
         ...record,
         weight,
+        metric,
         date: date || record.date,
         notes,
       };
@@ -189,7 +193,7 @@ export function updateRmLogsForCatalogExercise(
 
   for (const log of matchingLogs) {
     for (const record of log.records || []) {
-      const sig = `${record.date}_${record.weight}`;
+      const sig = `${record.date}_${getRmRecordMetric(record)}_${record.weight}`;
       if (!recordSignatures.has(sig)) {
         recordSignatures.add(sig);
         allRecords.push(record);

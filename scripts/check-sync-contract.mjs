@@ -29,7 +29,10 @@ try {
     ['db', 'query', '--local', '--output-format', 'json', query],
     { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
   );
-  const rows = JSON.parse(output.trim());
+  // `supabase db query` returns a bare array on older CLIs and an object with a
+  // `rows` key on newer ones; accept both shapes.
+  const parsed = JSON.parse(output.trim());
+  const rows = Array.isArray(parsed) ? parsed : parsed.rows ?? [];
   databaseContract = rows[0]?.sync_contract;
   if (!databaseContract) throw new Error('The database returned no sync contract metadata.');
 } catch (error) {

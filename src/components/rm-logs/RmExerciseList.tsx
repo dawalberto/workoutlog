@@ -11,9 +11,10 @@ import {
   X,
 } from 'lucide-react';
 import {
+  formatRmDate,
+  formatRmRecordValue,
   getHighestRmRecord,
   getLatestRmRecord,
-  formatRmDate,
 } from '../../utils/rmCalculations';
 import { normalizeExerciseTitle } from '../../utils/backup';
 import { formatExerciseCategories } from '../../utils/exerciseCategories';
@@ -47,7 +48,8 @@ export const RmExerciseList: React.FC<RmExerciseListProps> = ({
           </span>
         </div>
         <p className="text-xs sm:text-sm text-[#A1A1AA] mt-0.5">
-          Historial de pesos máximos (1RM) y récords en ejercicios de tu biblioteca.
+          Historial de tus mejores marcas: peso máximo o número de repeticiones en ejercicios de tu
+          biblioteca.
         </p>
       </div>
 
@@ -98,8 +100,8 @@ export const RmExerciseList: React.FC<RmExerciseListProps> = ({
           Aún no tienes ejercicios con RM registrado
         </h2>
         <p className="text-xs sm:text-sm text-[#A1A1AA] max-w-md mx-auto mb-6 leading-relaxed">
-          Lleva el control de tus marcas personales (1RM). Selecciona cualquier ejercicio de tu
-          biblioteca y anota tus progresos a lo largo del tiempo.
+          Lleva el control de tus marcas personales: peso máximo o repeticiones. Selecciona cualquier
+          ejercicio de tu biblioteca y anota tus progresos a lo largo del tiempo.
         </p>
 
         {catalog.length > 0 ? (
@@ -196,7 +198,7 @@ export const RmExerciseList: React.FC<RmExerciseListProps> = ({
                         Último RM
                       </span>
                       <span className="text-base sm:text-lg font-black text-white font-mono">
-                        {latestRecord ? `${latestRecord.weight} kg` : '--'}
+                        {latestRecord ? formatRmRecordValue(latestRecord) : '--'}
                       </span>
                       {latestRecord && (
                         <span className="block text-[10px] text-zinc-400 font-medium">
@@ -211,7 +213,7 @@ export const RmExerciseList: React.FC<RmExerciseListProps> = ({
                         <span>Récord Max</span>
                       </div>
                       <span className="text-base sm:text-lg font-black text-white font-mono">
-                        {highestRecord ? `${highestRecord.weight} kg` : '--'}
+                        {highestRecord ? formatRmRecordValue(highestRecord) : '--'}
                       </span>
                       {highestRecord && (
                         <span className="block text-[10px] text-zinc-400 font-medium">

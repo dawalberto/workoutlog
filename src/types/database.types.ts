@@ -179,14 +179,14 @@ isOneToOne: false
                   ]
                 },"rm_records": {
                   Row: {
-                    "created_at": string,"deleted_at": string | null,"id": string,"log_id": string,"notes": string | null,"recorded_on": string,"server_revision": number,"server_updated_at": string,"updated_at": string,"user_id": string,"weight": NonNullable<Json>
+                    "created_at": string,"deleted_at": string | null,"id": string,"log_id": string,"metric": string | null,"notes": string | null,"recorded_on": string,"server_revision": number,"server_updated_at": string,"updated_at": string,"user_id": string,"weight": NonNullable<Json>
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"deleted_at"?: string | null,"id": string,"log_id": string,"notes"?: string | null,"recorded_on": string,"server_revision"?: number,"server_updated_at"?: string,"updated_at"?: string,"user_id": string,"weight": NonNullable<Json>
+                    "created_at"?: string,"deleted_at"?: string | null,"id": string,"log_id": string,"metric"?: string | null,"notes"?: string | null,"recorded_on": string,"server_revision"?: number,"server_updated_at"?: string,"updated_at"?: string,"user_id": string,"weight": NonNullable<Json>
                   }
                   Update: {
-                    "created_at"?: string,"deleted_at"?: string | null,"id"?: string,"log_id"?: string,"notes"?: string | null,"recorded_on"?: string,"server_revision"?: number,"server_updated_at"?: string,"updated_at"?: string,"user_id"?: string,"weight"?: NonNullable<Json>
+                    "created_at"?: string,"deleted_at"?: string | null,"id"?: string,"log_id"?: string,"metric"?: string | null,"notes"?: string | null,"recorded_on"?: string,"server_revision"?: number,"server_updated_at"?: string,"updated_at"?: string,"user_id"?: string,"weight"?: NonNullable<Json>
                   }
                   Relationships: [
                     {

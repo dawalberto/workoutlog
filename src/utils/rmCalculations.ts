@@ -1,5 +1,27 @@
-import { ExerciseRmLog, RmRecord } from '../types';
+import { ExerciseRmLog, RmMetric, RmRecord } from '../types';
 import { normalizeExerciseTitle } from './backup';
+
+/**
+ * Resolves the metric of a record, treating legacy records without a metric as
+ * weight so older persisted and synced data keeps working.
+ */
+export function getRmRecordMetric(record: RmRecord): RmMetric {
+  return record.metric === 'reps' ? 'reps' : 'weight';
+}
+
+/**
+ * Returns the display unit for a metric (e.g. "kg" or "reps").
+ */
+export function getRmMetricUnit(metric: RmMetric): string {
+  return metric === 'reps' ? 'reps' : 'kg';
+}
+
+/**
+ * Formats a record value with its unit (e.g. "82.5 kg" or "120 reps").
+ */
+export function formatRmRecordValue(record: RmRecord): string {
+  return `${record.weight} ${getRmMetricUnit(getRmRecordMetric(record))}`;
+}
 
 /**
  * Returns the most recent RM record for an exercise log (by date descending).
@@ -18,14 +40,20 @@ export function getLatestRmRecord(rmLog: ExerciseRmLog | undefined | null): RmRe
 }
 
 /**
- * Returns the highest historical RM record for an exercise log.
+ * Returns the highest historical RM record for an exercise log. Comparison only
+ * happens within the metric of the latest record, because kg and repetitions are
+ * not comparable.
  */
 export function getHighestRmRecord(rmLog: ExerciseRmLog | undefined | null): RmRecord | null {
   if (!rmLog || !rmLog.records || rmLog.records.length === 0) return null;
 
-  return rmLog.records.reduce((highest, current) => {
+  const latest = getLatestRmRecord(rmLog);
+  const metric = latest ? getRmRecordMetric(latest) : 'weight';
+  const comparable = rmLog.records.filter((record) => getRmRecordMetric(record) === metric);
+
+  return comparable.reduce((highest, current) => {
     return current.weight > highest.weight ? current : highest;
-  }, rmLog.records[0]);
+  }, comparable[0]);
 }
 
 /**

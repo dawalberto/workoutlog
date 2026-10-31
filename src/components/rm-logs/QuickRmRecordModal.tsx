@@ -2,7 +2,9 @@ import React from 'react';
 import { Plus, Trophy, X } from 'lucide-react';
 import type { ExerciseRmLog } from '../../types';
 import type { useQuickRmRecordForm } from '../../hooks/rm-logs/useQuickRmRecordForm';
+import { getRmMetricUnit } from '../../utils/rmCalculations';
 import { formatWeightInput, parseWeightInput } from '../../utils/weightInput';
+import { RmMetricSelector } from './RmMetricSelector';
 
 interface QuickRmRecordModalProps {
   target: ExerciseRmLog;
@@ -49,23 +51,39 @@ export const QuickRmRecordModal: React.FC<QuickRmRecordModalProps> = ({
       <div className="space-y-3.5 mb-5">
         <div>
           <label className="block text-xs font-bold text-[#A1A1AA] uppercase tracking-wide mb-1">
-            Peso Máximo (kg) *
+            Tipo de marca
           </label>
-          <input
-            type="text"
-            inputMode="decimal"
-            pattern="[0-9]*[.,]?[0-9]*"
-            min="0"
-            placeholder="Ej: 100"
-            value={form.weight}
-            onChange={(e) => form.setWeight(e.target.value)}
-            onBlur={(e) => {
-              const parsedWeight = parseWeightInput(e.currentTarget.value);
-              if (parsedWeight !== null) form.setWeight(formatWeightInput(parsedWeight));
-            }}
-            autoFocus
-            className="w-full min-h-[48px] px-3.5 py-2.5 text-base font-bold rounded-xl border border-white/10 bg-zinc-900 text-white focus:outline-none focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/20"
+          <RmMetricSelector
+            value={form.metric}
+            onChange={form.setMetric}
+            idPrefix="quick-rm-metric"
           />
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-[#A1A1AA] uppercase tracking-wide mb-1">
+            {form.metric === 'reps' ? 'Repeticiones máximas *' : 'Peso Máximo (kg) *'}
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              inputMode={form.metric === 'reps' ? 'numeric' : 'decimal'}
+              pattern="[0-9]*[.,]?[0-9]*"
+              min="0"
+              placeholder={form.metric === 'reps' ? 'Ej: 120' : 'Ej: 100'}
+              value={form.weight}
+              onChange={(e) => form.setWeight(e.target.value)}
+              onBlur={(e) => {
+                const parsedWeight = parseWeightInput(e.currentTarget.value);
+                if (parsedWeight !== null) form.setWeight(formatWeightInput(parsedWeight));
+              }}
+              autoFocus
+              className="w-full min-h-[48px] px-3.5 py-2.5 text-base font-bold rounded-xl border border-white/10 bg-zinc-900 text-white focus:outline-none focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/20 pr-14"
+            />
+            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400">
+              {getRmMetricUnit(form.metric)}
+            </span>
+          </div>
         </div>
 
         <div>
