@@ -13,7 +13,7 @@ Last verified: 2026-10-14
 
 ## Schema
 
-All tables: `user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE`, composite keys scoped by `user_id`, plus `server_revision bigint`, `server_updated_at`, `deleted_at` (tombstone), `created_at`. Source: [`20261007135400_create_private_workout_data.sql`](../../supabase/migrations/20261007135400_create_private_workout_data.sql) lines 56–278 (history columns extended in `20261007180000_preserve_workout_history_metrics.sql`; the nullable `categories text[]` muscle-group column was added to `exercise_definitions`, `routine_exercises`, `rm_logs`, and `exercise_diaries` in `20261029170728_add_exercise_categories.sql`).
+All tables: `user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE`, composite keys scoped by `user_id`, plus `server_revision bigint`, `server_updated_at`, `deleted_at` (tombstone), `created_at`. Source: [`20261007135400_create_private_workout_data.sql`](../../supabase/migrations/20261007135400_create_private_workout_data.sql) lines 56–278 (history columns extended in `20261007180000_preserve_workout_history_metrics.sql`; the nullable `categories text[]` muscle-group column was added to `exercise_definitions`, `routine_exercises`, `rm_logs`, and `exercise_diaries` in `20261029170728_add_exercise_categories.sql`; the nullable `metric text` `weight`/`reps` column was added to `rm_records` in `20261101111539_add_rm_record_metric.sql`).
 
 | Table | Primary key | Parent FKs (all include `user_id`) |
 |---|---|---|
@@ -176,7 +176,8 @@ Production redirect URLs are configured in the Supabase dashboard (Auth > URL co
 | `20261014171406_rest_timer_push` | Web Push subscriptions/schedules, RPC access, `pg_cron` dispatch and cleanup | Active |
 | `20261014200000_harden_rest_push` | Web Push host allowlist, cleanup of invalid subscriptions, and cancellation-safe schedule transitions | Active |
 | `20261014210000_rest_push_sending_check` | Adds the service-role-only schedule status RPC without granting direct table access | Active |
-| `20261029170728_add_exercise_categories` | Adds nullable `categories text[]` muscle groups to the four metadata tables, allows the column in the private whitelist, accepts contract version 2, and preserves stored groups when a legacy client upserts | **Active (latest)** |
+| `20261029170728_add_exercise_categories` | Adds nullable `categories text[]` muscle groups to the four metadata tables, allows the column in the private whitelist, accepts contract version 2, and preserves stored groups when a legacy client upserts | Active |
+| `20261101111539_add_rm_record_metric` | Adds nullable `metric text` (`weight` \| `reps`) to `rm_records` with a check constraint, allows the column in the private whitelist, accepts contract version 3, and preserves the stored metric when a legacy client upserts | **Active (latest)** |
 
 Billing context: [ADR 0005](../decisions/0005-remove-billing-signed-in-sync.md).
 

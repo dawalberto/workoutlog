@@ -361,6 +361,21 @@ describe('RM store slice', () => {
     store.getState().checkRmWeight('Press banca', 100);
     expect(store.getState().pendingRmAlert).toBeNull();
   });
+
+  it('does not alert when the matching RM log tracks repetitions', () => {
+    const store = createAppStore();
+    const repsLog: ExerciseRmLog = {
+      id: 'rm-reps',
+      exerciseName: 'Comba',
+      records: [{ id: 'record-reps', weight: 120, metric: 'reps', date: '2026-10-01' }],
+      createdAt: '2026-10-01T00:00:00.000Z',
+      updatedAt: '2026-10-01T00:00:00.000Z',
+    };
+    store.setState({ rmLogs: [repsLog] });
+
+    store.getState().checkRmWeight('Comba', 999);
+    expect(store.getState().pendingRmAlert).toBeNull();
+  });
 });
 
 describe('backup import store action', () => {

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '../../store/appStore';
 import { selectPersistedData } from '../../store/selectors';
-import type { ExerciseDefinition } from '../../types';
+import type { ExerciseDefinition, RmMetric } from '../../types';
 import { findRmLogForExercise, getTodayDateString } from '../../utils/rmCalculations';
 import { formatWeightInput, parseWeightInput } from '../../utils/weightInput';
 import {
@@ -18,6 +18,7 @@ export function useAddExerciseToRmModal(onClose: () => void, onAdded: (logId: st
   const [selectedCatalogExercise, setSelectedCatalogExercise] =
     useState<ExerciseDefinition | null>(null);
   const [initialWeight, setInitialWeight] = useState('');
+  const [initialMetric, setInitialMetric] = useState<RmMetric>('weight');
   const [initialDate, setInitialDate] = useState(getTodayDateString());
   const [initialNotes, setInitialNotes] = useState('');
 
@@ -29,11 +30,13 @@ export function useAddExerciseToRmModal(onClose: () => void, onAdded: (logId: st
   const handleOpen = () => {
     setSelectedCatalogExercise(null);
     setInitialWeight('');
+    setInitialMetric('weight');
     setInitialNotes('');
   };
 
   const handleSelectCatalogExercise = (exercise: ExerciseDefinition) => {
     setSelectedCatalogExercise(exercise);
+    setInitialMetric('weight');
     setInitialWeight(
       exercise.defaultWeight && exercise.defaultWeight > 0
         ? formatWeightInput(exercise.defaultWeight)
@@ -43,18 +46,23 @@ export function useAddExerciseToRmModal(onClose: () => void, onAdded: (logId: st
 
   const handleConfirm = () => {
     if (!selectedCatalogExercise) return;
-    const weightNum = parseWeightInput(initialWeight);
-    if (weightNum === null || weightNum <= 0) {
-      alert('Por favor introduce un peso válido mayor a 0 kg');
+    const valueNum = parseWeightInput(initialWeight);
+    if (valueNum === null || valueNum <= 0) {
+      alert(
+        initialMetric === 'reps'
+          ? 'Por favor introduce un número de repeticiones válido mayor a 0'
+          : 'Por favor introduce un peso válido mayor a 0 kg',
+      );
       return;
     }
 
     const timestamp = new Date().toISOString();
     const newRecord = createRmRecord(
       `rm-rec-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      weightNum,
+      valueNum,
       initialDate || getTodayDateString(),
       initialNotes.trim() ? initialNotes.trim() : undefined,
+      initialMetric,
     );
 
     const existingLog = findRmLogForExercise(
@@ -80,6 +88,7 @@ export function useAddExerciseToRmModal(onClose: () => void, onAdded: (logId: st
     }
     setSelectedCatalogExercise(null);
     setInitialWeight('');
+    setInitialMetric('weight');
     setInitialNotes('');
     setInitialDate(getTodayDateString());
     onClose();
@@ -96,6 +105,8 @@ export function useAddExerciseToRmModal(onClose: () => void, onAdded: (logId: st
     handleClearSelectedExercise: () => setSelectedCatalogExercise(null),
     initialWeight,
     setInitialWeight,
+    initialMetric,
+    setInitialMetric,
     initialDate,
     setInitialDate,
     initialNotes,

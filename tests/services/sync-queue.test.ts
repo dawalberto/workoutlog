@@ -403,3 +403,70 @@ describe('exercise muscle groups in the sync payload', () => {
     expect(result[0].categories).toBeUndefined();
   });
 });
+
+describe('sync queue RM record metric', () => {
+  const baseLog = [
+    {
+      id: 'rm-log-comba',
+      exerciseName: 'Comba',
+      records: [] as Array<Record<string, unknown>>,
+      createdAt: '2026-10-01T00:00:00.000Z',
+      updatedAt: '2026-10-01T00:00:00.000Z',
+    },
+  ];
+
+  it('applies the reps metric from a remote rm_records change', () => {
+    const result = applyRemoteSyncChange(baseLog, {
+      table: 'rm_records',
+      id: 'record-reps',
+      revision: '2',
+      deletedAt: null,
+      record: {
+        id: 'record-reps',
+        log_id: 'rm-log-comba',
+        weight: 120,
+        metric: 'reps',
+        recorded_on: '2026-10-31',
+      },
+    }) as Array<{ records: Array<Record<string, unknown>> }>;
+
+    expect(result[0].records[0]).toMatchObject({ weight: 120, metric: 'reps' });
+  });
+
+  it('defaults a legacy null metric to weight', () => {
+    const result = applyRemoteSyncChange(baseLog, {
+      table: 'rm_records',
+      id: 'record-legacy',
+      revision: '2',
+      deletedAt: null,
+      record: {
+        id: 'record-legacy',
+        log_id: 'rm-log-comba',
+        weight: 80,
+        metric: null,
+        recorded_on: '2026-10-30',
+      },
+    }) as Array<{ records: Array<Record<string, unknown>> }>;
+
+    expect(result[0].records[0]).toMatchObject({ weight: 80, metric: 'weight' });
+  });
+
+  it('sends the metric in the push payload and defaults legacy weight records', () => {
+    const changes = diffSyncCollection('rmLogs', undefined, [
+      {
+        id: 'rm-log-comba',
+        exerciseName: 'Comba',
+        records: [
+          { id: 'record-reps', weight: 120, metric: 'reps', date: '2026-10-31' },
+          { id: 'record-legacy', weight: 80, date: '2026-10-30' },
+        ],
+        createdAt: '2026-10-01T00:00:00.000Z',
+        updatedAt: '2026-10-01T00:00:00.000Z',
+      },
+    ]);
+
+    const byId = new Map(changes.map((change) => [change.id, change.record]));
+    expect(byId.get('record-reps')).toMatchObject({ metric: 'reps', weight: 120 });
+    expect(byId.get('record-legacy')).toMatchObject({ metric: 'weight', weight: 80 });
+  });
+});

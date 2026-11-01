@@ -1,7 +1,11 @@
 import React from 'react';
 import { Trophy } from 'lucide-react';
 import { ExerciseRmLog } from '../types';
-import { findRmLogForExercise, getHighestRmRecord } from '../utils/rmCalculations';
+import {
+  findRmLogForExercise,
+  formatRmRecordValue,
+  getHighestRmRecord,
+} from '../utils/rmCalculations';
 
 export interface RmBadgeProps {
   rmLogs?: ExerciseRmLog[];
@@ -40,10 +44,10 @@ export const RmBadge: React.FC<RmBadgeProps> = ({
   return (
     <span
       className={`inline-flex items-center gap-1 font-bold rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.2)] shrink-0 select-none ${sizeClasses} ${className}`}
-      title={`Mayor RM registrado: ${highestRecord.weight} kg (${highestRecord.date || 'Récord personal'})`}
+      title={`Mayor RM registrado: ${formatRmRecordValue(highestRecord)} (${highestRecord.date || 'Récord personal'})`}
     >
       <Trophy className={`${iconClasses} text-amber-400 fill-amber-400/40 shrink-0`} />
-      <span>RM: {highestRecord.weight} kg</span>
+      <span>RM: {formatRmRecordValue(highestRecord)}</span>
     </span>
   );
 };

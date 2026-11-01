@@ -1,9 +1,11 @@
 import React from 'react';
 import { Plus, Search, Trophy, X } from 'lucide-react';
 import type { useAddExerciseToRmModal } from '../../hooks/rm-logs/useAddExerciseToRmModal';
+import { getRmMetricUnit } from '../../utils/rmCalculations';
 import { formatWeightInput, parseWeightInput } from '../../utils/weightInput';
 import { formatExerciseCategories } from '../../utils/exerciseCategories';
 import { ExerciseThumbnail } from '../ExerciseThumbnail';
+import { RmMetricSelector } from './RmMetricSelector';
 
 interface AddExerciseToRmModalProps {
   isOpen: boolean;
@@ -144,15 +146,28 @@ export const AddExerciseToRmModal: React.FC<AddExerciseToRmModalProps> = ({
 
               <div>
                 <label className="block text-xs font-bold text-[#A1A1AA] uppercase tracking-wide mb-1">
-                  Peso Máximo (1RM) *
+                  Tipo de marca
+                </label>
+                <RmMetricSelector
+                  value={form.initialMetric}
+                  onChange={form.setInitialMetric}
+                  idPrefix="add-rm-metric"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#A1A1AA] uppercase tracking-wide mb-1">
+                  {form.initialMetric === 'reps'
+                    ? 'Repeticiones máximas *'
+                    : 'Peso Máximo (1RM) *'}
                 </label>
                 <div className="relative">
                   <input
                     type="text"
-                    inputMode="decimal"
+                    inputMode={form.initialMetric === 'reps' ? 'numeric' : 'decimal'}
                     pattern="[0-9]*[.,]?[0-9]*"
                     min="0"
-                    placeholder="Ej: 100"
+                    placeholder={form.initialMetric === 'reps' ? 'Ej: 120' : 'Ej: 100'}
                     value={form.initialWeight}
                     onChange={(e) => form.setInitialWeight(e.target.value)}
                     onBlur={(e) => {
@@ -160,10 +175,10 @@ export const AddExerciseToRmModal: React.FC<AddExerciseToRmModalProps> = ({
                       if (parsedWeight !== null) form.setInitialWeight(formatWeightInput(parsedWeight));
                     }}
                     autoFocus
-                    className="w-full min-h-[48px] px-3.5 py-2.5 text-base font-bold rounded-xl border border-white/10 bg-zinc-900 text-white focus:outline-none focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/20 pr-10"
+                    className="w-full min-h-[48px] px-3.5 py-2.5 text-base font-bold rounded-xl border border-white/10 bg-zinc-900 text-white focus:outline-none focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/20 pr-14"
                   />
                   <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400">
-                    kg
+                    {getRmMetricUnit(form.initialMetric)}
                   </span>
                 </div>
               </div>

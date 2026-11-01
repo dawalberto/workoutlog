@@ -3,6 +3,7 @@ import type { RmRecord } from '../../types';
 import {
   findRmLogForExercise,
   getLatestRmRecord,
+  getRmRecordMetric,
   getTodayDateString,
 } from '../../utils/rmCalculations';
 import { normalizeExerciseTitle } from '../../utils/backup';
@@ -36,6 +37,8 @@ export const createRmSlice: StateCreator<AppState, [], [], RmSlice> =
 
       const latestRecord = getLatestRmRecord(matchingLog);
       if (!latestRecord || newWeight <= latestRecord.weight) return;
+      // Weight alerts only make sense for weight-based RMs; skip reps logs (e.g. comba).
+      if (getRmRecordMetric(latestRecord) === 'reps') return;
 
       set({
         pendingRmAlert: {
@@ -55,6 +58,7 @@ export const createRmSlice: StateCreator<AppState, [], [], RmSlice> =
         const newRecord: RmRecord = {
           id: `rm-rec-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
           weight: pendingRmAlert.newWeight,
+          metric: 'weight',
           date: getTodayDateString(),
           notes: 'Superado en rutina / ejercicio',
         };

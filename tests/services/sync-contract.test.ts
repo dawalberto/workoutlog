@@ -56,7 +56,7 @@ const expectedTables = [
   {
     name: 'rm_records',
     writableColumns: [
-      'id', 'log_id', 'weight', 'recorded_on', 'notes', 'created_at', 'updated_at',
+      'id', 'log_id', 'weight', 'metric', 'recorded_on', 'notes', 'created_at', 'updated_at',
     ],
     identity: ['id'],
   },
@@ -95,7 +95,7 @@ const expectedTables = [
 
 describe('sync contract', () => {
   it('lists all twelve tables in pull order with the exact writable columns and identities', () => {
-    expect(SYNC_CONTRACT_VERSION).toBe(2);
+    expect(SYNC_CONTRACT_VERSION).toBe(3);
     expect(
       SYNC_CONTRACT_TABLES.map(({ name, writableColumns, identity }) => ({
         name,
@@ -121,7 +121,7 @@ describe('sync contract', () => {
     const snapshot = getSyncContractSnapshot();
 
     expect(JSON.parse(JSON.stringify(snapshot))).toEqual({
-      version: 2,
+      version: 3,
       tables: expectedTables,
     });
   });

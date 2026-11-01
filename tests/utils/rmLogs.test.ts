@@ -50,6 +50,7 @@ describe('RM log transformations', () => {
     expect(record).toEqual({
       id: 'record-initial',
       weight: 60,
+      metric: 'weight',
       date: '2026-06-01',
       notes: 'First mark',
     });
@@ -138,10 +139,41 @@ describe('RM log transformations', () => {
     )[0]).toEqual({
       ...log,
       records: [
-        { ...olderRecord, weight: 90, date: '2026-07-10', notes: 'New note' },
+        { ...olderRecord, weight: 90, metric: 'weight', date: '2026-07-10', notes: 'New note' },
         newestRecord,
       ],
       updatedAt: 'now',
+    });
+  });
+
+  it('creates a repetition record with the reps metric', () => {
+    const record = createRmRecord('record-comba', 120, '2026-06-01', undefined, 'reps');
+
+    expect(record).toEqual({
+      id: 'record-comba',
+      weight: 120,
+      metric: 'reps',
+      date: '2026-06-01',
+      notes: undefined,
+    });
+  });
+
+  it('switches the metric when editing a record', () => {
+    const updated = editRmRecordInLogs(
+      [log],
+      log.id,
+      newestRecord.id,
+      45,
+      '2026-06-10',
+      undefined,
+      'now',
+      'reps',
+    );
+
+    expect(updated[0].records.find((record) => record.id === newestRecord.id)).toEqual({
+      ...newestRecord,
+      weight: 45,
+      metric: 'reps',
     });
   });
 

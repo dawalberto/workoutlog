@@ -11,10 +11,16 @@ import {
   Trash2,
 } from 'lucide-react';
 import type { ExerciseRmLog } from '../../types';
-import { formatRmDate } from '../../utils/rmCalculations';
+import {
+  formatRmDate,
+  formatRmRecordValue,
+  getRmMetricUnit,
+  getRmRecordMetric,
+} from '../../utils/rmCalculations';
 import { formatWeightInput, parseWeightInput } from '../../utils/weightInput';
 import { useRmRecordHistory } from '../../hooks/rm-logs/useRmRecordHistory';
 import type { RmRecordFormState } from '../../hooks/rm-logs/useRmRecordForm';
+import { RmMetricSelector } from './RmMetricSelector';
 
 interface RmRecordHistoryProps {
   log: ExerciseRmLog;
@@ -48,7 +54,10 @@ export const RmRecordHistory: React.FC<RmRecordHistoryProps> = ({
     <div className="space-y-2">
       {log.records.map((record, rIdx) => {
         const nextRecord = log.records[rIdx + 1];
-        const diff = nextRecord ? record.weight - nextRecord.weight : 0;
+        const recordMetric = getRmRecordMetric(record);
+        const canCompare = nextRecord ? getRmRecordMetric(nextRecord) === recordMetric : false;
+        const diff = canCompare ? record.weight - nextRecord.weight : 0;
+        const unit = getRmMetricUnit(recordMetric);
         const isEditingThis = actions.editingRecordId === record.id;
 
         if (isEditingThis) {
@@ -57,10 +66,21 @@ export const RmRecordHistory: React.FC<RmRecordHistoryProps> = ({
               key={record.id}
               className="p-3.5 rounded-2xl bg-[#1C1C1E] border border-[#00FF87]/50 shadow-lg"
             >
+              <div className="mb-2.5">
+                <label className="block text-[10px] font-bold text-zinc-400 uppercase mb-0.5">
+                  Tipo de marca
+                </label>
+                <RmMetricSelector
+                  value={actions.editMetric}
+                  onChange={actions.setEditMetric}
+                  idPrefix={`edit-rm-metric-${record.id}`}
+                />
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-2.5">
                 <div>
                   <label className="block text-[10px] font-bold text-zinc-400 uppercase mb-0.5">
-                    Peso (kg) *
+                    {actions.editMetric === 'reps' ? 'Repeticiones *' : 'Peso (kg) *'}
                   </label>
                   <input
                     type="text"
@@ -130,10 +150,10 @@ export const RmRecordHistory: React.FC<RmRecordHistoryProps> = ({
           >
             <div className="flex items-center gap-3 min-w-0">
               <span className="font-mono font-black text-sm sm:text-base text-white min-w-[70px]">
-                {record.weight} kg
+                {formatRmRecordValue(record)}
               </span>
 
-              {nextRecord && (
+              {canCompare && (
                 <span
                   className={`inline-flex items-center gap-0.5 font-bold text-[11px] px-2 py-0.5 rounded-full ${
                     diff > 0
@@ -146,17 +166,17 @@ export const RmRecordHistory: React.FC<RmRecordHistoryProps> = ({
                   {diff > 0 ? (
                     <>
                       <ArrowUpRight className="w-3 h-3 text-[#00FF87]" />
-                      +{diff.toFixed(1)} kg
+                      +{diff.toFixed(1)} {unit}
                     </>
                   ) : diff < 0 ? (
                     <>
                       <ArrowDownRight className="w-3 h-3 text-rose-400" />
-                      {diff.toFixed(1)} kg
+                      {diff.toFixed(1)} {unit}
                     </>
                   ) : (
                     <>
                       <Minus className="w-3 h-3 text-zinc-500" />
-                      0 kg
+                      0 {unit}
                     </>
                   )}
                 </span>

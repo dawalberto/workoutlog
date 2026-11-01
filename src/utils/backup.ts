@@ -353,6 +353,7 @@ export function sanitizeRmLogs(items: unknown[]): ExerciseRmLog[] {
         .map((r, rIdx) => ({
           id: typeof r.id === 'string' && r.id.trim() ? r.id : `rm-rec-${Date.now()}-${rIdx}-${Math.random().toString(36).substring(2, 6)}`,
           weight: typeof r.weight === 'number' ? r.weight : parseFloat(String(r.weight)) || 0,
+          metric: r.metric === 'reps' ? 'reps' : 'weight',
           date: typeof r.date === 'string' && r.date.trim() ? r.date.trim() : new Date().toISOString().split('T')[0],
           notes: typeof r.notes === 'string' ? r.notes : undefined,
         }));
@@ -781,11 +782,13 @@ export function mergeRmLogs(
 
       if (replaceDuplicates) {
         // Replace records or merge unique date records
-        const existingRecordSignatures = new Set(target.records.map((r) => `${r.date}_${r.weight}`));
+        const existingRecordSignatures = new Set(
+          target.records.map((r) => `${r.date}_${r.metric === 'reps' ? 'reps' : 'weight'}_${r.weight}`),
+        );
         const newRecords = [...target.records];
 
         importedLog.records.forEach((rec) => {
-          const sig = `${rec.date}_${rec.weight}`;
+          const sig = `${rec.date}_${rec.metric === 'reps' ? 'reps' : 'weight'}_${rec.weight}`;
           if (!existingRecordSignatures.has(sig)) {
             newRecords.push(rec);
             existingRecordSignatures.add(sig);

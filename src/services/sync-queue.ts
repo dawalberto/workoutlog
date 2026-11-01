@@ -6,6 +6,7 @@ import type {
   ExerciseDiary,
   ExerciseDiaryEntry,
   ExerciseRmLog,
+  RmMetric,
   RmRecord,
   Routine,
   WorkoutSet,
@@ -18,6 +19,7 @@ import {
   type SyncTable,
 } from '../sync/contract';
 import { getExerciseCategories } from '../utils/exerciseCategories';
+import { getRmRecordMetric } from '../utils/rmCalculations';
 
 export type { SyncCollection, SyncTable } from '../sync/contract';
 
@@ -461,6 +463,7 @@ function flattenRmLogs(value: unknown): SyncRecord[] {
             id: item.id,
             log_id: log.id,
             weight: item.weight,
+            metric: getRmRecordMetric(item),
             recorded_on: item.date,
             notes: item.notes,
           }),
@@ -899,6 +902,7 @@ function applyRmRecordChange(value: unknown, change: SyncRemoteChange): Exercise
     const record: RmRecord = {
       id: recordId,
       weight: numberValue(change.record, 'weight', current?.weight ?? 0),
+      metric: rmMetricValue(change.record.metric, current?.metric),
       date: stringValue(change.record, 'recorded_on', current?.date ?? ''),
       notes: nullableString(change.record, 'notes', current?.notes),
     };
@@ -1196,6 +1200,11 @@ function diaryFeeling(
 ): DiaryFeeling | undefined {
   if (value === 'good' || value === 'neutral' || value === 'bad') return value;
   return value === null ? undefined : fallback;
+}
+
+function rmMetricValue(value: unknown, fallback: RmMetric | undefined): RmMetric {
+  if (value === 'weight' || value === 'reps') return value;
+  return fallback ?? 'weight';
 }
 
 function optionalNumber(
