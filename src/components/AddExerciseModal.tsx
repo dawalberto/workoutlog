@@ -379,6 +379,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                 name={customName}
                 value={customImageUrl}
                 onChange={setCustomImageUrl}
+                albumMaxWidthClassName="max-w-xl"
               />
 
               {/* Video URL */}

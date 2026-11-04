@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Images } from 'lucide-react';
 import { ExerciseThumbnail } from './ExerciseThumbnail';
 import { ExerciseImageAlbumModal } from './ExerciseImageAlbumModal';
@@ -12,6 +13,8 @@ interface ExerciseImagePickerProps {
   onChange: (value: string) => void;
   /** Field label; defaults to "Imagen". */
   label?: string;
+  /** Max-width class for the album panel, so it matches its host modal. */
+  albumMaxWidthClassName?: string;
 }
 
 /**
@@ -24,6 +27,7 @@ export const ExerciseImagePicker: React.FC<ExerciseImagePickerProps> = ({
   value,
   onChange,
   label = 'Imagen',
+  albumMaxWidthClassName = 'max-w-lg',
 }) => {
   const [isAlbumOpen, setIsAlbumOpen] = useState(false);
 
@@ -57,13 +61,15 @@ export const ExerciseImagePicker: React.FC<ExerciseImagePickerProps> = ({
         </span>
       </button>
 
-      {isAlbumOpen && (
+      {isAlbumOpen && typeof document !== 'undefined' && createPortal(
         <ExerciseImageAlbumModal
           name={name}
           value={value}
           onSelect={onChange}
           onClose={() => setIsAlbumOpen(false)}
-        />
+          maxWidthClassName={albumMaxWidthClassName}
+        />,
+        document.body,
       )}
     </div>
   );
