@@ -384,7 +384,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
               {/* Video URL */}
               <div>
                 <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wide mb-1.5">
-                  URL de Video (opcional)
+                  URL de Video
                 </label>
                 <input
                   type="url"
@@ -398,7 +398,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
               {/* Notes */}
               <div>
                 <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wide mb-1.5">
-                  Notas de técnica (opcional)
+                  Notas de técnica
                 </label>
                 <input
                   type="text"
