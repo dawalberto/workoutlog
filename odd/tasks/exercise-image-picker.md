@@ -39,6 +39,10 @@ The exercise create/edit forms only accepted an image URL, so most exercises end
 - The image preview is now 1:1 in the exercise form (`ExerciseImagePicker`) and in the view modal (`ExercisePreviewModal`), so covers show uncropped.
 - Removed the "Biblioteca" badge from the form preview.
 
+## Bug fixes
+
+- `ExerciseThumbnail` and `ExercisePreviewModal` hid a failed cover with an inline `display:none` that persisted across `src` changes, so editing an exercise whose old image had failed kept showing the initials even after picking a library image (the preview modal, freshly mounted, showed it). Failure is now tracked per URL in state, so a new cover is retried and rendered. Regression test: `tests/exercise-thumbnail-recovery.test.tsx`.
+
 ## Progress and verification
 
 - `src/assets/exercises/*.webp` (19 files moved from `public/assets/exercises/`).

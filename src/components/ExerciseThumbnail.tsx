@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dumbbell } from 'lucide-react';
 import { getExerciseInitials } from '../utils/exerciseInitials';
 import { resolveExerciseImageUrl } from '../utils/exerciseImages';
@@ -33,6 +33,11 @@ export const ExerciseThumbnail: React.FC<ExerciseThumbnailProps> = ({
 }) => {
   const initials = getExerciseInitials(name);
   const resolvedImageUrl = resolveExerciseImageUrl(imageUrl);
+  // Tracked per URL so a previously failed image is retried when the cover
+  // changes (e.g. replacing a broken URL with a library image). Never hide the
+  // <img> by mutating its DOM style, which React would not reset on the new src.
+  const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
+  const showImage = resolvedImageUrl !== '' && resolvedImageUrl !== failedImageUrl;
 
   return (
     <div className={`relative flex items-center justify-center overflow-hidden ${className}`}>
@@ -45,14 +50,14 @@ export const ExerciseThumbnail: React.FC<ExerciseThumbnailProps> = ({
           {initials}
         </span>
       )}
-      {resolvedImageUrl && (
+      {showImage && (
         <img
           src={resolvedImageUrl}
           alt={name}
           loading="lazy"
           className="absolute inset-0 w-full h-full object-cover"
-          onError={(event) => {
-            (event.target as HTMLElement).style.display = 'none';
+          onError={() => {
+            setFailedImageUrl(resolvedImageUrl);
             onError?.();
           }}
         />
