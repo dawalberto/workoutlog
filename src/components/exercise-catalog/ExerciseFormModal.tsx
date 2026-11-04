@@ -116,7 +116,7 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
           {/* Notes */}
           <div>
             <label className="block text-xs font-extrabold text-zinc-300 uppercase tracking-wider mb-1.5">
-              Notas de Técnica (opcional)
+              Notas de Técnica
             </label>
             <textarea
               rows={2}
@@ -144,7 +144,7 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
                   value={form.defaultSets}
                   onFocus={(e) => e.target.select()}
                   onChange={(e) => form.setDefaultSets(e.target.value)}
-                  className="w-full min-h-[44px] text-center text-xs font-black rounded-xl border border-white/10 bg-zinc-800 text-white focus:border-[#00FF87] focus:outline-none"
+                  className="w-full min-h-[48px] text-center text-xs font-black rounded-xl border border-white/10 bg-zinc-800 text-white focus:border-[#00FF87] focus:outline-none"
                 />
               </div>
               <div>
@@ -158,7 +158,7 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
                   value={form.defaultReps}
                   onFocus={(e) => e.target.select()}
                   onChange={(e) => form.setDefaultReps(e.target.value)}
-                  className="w-full min-h-[44px] text-center text-xs font-black rounded-xl border border-white/10 bg-zinc-800 text-white focus:border-[#00FF87] focus:outline-none"
+                  className="w-full min-h-[48px] text-center text-xs font-black rounded-xl border border-white/10 bg-zinc-800 text-white focus:border-[#00FF87] focus:outline-none"
                 />
               </div>
               <div>

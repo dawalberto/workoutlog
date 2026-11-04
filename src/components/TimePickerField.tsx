@@ -102,7 +102,7 @@ export const TimePickerField: React.FC<TimePickerFieldProps> = ({
           disabled={disabled}
           onClick={() => setIsOpen(true)}
           title={`Tiempo: ${fullText} (${numSeconds}s)`}
-          className="w-full min-h-[44px] px-2.5 py-1.5 rounded-xl border border-white/10 hover:border-[#00FF87] bg-black/40 hover:bg-[#00FF87]/10 text-white transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-inner"
+          className="w-full min-h-[48px] px-2.5 py-1.5 rounded-xl border border-white/10 hover:border-[#00FF87] bg-black/40 hover:bg-[#00FF87]/10 text-white transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-inner"
         >
           <Clock className="w-3.5 h-3.5 text-[#00FF87] shrink-0" />
           <span className="font-mono text-xs font-black text-white">

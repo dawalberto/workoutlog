@@ -462,7 +462,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                           setCustomSetsCount(1);
                         }
                       }}
-                      className="w-full min-h-[44px] text-center text-xs font-bold py-1.5 rounded-lg border border-white/10 bg-black/40 text-white focus:outline-none focus:border-[#00FF87]"
+                      className="w-full min-h-[48px] text-center text-xs font-bold py-1.5 rounded-lg border border-white/10 bg-black/40 text-white focus:outline-none focus:border-[#00FF87]"
                     />
                   </div>
                   <div>
@@ -481,7 +481,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                           setCustomReps(1);
                         }
                       }}
-                      className="w-full min-h-[44px] text-center text-xs font-bold py-1.5 rounded-lg border border-white/10 bg-black/40 text-white focus:outline-none focus:border-[#00FF87]"
+                      className="w-full min-h-[48px] text-center text-xs font-bold py-1.5 rounded-lg border border-white/10 bg-black/40 text-white focus:outline-none focus:border-[#00FF87]"
                     />
                   </div>
                   <div>
