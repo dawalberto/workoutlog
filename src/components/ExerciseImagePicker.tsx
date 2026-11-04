@@ -40,7 +40,7 @@ export const ExerciseImagePicker: React.FC<ExerciseImagePickerProps> = ({
         type="button"
         onClick={() => setIsAlbumOpen(true)}
         aria-label={value ? 'Cambiar imagen del ejercicio' : 'Elegir imagen del ejercicio'}
-        className="group relative mx-auto block w-full max-w-xs aspect-square rounded-2xl overflow-hidden border border-white/10 bg-zinc-900 hover:border-[#00FF87]/40 transition-all shadow-inner"
+        className="group relative mx-auto block w-full max-w-[160px] aspect-square rounded-2xl overflow-hidden border border-white/10 bg-zinc-900 hover:border-[#00FF87]/40 transition-all shadow-inner"
       >
         <ExerciseThumbnail
           name={name}
