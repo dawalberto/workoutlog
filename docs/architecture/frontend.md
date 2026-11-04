@@ -106,6 +106,8 @@ This touches IndexedDB, the outbox, Supabase, and backups. Follow the ordered ch
 
 Bundled exercise cover photos live in `src/assets/exercises/` and are auto-enumerated with `import.meta.glob` in [`src/utils/exerciseImages.ts`](../../src/utils/exerciseImages.ts); adding a file there is enough, with no manifest to maintain. A chosen photo is stored in the synced `imageUrl` as a stable key (`library:<slug>`) and resolved to the current content-hashed asset URL at render time by `resolveExerciseImageUrl` (used by [`ExerciseThumbnail`](../../src/components/ExerciseThumbnail.tsx) and [`ExercisePreviewModal`](../../src/components/exercise-catalog/ExercisePreviewModal.tsx)), so stored values survive redeploys. Custom images keep storing their raw URL. [`ExerciseImagePicker`](../../src/components/ExerciseImagePicker.tsx) is the cover field (album plus custom URL) used by the catalog form and the in-the-moment custom form.
 
+To add a photo: drop a 1:1 file named in kebab-case English (for example `bulgarian-split-squat.webp`, `.png`, `.jpg`, or `.jpeg`) into `src/assets/exercises/`, and optionally add its Spanish label to `EXERCISE_IMAGE_LABELS` in the same module (otherwise the filename is humanized). No manifest or script to run; the album, search, and service-worker precache pick it up on the next build. Never rename or delete a shipped file: selections are stored as `library:<slug>`, so a missing file falls back to the initials placeholder — add a new file instead.
+
 ## Known debt
 
 | Item | Evidence |

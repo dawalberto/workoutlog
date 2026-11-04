@@ -9,6 +9,11 @@
  * For a bundled image, `imageUrl` holds a stable key (`library:<slug>`), and
  * {@link resolveExerciseImageUrl} maps it to the current build's asset URL.
  * Custom images keep storing their raw URL unchanged.
+ *
+ * Adding a photo: drop a 1:1 kebab-case English file in `src/assets/exercises/`
+ * and optionally add its Spanish label to EXERCISE_IMAGE_LABELS below. Never
+ * rename or delete a shipped file: stored `library:<slug>` keys would stop
+ * resolving and would fall back to the initials placeholder.
  */
 
 export interface ExerciseImageOption {
