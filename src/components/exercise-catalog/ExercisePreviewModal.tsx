@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Clock, Edit3, FileText, Layers, X } from 'lucide-react';
 import type { ExerciseDefinition } from '../../types';
 import { formatSecondsToTime } from '../../utils/timeCalculations';
@@ -21,9 +21,11 @@ export const ExercisePreviewModal: React.FC<ExercisePreviewModalProps> = ({
   onEdit,
 }) => {
   const { rmLogs, exerciseDiary, openExerciseDiary } = useExercisePreviewModal();
+  const [failedCoverUrl, setFailedCoverUrl] = useState<string | null>(null);
   if (!previewExercise) return null;
 
   const coverImageUrl = resolveExerciseImageUrl(previewExercise.imageUrl);
+  const showCoverImage = coverImageUrl !== '' && coverImageUrl !== failedCoverUrl;
 
   return (
     <div
@@ -90,17 +92,14 @@ export const ExercisePreviewModal: React.FC<ExercisePreviewModalProps> = ({
 
         {/* Modal Content */}
         <div className="p-5 sm:p-6 overflow-y-auto space-y-4">
-          {/* Media Image (only when the exercise has an image) */}
-          {coverImageUrl && (
+          {/* Media Image (only when the exercise has a working image) */}
+          {showCoverImage && (
             <div className="rounded-2xl overflow-hidden border border-white/10 bg-zinc-900 aspect-square shadow-md">
               <img
                 src={coverImageUrl}
                 alt={previewExercise.name}
                 className="w-full h-full object-cover"
-                onError={(event) => {
-                  const container = event.currentTarget.parentElement;
-                  if (container) container.style.display = 'none';
-                }}
+                onError={() => setFailedCoverUrl(coverImageUrl)}
               />
             </div>
           )}
