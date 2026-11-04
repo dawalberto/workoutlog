@@ -13,8 +13,6 @@ export interface ExerciseFormState extends ExerciseCatalogFormValues {
   setDefaultReps: Dispatch<SetStateAction<number | string>>;
   setDefaultWeight: Dispatch<SetStateAction<number | string>>;
   setDefaultRest: Dispatch<SetStateAction<number | string>>;
-  imageError: boolean;
-  setImageError: Dispatch<SetStateAction<boolean>>;
 }
 
 export function useExerciseForm() {
@@ -27,7 +25,6 @@ export function useExerciseForm() {
   const [defaultReps, setDefaultReps] = useState<number | string>(10);
   const [defaultWeight, setDefaultWeight] = useState<number | string>(50);
   const [defaultRest, setDefaultRest] = useState<number | string>(90);
-  const [imageError, setImageError] = useState(false);
 
   const reset = (exercise?: ExerciseDefinition) => {
     const exerciseCategories = exercise ? getExerciseCategories(exercise) : [];
@@ -40,7 +37,6 @@ export function useExerciseForm() {
     setDefaultReps(exercise?.defaultReps || 10);
     setDefaultWeight(exercise?.defaultWeight || 50);
     setDefaultRest(exercise?.defaultRestSeconds || 90);
-    setImageError(false);
   };
 
   const form: ExerciseFormState = {
@@ -62,8 +58,6 @@ export function useExerciseForm() {
     setDefaultWeight,
     defaultRest,
     setDefaultRest,
-    imageError,
-    setImageError,
   };
 
   return { form, reset };

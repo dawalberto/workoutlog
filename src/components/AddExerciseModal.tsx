@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  X, 
-  Search, 
-  Plus, 
-  Dumbbell, 
-  Layers, 
-  Clock, 
-  Sparkles, 
-  Image as ImageIcon,
+import {
+  X,
+  Search,
+  Plus,
+  Dumbbell,
+  Layers,
+  Clock,
+  Sparkles,
   Check
 } from 'lucide-react';
 import type { ExerciseDefinition } from '../types';
 import { RmBadge } from './RmBadge';
 import { DiaryButton } from './DiaryButton';
 import { ExerciseThumbnail } from './ExerciseThumbnail';
+import { ExerciseImagePicker } from './ExerciseImagePicker';
 import { TimePickerField } from './TimePickerField';
 import { filterExerciseCatalog } from '../utils/exerciseCatalog';
 import { formatExerciseCategories } from '../utils/exerciseCategories';
@@ -374,36 +374,12 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                 />
               </div>
 
-              {/* Cover Preview Image URL with live preview */}
-              <div>
-                <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wide mb-1.5 flex items-center justify-between">
-                  <span>URL de Imagen (Preview / Cover)</span>
-                  <span className="text-[10px] font-normal text-zinc-500">Miniatura visual rápida</span>
-                </label>
-                <div className="flex items-center gap-2.5">
-                  <div className="w-12 h-12 rounded-xl border border-white/10 bg-black/40 shrink-0 overflow-hidden flex items-center justify-center">
-                    {customImageUrl ? (
-                      <img
-                        src={customImageUrl}
-                        alt="Vista previa"
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLElement).style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <ImageIcon className="w-5 h-5 text-zinc-500" />
-                    )}
-                  </div>
-                  <input
-                    type="url"
-                    value={customImageUrl}
-                    onChange={(e) => setCustomImageUrl(e.target.value)}
-                    placeholder="https://ejemplo.com/foto.jpg..."
-                    className="flex-1 min-h-[48px] px-3.5 py-2.5 text-xs rounded-xl border border-white/10 bg-black/40 text-white placeholder-zinc-500 focus:outline-none focus:border-[#00FF87] focus:ring-1 focus:ring-[#00FF87] transition-all"
-                  />
-                </div>
-              </div>
+              {/* Cover image */}
+              <ExerciseImagePicker
+                name={customName}
+                value={customImageUrl}
+                onChange={setCustomImageUrl}
+              />
 
               {/* Video URL */}
               <div>

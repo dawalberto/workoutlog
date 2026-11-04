@@ -2,7 +2,7 @@
 
 Structure and conventions of the React PWA in `src/`, and where to extend it.
 
-Last verified: 2026-10-31
+Last verified: 2026-11-04
 
 ## At a glance
 
@@ -101,6 +101,10 @@ Signing out removes all local state for the signed-in owner, including queued ch
 ### Adding a persisted (and synced) collection
 
 This touches IndexedDB, the outbox, Supabase, and backups. Follow the ordered checklist in the [frontend–backend strategy](frontend-backend-strategy.md#checklist-add-a-synced-field-or-table). Never add a collection that persists locally but is silently excluded from sync without documenting it.
+
+### Exercise image library
+
+Bundled exercise cover photos live in `src/assets/exercises/` and are auto-enumerated with `import.meta.glob` in [`src/utils/exerciseImages.ts`](../../src/utils/exerciseImages.ts); adding a file there is enough, with no manifest to maintain. A chosen photo is stored in the synced `imageUrl` as a stable key (`library:<slug>`) and resolved to the current content-hashed asset URL at render time by `resolveExerciseImageUrl` (used by [`ExerciseThumbnail`](../../src/components/ExerciseThumbnail.tsx) and [`ExercisePreviewModal`](../../src/components/exercise-catalog/ExercisePreviewModal.tsx)), so stored values survive redeploys. Custom images keep storing their raw URL. [`ExerciseImagePicker`](../../src/components/ExerciseImagePicker.tsx) is the cover field (album plus custom URL) used by the catalog form and the in-the-moment custom form.
 
 ## Known debt
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Dumbbell } from 'lucide-react';
 import { getExerciseInitials } from '../utils/exerciseInitials';
+import { resolveExerciseImageUrl } from '../utils/exerciseImages';
 
 interface ExerciseThumbnailProps {
   /** Exercise name; drives the alt text and the initials placeholder. */
@@ -31,6 +32,7 @@ export const ExerciseThumbnail: React.FC<ExerciseThumbnailProps> = ({
   onError,
 }) => {
   const initials = getExerciseInitials(name);
+  const resolvedImageUrl = resolveExerciseImageUrl(imageUrl);
 
   return (
     <div className={`relative flex items-center justify-center overflow-hidden ${className}`}>
@@ -43,9 +45,9 @@ export const ExerciseThumbnail: React.FC<ExerciseThumbnailProps> = ({
           {initials}
         </span>
       )}
-      {imageUrl && (
+      {resolvedImageUrl && (
         <img
-          src={imageUrl}
+          src={resolvedImageUrl}
           alt={name}
           loading="lazy"
           className="absolute inset-0 w-full h-full object-cover"

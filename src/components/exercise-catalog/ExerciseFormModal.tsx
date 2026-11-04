@@ -2,7 +2,7 @@ import React from 'react';
 import { Dumbbell, X } from 'lucide-react';
 import type { ExerciseDefinition } from '../../types';
 import { TimePickerField } from '../TimePickerField';
-import { ExerciseThumbnail } from '../ExerciseThumbnail';
+import { ExerciseImagePicker } from '../ExerciseImagePicker';
 import { formatWeightInput, parseWeightInput } from '../../utils/weightInput';
 import type { ExerciseFormState } from '../../hooks/exercise-catalog/useExerciseForm';
 
@@ -92,42 +92,12 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
             </div>
           </div>
 
-          {/* Image URL & Live Preview */}
-          <div>
-            <label className="block text-xs font-extrabold text-zinc-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-              <span>URL de Imagen (Preview)</span>
-              <span className="text-[10px] font-normal text-zinc-500">Miniatura visual</span>
-            </label>
-            <div className="flex items-center gap-3">
-              <div className="w-14 h-14 rounded-2xl border border-white/10 bg-zinc-900 shrink-0 overflow-hidden shadow-inner">
-                <ExerciseThumbnail
-                  name={form.name}
-                  imageUrl={form.imageUrl}
-                  className="w-full h-full"
-                  iconClassName="w-6 h-6 text-zinc-600"
-                  initialsClassName="text-xs"
-                  onError={() => form.setImageError(true)}
-                />
-              </div>
-              <div className="flex-1">
-                <input
-                  type="url"
-                  value={form.imageUrl}
-                  onChange={(e) => {
-                    form.setImageUrl(e.target.value);
-                    form.setImageError(false);
-                  }}
-                  placeholder="https://ejemplo.com/imagen.jpg..."
-                  className="w-full min-h-[48px] px-4 text-xs rounded-2xl border border-white/10 bg-zinc-900 text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#00FF87]"
-                />
-                {form.imageError && (
-                  <p className="text-[11px] text-amber-400 mt-1">
-                    No se pudo cargar la imagen desde este enlace.
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
+          {/* Cover image */}
+          <ExerciseImagePicker
+            name={form.name}
+            value={form.imageUrl}
+            onChange={form.setImageUrl}
+          />
 
           {/* Video URL */}
           <div>
