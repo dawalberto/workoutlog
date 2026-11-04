@@ -38,6 +38,7 @@ The exercise create/edit forms only accepted an image URL, so most exercises end
 - Clear option copy shortened to "Sin imagen".
 - The image preview is now 1:1 in the exercise form (`ExerciseImagePicker`) and in the view modal (`ExercisePreviewModal`), so covers show uncropped.
 - Removed the "Biblioteca" badge from the form preview.
+- Album panel now matches its host modal width (rendered through a portal so the parent's entry-animation `transform` no longer traps the `fixed` overlay), and the custom-URL input and button stack on mobile to avoid horizontal scroll.
 
 ## Bug fixes
 

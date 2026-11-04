@@ -16,6 +16,8 @@ interface ExerciseImageAlbumModalProps {
   /** Called with the chosen value, then the modal closes. */
   onSelect: (value: string) => void;
   onClose: () => void;
+  /** Max-width class for the panel; hosts pass their own so widths match. */
+  maxWidthClassName?: string;
 }
 
 /**
@@ -28,6 +30,7 @@ export const ExerciseImageAlbumModal: React.FC<ExerciseImageAlbumModalProps> = (
   value,
   onSelect,
   onClose,
+  maxWidthClassName = 'max-w-lg',
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [urlDraft, setUrlDraft] = useState(() => (exerciseLibrarySlug(value) ? '' : value));
@@ -54,7 +57,7 @@ export const ExerciseImageAlbumModal: React.FC<ExerciseImageAlbumModalProps> = (
       }}
     >
       <div
-        className="bg-[#18181A] text-white rounded-3xl border border-white/10 shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-slide-up"
+        className={`bg-[#18181A] text-white rounded-3xl border border-white/10 shadow-2xl ${maxWidthClassName} w-full max-h-[92vh] flex flex-col overflow-hidden animate-slide-up`}
         onClick={(event) => event.stopPropagation()}
       >
         {/* Header */}
@@ -157,7 +160,7 @@ export const ExerciseImageAlbumModal: React.FC<ExerciseImageAlbumModalProps> = (
               <Link2 className="w-3.5 h-3.5 text-[#00E5FF]" />
               O usa una URL propia
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
               <input
                 type="url"
                 value={urlDraft}
@@ -167,13 +170,13 @@ export const ExerciseImageAlbumModal: React.FC<ExerciseImageAlbumModalProps> = (
                 }}
                 placeholder="https://ejemplo.com/imagen.jpg"
                 aria-label="URL de imagen personalizada"
-                className="flex-1 min-h-[48px] px-4 text-sm rounded-2xl border border-white/10 bg-zinc-900 text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#00E5FF] focus:ring-2 focus:ring-[#00E5FF]/20"
+                className="w-full min-w-0 sm:flex-1 min-h-[48px] px-4 text-sm rounded-2xl border border-white/10 bg-zinc-900 text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#00E5FF] focus:ring-2 focus:ring-[#00E5FF]/20"
               />
               <button
                 type="button"
                 onClick={() => selectAndClose(trimmedUrl)}
                 disabled={!trimmedUrl}
-                className="min-h-[48px] px-4 rounded-2xl text-xs font-extrabold bg-[#00E5FF] text-black hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0"
+                className="w-full sm:w-auto min-h-[48px] px-4 rounded-2xl text-xs font-extrabold bg-[#00E5FF] text-black hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0"
               >
                 Usar URL
               </button>
