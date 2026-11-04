@@ -99,12 +99,33 @@ export function resolveExerciseImageUrl(imageUrl: string | undefined): string {
   return LIBRARY_URL_BY_VALUE.get(imageUrl) ?? '';
 }
 
-/** Filters the album by a case-insensitive label match. */
+/**
+ * Normalizes text for search: lower-case, accent-insensitive, and without
+ * separators, so "push up", "pushup", and "push-ups" all match the same entry.
+ */
+function normalizeSearchText(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+}
+
+/**
+ * Filters the album by a case- and accent-insensitive match against both the
+ * Spanish label and the English file slug (so "push up" finds "Flexiones").
+ */
 export function filterExerciseImageOptions(
   options: ExerciseImageOption[],
   searchTerm: string,
 ): ExerciseImageOption[] {
-  const term = searchTerm.trim().toLowerCase();
+  const term = normalizeSearchText(searchTerm);
   if (!term) return options;
-  return options.filter((option) => option.label.toLowerCase().includes(term));
+  return options.filter((option) => {
+    const slug = exerciseLibrarySlug(option.value) ?? option.value;
+    return (
+      normalizeSearchText(option.label).includes(term) ||
+      normalizeSearchText(slug).includes(term)
+    );
+  });
 }

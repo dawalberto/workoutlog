@@ -50,15 +50,28 @@ describe('exercise image library', () => {
     expect(resolveExerciseImageUrl('library:missing-image')).toBe('');
   });
 
-  it('filters options by case-insensitive label', () => {
+  it('filters by Spanish label or English slug, ignoring case and accents', () => {
     const options = [
-      { value: 'library:a', url: '/a.webp', label: 'Prensa de Piernas' },
-      { value: 'library:b', url: '/b.webp', label: 'Flexiones' },
+      { value: 'library:leg-press', url: '/leg.webp', label: 'Prensa de Piernas' },
+      { value: 'library:push-ups', url: '/push.webp', label: 'Flexiones' },
+      { value: 'library:lat-pulldown', url: '/lat.webp', label: 'Jalón al Pecho' },
     ];
 
     expect(filterExerciseImageOptions(options, 'PIE')).toEqual([options[0]]);
-    expect(filterExerciseImageOptions(options, '  flex ')).toEqual([options[1]]);
+    expect(filterExerciseImageOptions(options, '  prensa ')).toEqual([options[0]]);
+    expect(filterExerciseImageOptions(options, 'jalon')).toEqual([options[2]]);
     expect(filterExerciseImageOptions(options, '')).toEqual(options);
     expect(filterExerciseImageOptions(options, 'zzz')).toEqual([]);
+  });
+
+  it('finds Spanish labels by their English filename too', () => {
+    const labels = (term: string) =>
+      filterExerciseImageOptions(EXERCISE_IMAGE_LIBRARY, term).map((option) => option.label);
+
+    expect(labels('pushup')).toContain('Flexiones');
+    expect(labels('push up')).toContain('Flexiones');
+    expect(labels('push-ups')).toContain('Flexiones');
+    expect(labels('back squat')).toContain('Sentadilla Trasera');
+    expect(labels('bench press')).toContain('Press de Banca Plano');
   });
 });

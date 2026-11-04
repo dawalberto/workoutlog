@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Images } from 'lucide-react';
 import { ExerciseThumbnail } from './ExerciseThumbnail';
 import { ExerciseImageAlbumModal } from './ExerciseImageAlbumModal';
-import { exerciseLibrarySlug } from '../utils/exerciseImages';
 
 interface ExerciseImagePickerProps {
   /** Exercise name, used for the alt text and the initials fallback. */
@@ -27,7 +26,6 @@ export const ExerciseImagePicker: React.FC<ExerciseImagePickerProps> = ({
   label = 'Imagen',
 }) => {
   const [isAlbumOpen, setIsAlbumOpen] = useState(false);
-  const isLibraryImage = exerciseLibrarySlug(value) !== null;
 
   return (
     <div>
@@ -42,7 +40,7 @@ export const ExerciseImagePicker: React.FC<ExerciseImagePickerProps> = ({
         type="button"
         onClick={() => setIsAlbumOpen(true)}
         aria-label={value ? 'Cambiar imagen del ejercicio' : 'Elegir imagen del ejercicio'}
-        className="group relative w-full h-32 sm:h-40 rounded-2xl overflow-hidden border border-white/10 bg-zinc-900 hover:border-[#00FF87]/40 transition-all shadow-inner"
+        className="group relative mx-auto block w-full max-w-xs aspect-square rounded-2xl overflow-hidden border border-white/10 bg-zinc-900 hover:border-[#00FF87]/40 transition-all shadow-inner"
       >
         <ExerciseThumbnail
           name={name}
@@ -57,11 +55,6 @@ export const ExerciseImagePicker: React.FC<ExerciseImagePickerProps> = ({
             {value ? 'Cambiar imagen' : 'Elegir imagen'}
           </span>
         </span>
-        {isLibraryImage && (
-          <span className="absolute top-2 left-2 px-2 py-0.5 rounded-lg bg-[#00FF87]/15 border border-[#00FF87]/40 text-[10px] font-black text-[#00FF87] uppercase tracking-wider">
-            Biblioteca
-          </span>
-        )}
       </button>
 
       {isAlbumOpen && (

@@ -27,11 +27,11 @@ describe('ExerciseImagePicker', () => {
     );
 
     expect(backSquat).toBeDefined();
-    expect(markup).toContain('Biblioteca');
     expect(markup).toContain('Cambiar imagen');
     expect(markup).toContain('aria-label="Cambiar imagen del ejercicio"');
     expect(markup).toContain(backSquat!.url);
     expect(markup).not.toContain('src="library:back-squat"');
+    expect(markup).not.toContain('Biblioteca');
   });
 
   it('renders a custom URL directly and does not flag it as a library image', () => {
@@ -59,7 +59,7 @@ describe('ExerciseImageAlbumModal', () => {
     expect(markup).toContain('role="dialog"');
     expect(markup).toContain('aria-modal="true"');
     expect(markup).toContain('Elegir imagen');
-    expect(markup).toContain('Sin imagen (usar iniciales)');
+    expect(markup).toContain('Sin imagen');
     expect(markup).toContain('O usa una URL propia');
     expect(markup).toContain('placeholder="Buscar imagen..."');
     expect(markup).toContain('placeholder="https://ejemplo.com/imagen.jpg"');

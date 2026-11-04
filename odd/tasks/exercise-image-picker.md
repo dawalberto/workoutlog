@@ -31,6 +31,14 @@ The exercise create/edit forms only accepted an image URL, so most exercises end
 - A stored library image still resolves after a production rebuild (stable key, hashed URL).
 - `pnpm test`, `pnpm lint`, `pnpm build` pass.
 
+## Follow-up adjustments
+
+- Album labels moved below each image; long names scroll as a horizontal banner (`MarqueeLabel`) instead of truncating.
+- Album search matches both the Spanish label and the English file slug, accent-insensitive ("push up", "pushup", "Flexiones", "jalon").
+- Clear option copy shortened to "Sin imagen".
+- The image preview is now 1:1 in the exercise form (`ExerciseImagePicker`) and in the view modal (`ExercisePreviewModal`), so covers show uncropped.
+- Removed the "Biblioteca" badge from the form preview.
+
 ## Progress and verification
 
 - `src/assets/exercises/*.webp` (19 files moved from `public/assets/exercises/`).
@@ -41,7 +49,7 @@ The exercise create/edit forms only accepted an image URL, so most exercises end
 - `vite.config.ts` precaches `webp`/`jpg`/`jpeg` for offline.
 - Tests: `tests/exercise-images.test.ts` (6), `tests/exercise-image-picker.test.tsx` (5), extended `tests/exercise-thumbnail.test.tsx`; refreshed `tests/__snapshots__/exercise-catalog.test.tsx.snap` (`catalog-create-form-original`, `catalog-edit-form-original`).
 - Docs: new "Exercise image library" subsection in `docs/architecture/frontend.md`.
-- Checks: `pnpm test` 44 files / 319 tests passed; `pnpm lint` exit 0; `pnpm build` succeeded (chunk-size warning only; 19 hashed `.webp` precached, 42 SW entries).
+- Checks: `pnpm test` 44 files / 320 tests passed; `pnpm lint` exit 0; `pnpm build` succeeded (chunk-size warning only; 19 hashed `.webp` precached, 42 SW entries).
 
 ## Next step
 

@@ -96,6 +96,29 @@ html, body {
   animation: slide-up-sheet 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Horizontal banner scroll for long labels (applied only when text overflows) */
+@keyframes marquee-banner {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+.marquee-banner-item {
+  flex: 0 0 auto;
+  min-width: 100%;
+  padding-right: 1.5rem;
+  animation: marquee-banner 8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-banner-item {
+    animation: none;
+  }
+}
+
 /* Glassmorphism Classes */
 .glass-panel {
   background: rgba(28, 28, 30, 0.85);
