@@ -197,7 +197,7 @@ These are separate datasets with different purposes. [`supabase/seed.sql`](../..
 
 First-run starter exercises and routines are client-side in [`src/data/initialData.ts`](../../src/data/initialData.ts), which `src/services/db.ts` uses when a user first opens the app. They become private, editable user records; do not move them into a shared/global seed catalog table.
 
-TODO(human): define the final starter exercises and routines in `src/data/initialData.ts`
+The shipped starter data seeds two editable routines — `Tren superior` and `Tren inferior` — with seven exercises each (14 catalog definitions). Every entry carries a Spanish name, a short technique note, its bundled `library:<slug>` image, a muscle-group category from the app filter list, and default sets/reps/weight/rest. Because a set stores a single numeric weight, each exercise seeds the midpoint of its recommended range (calf raises default to bodyweight). Tests in [`tests/data/initialData.test.ts`](../../tests/data/initialData.test.ts) guard the shape, categories, notes, resolvable images, and routine wiring.
 
 ## What does NOT exist
 
