@@ -163,6 +163,7 @@ Load the matching `SKILL.md` before writing.
 - **Testing**: Trigger: tests, Vitest, pgTAP, fixtures, mocks. Load `.github/skills/workoutlog-testing/SKILL.md`.
 - **Offline Sync**: Trigger: offline sync, IndexedDB, browser storage, cloud sync. Load `.github/skills/workoutlog-offline-sync/SKILL.md` for these tasks.
 - **UI & Bento Neon Style**: Trigger: UI, CSS, styling, visual, component, design, bento, neon, layout. Load `.github/skills/workoutlog-ui-style/SKILL.md` for visual tasks.
+- **Modern Web Guidance**: Trigger: HTML, CSS, browser APIs, accessibility, or client-side web behavior. Load `.agents/skills/modern-web-guidance/SKILL.md`; project rules and browser compatibility take precedence.
 
 ## Where to look next
 
