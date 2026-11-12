@@ -49,7 +49,7 @@ export const ExerciseCatalogCard: React.FC<ExerciseCatalogCardProps> = ({
             <span className="px-2 py-0.5 rounded-lg text-[10px] font-black bg-zinc-800 text-zinc-300 border border-white/5 uppercase tracking-wider">
               {formatExerciseCategories(ex) || 'General'}
             </span>
-            <RmBadge rmLogs={rmLogs} exerciseName={ex.name} exerciseId={ex.id} />
+            <RmBadge rmLogs={rmLogs} exerciseName={ex.name} exerciseId={ex.id} estimatedSets={[{ weight: ex.defaultWeight ?? 0, reps: ex.defaultReps || 10 }]} />
           </div>
           <h3 className="text-base font-bold text-white tracking-tight mt-1 truncate group-hover:text-[#00FF87] transition-colors">
             {ex.name}

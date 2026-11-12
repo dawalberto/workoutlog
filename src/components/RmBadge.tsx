@@ -5,6 +5,7 @@ import {
   findRmLogForExercise,
   formatRmRecordValue,
   getHighestRmRecord,
+  estimateOneRepMax,
 } from '../utils/rmCalculations';
 
 export interface RmBadgeProps {
@@ -13,6 +14,7 @@ export interface RmBadgeProps {
   exerciseId?: string;
   size?: 'xs' | 'sm' | 'md';
   className?: string;
+  estimatedSets?: Array<{ weight: number | string; reps: number | string }>;
 }
 
 export const RmBadge: React.FC<RmBadgeProps> = ({
@@ -21,14 +23,13 @@ export const RmBadge: React.FC<RmBadgeProps> = ({
   exerciseId,
   size = 'sm',
   className = '',
+  estimatedSets = [],
 }) => {
-  if (!rmLogs || rmLogs.length === 0 || !exerciseName) return null;
-
-  const log = findRmLogForExercise(rmLogs, exerciseName, exerciseId);
-  if (!log || !log.records || log.records.length === 0) return null;
-
-  const highestRecord = getHighestRmRecord(log);
-  if (!highestRecord || highestRecord.weight <= 0) return null;
+  const log = exerciseName ? findRmLogForExercise(rmLogs ?? [], exerciseName, exerciseId) : undefined;
+  const record = getHighestRmRecord(log);
+  const highestRecord = record && record.weight > 0 ? record : null;
+  const estimate = highestRecord ? null : estimateOneRepMax(estimatedSets);
+  if (!highestRecord && estimate === null) return null;
 
   let sizeClasses = 'text-[10px] sm:text-[11px] px-1.5 py-0.5';
   let iconClasses = 'w-3 h-3';
@@ -43,11 +44,11 @@ export const RmBadge: React.FC<RmBadgeProps> = ({
 
   return (
     <span
-      className={`inline-flex items-center gap-1 font-bold rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.2)] shrink-0 select-none ${sizeClasses} ${className}`}
-      title={`Mayor RM registrado: ${formatRmRecordValue(highestRecord)} (${highestRecord.date || 'Récord personal'})`}
+      className={`inline-flex items-center gap-1 font-bold rounded-lg border shrink-0 select-none ${highestRecord ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.2)]' : 'bg-orange-500/10 text-orange-300 border-dashed border-orange-400/50'} ${sizeClasses} ${className}`}
+      title={highestRecord ? `Mayor RM registrado: ${formatRmRecordValue(highestRecord)} (${highestRecord.date || 'Récord personal'})` : 'RM estimado con la fórmula de Epley; supone una serie cercana al fallo'}
     >
       <Trophy className={`${iconClasses} text-amber-400 fill-amber-400/40 shrink-0`} />
-      <span>RM: {formatRmRecordValue(highestRecord)}</span>
+      <span>{highestRecord ? `RM: ${formatRmRecordValue(highestRecord)}` : `RM est.: ${estimate} kg`}</span>
     </span>
   );
 };
