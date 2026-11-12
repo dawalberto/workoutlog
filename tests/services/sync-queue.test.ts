@@ -36,6 +36,19 @@ function operation(
 }
 
 describe('sync queue ordering', () => {
+  it('round-trips timing and completed duration snapshots through sync', () => {
+    const timings = { exercise: { startedAt: 1000, completedAt: 5000, configuration: 'cfg', restSeconds: 60 } };
+    const session = { routineId: 'routine', startTime: 1000, completedSetIds: [], exerciseTimings: timings };
+    expect(diffSyncCollection('activeSessions', undefined, { routine: session }).find((item) => item.table === 'active_workout_sessions')?.record.exercise_timings).toEqual(timings);
+    const pulledSession = applyRemoteSyncChange({}, { table: 'active_workout_sessions', id: 'routine', revision: '1', deletedAt: null, record: { routine_id: 'routine', started_at: '1970-01-01T00:00:01Z', exercise_timings: timings } }) as Record<string, typeof session>;
+    expect(pulledSession.routine.exerciseTimings).toEqual(timings);
+    const measurement = { exerciseId: 'exercise', configuration: 'cfg', durationSeconds: 64 };
+    const history = { id: 'history', routineId: 'routine', routineName: 'Rutina', startTime: 0, endTime: 1000, completedAt: '1970-01-01T00:00:01Z', durationSeconds: 1, completedSetsCount: 1, totalSetsCount: 1, completionPercentage: 100, exercisesSummary: [{ name: 'Press', completedSets: 1, totalSets: 1, durationMeasurement: measurement }] };
+    expect(diffSyncCollection('workoutHistory', undefined, [history]).find((item) => item.table === 'workout_history_exercises')?.record.duration_measurement).toEqual(measurement);
+    const pulled = applyRemoteSyncChange([{ ...history, exercisesSummary: [] }], { table: 'workout_history_exercises', id: '["history",0]', revision: '1', deletedAt: null, record: { history_id: 'history', position: 0, exercise_name: 'Press', sets_completed: 1, sets_total: 1, duration_measurement: measurement } }) as typeof history[];
+    expect(pulled[0].exercisesSummary[0].durationMeasurement).toEqual(measurement);
+  });
+
   it('syncs optional history snapshots in both directions', () => {
     const history = { id: 'history', routineId: 'routine', routineName: 'Rutina', startTime: 0, endTime: 1,
       completedAt: '1970-01-01T00:00:01.000Z', durationSeconds: 1, completedSetsCount: 0,

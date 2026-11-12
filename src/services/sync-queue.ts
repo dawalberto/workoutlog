@@ -415,6 +415,7 @@ function flattenActiveSessions(value: unknown): SyncRecord[] {
         compactRecord({
           routine_id: routineId,
           started_at: toIsoString(session.startTime),
+          exercise_timings: session.exerciseTimings,
         }),
       ),
     );
@@ -514,6 +515,7 @@ function flattenWorkoutHistory(value: unknown): SyncRecord[] {
         sets_completed: exercise.completedSets,
         sets_total: exercise.totalSets ?? null,
         is_optional: exercise.isOptional ?? null,
+        duration_measurement: exercise.durationMeasurement,
       });
       validateWorkoutHistoryRecord(
         'workout_history_exercises',
@@ -842,6 +844,7 @@ function applyActiveSessionChange(
       routineId,
       startTime: timestampValue(change.record.started_at, current?.startTime ?? 0),
       completedSetIds: current?.completedSetIds ?? [],
+      exerciseTimings: isRecord(change.record.exercise_timings) ? change.record.exercise_timings as unknown as ActiveWorkoutSession['exerciseTimings'] : current?.exerciseTimings,
     },
   };
 }
@@ -996,6 +999,7 @@ function applyWorkoutHistoryExerciseChange(
           'sets_total',
         ),
         ...(typeof change.record.is_optional === 'boolean' ? { isOptional: change.record.is_optional } : {}),
+        ...(isRecord(change.record.duration_measurement) ? { durationMeasurement: change.record.duration_measurement as unknown as NonNullable<WorkoutHistoryLog['exercisesSummary'][number]['durationMeasurement']> } : {}),
         position,
       };
       if (currentIndex >= 0) {

@@ -51,14 +51,14 @@ isOneToOne: true
                   ]
                 },"active_workout_sessions": {
                   Row: {
-                    "created_at": string,"deleted_at": string | null,"routine_id": string,"server_revision": number,"server_updated_at": string,"started_at": string,"updated_at": string,"user_id": string
+                    "created_at": string,"deleted_at": string | null,"exercise_timings": Json | null,"routine_id": string,"server_revision": number,"server_updated_at": string,"started_at": string,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"deleted_at"?: string | null,"routine_id": string,"server_revision"?: number,"server_updated_at"?: string,"started_at": string,"updated_at"?: string,"user_id": string
+                    "created_at"?: string,"deleted_at"?: string | null,"exercise_timings"?: Json | null,"routine_id": string,"server_revision"?: number,"server_updated_at"?: string,"started_at": string,"updated_at"?: string,"user_id": string
                   }
                   Update: {
-                    "created_at"?: string,"deleted_at"?: string | null,"routine_id"?: string,"server_revision"?: number,"server_updated_at"?: string,"started_at"?: string,"updated_at"?: string,"user_id"?: string
+                    "created_at"?: string,"deleted_at"?: string | null,"exercise_timings"?: Json | null,"routine_id"?: string,"server_revision"?: number,"server_updated_at"?: string,"started_at"?: string,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -259,14 +259,14 @@ isOneToOne: false
                   ]
                 },"workout_history_exercises": {
                   Row: {
-                    "created_at": string,"deleted_at": string | null,"exercise_name": string,"exercises_completed": number,"history_id": string,"is_optional": boolean | null,"position": number,"server_revision": number,"server_updated_at": string,"sets_completed": number,"sets_total": number | null,"updated_at": string,"user_id": string
+                    "created_at": string,"deleted_at": string | null,"duration_measurement": Json | null,"exercise_name": string,"exercises_completed": number,"history_id": string,"is_optional": boolean | null,"position": number,"server_revision": number,"server_updated_at": string,"sets_completed": number,"sets_total": number | null,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"deleted_at"?: string | null,"exercise_name": string,"exercises_completed"?: number,"history_id": string,"is_optional"?: boolean | null,"position": number,"server_revision"?: number,"server_updated_at"?: string,"sets_completed"?: number,"sets_total"?: number | null,"updated_at"?: string,"user_id": string
+                    "created_at"?: string,"deleted_at"?: string | null,"duration_measurement"?: Json | null,"exercise_name": string,"exercises_completed"?: number,"history_id": string,"is_optional"?: boolean | null,"position": number,"server_revision"?: number,"server_updated_at"?: string,"sets_completed"?: number,"sets_total"?: number | null,"updated_at"?: string,"user_id": string
                   }
                   Update: {
-                    "created_at"?: string,"deleted_at"?: string | null,"exercise_name"?: string,"exercises_completed"?: number,"history_id"?: string,"is_optional"?: boolean | null,"position"?: number,"server_revision"?: number,"server_updated_at"?: string,"sets_completed"?: number,"sets_total"?: number | null,"updated_at"?: string,"user_id"?: string
+                    "created_at"?: string,"deleted_at"?: string | null,"duration_measurement"?: Json | null,"exercise_name"?: string,"exercises_completed"?: number,"history_id"?: string,"is_optional"?: boolean | null,"position"?: number,"server_revision"?: number,"server_updated_at"?: string,"sets_completed"?: number,"sets_total"?: number | null,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {

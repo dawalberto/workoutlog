@@ -22,6 +22,7 @@ import { ExerciseThumbnail } from './ExerciseThumbnail';
 export const RoutineList: React.FC = () => {
   const {
     routines,
+    measurements,
     activeSessions,
     totalRoutines,
     totalSetsOverall,
@@ -123,7 +124,7 @@ export const RoutineList: React.FC = () => {
             {/* Bento Grid Routine Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
               {routines.map((routine) => {
-                const totalSeconds = getRoutineTotalSeconds(routine);
+                const totalSeconds = getRoutineTotalSeconds(routine, measurements);
                 const exerciseCount = routine.exercises.length;
                 const totalSets = routine.exercises.reduce((acc, ex) => acc + ex.sets.length, 0);
                 const session = activeSessions[routine.id];

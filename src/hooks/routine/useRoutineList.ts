@@ -1,8 +1,11 @@
 import { useMemo } from 'react';
+import { measurementsFromHistory } from '../../utils/exerciseDuration';
 import { useAppStore } from '../../store/appStore';
 
 export function useRoutineList() {
   const routines = useAppStore((state) => state.routines);
+  const history = useAppStore((state) => state.workoutHistory);
+  const measurements = useMemo(() => measurementsFromHistory(history), [history]);
   const activeSessions = useAppStore((state) => state.activeSessions);
   const createRoutine = useAppStore((state) => state.createRoutine);
   const selectRoutine = useAppStore((state) => state.selectRoutine);
@@ -22,6 +25,7 @@ export function useRoutineList() {
 
   return {
     routines,
+    measurements,
     activeSessions,
     ...summary,
     onCreateRoutine: createRoutine,

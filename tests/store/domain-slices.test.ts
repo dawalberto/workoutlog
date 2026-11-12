@@ -242,6 +242,32 @@ describe('routine store slice', () => {
 });
 
 describe('workout store slice', () => {
+  it('keeps the original start when a completed set is unchecked and completed again', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(100000);
+    const routine = createRoutine('routine-1');
+    routine.exercises[0].sets.push({ id: 'set-2', setNumber: 2, reps: 8, weight: 40, restSeconds: 90 });
+    const store = createAppStore({ routines: [routine] });
+    store.getState().toggleSetComplete(routine.id, 'routine-1-set');
+    vi.setSystemTime(110000);
+    store.getState().toggleSetComplete(routine.id, 'routine-1-set');
+    vi.setSystemTime(120000);
+    store.getState().toggleSetComplete(routine.id, 'routine-1-set');
+    vi.setSystemTime(150000);
+    store.getState().toggleSetComplete(routine.id, 'set-2');
+    expect(store.getState().activeSessions[routine.id].exerciseTimings?.['routine-1-exercise']).toMatchObject({
+      startedAt: 100000, completedAt: 150000, restSeconds: 90,
+    });
+  });
+
+  it('does not invent a start for a partially completed legacy session', () => {
+    const routine = createRoutine('routine-1');
+    routine.exercises[0].sets.push({ id: 'set-2', setNumber: 2, reps: 8, weight: 40, restSeconds: 90 });
+    const store = createAppStore({ routines: [routine], activeSessions: { [routine.id]: { routineId: routine.id, startTime: 100, completedSetIds: ['routine-1-set'] } } });
+    store.getState().toggleSetComplete(routine.id, 'set-2');
+    expect(store.getState().activeSessions[routine.id].exerciseTimings?.['routine-1-exercise']).toBeUndefined();
+  });
+
   it('starts sessions, toggles completed sets, and selects off-screen progress', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-10-13T12:00:00.000Z'));

@@ -371,6 +371,15 @@ export function sanitizeRmLogs(items: unknown[]): ExerciseRmLog[] {
     });
 }
 
+function sanitizeDurationMeasurement(value: unknown): WorkoutHistoryLog['exercisesSummary'][number]['durationMeasurement'] {
+  if (!value || typeof value !== 'object') return undefined;
+  const measurement = value as Record<string, unknown>;
+  if (typeof measurement.exerciseId !== 'string' || typeof measurement.configuration !== 'string' ||
+      typeof measurement.durationSeconds !== 'number' || !Number.isFinite(measurement.durationSeconds) ||
+      measurement.durationSeconds < 0) return undefined;
+  return { exerciseId: measurement.exerciseId, configuration: measurement.configuration, durationSeconds: measurement.durationSeconds };
+}
+
 export function sanitizeWorkoutHistory(items: unknown[]): WorkoutHistoryLog[] {
   return items
     .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object' && typeof (item as { routineName?: unknown }).routineName === 'string')
@@ -380,6 +389,7 @@ export function sanitizeWorkoutHistory(items: unknown[]): WorkoutHistoryLog[] {
         .filter((ex): ex is Record<string, unknown> => !!ex && typeof ex === 'object' && typeof ex.name === 'string')
         .map((ex) => ({
           name: String(ex.name || 'Ejercicio'),
+          durationMeasurement: sanitizeDurationMeasurement(ex.durationMeasurement),
           ...(typeof ex.isOptional === 'boolean' ? { isOptional: ex.isOptional } : {}),
           completedSets: typeof ex.completedSets === 'number' ? ex.completedSets : 0,
           totalSets: typeof ex.totalSets === 'number' ? ex.totalSets : null,

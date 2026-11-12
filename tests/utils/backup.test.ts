@@ -2,6 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { parseImportedData } from '../../src/utils/backup';
 
 describe('parseImportedData workout history metrics', () => {
+  it('retains valid exercise duration measurements in backups', () => {
+    const measurement = { exerciseId: 'exercise-1', configuration: '[[10,40]]', durationSeconds: 120 };
+    const imported = parseImportedData(JSON.stringify({ workoutHistory: [{ routineName: 'Rutina', exercisesSummary: [{ name: 'Sentadilla', completedSets: 1, totalSets: 1, durationMeasurement: measurement }] }] }));
+    expect(imported.workoutHistory[0].exercisesSummary[0].durationMeasurement).toEqual(measurement);
+  });
+
   it('preserves missing legacy history metrics as unknown', () => {
     const imported = parseImportedData(JSON.stringify({
       workoutHistory: [{

@@ -97,10 +97,18 @@ export interface ExerciseRmLog {
 export type ViewMode = 'list' | 'detail';
 export type RoutineSubMode = 'edit' | 'execute';
 
+export interface ExerciseTiming {
+  startedAt: number;
+  configuration: string;
+  completedAt?: number;
+  restSeconds?: number;
+}
+
 export interface ActiveWorkoutSession {
   routineId: string;
   startTime: number; // Date.now() timestamp when started (ms)
   completedSetIds: string[]; // array of set IDs marked complete
+  exerciseTimings?: Record<string, ExerciseTiming>;
 }
 
 export interface ActiveRestTimer {
@@ -124,6 +132,7 @@ export interface WorkoutCompletionSummary {
   completionPercentage: number | null;
   exercisesSummary: {
     name: string;
+    durationMeasurement?: { exerciseId: string; configuration: string; durationSeconds: number };
     completedSets: number;
     isOptional?: boolean;
     totalSets: number | null;
