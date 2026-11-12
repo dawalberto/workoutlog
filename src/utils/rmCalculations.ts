@@ -121,3 +121,16 @@ export function getTodayDateString(): string {
   const day = String(today.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
+
+/** Estimates 1RM from the strongest configured set using Epley's equation.
+ * The estimate assumes repetitions are close to muscular failure.
+ */
+export function estimateOneRepMax(sets: Array<{ weight: number | string; reps: number | string }>): number | null {
+  const estimates = sets.flatMap(({ weight, reps }) => {
+    const load = Number(weight);
+    const repetitions = Number(reps);
+    if (!Number.isFinite(load) || load <= 0 || !Number.isInteger(repetitions) || repetitions < 1) return [];
+    return [repetitions === 1 ? load : load * (1 + repetitions / 30)];
+  });
+  return estimates.length ? Math.round(Math.max(...estimates) * 10) / 10 : null;
+}

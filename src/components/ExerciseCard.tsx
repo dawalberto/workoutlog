@@ -115,6 +115,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                       rmLogs={rmLogs}
                       exerciseName={exercise.name}
                       exerciseId={exercise.definitionId}
+                      estimatedSets={exercise.sets}
                     />
                     {onOpenDiary && (
                       <DiaryButton
@@ -148,7 +149,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                       placeholder="Nombre del ejercicio (ej. Press banca, Sentadilla...)"
                       className="flex-1 text-base sm:text-lg font-black text-white bg-transparent border-b border-white/10 hover:border-white/30 focus:border-[#00FF87] focus:outline-none px-1 py-1 rounded transition-colors min-w-0"
                     />
-                    <RmBadge rmLogs={rmLogs} exerciseName={exercise.name} exerciseId={exercise.definitionId} />
+                    <RmBadge rmLogs={rmLogs} exerciseName={exercise.name} exerciseId={exercise.definitionId} estimatedSets={exercise.sets} />
                     {onOpenDiary && (
                       <DiaryButton
                         exerciseName={exercise.name}
