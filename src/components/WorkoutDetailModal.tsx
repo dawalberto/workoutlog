@@ -158,6 +158,9 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
                       <span className="font-bold text-sm text-zinc-100 truncate">
                         {ex.name}
                       </span>
+                      {ex.isOptional && (
+                        <span className="inline-flex rounded-full border border-white/10 px-2 py-0.5 text-xs font-bold text-[#00E5FF]">Opcional</span>
+                      )}
                       <RmBadge rmLogs={rmLogs} exerciseName={ex.name} size="xs" />
                       {onOpenDiary && (
                         <DiaryButton

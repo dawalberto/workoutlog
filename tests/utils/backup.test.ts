@@ -129,3 +129,15 @@ describe('normalizeExerciseTitle', () => {
   });
 });
 
+
+describe('optional exercises in backups', () => {
+  it('preserves the flag and treats legacy exercises as required', () => {
+    const imported = parseImportedData(JSON.stringify({ routines: [{
+      id: 'routine', name: 'Rutina', exercises: [
+        { id: 'a', name: 'Sentadilla', isOptional: true, sets: [] },
+        { id: 'b', name: 'Press', sets: [] },
+      ],
+    }] }));
+    expect(imported.routines[0].exercises.map((exercise) => exercise.isOptional)).toEqual([true, false]);
+  });
+});

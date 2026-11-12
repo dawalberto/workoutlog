@@ -177,7 +177,9 @@ Production redirect URLs are configured in the Supabase dashboard (Auth > URL co
 | `20261014200000_harden_rest_push` | Web Push host allowlist, cleanup of invalid subscriptions, and cancellation-safe schedule transitions | Active |
 | `20261014210000_rest_push_sending_check` | Adds the service-role-only schedule status RPC without granting direct table access | Active |
 | `20261029170728_add_exercise_categories` | Adds nullable `categories text[]` muscle groups to the four metadata tables, allows the column in the private whitelist, accepts contract version 2, and preserves stored groups when a legacy client upserts | Active |
-| `20261101111539_add_rm_record_metric` | Adds nullable `metric text` (`weight` \| `reps`) to `rm_records` with a check constraint, allows the column in the private whitelist, accepts contract version 3, and preserves the stored metric when a legacy client upserts | **Active (latest)** |
+| `20261112141402_optional_history_exercises` | Adds nullable `is_optional` to history exercise snapshots, accepts contract version 5, and preserves it on legacy upserts | **Active (latest)** |
+| `20261112140058_optional_routine_exercises` | Adds nullable `is_optional` to routine exercises, accepts contract version 4, and preserves the choice on legacy upserts | Active |
+| `20261101111539_add_rm_record_metric` | Adds nullable `metric text` (`weight` \| `reps`) to `rm_records` with a check constraint, allows the column in the private whitelist, accepts contract version 3, and preserves the stored metric when a legacy client upserts | Active |
 
 Billing context: [ADR 0005](../decisions/0005-remove-billing-signed-in-sync.md).
 

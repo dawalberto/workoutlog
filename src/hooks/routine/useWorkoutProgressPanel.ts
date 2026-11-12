@@ -36,6 +36,7 @@ export function useWorkoutProgressPanel() {
       completionPercentage: progress?.completionPercentage ?? 0,
       exercisesSummary: routine.exercises.map((exercise) => ({
         name: exercise.name,
+        isOptional: exercise.isOptional ?? false,
         completedSets: exercise.sets.filter((set) =>
           progress?.completedSetIds.has(set.id),
         ).length,

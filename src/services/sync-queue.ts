@@ -372,6 +372,7 @@ function flattenRoutines(value: unknown): SyncRecord[] {
             notes: exercise.notes,
             image_url: exercise.imageUrl,
             video_url: exercise.videoUrl,
+            is_optional: exercise.isOptional ?? false,
             position: exercisePosition,
           }),
         ),
@@ -512,6 +513,7 @@ function flattenWorkoutHistory(value: unknown): SyncRecord[] {
         exercises_completed: exercise.completedSets > 0 ? 1 : 0,
         sets_completed: exercise.completedSets,
         sets_total: exercise.totalSets ?? null,
+        is_optional: exercise.isOptional ?? null,
       });
       validateWorkoutHistoryRecord(
         'workout_history_exercises',
@@ -772,6 +774,7 @@ function applyRoutineExerciseChange(value: unknown, change: SyncRemoteChange): R
       notes: nullableString(change.record, 'notes', current?.notes),
       imageUrl: nullableString(change.record, 'image_url', current?.imageUrl),
       videoUrl: nullableString(change.record, 'video_url', current?.videoUrl),
+      isOptional: typeof change.record.is_optional === 'boolean' ? change.record.is_optional : current?.isOptional ?? false,
       sets: current?.sets ?? [],
     };
     return {
@@ -992,6 +995,7 @@ function applyWorkoutHistoryExerciseChange(
           change.record,
           'sets_total',
         ),
+        ...(typeof change.record.is_optional === 'boolean' ? { isOptional: change.record.is_optional } : {}),
         position,
       };
       if (currentIndex >= 0) {

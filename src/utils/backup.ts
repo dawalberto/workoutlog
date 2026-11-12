@@ -380,6 +380,7 @@ export function sanitizeWorkoutHistory(items: unknown[]): WorkoutHistoryLog[] {
         .filter((ex): ex is Record<string, unknown> => !!ex && typeof ex === 'object' && typeof ex.name === 'string')
         .map((ex) => ({
           name: String(ex.name || 'Ejercicio'),
+          ...(typeof ex.isOptional === 'boolean' ? { isOptional: ex.isOptional } : {}),
           completedSets: typeof ex.completedSets === 'number' ? ex.completedSets : 0,
           totalSets: typeof ex.totalSets === 'number' ? ex.totalSets : null,
         }));
@@ -443,6 +444,7 @@ function sanitizeRoutines(items: unknown[]): Routine[] {
               imageUrl: typeof exObj?.imageUrl === 'string' ? exObj.imageUrl : undefined,
               videoUrl: typeof exObj?.videoUrl === 'string' ? exObj.videoUrl : undefined,
               notes: typeof exObj?.notes === 'string' ? exObj.notes : undefined,
+              isOptional: exObj?.isOptional === true,
               sets: Array.isArray(exObj?.sets)
                 ? exObj.sets.map((s, sIdx) => {
                     const sObj = s as Record<string, unknown>;

@@ -1,6 +1,7 @@
 import React, { isValidElement, type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Routine } from '../src/types';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { AllSetsCompleteFinishModal } from '../src/components/AllSetsCompleteFinishModal';
 import { shouldPromptForAllSetsComplete } from '../src/utils/routineCompletion';
 
@@ -79,7 +80,7 @@ async function setupProgressPanel() {
   };
   const progress = {
     routine,
-    session: { routineId: 'routine', startTime: 1, completedSetIds: [] },
+    session: { routineId: 'routine', startTime: 1, completedSetIds: [] as string[] },
     completedSetsCount: 1,
     totalSetsCount: 2,
     completionPercentage: 50,
@@ -140,6 +141,62 @@ describe('all-sets-complete finish prompt', () => {
     (prompt?.props.onConfirm as () => void)();
     expect(progress.onConfirmFinish).toHaveBeenCalledOnce();
     expect(findPrompt(render())?.props.isOpen).toBe(false);
+  });
+
+  it('prompts again after finishing pending optional sets', async () => {
+    const { progress, render } = await setupProgressPanel();
+    progress.routine.exercises = [{
+      id: 'optional', name: 'Extra', isOptional: true,
+      sets: [{ id: 'extra-1', setNumber: 1, reps: 10, weight: 0, restSeconds: 60 },
+        { id: 'extra-2', setNumber: 2, reps: 10, weight: 0, restSeconds: 60 }],
+    }];
+    const findPrompt = (tree: ReactNode) => findElement(tree, (element) =>
+      typeof element.type === 'function' && element.type.name === 'AllSetsCompleteFinishModal');
+    render();
+    progress.completedSetsCount = 2;
+    render();
+    let prompt = findPrompt(render());
+    expect(prompt?.props.isOpen).toBe(true);
+    expect(prompt?.props.pendingOptionalSetsCount).toBe(2);
+    (prompt?.props.onDismiss as () => void)();
+    progress.session.completedSetIds = ['extra-1'];
+    render();
+    expect(findPrompt(render())?.props.isOpen).toBe(false);
+    progress.session.completedSetIds = ['extra-1', 'extra-2'];
+    render();
+    prompt = findPrompt(render());
+    expect(prompt?.props.isOpen).toBe(true);
+    expect(prompt?.props.hasCompletedOptionalSets).toBe(true);
+    (prompt?.props.onDismiss as () => void)();
+    expect(findPrompt(render())?.props.isOpen).toBe(false);
+  });
+
+  it('does not prompt when optional sets finish before required ones', async () => {
+    const { progress, render } = await setupProgressPanel();
+    progress.routine.exercises = [{ id: 'extra', name: 'Extra', isOptional: true,
+      sets: [{ id: 'extra-1', setNumber: 1, reps: 10, weight: 0, restSeconds: 60 }] }];
+    render();
+    progress.session.completedSetIds = ['extra-1'];
+    render();
+    const prompt = findElement(render(), (element) =>
+      typeof element.type === 'function' && element.type.name === 'AllSetsCompleteFinishModal');
+    expect(prompt?.props.isOpen).toBe(false);
+    progress.completedSetsCount = 2;
+    render();
+    const completed = findElement(render(), (element) =>
+      typeof element.type === 'function' && element.type.name === 'AllSetsCompleteFinishModal');
+    expect(completed?.props.isOpen).toBe(true);
+    expect(completed?.props.hasCompletedOptionalSets).toBe(true);
+  });
+
+  it('describes pending optional sets and celebrates extra effort', () => {
+    const props = { isOpen: true, onDismiss: vi.fn(), onConfirm: vi.fn() };
+    expect(renderToStaticMarkup(<AllSetsCompleteFinishModal {...props} pendingOptionalSetsCount={1} />))
+      .toContain('¿Te animas a hacer la serie opcional?');
+    expect(renderToStaticMarkup(<AllSetsCompleteFinishModal {...props} pendingOptionalSetsCount={2} />))
+      .toContain('¿Te animas a hacer las 2 series opcionales?');
+    expect(renderToStaticMarkup(<AllSetsCompleteFinishModal {...props} hasCompletedOptionalSets />))
+      .toContain('Hoy has hecho un esfuerzo extra');
   });
 
   it('does not prompt for an already-complete or empty routine', async () => {

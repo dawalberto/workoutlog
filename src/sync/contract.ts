@@ -1,6 +1,6 @@
 import type { Database } from '../types/database.types';
 
-export const SYNC_CONTRACT_VERSION = 3;
+export const SYNC_CONTRACT_VERSION = 5;
 
 export type SyncCollection =
   | 'routines'
@@ -52,7 +52,7 @@ export const SYNC_CONTRACT_TABLES = [
     name: 'routine_exercises',
     writableColumns: [
       'id', 'routine_id', 'definition_id', 'name', 'category', 'categories', 'notes', 'image_url',
-      'video_url', 'position', 'created_at', 'updated_at',
+      'video_url', 'is_optional', 'position', 'created_at', 'updated_at',
     ],
     identity: ['id'],
     collection: 'routines',
@@ -115,7 +115,7 @@ export const SYNC_CONTRACT_TABLES = [
     name: 'workout_history_exercises',
     writableColumns: [
       'history_id', 'position', 'exercise_name', 'exercises_completed',
-      'sets_completed', 'sets_total', 'created_at', 'updated_at',
+      'sets_completed', 'sets_total', 'is_optional', 'created_at', 'updated_at',
     ],
     identity: ['history_id', 'position'],
     collection: 'workoutHistory',

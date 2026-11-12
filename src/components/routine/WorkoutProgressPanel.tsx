@@ -24,9 +24,14 @@ export const WorkoutProgressPanel: React.FC<WorkoutProgressPanelProps> = ({ elap
     onConfirmFinish,
   } = useWorkoutProgressPanel();
   const isAllSetsComplete = totalSetsCount > 0 && completedSetsCount === totalSetsCount;
+  const completedSetIds = new Set(session?.completedSetIds ?? []);
+  const optionalSets = routine?.exercises.filter((exercise) => exercise.isOptional).flatMap((exercise) => exercise.sets) ?? [];
+  const pendingOptionalSetsCount = optionalSets.filter((set) => !completedSetIds.has(set.id)).length;
+  const isAllOptionalSetsComplete = optionalSets.length > 0 && pendingOptionalSetsCount === 0;
   const completionState = useRef({
     routineId: routine?.id ?? null,
     isAllSetsComplete,
+    isAllOptionalSetsComplete,
   });
 
   useEffect(() => {
@@ -34,21 +39,26 @@ export const WorkoutProgressPanel: React.FC<WorkoutProgressPanelProps> = ({ elap
       completionState.current = {
         routineId: routine?.id ?? null,
         isAllSetsComplete,
+        isAllOptionalSetsComplete,
       };
       return;
     }
 
-    if (routine && shouldPromptForAllSetsComplete(
+    if (routine && (shouldPromptForAllSetsComplete(
       completionState.current.isAllSetsComplete,
       completedSetsCount,
       totalSetsCount,
       Boolean(session?.startTime),
-    )) {
+    ) || (
+      isAllSetsComplete && isAllOptionalSetsComplete &&
+      !completionState.current.isAllOptionalSetsComplete && Boolean(session?.startTime)
+    ))) {
       setFinishPromptRoutineId(routine.id);
     }
 
     completionState.current.isAllSetsComplete = isAllSetsComplete;
-  }, [routine?.id, isAllSetsComplete, completedSetsCount, totalSetsCount, session?.startTime]);
+    completionState.current.isAllOptionalSetsComplete = isAllOptionalSetsComplete;
+  }, [routine?.id, isAllSetsComplete, isAllOptionalSetsComplete, completedSetsCount, totalSetsCount, session?.startTime]);
 
   if (!routine) return null;
 
@@ -152,6 +162,8 @@ export const WorkoutProgressPanel: React.FC<WorkoutProgressPanelProps> = ({ elap
     />
     <AllSetsCompleteFinishModal
       isOpen={finishPromptRoutineId === routine.id}
+      pendingOptionalSetsCount={pendingOptionalSetsCount}
+      hasCompletedOptionalSets={isAllOptionalSetsComplete}
       onDismiss={() => setFinishPromptRoutineId(null)}
       onConfirm={() => {
         setFinishPromptRoutineId(null);

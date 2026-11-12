@@ -36,6 +36,32 @@ function operation(
 }
 
 describe('sync queue ordering', () => {
+  it('syncs optional history snapshots in both directions', () => {
+    const history = { id: 'history', routineId: 'routine', routineName: 'Rutina', startTime: 0, endTime: 1,
+      completedAt: '1970-01-01T00:00:01.000Z', durationSeconds: 1, completedSetsCount: 0,
+      totalSetsCount: 1, completionPercentage: 0, exercisesSummary: [{ name: 'Press', completedSets: 0, totalSets: 1, isOptional: true }] };
+    const changes = diffSyncCollection('workoutHistory', undefined, [history]);
+    expect(changes.find((item) => item.table === 'workout_history_exercises')?.record.is_optional).toBe(true);
+    const pulled = applyRemoteSyncChange([{ ...history, exercisesSummary: [] }], {
+      table: 'workout_history_exercises', id: '["history",0]', revision: '1', deletedAt: null,
+      record: { history_id: 'history', position: 0, exercise_name: 'Press', sets_completed: 0, sets_total: 1, is_optional: true },
+    }) as typeof history[];
+    expect(pulled[0].exercisesSummary[0].isOptional).toBe(true);
+  });
+
+  it('syncs optional exercise choices in both directions', () => {
+    const routine = { id: 'routine', name: 'Rutina', createdAt: '', updatedAt: '', exercises: [
+      { id: 'exercise', name: 'Press', isOptional: true, sets: [] },
+    ] };
+    const changes = diffSyncCollection('routines', undefined, [routine]);
+    expect(changes.find((item) => item.table === 'routine_exercises')?.record.is_optional).toBe(true);
+    const pulled = applyRemoteSyncChange([{ ...routine, exercises: [] }], {
+      table: 'routine_exercises', id: 'exercise', revision: '1', deletedAt: null,
+      record: { id: 'exercise', routine_id: 'routine', name: 'Press', position: 0, is_optional: true },
+    }) as typeof routine[];
+    expect(pulled[0].exercises[0].isOptional).toBe(true);
+  });
+
   it('drops a remote history exercise when its parent history is missing', () => {
     const record = {
       history_id: 'missing-history',
