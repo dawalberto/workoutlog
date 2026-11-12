@@ -1,3 +1,4 @@
+import { t } from '../utils/i18n';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -109,7 +110,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-base sm:text-lg font-black text-white tracking-tight truncate">
-                      {exercise.name || 'Ejercicio sin nombre'}
+                      {exercise.name || t("Ejercicio sin nombre")}
                     </h3>
                     <RmBadge
                       rmLogs={rmLogs}
@@ -129,7 +130,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
 
                     {isAllCompleted && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-[#00FF87]/20 text-[#00FF87] border border-[#00FF87]/40 shadow-xs">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Completado ({completedSetsCount}/{totalSetsCount})
+                        <CheckCircle2 className="w-3.5 h-3.5" /> {t("Completado (")}{completedSetsCount}/{totalSetsCount})
                       </span>
                     )}
                   </div>
@@ -146,7 +147,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                     <input
                       type="text"
                       {...textFieldProps('name')}
-                      placeholder="Nombre del ejercicio (ej. Press banca, Sentadilla...)"
+                      placeholder={t("Nombre del ejercicio (ej. Press banca, Sentadilla...)")}
                       className="flex-1 text-base sm:text-lg font-black text-white bg-transparent border-b border-white/10 hover:border-white/30 focus:border-[#00FF87] focus:outline-none px-1 py-1 rounded transition-colors min-w-0"
                     />
                     <RmBadge rmLogs={rmLogs} exerciseName={exercise.name} exerciseId={exercise.definitionId} estimatedSets={exercise.sets} />
@@ -163,7 +164,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                   <input
                     type="text"
                     {...textFieldProps('notes')}
-                    placeholder="Notas de técnica o consejos (opcional)"
+                    placeholder={t("Notas de técnica o consejos (opcional)")}
                     className="w-full text-base sm:text-sm text-[#A1A1AA] placeholder:text-zinc-600 bg-transparent border-b border-white/5 hover:border-white/20 focus:border-[#00FF87] focus:outline-none px-1 py-1 rounded transition-colors"
                   />
                 </div>
@@ -176,8 +177,8 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
             type="button"
             onClick={handleToggleCollapse}
             className="p-2 sm:p-2.5 rounded-xl text-zinc-300 hover:text-white bg-zinc-900/90 hover:bg-zinc-800 border border-white/10 transition-colors active:scale-95 shrink-0 ml-1.5 shadow-sm"
-            title={isCollapsed ? 'Desplegar ejercicio' : 'Plegar ejercicio'}
-            aria-label={isCollapsed ? 'Desplegar ejercicio' : 'Plegar ejercicio'}
+            title={isCollapsed ? t("Desplegar ejercicio") : t("Plegar ejercicio")}
+            aria-label={isCollapsed ? t("Desplegar ejercicio") : t("Plegar ejercicio")}
           >
             {isCollapsed ? <ChevronDown className="w-5 h-5 text-[#00FF87]" /> : <ChevronUp className="w-5 h-5 text-zinc-300" />}
           </button>
@@ -189,7 +190,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
             {isCollapsed && summaryText && (
               <span
                 className="inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] sm:text-[11px] font-mono font-semibold bg-zinc-900 text-zinc-300 border border-white/10 shadow-inner max-w-[200px] sm:max-w-none truncate"
-                title="Resumen: series x repeticiones · peso - descanso"
+                title={t("Resumen: series x repeticiones · peso - descanso")}
               >
                 {summaryText}
               </span>
@@ -202,7 +203,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                   ? 'bg-[#00FF87]/15 text-[#00FF87] border-[#00FF87]/30'
                   : 'bg-zinc-900 text-zinc-300 border-white/10'
               }`}
-              title="Tiempo aproximado calculado"
+              title={t("Tiempo aproximado calculado")}
             >
               <Clock className="w-3.5 h-3.5 text-[#00FF87]" />
               <span>~{formatSecondsToTime(totalExerciseSeconds)}</span>
@@ -214,7 +215,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
               <button
                 type="button"
                 onClick={() => setShowImageInput(!showImageInput)}
-                title="Configurar imagen miniatura / preview"
+                title={t("Configurar imagen miniatura / preview")}
                 className={`p-2 rounded-xl border text-xs transition-colors active:scale-95 ${
                   exercise.imageUrl
                     ? 'bg-[#00FF87]/20 text-[#00FF87] border-[#00FF87]/40'
@@ -227,7 +228,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
               <button
                 type="button"
                 onClick={() => setShowVideoInput(!showVideoInput)}
-                title="Configurar enlace de video"
+                title={t("Configurar enlace de video")}
                 className={`p-2 rounded-xl border text-xs transition-colors active:scale-95 ${
                   exercise.videoUrl
                     ? 'bg-[#00FF87]/20 text-[#00FF87] border-[#00FF87]/40'
@@ -240,7 +241,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
               <button
                 type="button"
                 onClick={onDeleteExercise}
-                title="Eliminar ejercicio"
+                title={t("Eliminar ejercicio")}
                 className="p-2 rounded-xl border border-red-500/20 bg-zinc-900 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors active:scale-95"
               >
                 <Trash2 className="w-4 h-4" />
@@ -250,7 +251,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
         </div>
 
         {isExecutionMode && exercise.isOptional && (
-          <span className="mt-3 inline-flex rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-[#00E5FF]">Opcional</span>
+          <span className="mt-3 inline-flex rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-[#00E5FF]">{t("Opcional")}</span>
         )}
         {!isExecutionMode && (
           <button
@@ -264,7 +265,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                 : 'border-white/10 bg-[#242428] text-zinc-300'
             }`}
           >
-            <span>Opcional <span className="font-normal text-[#A1A1AA]">· No cuenta para el progreso de la sesión</span></span>
+            <span>{t("Opcional")} <span className="font-normal text-[#A1A1AA]">{t("· No cuenta para el progreso de la sesión")}</span></span>
             <span aria-hidden="true" className={`relative h-6 w-10 shrink-0 rounded-full ${exercise.isOptional ? 'bg-[#00FF87]' : 'bg-zinc-700'}`}>
               <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-black transition-transform ${exercise.isOptional ? 'translate-x-4' : 'translate-x-0.5'}`} />
             </span>
@@ -277,7 +278,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
             <input
               type="url"
               {...textFieldProps('imageUrl')}
-              placeholder="URL de imagen preview (https://...)"
+              placeholder={t("URL de imagen preview (https://...)")}
               className="flex-1 text-base sm:text-xs px-3 py-2 rounded-xl border border-white/10 bg-zinc-900 text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#00FF87]"
             />
             {exercise.imageUrl && (
@@ -286,7 +287,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                 onClick={() => onUpdateExercise({ ...exercise, imageUrl: '' })}
                 className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded-lg bg-zinc-900 border border-red-500/20"
               >
-                Quitar
+                {t("Quitar")}
               </button>
             )}
           </div>
@@ -298,7 +299,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
             <input
               type="url"
               {...textFieldProps('videoUrl')}
-              placeholder="Enlace de video (YouTube, Vimeo, mp4)..."
+              placeholder={t("Enlace de video (YouTube, Vimeo, mp4)...")}
               className="w-full text-base sm:text-xs px-3 py-2 rounded-xl border border-white/10 bg-zinc-900 text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#00FF87]"
             />
           </div>
@@ -314,15 +315,15 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
             <table className="w-full text-left border-collapse min-w-[310px] sm:min-w-full">
               <thead>
                 <tr className="border-b border-white/[0.08] text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[#A1A1AA]">
-                  <th className="py-3 px-2 text-center w-12">Serie</th>
-                  <th className="py-3 px-2 text-center min-w-[70px] sm:min-w-[85px]">Reps</th>
-                  <th className="py-3 px-2 text-center min-w-[70px] sm:min-w-[85px]">Peso</th>
-                  <th className="py-3 px-2 text-center min-w-[80px] sm:min-w-[95px]">Descanso</th>
-                  <th className="py-3 px-2 text-center hidden md:table-cell text-zinc-500">Tiempo</th>
+                  <th className="py-3 px-2 text-center w-12">{t("Serie")}</th>
+                  <th className="py-3 px-2 text-center min-w-[70px] sm:min-w-[85px]">{t("Reps")}</th>
+                  <th className="py-3 px-2 text-center min-w-[70px] sm:min-w-[85px]">{t("Peso")}</th>
+                  <th className="py-3 px-2 text-center min-w-[80px] sm:min-w-[95px]">{t("Descanso")}</th>
+                  <th className="py-3 px-2 text-center hidden md:table-cell text-zinc-500">{t("Tiempo")}</th>
                   {isExecutionMode ? (
-                    <th className="py-3 px-2 text-center w-16">Estado</th>
+                    <th className="py-3 px-2 text-center w-16">{t("Estado")}</th>
                   ) : (
-                    <th className="py-3 px-2 text-right w-20 sm:w-24">Acciones</th>
+                    <th className="py-3 px-2 text-right w-20 sm:w-24">{t("Acciones")}</th>
                   )}
                 </tr>
               </thead>
@@ -363,7 +364,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                           >
                             {set.reps}{' '}
                             <span className="text-[10px] sm:text-xs font-semibold text-[#A1A1AA]">
-                              reps
+                              {t("reps")}
                             </span>
                           </span>
                         ) : (
@@ -412,7 +413,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                           >
                             {set.weight}{' '}
                             <span className="text-[10px] sm:text-xs font-semibold text-[#A1A1AA]">
-                              kg
+                              {t("kg")}
                             </span>
                           </span>
                         ) : (
@@ -493,7 +494,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                                   ? 'bg-[#00FF87] text-black shadow-[0_0_18px_rgba(0,255,135,0.5)] border-0 scale-105'
                                   : 'bg-zinc-900 border-2 border-white/20 text-transparent hover:border-[#00FF87] hover:text-[#00FF87]/40'
                               }`}
-                              title={isCompleted ? 'Desmarcar serie' : 'Marcar completada e iniciar descanso'}
+                              title={isCompleted ? t("Desmarcar serie") : t("Marcar completada e iniciar descanso")}
                             >
                               <Check className={`w-5 h-5 stroke-[3] ${isCompleted ? 'text-black' : 'currentColor'}`} />
                             </button>
@@ -505,8 +506,8 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                               type="button"
                               onClick={() => handleDuplicateSet(setIndex)}
                               className="min-h-[40px] min-w-[40px] p-2 rounded-xl text-zinc-400 hover:text-[#00FF87] hover:bg-zinc-800 transition-colors flex items-center justify-center active:scale-95"
-                              title="Duplicar serie"
-                              aria-label="Duplicar serie"
+                              title={t("Duplicar serie")}
+                              aria-label={t("Duplicar serie")}
                             >
                               <Copy className="w-4 h-4" />
                             </button>
@@ -521,8 +522,8 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                                   ? 'text-zinc-600 cursor-not-allowed opacity-50'
                                   : 'text-zinc-400 hover:text-red-400 hover:bg-red-500/10'
                               }`}
-                              title={exercise.sets.length <= 1 ? 'Mínimo 1 serie' : 'Eliminar serie'}
-                              aria-label="Eliminar serie"
+                              title={exercise.sets.length <= 1 ? t("Mínimo 1 serie") : t("Eliminar serie")}
+                              aria-label={t("Eliminar serie")}
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -546,11 +547,11 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                 className="min-h-[44px] inline-flex items-center gap-2 px-4 text-xs font-bold rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white transition-all active:scale-[0.97] border border-white/10"
               >
                 <Plus className="w-4 h-4 stroke-[2.5]" />
-                <span>Añadir Serie</span>
+                <span>{t("Añadir Serie")}</span>
               </button>
 
               <span className="text-xs font-semibold text-[#A1A1AA]">
-                {exercise.sets.length} {exercise.sets.length === 1 ? 'serie' : 'series'} en total
+                {exercise.sets.length} {exercise.sets.length === 1 ? t("serie") : t("series")} {t("en total")}
               </span>
             </div>
           )}

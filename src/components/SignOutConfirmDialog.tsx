@@ -1,3 +1,4 @@
+import { t } from '../utils/i18n';
 import React from 'react';
 import { ConfirmDialog } from './ConfirmDialog';
 import { useSignOutConfirmDialog } from '../hooks/shell/useSignOutConfirmDialog';
@@ -8,9 +9,9 @@ export const SignOutConfirmDialog: React.FC = () => {
   return (
     <ConfirmDialog
       isOpen={isOpen}
-      title="¿Cerrar sesión?"
-      message="Tienes cambios sin sincronizar. Si cierras sesión ahora se perderán en este dispositivo."
-      confirmLabel="Cerrar sesión igualmente"
+      title={t("¿Cerrar sesión?")}
+      message={t("Tienes cambios sin sincronizar. Si cierras sesión ahora se perderán en este dispositivo.")}
+      confirmLabel={t("Cerrar sesión igualmente")}
       onCancel={onCancel}
       onConfirm={onConfirm}
     />

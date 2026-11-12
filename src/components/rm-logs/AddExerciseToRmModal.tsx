@@ -1,3 +1,4 @@
+import { t } from '../../utils/i18n';
 import React from 'react';
 import { Plus, Search, Trophy, X } from 'lucide-react';
 import type { useAddExerciseToRmModal } from '../../hooks/rm-logs/useAddExerciseToRmModal';
@@ -37,10 +38,10 @@ export const AddExerciseToRmModal: React.FC<AddExerciseToRmModalProps> = ({
             </div>
             <div>
               <h3 className="text-base sm:text-lg font-black text-white">
-                Añadir ejercicio a RMs
+                {t("Añadir ejercicio a RMs")}
               </h3>
               <p className="text-xs text-[#A1A1AA] font-medium">
-                Selecciona un ejercicio de tu biblioteca
+                {t("Selecciona un ejercicio de tu biblioteca")}
               </p>
             </div>
           </div>
@@ -60,7 +61,7 @@ export const AddExerciseToRmModal: React.FC<AddExerciseToRmModalProps> = ({
                 <Search className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder="Buscar en tu biblioteca de ejercicios..."
+                  placeholder={t("Buscar en tu biblioteca de ejercicios...")}
                   value={form.catalogSearch}
                   onChange={(e) => form.setCatalogSearch(e.target.value)}
                   className="w-full min-h-[48px] pl-10 pr-3 py-2 text-xs rounded-xl border border-white/10 bg-zinc-900 text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#00FF87]"
@@ -71,9 +72,9 @@ export const AddExerciseToRmModal: React.FC<AddExerciseToRmModalProps> = ({
                 {form.availableCatalog.length === 0 ? (
                   <div className="text-center py-8 text-zinc-500 text-xs">
                     {form.catalog.length === 0 ? (
-                      <span>No hay ejercicios creados en la biblioteca.</span>
+                      <span>{t("No hay ejercicios creados en la biblioteca.")}</span>
                     ) : (
-                      <span>Todos los ejercicios de tu biblioteca ya están añadidos al seguimiento de RMs.</span>
+                      <span>{t("Todos los ejercicios de tu biblioteca ya están añadidos al seguimiento de RMs.")}</span>
                     )}
                   </div>
                 ) : (
@@ -106,7 +107,7 @@ export const AddExerciseToRmModal: React.FC<AddExerciseToRmModalProps> = ({
                         </div>
                       </div>
                       <span className="text-xs font-bold text-[#00FF87] shrink-0 ml-2">
-                        Elegir &rarr;
+                        {t("Elegir &rarr;")}
                       </span>
                     </button>
                   ))
@@ -131,7 +132,7 @@ export const AddExerciseToRmModal: React.FC<AddExerciseToRmModalProps> = ({
                       {form.selectedCatalogExercise.name}
                     </span>
                     <span className="text-[10px] text-zinc-400 font-medium">
-                      {formatExerciseCategories(form.selectedCatalogExercise) || 'General'}
+                      {formatExerciseCategories(form.selectedCatalogExercise) || t("General")}
                     </span>
                   </div>
                 </div>
@@ -140,13 +141,13 @@ export const AddExerciseToRmModal: React.FC<AddExerciseToRmModalProps> = ({
                   onClick={form.handleClearSelectedExercise}
                   className="text-xs font-bold text-[#00FF87] hover:underline"
                 >
-                  Cambiar
+                  {t("Cambiar")}
                 </button>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-[#A1A1AA] uppercase tracking-wide mb-1">
-                  Tipo de marca
+                  {t("Tipo de marca")}
                 </label>
                 <RmMetricSelector
                   value={form.initialMetric}
@@ -158,8 +159,8 @@ export const AddExerciseToRmModal: React.FC<AddExerciseToRmModalProps> = ({
               <div>
                 <label className="block text-xs font-bold text-[#A1A1AA] uppercase tracking-wide mb-1">
                   {form.initialMetric === 'reps'
-                    ? 'Repeticiones máximas *'
-                    : 'Peso Máximo (1RM) *'}
+                    ? t("Repeticiones máximas *")
+                    : t("Peso Máximo (1RM) *")}
                 </label>
                 <div className="relative">
                   <input
@@ -167,7 +168,7 @@ export const AddExerciseToRmModal: React.FC<AddExerciseToRmModalProps> = ({
                     inputMode={form.initialMetric === 'reps' ? 'numeric' : 'decimal'}
                     pattern="[0-9]*[.,]?[0-9]*"
                     min="0"
-                    placeholder={form.initialMetric === 'reps' ? 'Ej: 120' : 'Ej: 100'}
+                    placeholder={form.initialMetric === 'reps' ? t("Ej: 120") : t("Ej: 100")}
                     value={form.initialWeight}
                     onChange={(e) => form.setInitialWeight(e.target.value)}
                     onBlur={(e) => {
@@ -185,7 +186,7 @@ export const AddExerciseToRmModal: React.FC<AddExerciseToRmModalProps> = ({
 
               <div>
                 <label className="block text-xs font-bold text-[#A1A1AA] uppercase tracking-wide mb-1">
-                  Fecha del registro *
+                  {t("Fecha del registro *")}
                 </label>
                 <input
                   type="date"
@@ -197,11 +198,11 @@ export const AddExerciseToRmModal: React.FC<AddExerciseToRmModalProps> = ({
 
               <div>
                 <label className="block text-xs font-bold text-[#A1A1AA] uppercase tracking-wide mb-1">
-                  Notas / Observaciones (opcional)
+                  {t("Notas / Observaciones (opcional)")}
                 </label>
                 <input
                   type="text"
-                  placeholder="Ej: Marca conseguida en competición, RPE 10..."
+                  placeholder={t("Ej: Marca conseguida en competición, RPE 10...")}
                   value={form.initialNotes}
                   onChange={(e) => form.setInitialNotes(e.target.value)}
                   className="w-full min-h-[48px] px-3.5 py-2 text-xs rounded-xl border border-white/10 bg-zinc-900 text-white focus:outline-none focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/20"
@@ -218,7 +219,7 @@ export const AddExerciseToRmModal: React.FC<AddExerciseToRmModalProps> = ({
               onClick={form.handleClearSelectedExercise}
               className="px-4 min-h-[48px] text-xs font-semibold text-zinc-400 hover:text-white rounded-xl"
             >
-              Volver
+              {t("Volver")}
             </button>
             <button
               id="btn-confirm-add-rm"
@@ -226,7 +227,7 @@ export const AddExerciseToRmModal: React.FC<AddExerciseToRmModalProps> = ({
               onClick={form.handleConfirm}
               className="px-5 min-h-[48px] text-xs sm:text-sm font-extrabold text-black bg-[#00FF87] hover:bg-[#00e57a] rounded-xl shadow-[0_0_20px_rgba(0,255,135,0.35)] transition-all active:scale-[0.97] flex items-center gap-1.5"
             >
-              <Plus className="w-4 h-4 stroke-[3]" /> Guardar en RMs
+              <Plus className="w-4 h-4 stroke-[3]" /> {t("Guardar en RMs")}
             </button>
           </div>
         )}

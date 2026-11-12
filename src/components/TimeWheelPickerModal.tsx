@@ -1,3 +1,4 @@
+import { t } from '../utils/i18n';
 import React, { useState, useEffect, useMemo } from 'react';
 import { Clock, X, Check, RotateCcw, Plus, Minus, Layers } from 'lucide-react';
 import { InfiniteWheelColumn } from './InfiniteWheelColumn';
@@ -113,7 +114,7 @@ export const TimeWheelPickerModal: React.FC<TimeWheelPickerModalProps> = ({
             type="button"
             onClick={onClose}
             className="p-2 text-zinc-400 hover:text-white rounded-xl hover:bg-white/[0.08] transition-colors"
-            aria-label="Cerrar selector"
+            aria-label={t("Cerrar selector")}
           >
             <X className="w-5 h-5" />
           </button>
@@ -133,7 +134,7 @@ export const TimeWheelPickerModal: React.FC<TimeWheelPickerModalProps> = ({
 
           <div className="mt-1 flex items-center justify-center gap-2 text-xs">
             <span className="text-[#00FF87] font-extrabold font-mono">
-              {totalCalculatedSeconds} segundos
+              {totalCalculatedSeconds} {t("segundos")}
             </span>
             <span className="text-zinc-600">•</span>
             <span className="text-zinc-400">
@@ -151,7 +152,7 @@ export const TimeWheelPickerModal: React.FC<TimeWheelPickerModalProps> = ({
               className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 disabled:hover:bg-zinc-800 text-zinc-300 transition-colors flex items-center gap-1 active:scale-95"
             >
               <Minus className="w-3 h-3" />
-              <span>15s</span>
+              <span>{t("15s")}</span>
             </button>
             <button
               type="button"
@@ -160,7 +161,7 @@ export const TimeWheelPickerModal: React.FC<TimeWheelPickerModalProps> = ({
               className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 disabled:hover:bg-zinc-800 text-zinc-300 transition-colors flex items-center gap-1 active:scale-95"
             >
               <Minus className="w-3 h-3" />
-              <span>30s</span>
+              <span>{t("30s")}</span>
             </button>
             <button
               type="button"
@@ -168,7 +169,7 @@ export const TimeWheelPickerModal: React.FC<TimeWheelPickerModalProps> = ({
               className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors flex items-center gap-1 active:scale-95"
             >
               <Plus className="w-3 h-3" />
-              <span>15s</span>
+              <span>{t("15s")}</span>
             </button>
             <button
               type="button"
@@ -176,7 +177,7 @@ export const TimeWheelPickerModal: React.FC<TimeWheelPickerModalProps> = ({
               className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors flex items-center gap-1 active:scale-95"
             >
               <Plus className="w-3 h-3" />
-              <span>30s</span>
+              <span>{t("30s")}</span>
             </button>
           </div>
         </div>
@@ -184,9 +185,9 @@ export const TimeWheelPickerModal: React.FC<TimeWheelPickerModalProps> = ({
         {/* Dual Infinite Apple-style Wheel Picker */}
         <div className="bg-[#18181A] border border-white/[0.08] rounded-2xl p-2 sm:p-3 mb-4 shadow-xl">
           <div className="flex items-center justify-around text-center text-xs font-black uppercase tracking-wider text-[#A1A1AA] pb-1 border-b border-white/5">
-            <span className="flex-1">Minutos</span>
+            <span className="flex-1">{t("Minutos")}</span>
             <span className="w-8 text-zinc-600">:</span>
-            <span className="flex-1">Segundos</span>
+            <span className="flex-1">{t("Segundos")}</span>
           </div>
 
           <div className="flex items-center justify-center gap-2">
@@ -215,7 +216,7 @@ export const TimeWheelPickerModal: React.FC<TimeWheelPickerModalProps> = ({
         {/* Quick Presets Carousel */}
         <div className="mb-4">
           <span className="block text-[11px] font-extrabold uppercase tracking-wider text-zinc-400 mb-2">
-            Ajustes rápidos de descanso:
+            {t("Ajustes rápidos de descanso:")}
           </span>
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
             {PRESETS.map((p) => {
@@ -249,7 +250,7 @@ export const TimeWheelPickerModal: React.FC<TimeWheelPickerModalProps> = ({
             />
             <div className="flex items-center gap-1.5 text-xs text-zinc-300 font-semibold">
               <Layers className="w-3.5 h-3.5 text-[#00E5FF]" />
-              <span>Aplicar este descanso a todas las series del ejercicio</span>
+              <span>{t("Aplicar este descanso a todas las series del ejercicio")}</span>
             </div>
           </label>
         )}
@@ -261,7 +262,7 @@ export const TimeWheelPickerModal: React.FC<TimeWheelPickerModalProps> = ({
             onClick={onClose}
             className="flex-1 min-h-[48px] px-4 rounded-xl text-xs font-bold text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-white/10 transition-colors"
           >
-            Cancelar
+            {t("Cancelar")}
           </button>
 
           <button
@@ -270,7 +271,7 @@ export const TimeWheelPickerModal: React.FC<TimeWheelPickerModalProps> = ({
             className="flex-2 min-h-[48px] px-6 rounded-xl text-xs sm:text-sm font-black text-black bg-[#00FF87] hover:bg-[#00e57a] transition-all shadow-[0_0_20px_rgba(0,255,135,0.35)] active:scale-[0.98] flex items-center justify-center gap-2"
           >
             <Check className="w-4 h-4 stroke-[3]" />
-            <span>Guardar</span>
+            <span>{t("Guardar")}</span>
           </button>
         </div>
       </div>

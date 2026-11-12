@@ -1,3 +1,4 @@
+import { t } from '../../utils/i18n';
 import React from 'react';
 import { Calendar, Dumbbell, Edit3, Trash2 } from 'lucide-react';
 import type { FlattenedDiaryEntry } from '../../utils/diaryCalculations';
@@ -73,9 +74,9 @@ export const DiaryEntryCard: React.FC<DiaryEntryCardProps> = ({
             type="button"
             onClick={() => onFilterExercise(item.exerciseName)}
             className="text-[11px] font-semibold text-zinc-400 hover:text-[#00FF87] transition-colors"
-            title={`Ver todos los registros de ${item.exerciseName}`}
+            title={t("Ver todos los registros de {0}", item.exerciseName)}
           >
-            Filtrar solo este ejercicio
+            {t("Filtrar solo este ejercicio")}
           </button>
         </div>
 
@@ -84,17 +85,17 @@ export const DiaryEntryCard: React.FC<DiaryEntryCardProps> = ({
             type="button"
             onClick={() => onEdit(item)}
             className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg text-zinc-300 hover:text-white hover:bg-white/[0.08] transition-colors active:scale-95"
-            title="Editar registro"
+            title={t("Editar registro")}
           >
             <Edit3 className="w-3.5 h-3.5" />
-            <span>Editar</span>
+            <span>{t("Editar")}</span>
           </button>
 
           <button
             type="button"
             onClick={() => onDelete(item.diaryId, item.id, item.exerciseName)}
             className="p-1.5 text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors active:scale-95"
-            title="Eliminar registro"
+            title={t("Eliminar registro")}
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>

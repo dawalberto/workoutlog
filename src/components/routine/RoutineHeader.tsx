@@ -1,3 +1,4 @@
+import { t } from '../../utils/i18n';
 import React, { type ReactNode } from 'react';
 import { ArrowLeft, Clock, Edit3, FileText, Play } from 'lucide-react';
 import type { RoutineSubMode } from '../../types';
@@ -48,14 +49,14 @@ export const RoutineHeader: React.FC<RoutineHeaderProps> = ({
             onClick={onBack}
             className="shrink-0 min-h-[44px] inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl text-zinc-300 hover:text-white bg-zinc-900 border border-white/10 hover:border-white/20 transition-all active:scale-[0.97]"
           >
-            <ArrowLeft className="w-4 h-4" /> <span>Rutinas</span>
+            <ArrowLeft className="w-4 h-4" /> <span>{t("Rutinas")}</span>
           </button>
 
           {/* In-header live workout stopwatch */}
           {subMode === 'execute' && session?.startTime && (
             <div
               className="hidden xs:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 border border-[#00FF87]/30 text-[#00FF87] font-mono font-bold text-xs shrink-0 shadow-inner"
-              title="Tiempo de entrenamiento transcurrido"
+              title={t("Tiempo de entrenamiento transcurrido")}
             >
               <span className="w-2 h-2 rounded-full bg-[#00FF87] animate-ping" />
               <Clock className="w-3.5 h-3.5" />
@@ -76,7 +77,7 @@ export const RoutineHeader: React.FC<RoutineHeaderProps> = ({
                 : 'text-zinc-400 hover:text-white'
             }`}
           >
-            <Edit3 className="w-3.5 h-3.5" /> <span>Editar</span>
+            <Edit3 className="w-3.5 h-3.5" /> <span>{t("Editar")}</span>
           </button>
 
           <button
@@ -89,7 +90,7 @@ export const RoutineHeader: React.FC<RoutineHeaderProps> = ({
                 : 'text-zinc-400 hover:text-white'
             }`}
           >
-            <Play className="w-3.5 h-3.5 fill-current" /> <span>Entrenar</span>
+            <Play className="w-3.5 h-3.5 fill-current" /> <span>{t("Entrenar")}</span>
           </button>
         </div>
       </div>
@@ -103,13 +104,13 @@ export const RoutineHeader: React.FC<RoutineHeaderProps> = ({
             {subMode === 'edit' ? (
               <div>
                 <label htmlFor="routine-name-input" className="block text-[11px] font-extrabold text-[#A1A1AA] uppercase tracking-wider mb-1">
-                  Nombre de la Rutina
+                  {t("Nombre de la Rutina")}
                 </label>
                 <input
                   id="routine-name-input"
                   type="text"
                   {...routineFieldProps('name')}
-                  placeholder="Ej: Torso Hipertrofia, Pierna Fuerza..."
+                  placeholder={t("Ej: Torso Hipertrofia, Pierna Fuerza...")}
                   className="w-full text-xl sm:text-2xl font-black text-white bg-transparent border-b border-white/10 focus:border-[#00FF87] focus:outline-none pb-1 transition-colors"
                 />
               </div>
@@ -117,16 +118,16 @@ export const RoutineHeader: React.FC<RoutineHeaderProps> = ({
               <div>
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <span className="px-2.5 py-0.5 text-[10px] font-black rounded-lg bg-[#00FF87]/15 text-[#00FF87] border border-[#00FF87]/30 uppercase tracking-wider">
-                    Modo Entrenamiento
+                    {t("Modo Entrenamiento")}
                   </span>
                   {allExercisesCompleted && (
                     <span className="px-2.5 py-0.5 text-[10px] font-black rounded-lg bg-[#00E5FF]/20 text-[#00E5FF] border border-[#00E5FF]/40 uppercase tracking-wider">
-                      ¡Entrenamiento Completo!
+                      {t("¡Entrenamiento Completo!")}
                     </span>
                   )}
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight mt-1">
-                  {routine.name || 'Rutina sin nombre'}
+                  {routine.name || t("Rutina sin nombre")}
                 </h1>
               </div>
             )}
@@ -136,13 +137,13 @@ export const RoutineHeader: React.FC<RoutineHeaderProps> = ({
               {subMode === 'edit' ? (
                 <div>
                   <label htmlFor="routine-notes-input" className="block text-[11px] font-extrabold text-[#A1A1AA] uppercase tracking-wider mb-1">
-                    Notas / Objetivos
+                    {t("Notas / Objetivos")}
                   </label>
                   <textarea
                     id="routine-notes-input"
                     rows={2}
                     {...routineFieldProps('notes')}
-                    placeholder="Objetivos del día, notas sobre descansos, peso objetivo..."
+                    placeholder={t("Objetivos del día, notas sobre descansos, peso objetivo...")}
                     className="w-full text-base sm:text-sm text-zinc-200 bg-zinc-900 border border-white/10 rounded-xl p-3 focus:bg-black focus:border-[#00FF87] focus:outline-none transition-all"
                   />
                 </div>
@@ -160,14 +161,14 @@ export const RoutineHeader: React.FC<RoutineHeaderProps> = ({
           {/* Estimated Workout Duration Badge */}
           <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center p-3 sm:p-4 rounded-xl bg-zinc-900 border border-white/10 shrink-0 w-full sm:w-auto shadow-inner">
             <span className="text-[10px] font-extrabold text-[#A1A1AA] uppercase tracking-wider">
-              Tiempo Estimado
+              {t("Tiempo Estimado")}
             </span>
             <div className="flex items-center gap-1.5 text-white font-black font-mono text-lg sm:text-xl">
               <Clock className="w-5 h-5 text-[#00FF87]" />
               <span>~{formatSecondsToTime(totalWorkoutSeconds)}</span>
             </div>
             <span className="text-[10px] text-zinc-500 hidden sm:block">
-              (series + descansos)
+              {t("(series + descansos)")}
             </span>
           </div>
         </div>

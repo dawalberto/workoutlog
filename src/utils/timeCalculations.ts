@@ -1,3 +1,4 @@
+import { displayedWeightUnit } from './i18n';
 import { Exercise, Routine, WorkoutSet } from '../types';
 import { averageExerciseDuration, type ExerciseDurationMeasurement } from './exerciseDuration';
 
@@ -128,7 +129,7 @@ export function formatExerciseSummary(sets?: WorkoutSet[]): string {
   const weightArr = sets.map((s) => Number(s.weight) || 0);
   const minWeight = Math.min(...weightArr);
   const maxWeight = Math.max(...weightArr);
-  const weightStr = minWeight === maxWeight ? `${minWeight}kg` : `${minWeight}-${maxWeight}kg`;
+  const weightStr = minWeight === maxWeight ? `${minWeight}${displayedWeightUnit()}` : `${minWeight}-${maxWeight}${displayedWeightUnit()}`;
 
   // Rest
   const restArr = sets.map((s) => Number(s.restSeconds) || 0);

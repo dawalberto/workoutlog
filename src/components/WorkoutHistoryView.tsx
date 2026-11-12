@@ -1,3 +1,4 @@
+import { t } from '../utils/i18n';
 import React from 'react';
 import {
   Calendar as CalendarIcon,
@@ -60,14 +61,14 @@ export const WorkoutHistoryView: React.FC = () => {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <h1 className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-widest text-[#00FF87]">
-                <CalendarIcon className="w-3.5 h-3.5" /> Historial de Entrenamientos
+                <CalendarIcon className="w-3.5 h-3.5" /> {t("Historial de Entrenamientos")}
               </h1>
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#00FF87]/15 text-[#00FF87] border border-[#00FF87]/30">
-                {totalCount} {totalCount === 1 ? 'sesión' : 'sesiones'}
+                {totalCount} {totalCount === 1 ? t("sesión") : t("sesiones")}
               </span>
             </div>
             <p className="text-xs sm:text-sm text-[#A1A1AA] mt-0.5">
-              Calendario de rutinas completadas y desglose de cada sesión.
+              {t("Calendario de rutinas completadas y desglose de cada sesión.")}
             </p>
           </div>
         </div>
@@ -81,13 +82,13 @@ export const WorkoutHistoryView: React.FC = () => {
             </div>
             <div className="min-w-0">
               <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#00FF87] block truncate">
-                Esta semana
+                {t("Esta semana")}
               </span>
               <span className="text-xl sm:text-2xl font-black text-white font-mono leading-none block">
                 {currentWeekCount}
               </span>
               <span className="text-[10px] text-zinc-400 font-semibold truncate block mt-0.5">
-                {currentWeekCount === 1 ? 'rutina completada' : 'rutinas completadas'}
+                {currentWeekCount === 1 ? t("rutina completada") : t("rutinas completadas")}
               </span>
             </div>
           </div>
@@ -99,13 +100,13 @@ export const WorkoutHistoryView: React.FC = () => {
             </div>
             <div className="min-w-0">
               <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#00E5FF] block truncate">
-                Este mes ({MONTH_NAMES[today.getMonth()]})
+                {t("Este mes (")}{t(MONTH_NAMES[today.getMonth()])})
               </span>
               <span className="text-xl sm:text-2xl font-black text-white font-mono leading-none block">
                 {currentMonthCount}
               </span>
               <span className="text-[10px] text-zinc-400 font-semibold truncate block mt-0.5">
-                {currentMonthCount === 1 ? 'rutina completada' : 'rutinas completadas'}
+                {currentMonthCount === 1 ? t("rutina completada") : t("rutinas completadas")}
               </span>
             </div>
           </div>
@@ -117,13 +118,13 @@ export const WorkoutHistoryView: React.FC = () => {
             </div>
             <div className="min-w-0">
               <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-zinc-400 block truncate">
-                Total registrado
+                {t("Total registrado")}
               </span>
               <span className="text-xl sm:text-2xl font-black text-white font-mono leading-none block">
                 {totalCount}
               </span>
               <span className="text-[10px] text-zinc-400 font-semibold truncate block mt-0.5">
-                sesiones en histórico
+                {t("sesiones en histórico")}
               </span>
             </div>
           </div>
@@ -135,7 +136,7 @@ export const WorkoutHistoryView: React.FC = () => {
           <div className="p-4 sm:p-5 border-b border-white/[0.08] flex items-center justify-between">
             <div className="flex items-center gap-2">
               <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">
-                {MONTH_NAMES[currentMonth]} {currentYear}
+                {t(MONTH_NAMES[currentMonth])} {currentYear}
               </h2>
             </div>
 
@@ -147,7 +148,7 @@ export const WorkoutHistoryView: React.FC = () => {
                     onClick={handleGoToday}
                     className="px-4 min-h-[44px] rounded-xl border border-white/10 bg-zinc-900 hover:bg-zinc-800 text-xs font-bold text-white transition active:scale-[0.97] shadow-inner"
                   >
-                    Hoy
+                    {t("Hoy")}
                   </button>
                 )}
               </div>
@@ -156,8 +157,8 @@ export const WorkoutHistoryView: React.FC = () => {
                 type="button"
                 onClick={handlePrevMonth}
                 className="min-h-[44px] min-w-[44px] p-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors active:scale-95 border border-white/10 flex items-center justify-center"
-                title="Mes anterior"
-                aria-label="Mes anterior"
+                title={t("Mes anterior")}
+                aria-label={t("Mes anterior")}
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -166,8 +167,8 @@ export const WorkoutHistoryView: React.FC = () => {
                 type="button"
                 onClick={handleNextMonth}
                 className="min-h-[44px] min-w-[44px] p-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors active:scale-95 border border-white/10 flex items-center justify-center"
-                title="Mes siguiente"
-                aria-label="Mes siguiente"
+                title={t("Mes siguiente")}
+                aria-label={t("Mes siguiente")}
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -178,7 +179,7 @@ export const WorkoutHistoryView: React.FC = () => {
           <div className="grid grid-cols-7 border-b border-white/[0.06] bg-zinc-900/60 text-center py-2.5 text-[11px] sm:text-xs font-extrabold text-[#A1A1AA] uppercase tracking-wider">
             {WEEKDAY_NAMES.map((wName, idx) => (
               <div key={idx} className={idx >= 5 ? 'text-zinc-500' : ''}>
-                {wName}
+                {t(wName)}
               </div>
             ))}
           </div>
@@ -218,7 +219,7 @@ export const WorkoutHistoryView: React.FC = () => {
                     {cell.workouts.length > 1 && (
                       <span
                         className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-[#00FF87] text-black shadow-[0_0_8px_rgba(0,255,135,0.4)]"
-                        title={`${cell.workouts.length} entrenamientos`}
+                        title={t("{0} entrenamientos", cell.workouts.length)}
                       >
                         {cell.workouts.length}
                       </span>
@@ -238,14 +239,14 @@ export const WorkoutHistoryView: React.FC = () => {
                         >
                           <Flame className="w-2.5 h-2.5 text-[#00FF87] shrink-0 fill-current" />
                           <span className="truncate hidden sm:inline">{w.routineName}</span>
-                          <span className="sm:hidden font-mono text-[9px]">{w.completedSetsCount}s</span>
+                          <span className="sm:hidden font-mono text-[9px]">{w.completedSetsCount}{t("s")}</span>
                         </div>
                       );
                     })}
 
                     {cell.workouts.length > 2 && (
                       <span className="text-[9px] font-bold text-[#00FF87] block text-right">
-                        +{cell.workouts.length - 2} más
+                        +{cell.workouts.length - 2} {t("más")}
                       </span>
                     )}
                   </div>
@@ -262,17 +263,17 @@ export const WorkoutHistoryView: React.FC = () => {
             <Trophy className="w-7 h-7" />
           </div>
           <h3 className="text-base font-bold text-white mb-1">
-            Tu calendario se llenará automáticamente
+            {t("Tu calendario se llenará automáticamente")}
           </h3>
           <p className="text-xs text-[#A1A1AA] max-w-sm mx-auto mb-5 leading-relaxed">
-            Cada vez que pulses «Finalizar entrenamiento» al terminar una sesión de rutina, se guardará aquí su resumen con el tiempo y series realizadas.
+            {t("Cada vez que pulses «Finalizar entrenamiento» al terminar una sesión de rutina, se guardará aquí su resumen con el tiempo y series realizadas.")}
           </p>
           <button
             type="button"
             onClick={onGoToRoutines}
             className="px-6 min-h-[48px] rounded-2xl bg-[#00FF87] hover:bg-[#00e57a] text-black font-extrabold text-sm shadow-[0_0_20px_rgba(0,255,135,0.35)] transition-all active:scale-[0.97]"
           >
-            Ir a mis Rutinas
+            {t("Ir a mis Rutinas")}
           </button>
         </div>
       )}
@@ -294,7 +295,7 @@ export const WorkoutHistoryView: React.FC = () => {
                   {selectedDayWorkouts.dateLabel}
                 </h3>
                 <span className="text-xs text-[#A1A1AA] font-medium">
-                  {selectedDayWorkouts.workouts.length} entrenamientos completados
+                  {selectedDayWorkouts.workouts.length} {t("entrenamientos completados")}
                 </span>
               </div>
               <button
@@ -331,12 +332,12 @@ export const WorkoutHistoryView: React.FC = () => {
                           {formatDetailedDuration(w.durationSeconds)}
                         </span>
                         <span>•</span>
-                        <span>{w.completedSetsCount}/{w.totalSetsCount ?? '—'} series</span>
+                        <span>{w.completedSetsCount}/{w.totalSetsCount ?? '—'} {t("series")}</span>
                       </div>
                     </div>
                   </div>
                   <span className="text-xs font-bold text-[#00FF87] shrink-0 ml-2">
-                    Ver desglose &rarr;
+                    {t("Ver desglose &rarr;")}
                   </span>
                 </button>
               ))}

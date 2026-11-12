@@ -1,3 +1,4 @@
+import { t } from '../utils/i18n';
 import { useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { AppTab } from '../types';
@@ -71,7 +72,7 @@ export function useExerciseCatalog() {
   };
 
   const handleDelete = (id: string, name: string) => {
-    if (!window.confirm(`¿Seguro que deseas eliminar "${name}" de la biblioteca?`)) return;
+    if (!window.confirm(t("¿Seguro que deseas eliminar \"{0}\" de la biblioteca?", name))) return;
     if (previewExercise?.id === id) setPreviewExercise(null);
     deleteCatalogExercise(id);
   };

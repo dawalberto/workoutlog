@@ -1,3 +1,4 @@
+import { t } from '../../utils/i18n';
 import React, { useMemo, useState } from 'react';
 import { useAppStore } from '../../store/appStore';
 import { selectActiveRoutine } from '../../store/selectors';
@@ -62,7 +63,7 @@ export function useExerciseCard(
   };
 
   const deleteExercise = () => {
-    if (!routine || !exercise || !window.confirm('¿Seguro que deseas eliminar este ejercicio de la rutina?')) {
+    if (!routine || !exercise || !window.confirm(t("¿Seguro que deseas eliminar este ejercicio de la rutina?"))) {
       return;
     }
     saveRoutine({

@@ -1,3 +1,4 @@
+import { t } from '../utils/i18n';
 import React from 'react';
 import { Flag, X, Clock, Layers, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { formatDetailedDuration } from '../utils/timeCalculations';
@@ -44,7 +45,7 @@ export const WorkoutFinishConfirmModal: React.FC<WorkoutFinishConfirmModalProps>
             </div>
             <div>
               <h3 className="text-lg font-black text-white tracking-tight">
-                ¿Finalizar entrenamiento?
+                {t("¿Finalizar entrenamiento?")}
               </h3>
               <p className="text-xs text-zinc-400 truncate max-w-xs">{routineName}</p>
             </div>
@@ -63,7 +64,7 @@ export const WorkoutFinishConfirmModal: React.FC<WorkoutFinishConfirmModalProps>
           <div className="bg-black/30 border border-white/[0.08] rounded-2xl p-3.5 text-center">
             <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-1">
               <Clock className="w-3.5 h-3.5 text-[#00FF87]" />
-              <span>Tiempo</span>
+              <span>{t("Tiempo")}</span>
             </div>
             <span className="text-base sm:text-lg font-black text-white font-mono">
               {formatDetailedDuration(elapsedSeconds)}
@@ -73,7 +74,7 @@ export const WorkoutFinishConfirmModal: React.FC<WorkoutFinishConfirmModalProps>
           <div className="bg-black/30 border border-white/[0.08] rounded-2xl p-3.5 text-center">
             <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-1">
               <Layers className="w-3.5 h-3.5 text-[#00FF87]" />
-              <span>Progreso</span>
+              <span>{t("Progreso")}</span>
             </div>
             <span className="text-base sm:text-lg font-black text-[#00FF87]">
               {completedSetsCount}/{totalSetsCount} ({completionPercentage}%)
@@ -85,13 +86,13 @@ export const WorkoutFinishConfirmModal: React.FC<WorkoutFinishConfirmModalProps>
         {isAllCompleted ? (
           <div className="flex items-start gap-2.5 p-3.5 rounded-2xl bg-[#00FF87]/15 border border-[#00FF87]/30 text-[#00FF87] text-xs mb-6">
             <CheckCircle2 className="w-4 h-4 text-[#00FF87] shrink-0 mt-0.5" />
-            <span className="font-semibold">¡Excelente trabajo! Has completado el 100% de las series de esta rutina.</span>
+            <span className="font-semibold">{t("¡Excelente trabajo! Has completado el 100% de las series de esta rutina.")}</span>
           </div>
         ) : (
           <div className="flex items-start gap-2.5 p-3.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs mb-6">
             <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
             <span className="leading-relaxed">
-              Aún te quedan {remainingSets} serie{remainingSets > 1 ? 's' : ''} por completar. Al finalizar se registrará el tiempo y progreso alcanzado hasta ahora.
+              {t("Aún te quedan")} {remainingSets} {t("serie")}{remainingSets > 1 ? t("s") : ''} {t("por completar. Al finalizar se registrará el tiempo y progreso alcanzado hasta ahora.")}
             </span>
           </div>
         )}
@@ -104,7 +105,7 @@ export const WorkoutFinishConfirmModal: React.FC<WorkoutFinishConfirmModalProps>
             onClick={onCancel}
             className="px-4 py-2.5 min-h-[48px] text-xs sm:text-sm font-semibold text-zinc-400 hover:text-white rounded-xl hover:bg-white/[0.06] transition-colors active:scale-[0.97]"
           >
-            Continuar entrenando
+            {t("Continuar entrenando")}
           </button>
 
           <button
@@ -113,7 +114,7 @@ export const WorkoutFinishConfirmModal: React.FC<WorkoutFinishConfirmModalProps>
             onClick={onConfirm}
             className="px-5 py-2.5 min-h-[48px] text-xs sm:text-sm font-extrabold text-black bg-[#00FF87] hover:bg-[#00e57a] rounded-xl transition-all shadow-[0_0_15px_rgba(0,255,135,0.3)] active:scale-[0.97] flex items-center gap-2"
           >
-            <Flag className="w-4 h-4 text-black stroke-[2.5]" /> Sí, finalizar rutina
+            <Flag className="w-4 h-4 text-black stroke-[2.5]" /> {t("Sí, finalizar rutina")}
           </button>
         </div>
       </div>
