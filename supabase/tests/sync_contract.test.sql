@@ -56,7 +56,7 @@ SELECT is(
     jsonb_build_object('table_name', 'routine_exercises', 'writable_columns', ARRAY['id', 'routine_id', 'definition_id', 'name', 'category', 'categories', 'notes', 'image_url', 'video_url', 'is_optional', 'position', 'created_at', 'updated_at'], 'identity_columns', ARRAY['id']),
     jsonb_build_object('table_name', 'routines', 'writable_columns', ARRAY['id', 'name', 'notes', 'created_at', 'updated_at'], 'identity_columns', ARRAY['id']),
     jsonb_build_object('table_name', 'workout_history', 'writable_columns', ARRAY['id', 'routine_id', 'routine_name', 'started_at', 'completed_at', 'duration_seconds', 'exercises_completed', 'sets_completed', 'total_sets_count', 'completion_percentage', 'created_at', 'updated_at'], 'identity_columns', ARRAY['id']),
-    jsonb_build_object('table_name', 'workout_history_exercises', 'writable_columns', ARRAY['history_id', 'position', 'exercise_name', 'exercises_completed', 'sets_completed', 'sets_total', 'created_at', 'updated_at'], 'identity_columns', ARRAY['history_id', 'position']),
+    jsonb_build_object('table_name', 'workout_history_exercises', 'writable_columns', ARRAY['history_id', 'position', 'exercise_name', 'exercises_completed', 'sets_completed', 'sets_total', 'is_optional', 'created_at', 'updated_at'], 'identity_columns', ARRAY['history_id', 'position']),
     jsonb_build_object('table_name', 'workout_sets', 'writable_columns', ARRAY['id', 'routine_id', 'routine_exercise_id', 'position', 'reps', 'weight', 'rest_seconds', 'created_at', 'updated_at'], 'identity_columns', ARRAY['id'])
   ),
   'metadata matches every writable column and identity in the client contract'

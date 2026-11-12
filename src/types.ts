@@ -125,6 +125,7 @@ export interface WorkoutCompletionSummary {
   exercisesSummary: {
     name: string;
     completedSets: number;
+    isOptional?: boolean;
     totalSets: number | null;
     position?: number;
     summaryText?: string;

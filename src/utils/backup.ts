@@ -380,6 +380,7 @@ export function sanitizeWorkoutHistory(items: unknown[]): WorkoutHistoryLog[] {
         .filter((ex): ex is Record<string, unknown> => !!ex && typeof ex === 'object' && typeof ex.name === 'string')
         .map((ex) => ({
           name: String(ex.name || 'Ejercicio'),
+          ...(typeof ex.isOptional === 'boolean' ? { isOptional: ex.isOptional } : {}),
           completedSets: typeof ex.completedSets === 'number' ? ex.completedSets : 0,
           totalSets: typeof ex.totalSets === 'number' ? ex.totalSets : null,
         }));

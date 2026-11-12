@@ -36,3 +36,12 @@ Allow an exercise in a routine to be marked optional, excluding its sets from ro
 - `pnpm db:reset`, `pnpm db:types`, `pnpm sync:contract:check`, `pnpm db:test` (212 assertions), and `pnpm db:lint` passed on the local stack.
 - Routines with no required sets retain the existing 0% / not-complete behavior; optional completed sets remain in exercise summaries.
 - Next: human review and production migration before frontend deployment.
+
+## Follow-up: optional indicators in summaries
+
+- [x] `ui-followup`: Match the existing switch style and show optional badges in both summaries.
+- [x] `history-snapshot`: Preserve the optional flag in session history and backup.
+- [x] `history-sync`: Add and verify a compatible history exercise sync field.
+- [x] `followup-checks`: Run frontend and database checks after the history sync change.
+
+- Follow-up verified: `pnpm test` (339 tests), `pnpm lint`, `pnpm build`, `pnpm db:reset`, `pnpm db:types`, `pnpm sync:contract:check`, `pnpm db:test` (214 assertions), and `pnpm db:lint` passed. Historical sessions created before this change do not contain an optional-status snapshot. Deploy both migrations before the frontend.

@@ -513,6 +513,7 @@ function flattenWorkoutHistory(value: unknown): SyncRecord[] {
         exercises_completed: exercise.completedSets > 0 ? 1 : 0,
         sets_completed: exercise.completedSets,
         sets_total: exercise.totalSets ?? null,
+        is_optional: exercise.isOptional ?? null,
       });
       validateWorkoutHistoryRecord(
         'workout_history_exercises',
@@ -994,6 +995,7 @@ function applyWorkoutHistoryExerciseChange(
           change.record,
           'sets_total',
         ),
+        ...(typeof change.record.is_optional === 'boolean' ? { isOptional: change.record.is_optional } : {}),
         position,
       };
       if (currentIndex >= 0) {

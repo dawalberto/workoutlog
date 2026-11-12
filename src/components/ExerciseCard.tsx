@@ -253,15 +253,22 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
           <span className="mt-3 inline-flex rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-[#00E5FF]">Opcional</span>
         )}
         {!isExecutionMode && (
-          <label className="mt-3 flex min-h-[48px] cursor-pointer items-center gap-3 rounded-xl border border-white/10 px-3 text-sm font-bold text-white">
-            <input
-              type="checkbox"
-              checked={exercise.isOptional ?? false}
-              onChange={(event) => onUpdateExercise({ ...exercise, isOptional: event.target.checked })}
-              className="h-5 w-5 accent-[#00FF87]"
-            />
-            <span>Ejercicio opcional <span className="font-normal text-[#A1A1AA]">· No cuenta para el progreso</span></span>
-          </label>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={exercise.isOptional ?? false}
+            onClick={() => onUpdateExercise({ ...exercise, isOptional: !exercise.isOptional })}
+            className={`mt-3 flex min-h-[48px] w-full items-center justify-between gap-3 rounded-xl border px-3 text-left text-sm font-bold transition-all active:scale-[0.97] ${
+              exercise.isOptional
+                ? 'border-[#00FF87]/40 bg-[#00FF87]/15 text-[#00FF87]'
+                : 'border-white/10 bg-[#242428] text-zinc-300'
+            }`}
+          >
+            <span>Opcional <span className="font-normal text-[#A1A1AA]">· No cuenta para el progreso de la sesión</span></span>
+            <span aria-hidden="true" className={`relative h-6 w-10 shrink-0 rounded-full ${exercise.isOptional ? 'bg-[#00FF87]' : 'bg-zinc-700'}`}>
+              <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-black transition-transform ${exercise.isOptional ? 'translate-x-4' : 'translate-x-0.5'}`} />
+            </span>
+          </button>
         )}
 
         {/* Media Inputs in Edit Mode */}
