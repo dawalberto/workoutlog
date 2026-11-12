@@ -1,3 +1,5 @@
+import { t } from '../../utils/i18n';
+import { appStore } from '../../store/appStore';
 import { useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '../../store/appStore';
@@ -32,8 +34,8 @@ export function useQuickRmRecordForm(target: ExerciseRmLog | null, onClose: () =
     if (valueNum === null || valueNum <= 0) {
       alert(
         metric === 'reps'
-          ? 'Por favor introduce un número de repeticiones válido mayor a 0'
-          : 'Por favor introduce un peso válido mayor a 0 kg',
+          ? t('Por favor introduce un número de repeticiones válido mayor a 0')
+          : t('Por favor introduce un peso válido mayor a 0 {0}', appStore.getState().weightUnit),
       );
       return;
     }

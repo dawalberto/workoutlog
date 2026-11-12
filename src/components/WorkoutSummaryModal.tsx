@@ -1,3 +1,5 @@
+import { displayedWeightUnit } from '../utils/i18n';
+import { t } from '../utils/i18n';
 import React from 'react';
 import { Trophy, Clock, CheckCircle2, Dumbbell, X, Sparkles } from 'lucide-react';
 import { formatDetailedDuration, formatExerciseSummary } from '../utils/timeCalculations';
@@ -42,7 +44,7 @@ export const WorkoutSummaryModal: React.FC = () => {
         const restSec = cat.defaultRestSeconds || 90;
         const m = Math.floor(restSec / 60);
         const s = restSec % 60;
-        return `${totalSets ?? 3}s x ${reps}r · ${weight}kg - ${m}:${s < 10 ? '0' : ''}${s}⏱️`;
+        return `${totalSets ?? 3}s x ${reps}r · ${weight}${displayedWeightUnit()} - ${m}:${s < 10 ? '0' : ''}${s}⏱️`;
       }
     }
 
@@ -67,7 +69,7 @@ export const WorkoutSummaryModal: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-1.5 text-xs font-black text-[#00FF87] uppercase tracking-wider">
-                <Sparkles className="w-3.5 h-3.5" /> ¡Entrenamiento completado!
+                <Sparkles className="w-3.5 h-3.5" /> {t("¡Entrenamiento completado!")}
               </div>
               <h3 className="text-xl font-black text-white tracking-tight">
                 {summary.routineName}
@@ -88,26 +90,26 @@ export const WorkoutSummaryModal: React.FC = () => {
           <div className="bg-black/30 border border-[#00FF87]/20 rounded-2xl p-4 text-center">
             <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-[#00FF87] uppercase tracking-wider mb-1">
               <Clock className="w-4 h-4 text-[#00FF87]" />
-              <span>Tiempo total</span>
+              <span>{t("Tiempo total")}</span>
             </div>
             <span className="text-xl sm:text-2xl font-black text-white font-mono block">
               {formatDetailedDuration(summary.durationSeconds)}
             </span>
-            <span className="text-[11px] text-zinc-400 font-medium">desde el inicio</span>
+            <span className="text-[11px] text-zinc-400 font-medium">{t("desde el inicio")}</span>
           </div>
 
           <div className="bg-black/30 border border-white/[0.08] rounded-2xl p-4 text-center">
             <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-zinc-300 uppercase tracking-wider mb-1">
               <CheckCircle2 className="w-4 h-4 text-[#00FF87]" />
-              <span>Progreso</span>
+              <span>{t("Progreso")}</span>
             </div>
             <span className="text-xl sm:text-2xl font-black text-white block">
               {summary.completedSetsCount}/{summary.totalSetsCount ?? '—'}
             </span>
             <span className="text-[11px] text-[#00FF87] font-extrabold">
               {summary.completionPercentage === null
-                ? 'Progreso desconocido'
-                : `${summary.completionPercentage}% series hechas`}
+                ? t("Progreso desconocido")
+                : t("{0}% series hechas", summary.completionPercentage)}
             </span>
           </div>
         </div>
@@ -115,7 +117,7 @@ export const WorkoutSummaryModal: React.FC = () => {
         {/* Exercise breakdown */}
         <div className="flex-1 overflow-y-auto mb-5 pr-1">
           <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-            <Dumbbell className="w-3.5 h-3.5 text-[#00FF87]" /> Desglose por ejercicio
+            <Dumbbell className="w-3.5 h-3.5 text-[#00FF87]" /> {t("Desglose por ejercicio")}
           </h4>
 
           <div className="space-y-2">
@@ -136,7 +138,7 @@ export const WorkoutSummaryModal: React.FC = () => {
                         {ex.name}
                       </span>
                       {ex.isOptional && (
-                        <span className="inline-flex rounded-full border border-white/10 px-2 py-0.5 text-xs font-bold text-[#00E5FF]">Opcional</span>
+                        <span className="inline-flex rounded-full border border-white/10 px-2 py-0.5 text-xs font-bold text-[#00E5FF]">{t("Opcional")}</span>
                       )}
                       <RmBadge rmLogs={rmLogs} exerciseName={ex.name} size="xs" />
                       {onOpenDiary && (
@@ -157,7 +159,7 @@ export const WorkoutSummaryModal: React.FC = () => {
                       <div className="mt-0.5">
                         <span
                           className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-mono font-semibold bg-zinc-900 text-zinc-300 border border-white/10 whitespace-nowrap shadow-inner"
-                          title="Resumen: series x repeticiones · peso - descanso"
+                          title={t("Resumen: series x repeticiones · peso - descanso")}
                         >
                           {badgeText}
                         </span>
@@ -176,8 +178,8 @@ export const WorkoutSummaryModal: React.FC = () => {
                       }`}
                     >
                       {ex.totalSets === null
-                        ? `${ex.completedSets} / — series (total desconocido)`
-                        : `${ex.completedSets} / ${ex.totalSets} series`}
+                        ? t("{0} / — series (total desconocido)", ex.completedSets)
+                        : t("{0} / {1} series", ex.completedSets, ex.totalSets)}
                     </span>
                     {isExComplete && <CheckCircle2 className="w-4 h-4 text-[#00FF87] shrink-0" />}
                   </div>
@@ -195,7 +197,7 @@ export const WorkoutSummaryModal: React.FC = () => {
             onClick={onClose}
             className="w-full sm:w-auto px-6 py-3 min-h-[48px] text-xs sm:text-sm font-extrabold text-black bg-[#00FF87] hover:bg-[#00e57a] rounded-xl transition-all shadow-[0_0_15px_rgba(0,255,135,0.3)] active:scale-[0.97] text-center"
           >
-            Aceptar
+            {t("Aceptar")}
           </button>
         </div>
       </div>

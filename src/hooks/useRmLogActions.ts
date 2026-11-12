@@ -1,3 +1,4 @@
+import { t } from '../utils/i18n';
 import { useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { AppTab, type ExerciseRmLog } from '../types';
@@ -30,7 +31,7 @@ export function useRmLogActions() {
     setQuickLogTarget(log);
   };
   const handleDeleteExercise = (logId: string, name: string) => {
-    if (!window.confirm(`¿Seguro que deseas eliminar el registro de RM de "${name}" y todo su historial?`)) {
+    if (!window.confirm(t("¿Seguro que deseas eliminar el registro de RM de \"{0}\" y todo su historial?", name))) {
       return;
     }
     data.setRmLogs(data.rmLogs.filter((log) => log.id !== logId));

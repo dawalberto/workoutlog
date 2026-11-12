@@ -1,3 +1,4 @@
+import { t } from '../utils/i18n';
 import { useEffect } from 'react';
 import {
   closeRestNotifications,
@@ -118,7 +119,7 @@ export function useRestPush(): void {
             if (mounted) {
               setRestPushState({
                 error: error
-                  ? 'No se pudo programar el aviso. Se usará la alerta local.'
+                  ? t("No se pudo programar el aviso. Se usará la alerta local.")
                   : null,
               });
             }

@@ -60,7 +60,7 @@ describe('App shell composition', () => {
     expect(renderApp()).toContain('id="exercise-catalog-page"');
   });
 
-  it('opens and closes the sidebar and backup modal through shell actions', () => {
+  it('opens backup from settings and closes the sidebar and modal', () => {
     let headerActions: ReturnType<typeof useAppHeader>;
     const CaptureHeaderActions: React.FC = () => {
       headerActions = useAppHeader();
@@ -85,9 +85,12 @@ describe('App shell composition', () => {
 
     headerActions!.onOpenMenu();
     renderToStaticMarkup(<CaptureSidebarActions />);
-    sidebarActions!.handleBackup();
+    expect(renderApp()).not.toContain('id="sidebar-link-backup"');
+    sidebarActions!.handleNav(AppTab.SETTINGS);
 
     expect(appStore.getState().isMenuOpen).toBe(false);
+    expect(renderApp()).toContain('id="settings-link-backup"');
+    appStore.getState().openBackupModal();
     expect(appStore.getState().isBackupModalOpen).toBe(true);
     expect(renderApp()).toContain('Exportar');
 

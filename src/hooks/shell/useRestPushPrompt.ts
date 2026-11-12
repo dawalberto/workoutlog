@@ -1,3 +1,4 @@
+import { t } from '../../utils/i18n';
 import { useCallback } from 'react';
 import { useAppStore } from '../../store/appStore';
 import { subscribeBrowserPush } from '../../utils/pushBrowser';
@@ -15,7 +16,7 @@ export function useRestPushPrompt() {
       );
     } catch {
       setRestPushState({
-        error: 'No se pudieron activar las notificaciones. Inténtalo de nuevo.',
+        error: t("No se pudieron activar las notificaciones. Inténtalo de nuevo."),
       });
       return;
     }

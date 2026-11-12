@@ -1,3 +1,4 @@
+import { t } from '../../utils/i18n';
 import React from 'react';
 import { Dumbbell, Repeat } from 'lucide-react';
 import type { RmMetric } from '../../types';
@@ -25,7 +26,7 @@ export const RmMetricSelector: React.FC<RmMetricSelectorProps> = ({
   return (
     <div
       role="tablist"
-      aria-label="Métrica del RM"
+      aria-label={t("Métrica del RM")}
       className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-zinc-900 border border-white/10"
     >
       <button
@@ -37,7 +38,7 @@ export const RmMetricSelector: React.FC<RmMetricSelectorProps> = ({
         className={`${baseClass} ${value === 'weight' ? activeClass : inactiveClass}`}
       >
         <Dumbbell className="w-3.5 h-3.5" />
-        <span>Peso (kg)</span>
+        <span>{t("Peso (kg)")}</span>
       </button>
       <button
         id={`${idPrefix}-reps`}
@@ -48,7 +49,7 @@ export const RmMetricSelector: React.FC<RmMetricSelectorProps> = ({
         className={`${baseClass} ${value === 'reps' ? activeClass : inactiveClass}`}
       >
         <Repeat className="w-3.5 h-3.5" />
-        <span>Repeticiones</span>
+        <span>{t("Repeticiones")}</span>
       </button>
     </div>
   );

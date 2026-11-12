@@ -1,3 +1,4 @@
+import { t } from '../utils/i18n';
 import React, { useState } from 'react';
 import { Check, ImageOff, Link2, Search, X } from 'lucide-react';
 import { ExerciseThumbnail } from './ExerciseThumbnail';
@@ -49,7 +50,7 @@ export const ExerciseImageAlbumModal: React.FC<ExerciseImageAlbumModalProps> = (
       className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-hidden animate-in fade-in duration-150"
       role="dialog"
       aria-modal="true"
-      aria-label="Seleccionar imagen del ejercicio"
+      aria-label={t("Seleccionar imagen del ejercicio")}
       onClick={onClose}
       onKeyDown={(event) => {
         // The album lives inside the exercise form; keep Enter from submitting it.
@@ -63,15 +64,15 @@ export const ExerciseImageAlbumModal: React.FC<ExerciseImageAlbumModalProps> = (
         {/* Header */}
         <div className="flex items-start justify-between gap-3 px-5 sm:px-6 py-4 border-b border-white/[0.08] shrink-0">
           <div className="min-w-0">
-            <h2 className="text-base sm:text-lg font-black text-white truncate">Elegir imagen</h2>
+            <h2 className="text-base sm:text-lg font-black text-white truncate">{t("Elegir imagen")}</h2>
             <p className="text-[11px] text-zinc-500 mt-0.5">
-              Elige una de la biblioteca o pega tu propia URL.
+              {t("Elige una de la biblioteca o pega tu propia URL.")}
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Cerrar álbum de imágenes"
+            aria-label={t("Cerrar álbum de imágenes")}
             className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors shrink-0"
           >
             <X className="w-5 h-5" />
@@ -86,8 +87,8 @@ export const ExerciseImageAlbumModal: React.FC<ExerciseImageAlbumModalProps> = (
               type="text"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Buscar imagen..."
-              aria-label="Buscar imagen en la biblioteca"
+              placeholder={t("Buscar imagen...")}
+              aria-label={t("Buscar imagen en la biblioteca")}
               className="w-full min-h-[48px] pl-11 pr-4 text-sm rounded-2xl border border-white/10 bg-zinc-900 text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/20"
             />
           </div>
@@ -104,13 +105,13 @@ export const ExerciseImageAlbumModal: React.FC<ExerciseImageAlbumModalProps> = (
             }`}
           >
             <ImageOff className="w-4 h-4" />
-            Sin imagen
+            {t("Sin imagen")}
           </button>
 
           {/* Library grid */}
           {options.length === 0 ? (
             <p className="text-xs text-zinc-500 text-center py-8">
-              No hay imágenes que coincidan con &quot;{searchTerm}&quot;.
+              {t("No hay imágenes que coincidan con &quot;")}{searchTerm}{t("&quot;.")}
             </p>
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
@@ -158,7 +159,7 @@ export const ExerciseImageAlbumModal: React.FC<ExerciseImageAlbumModalProps> = (
           <div className="pt-4 border-t border-white/[0.08] space-y-2">
             <span className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-zinc-400">
               <Link2 className="w-3.5 h-3.5 text-[#00E5FF]" />
-              O usa una URL propia
+              {t("O usa una URL propia")}
             </span>
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
               <input
@@ -168,8 +169,8 @@ export const ExerciseImageAlbumModal: React.FC<ExerciseImageAlbumModalProps> = (
                   setUrlDraft(event.target.value);
                   setUrlError(false);
                 }}
-                placeholder="https://ejemplo.com/imagen.jpg"
-                aria-label="URL de imagen personalizada"
+                placeholder={t("https://ejemplo.com/imagen.jpg")}
+                aria-label={t("URL de imagen personalizada")}
                 className="w-full min-w-0 sm:flex-1 min-h-[48px] px-4 text-sm rounded-2xl border border-white/10 bg-zinc-900 text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#00E5FF] focus:ring-2 focus:ring-[#00E5FF]/20"
               />
               <button
@@ -178,12 +179,12 @@ export const ExerciseImageAlbumModal: React.FC<ExerciseImageAlbumModalProps> = (
                 disabled={!trimmedUrl}
                 className="w-full sm:w-auto min-h-[48px] px-4 rounded-2xl text-xs font-extrabold bg-[#00E5FF] text-black hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0"
               >
-                Usar URL
+                {t("Usar URL")}
               </button>
             </div>
             {urlError && (
               <p className="text-[11px] text-amber-400">
-                No se pudo cargar la imagen desde este enlace.
+                {t("No se pudo cargar la imagen desde este enlace.")}
               </p>
             )}
             {trimmedUrl && (
@@ -196,7 +197,7 @@ export const ExerciseImageAlbumModal: React.FC<ExerciseImageAlbumModalProps> = (
                     onError={() => setUrlError(true)}
                   />
                 </div>
-                <span className="text-[11px] text-zinc-500">Vista previa del enlace</span>
+                <span className="text-[11px] text-zinc-500">{t("Vista previa del enlace")}</span>
               </div>
             )}
           </div>

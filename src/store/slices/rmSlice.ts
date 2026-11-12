@@ -1,3 +1,4 @@
+import { t } from '../../utils/i18n';
 import type { StateCreator } from 'zustand/vanilla';
 import type { RmRecord } from '../../types';
 import {
@@ -83,7 +84,7 @@ export const createRmSlice: StateCreator<AppState, [], [], RmSlice> =
           }),
         }));
         get().notify(
-          `🏆 ¡Nuevo RM de ${pendingRmAlert.newWeight} kg registrado en ${pendingRmAlert.exerciseName}!`,
+          t("🏆 ¡Nuevo RM de {0} {1} registrado en {2}!", pendingRmAlert.newWeight, get().weightUnit, pendingRmAlert.exerciseName),
         );
       }
 

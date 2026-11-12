@@ -1,3 +1,5 @@
+import { displayedWeightUnit } from '../utils/i18n';
+import { t } from '../utils/i18n';
 import React from 'react';
 import { Trophy } from 'lucide-react';
 import { ExerciseRmLog } from '../types';
@@ -45,10 +47,10 @@ export const RmBadge: React.FC<RmBadgeProps> = ({
   return (
     <span
       className={`inline-flex items-center gap-1 font-bold rounded-lg border shrink-0 select-none ${highestRecord ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.2)]' : 'bg-orange-500/10 text-orange-300 border-dashed border-orange-400/50'} ${sizeClasses} ${className}`}
-      title={highestRecord ? `Mayor RM registrado: ${formatRmRecordValue(highestRecord)} (${highestRecord.date || 'Récord personal'})` : 'RM estimado con la fórmula de Epley; supone una serie cercana al fallo'}
+      title={highestRecord ? `Mayor RM registrado: ${formatRmRecordValue(highestRecord)} (${highestRecord.date || 'Récord personal'})` : t("RM estimado con la fórmula de Epley; supone una serie cercana al fallo")}
     >
       <Trophy className={`${iconClasses} text-amber-400 fill-amber-400/40 shrink-0`} />
-      <span>{highestRecord ? `RM: ${formatRmRecordValue(highestRecord)}` : `RM est.: ${estimate} kg`}</span>
+      <span>{highestRecord ? `RM: ${formatRmRecordValue(highestRecord)}` : `RM est.: ${estimate} ${displayedWeightUnit()}`}</span>
     </span>
   );
 };

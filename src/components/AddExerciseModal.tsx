@@ -1,3 +1,4 @@
+import { t } from '../utils/i18n';
 import React, { useState, useEffect } from 'react';
 import {
   X,
@@ -81,7 +82,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
     // Keep modal open, provide visual confirmation and toast feedback
     setJustAddedId(item.id);
     setAddedCount((prev) => prev + 1);
-    setAddedNotification(`"${item.name}" añadido a la rutina`);
+    setAddedNotification(t("\"{0}\" añadido a la rutina", item.name));
 
     setTimeout(() => {
       setJustAddedId((curr) => (curr === item.id ? null : curr));
@@ -115,7 +116,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
     setCustomVideoUrl('');
     setCustomNotes('');
     setAddedCount((prev) => prev + 1);
-    setAddedNotification(`"${createdName}" añadido a la rutina`);
+    setAddedNotification(t("\"{0}\" añadido a la rutina", createdName));
 
     setTimeout(() => {
       setAddedNotification((curr) => (curr && curr.includes(createdName) ? null : curr));
@@ -132,14 +133,14 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
               <Dumbbell className="w-4 h-4 text-[#00FF87]" />
             </span>
             <div className="min-w-0">
-              <h2 className="text-base sm:text-lg font-black text-white truncate">Añadir Ejercicio a la Rutina</h2>
+              <h2 className="text-base sm:text-lg font-black text-white truncate">{t("Añadir Ejercicio a la Rutina")}</h2>
             </div>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
             {addedCount > 0 && (
               <span className="text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-[#00FF87]/15 text-[#00FF87] border border-[#00FF87]/30 animate-in zoom-in-75">
-                +{addedCount} añadido{addedCount > 1 ? 's' : ''}
+                +{addedCount} {t("añadido")}{addedCount > 1 ? t("s") : ''}
               </span>
             )}
             <button
@@ -147,13 +148,13 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 min-h-[40px] text-xs font-extrabold bg-[#00FF87] hover:bg-[#00e57a] text-black rounded-xl transition-all shadow-[0_0_15px_rgba(0,255,135,0.3)] active:scale-[0.97]"
             >
-              Listo
+              {t("Listo")}
             </button>
             <button
               type="button"
               onClick={onClose}
               className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/[0.08] transition-colors shrink-0"
-              aria-label="Cerrar modal"
+              aria-label={t("Cerrar modal")}
             >
               <X className="w-5 h-5" />
             </button>
@@ -172,7 +173,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                   : 'text-zinc-400 hover:text-white'
               }`}
             >
-              Biblioteca ({catalog.length})
+              {t("Biblioteca (")}{catalog.length})
             </button>
             <button
               type="button"
@@ -183,7 +184,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                   : 'text-zinc-400 hover:text-white'
               }`}
             >
-              Crear en el momento
+              {t("Crear en el momento")}
             </button>
           </div>
         </div>
@@ -202,7 +203,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                 type="button"
                 onClick={() => setAddedNotification(null)}
                 className="p-1 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white shrink-0 transition-colors"
-                aria-label="Cerrar notificación"
+                aria-label={t("Cerrar notificación")}
               >
                 <X className="w-4 h-4" />
               </button>
@@ -222,7 +223,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Buscar en la biblioteca..."
+                    placeholder={t("Buscar en la biblioteca...")}
                     className="w-full min-h-[44px] pl-10 pr-3.5 py-2 text-xs sm:text-sm rounded-xl border border-white/10 bg-black/40 text-white placeholder-zinc-500 focus:outline-none focus:border-[#00FF87] focus:ring-1 focus:ring-[#00FF87] transition-all"
                   />
                 </div>
@@ -250,18 +251,18 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                 <div className="text-center py-8 px-4 text-xs">
                   {catalog.length === 0 ? (
                     <div className="space-y-2">
-                      <p className="font-bold text-zinc-300">Tu biblioteca no tiene ejercicios todavía.</p>
-                      <p className="text-zinc-500">Puedes crear un ejercicio ahora mismo en la pestaña &quot;Crear en el momento&quot;.</p>
+                      <p className="font-bold text-zinc-300">{t("Tu biblioteca no tiene ejercicios todavía.")}</p>
+                      <p className="text-zinc-500">{t("Puedes crear un ejercicio ahora mismo en la pestaña &quot;Crear en el momento&quot;.")}</p>
                       <button
                         type="button"
                         onClick={() => setActiveTab('custom')}
                         className="mt-2 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#00FF87] text-black font-extrabold text-xs shadow-[0_0_12px_rgba(0,255,135,0.3)] hover:bg-[#00e57a] transition-all"
                       >
-                        <Plus className="w-3.5 h-3.5 stroke-[2.5]" /> Crear en el momento
+                        <Plus className="w-3.5 h-3.5 stroke-[2.5]" /> {t("Crear en el momento")}
                       </button>
                     </div>
                   ) : (
-                    <span className="text-zinc-500">No se encontraron ejercicios con ese filtro o búsqueda.</span>
+                    <span className="text-zinc-500">{t("No se encontraron ejercicios con ese filtro o búsqueda.")}</span>
                   )}
                 </div>
               ) : (
@@ -300,7 +301,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                                   isJustAdded ? 'bg-[#00FF87] text-black' : 'bg-white/[0.06] text-zinc-400 border border-white/5'
                                 }`}
                               >
-                                {formatExerciseCategories(item) || 'General'}
+                                {formatExerciseCategories(item) || t("General")}
                               </span>
                               <RmBadge rmLogs={rmLogs} exerciseName={item.name} exerciseId={item.id} size="xs" />
                               {onOpenDiary && (
@@ -317,7 +318,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                               )}
                               {isJustAdded && (
                                 <span className="text-[10px] font-black text-[#00FF87] animate-in fade-in">
-                                  ✓ Añadido
+                                  {t("✓ Añadido")}
                                 </span>
                               )}
                             </div>
@@ -325,7 +326,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                               {item.name}
                             </h4>
                             <p className="text-[11px] text-zinc-400 truncate">
-                              {item.defaultSetsCount || 3} series • {item.defaultReps || 10} reps • {item.defaultWeight || 0} kg • {item.defaultRestSeconds || 90}s rest
+                              {item.defaultSetsCount || 3} {t("series •")} {item.defaultReps || 10} {t("reps •")} {item.defaultWeight || 0} {t("kg •")} {item.defaultRestSeconds || 90}{t("s rest")}
                             </p>
                           </div>
                         </div>
@@ -342,12 +343,12 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                           {isJustAdded ? (
                             <>
                               <Check className="w-3.5 h-3.5 stroke-[3] animate-in zoom-in-50 duration-150" />
-                              <span>¡Añadido!</span>
+                              <span>{t("¡Añadido!")}</span>
                             </>
                           ) : (
                             <>
                               <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                              <span>Añadir</span>
+                              <span>{t("Añadir")}</span>
                             </>
                           )}
                         </button>
@@ -362,14 +363,14 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
             <form onSubmit={handleCreateCustom} className="space-y-3.5">
               <div>
                 <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wide mb-1.5">
-                  Nombre del Ejercicio <span className="text-rose-500">*</span>
+                  {t("Nombre del Ejercicio")} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={customName}
                   onChange={(e) => setCustomName(e.target.value)}
-                  placeholder="ej. Press Inclinado, Fondos..."
+                  placeholder={t("ej. Press Inclinado, Fondos...")}
                   className="w-full min-h-[48px] px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-white/10 bg-black/40 text-white placeholder-zinc-500 focus:outline-none focus:border-[#00FF87] focus:ring-1 focus:ring-[#00FF87] transition-all"
                 />
               </div>
@@ -385,13 +386,13 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
               {/* Video URL */}
               <div>
                 <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wide mb-1.5">
-                  URL de Video
+                  {t("URL de Video")}
                 </label>
                 <input
                   type="url"
                   value={customVideoUrl}
                   onChange={(e) => setCustomVideoUrl(e.target.value)}
-                  placeholder="https://www.youtube.com/watch?v=..."
+                  placeholder={t("https://www.youtube.com/watch?v=...")}
                   className="w-full min-h-[48px] px-3.5 py-2.5 text-xs rounded-xl border border-white/10 bg-black/40 text-white placeholder-zinc-500 focus:outline-none focus:border-[#00FF87] focus:ring-1 focus:ring-[#00FF87] transition-all"
                 />
               </div>
@@ -399,13 +400,13 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
               {/* Notes */}
               <div>
                 <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wide mb-1.5">
-                  Notas de técnica
+                  {t("Notas de técnica")}
                 </label>
                 <input
                   type="text"
                   value={customNotes}
                   onChange={(e) => setCustomNotes(e.target.value)}
-                  placeholder="Consejos sobre agarre, colocación..."
+                  placeholder={t("Consejos sobre agarre, colocación...")}
                   className="w-full min-h-[48px] px-3.5 py-2.5 text-xs rounded-xl border border-white/10 bg-black/40 text-white placeholder-zinc-500 focus:outline-none focus:border-[#00FF87] focus:ring-1 focus:ring-[#00FF87] transition-all"
                 />
               </div>
@@ -413,7 +414,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
               {/* Muscle groups (multiple) */}
               <div>
                 <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wide mb-1.5">
-                  Grupos Musculares
+                  {t("Grupos Musculares")}
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {['Pecho', 'Espalda', 'Pierna', 'Hombro', 'Brazos', 'Core', 'Otro'].map((cat) => {
@@ -444,11 +445,11 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
               {/* Initial Sets config */}
               <div className="p-3.5 rounded-2xl bg-black/30 border border-white/[0.08]">
                 <span className="block text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-2.5">
-                  Configuración inicial de series
+                  {t("Configuración inicial de series")}
                 </span>
                 <div className="grid grid-cols-4 gap-2">
                   <div>
-                    <label className="block text-[10px] font-bold text-zinc-400 mb-1">Series</label>
+                    <label className="block text-[10px] font-bold text-zinc-400 mb-1">{t("Series")}</label>
                     <input
                       type="number"
                       inputMode="numeric"
@@ -467,7 +468,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-zinc-400 mb-1">Reps</label>
+                    <label className="block text-[10px] font-bold text-zinc-400 mb-1">{t("Reps")}</label>
                     <input
                       type="number"
                       inputMode="numeric"
@@ -486,7 +487,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-zinc-400 mb-1">Peso (kg)</label>
+                    <label className="block text-[10px] font-bold text-zinc-400 mb-1">{t("Peso (kg)")}</label>
                     <input
                       type="text"
                       inputMode="decimal"
@@ -524,7 +525,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                   className="w-4 h-4 rounded accent-[#00FF87]"
                 />
                 <span className="text-xs font-semibold text-zinc-300">
-                  Guardar también en mi Biblioteca para usarlo en futuras rutinas
+                  {t("Guardar también en mi Biblioteca para usarlo en futuras rutinas")}
                 </span>
               </label>
 
@@ -534,13 +535,13 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
                   onClick={onClose}
                   className="px-4 py-2.5 min-h-[44px] text-xs font-bold text-zinc-400 hover:text-white rounded-xl hover:bg-white/[0.06] transition-colors"
                 >
-                  Cancelar
+                  {t("Cancelar")}
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2.5 min-h-[48px] text-xs font-extrabold bg-[#00FF87] hover:bg-[#00e57a] text-black rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.3)] transition-all active:scale-[0.97]"
                 >
-                  Añadir a la Rutina
+                  {t("Añadir a la Rutina")}
                 </button>
               </div>
             </form>

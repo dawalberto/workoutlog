@@ -1,3 +1,4 @@
+import { t } from '../../utils/i18n';
 import React from 'react';
 import {
   ArrowDownRight,
@@ -39,7 +40,7 @@ export const RmRecordHistory: React.FC<RmRecordHistoryProps> = ({
     <div className="flex items-center justify-between mb-3">
       <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
         <Calendar className="w-3.5 h-3.5 text-[#00FF87]" />
-        <span>Historial de registros ({log.records.length})</span>
+        <span>{t("Historial de registros (")}{log.records.length})</span>
       </h3>
 
       <button
@@ -47,7 +48,7 @@ export const RmRecordHistory: React.FC<RmRecordHistoryProps> = ({
         onClick={onOpenQuickLog}
         className="text-xs font-bold text-[#00FF87] hover:underline inline-flex items-center gap-1"
       >
-        <Plus className="w-3.5 h-3.5" /> <span>Añadir registro hoy</span>
+        <Plus className="w-3.5 h-3.5" /> <span>{t("Añadir registro hoy")}</span>
       </button>
     </div>
 
@@ -68,7 +69,7 @@ export const RmRecordHistory: React.FC<RmRecordHistoryProps> = ({
             >
               <div className="mb-2.5">
                 <label className="block text-[10px] font-bold text-zinc-400 uppercase mb-0.5">
-                  Tipo de marca
+                  {t("Tipo de marca")}
                 </label>
                 <RmMetricSelector
                   value={actions.editMetric}
@@ -80,7 +81,7 @@ export const RmRecordHistory: React.FC<RmRecordHistoryProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-2.5">
                 <div>
                   <label className="block text-[10px] font-bold text-zinc-400 uppercase mb-0.5">
-                    {actions.editMetric === 'reps' ? 'Repeticiones *' : 'Peso (kg) *'}
+                    {actions.editMetric === 'reps' ? t("Repeticiones *") : t("Peso (kg) *")}
                   </label>
                   <input
                     type="text"
@@ -99,7 +100,7 @@ export const RmRecordHistory: React.FC<RmRecordHistoryProps> = ({
 
                 <div>
                   <label className="block text-[10px] font-bold text-zinc-400 uppercase mb-0.5">
-                    Fecha *
+                    {t("Fecha *")}
                   </label>
                   <input
                     type="date"
@@ -111,11 +112,11 @@ export const RmRecordHistory: React.FC<RmRecordHistoryProps> = ({
 
                 <div>
                   <label className="block text-[10px] font-bold text-zinc-400 uppercase mb-0.5">
-                    Notas (opcional)
+                    {t("Notas (opcional)")}
                   </label>
                   <input
                     type="text"
-                    placeholder="RPE 9.5, agarre cerrado..."
+                    placeholder={t("RPE 9.5, agarre cerrado...")}
                     value={actions.editNotes}
                     onChange={(e) => actions.setEditNotes(e.target.value)}
                     className="w-full min-h-[44px] px-3 py-2 text-xs rounded-xl border border-white/10 bg-zinc-900 text-white focus:outline-none focus:border-[#00FF87]"
@@ -129,14 +130,14 @@ export const RmRecordHistory: React.FC<RmRecordHistoryProps> = ({
                   onClick={actions.handleCancelEdit}
                   className="px-3 min-h-[40px] text-xs font-semibold text-zinc-400 hover:text-white rounded-xl"
                 >
-                  Cancelar
+                  {t("Cancelar")}
                 </button>
                 <button
                   type="button"
                   onClick={() => actions.handleSaveEditRecord(log.id, record.id)}
                   className="px-4 min-h-[40px] text-xs font-bold text-black bg-[#00FF87] hover:bg-[#00e57a] rounded-xl flex items-center gap-1 active:scale-95"
                 >
-                  <Check className="w-3.5 h-3.5" /> Guardar
+                  <Check className="w-3.5 h-3.5" /> {t("Guardar")}
                 </button>
               </div>
             </div>
@@ -199,8 +200,8 @@ export const RmRecordHistory: React.FC<RmRecordHistoryProps> = ({
                 type="button"
                 onClick={() => actions.handleStartEditRecord(record)}
                 className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors"
-                title="Editar registro"
-                aria-label="Editar registro"
+                title={t("Editar registro")}
+                aria-label={t("Editar registro")}
               >
                 <Edit2 className="w-3.5 h-3.5" />
               </button>
@@ -209,8 +210,8 @@ export const RmRecordHistory: React.FC<RmRecordHistoryProps> = ({
                 type="button"
                 onClick={() => actions.handleDeleteRecord(log.id, record.id)}
                 className="p-1.5 text-zinc-400 hover:text-rose-400 rounded-lg hover:bg-rose-500/10 transition-colors"
-                title="Eliminar registro"
-                aria-label="Eliminar registro"
+                title={t("Eliminar registro")}
+                aria-label={t("Eliminar registro")}
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>

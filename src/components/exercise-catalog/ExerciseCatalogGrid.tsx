@@ -1,3 +1,4 @@
+import { t } from '../../utils/i18n';
 import React from 'react';
 import { Dumbbell } from 'lucide-react';
 import type { ExerciseDefinition } from '../../types';
@@ -27,16 +28,16 @@ export const ExerciseCatalogGrid: React.FC<ExerciseCatalogGridProps> = ({
       <div className="w-14 h-14 bg-zinc-900 border border-white/10 rounded-2xl flex items-center justify-center mx-auto mb-3 text-zinc-500">
         <Dumbbell className="w-7 h-7" />
       </div>
-      <h3 className="text-lg font-bold text-white">No se encontraron ejercicios</h3>
+      <h3 className="text-lg font-bold text-white">{t("No se encontraron ejercicios")}</h3>
       <p className="text-xs text-[#A1A1AA] mt-1 mb-5">
-        Prueba con otro término de búsqueda o añade un nuevo ejercicio a tu biblioteca.
+        {t("Prueba con otro término de búsqueda o añade un nuevo ejercicio a tu biblioteca.")}
       </p>
       <button
         type="button"
         onClick={onCreateExercise}
         className="min-h-[48px] px-5 text-xs font-extrabold rounded-2xl bg-[#00FF87] text-black hover:bg-[#00e57a] transition-all shadow-[0_0_15px_rgba(0,255,135,0.3)] active:scale-[0.97]"
       >
-        + Crear Ejercicio
+        {t("+ Crear Ejercicio")}
       </button>
     </div>
   ) : (

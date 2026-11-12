@@ -1,3 +1,4 @@
+import { t } from '../utils/i18n';
 import React from 'react';
 import { Download, FileJson, Upload, X } from 'lucide-react';
 import { BackupExportPanel } from './data-backup/BackupExportPanel';
@@ -32,10 +33,10 @@ export const DataBackupModal: React.FC = () => {
             </span>
             <div>
               <h2 className="text-base sm:text-lg font-black text-white leading-tight">
-                Copia de Seguridad &amp; Datos
+                {t("Copia de Seguridad &amp; Datos")}
               </h2>
               <p className="text-xs text-zinc-400">
-                Exporta o restaura tus ejercicios y rutinas en formato JSON
+                {t("Exporta o restaura tus ejercicios y rutinas en formato JSON")}
               </p>
             </div>
           </div>
@@ -43,7 +44,7 @@ export const DataBackupModal: React.FC = () => {
             type="button"
             onClick={onClose}
             className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/[0.08] active:scale-95 transition-all"
-            aria-label="Cerrar ventana"
+            aria-label={t("Cerrar ventana")}
           >
             <X className="w-5 h-5" />
           </button>
@@ -62,7 +63,7 @@ export const DataBackupModal: React.FC = () => {
               }`}
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Exportar</span>
+              <span>{t("Exportar")}</span>
             </button>
             <button
               id="tab-backup-import"
@@ -75,7 +76,7 @@ export const DataBackupModal: React.FC = () => {
               }`}
             >
               <Upload className="w-3.5 h-3.5" />
-              <span>Importar</span>
+              <span>{t("Importar")}</span>
             </button>
           </div>
         </div>
@@ -99,7 +100,7 @@ export const DataBackupModal: React.FC = () => {
             onClick={onClose}
             className="px-4 py-2.5 min-h-[44px] text-xs font-bold text-zinc-400 hover:text-white rounded-xl hover:bg-white/[0.06] transition"
           >
-            Cerrar
+            {t("Cerrar")}
           </button>
 
           {activeTab === 'import' && parsedData && (
@@ -111,7 +112,7 @@ export const DataBackupModal: React.FC = () => {
               className="inline-flex items-center gap-2 px-5 py-2.5 min-h-[48px] text-xs font-extrabold rounded-xl bg-[#00FF87] hover:bg-[#00e57a] text-black shadow-[0_0_15px_rgba(0,255,135,0.3)] transition active:scale-[0.97] disabled:opacity-50"
             >
               <Upload className="w-4 h-4 stroke-[3]" />
-              <span>{isProcessing ? 'Importando...' : 'Confirmar e Importar'}</span>
+              <span>{isProcessing ? t("Importando...") : t("Confirmar e Importar")}</span>
             </button>
           )}
         </div>

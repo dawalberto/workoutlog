@@ -97,6 +97,7 @@ async function setupExerciseCard() {
     openExerciseDiary: vi.fn(),
   };
   vi.doMock('../src/store/appStore', () => ({
+    appStore: { getState: () => ({ language: 'es', weightUnit: 'kg' }) },
     useAppStore: (selector: (state: typeof storeState) => unknown) => selector(storeState),
   }));
   const { ExerciseCard } = await import('../src/components/ExerciseCard');

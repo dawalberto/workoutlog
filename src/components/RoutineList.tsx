@@ -1,3 +1,4 @@
+import { t } from '../utils/i18n';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -40,11 +41,11 @@ export const RoutineList: React.FC = () => {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <h1 className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-widest text-[#00FF87]">
-                <Zap className="w-3.5 h-3.5" /> Mis rutinas
+                <Zap className="w-3.5 h-3.5" /> {t("Mis rutinas")}
               </h1>
             </div>
             <p className="text-xs sm:text-sm text-[#A1A1AA] mt-0.5">
-              Planifica tus series, controla descansos y supera tus récords en tiempo real.
+              {t("Planifica tus series, controla descansos y supera tus récords en tiempo real.")}
             </p>
           </div>
 
@@ -56,7 +57,7 @@ export const RoutineList: React.FC = () => {
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 min-h-[48px] rounded-2xl text-sm font-extrabold bg-[#00FF87] hover:bg-[#00e57a] text-black shadow-[0_0_20px_rgba(0,255,135,0.35)] transition-all active:scale-[0.97]"
             >
               <Plus className="w-5 h-5 stroke-[2.5]" />
-              <span>Nueva Rutina</span>
+              <span>{t("Nueva Rutina")}</span>
             </button>
           </div>
         </div>
@@ -68,7 +69,7 @@ export const RoutineList: React.FC = () => {
             <div className="bg-[#1C1C1E] border border-white/[0.08] rounded-2xl p-4 sm:p-5 flex flex-col justify-between hover:border-white/20 transition-colors shadow-lg">
               <div className="flex items-center justify-between text-zinc-400 mb-2">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-[#A1A1AA]">
-                  Rutinas Activas
+                  {t("Rutinas Activas")}
                 </span>
                 <Flame className="w-4 h-4 text-[#00FF87]" />
               </div>
@@ -76,7 +77,7 @@ export const RoutineList: React.FC = () => {
                 <span className="text-2xl sm:text-3xl font-black text-white">
                   {totalRoutines}
                 </span>
-                <span className="text-xs text-[#A1A1AA]">creadas</span>
+                <span className="text-xs text-[#A1A1AA]">{t("creadas")}</span>
               </div>
             </div>
 
@@ -84,7 +85,7 @@ export const RoutineList: React.FC = () => {
             <div className="bg-[#1C1C1E] border border-white/[0.08] rounded-2xl p-4 sm:p-5 flex flex-col justify-between hover:border-white/20 transition-colors shadow-lg">
               <div className="flex items-center justify-between text-zinc-400 mb-2">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-[#A1A1AA]">
-                  Volumen Total
+                  {t("Volumen Total")}
                 </span>
                 <Layers className="w-4 h-4 text-[#00E5FF]" />
               </div>
@@ -92,7 +93,7 @@ export const RoutineList: React.FC = () => {
                 <span className="text-2xl sm:text-3xl font-black text-white">
                   {totalSetsOverall}
                 </span>
-                <span className="text-xs text-[#A1A1AA]">series listas</span>
+                <span className="text-xs text-[#A1A1AA]">{t("series listas")}</span>
               </div>
             </div>
           </div>
@@ -104,9 +105,9 @@ export const RoutineList: React.FC = () => {
             <div className="w-16 h-16 bg-zinc-900 border border-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-[#00FF87] shadow-[0_0_20px_rgba(0,255,135,0.2)]">
               <Dumbbell className="w-8 h-8" />
             </div>
-            <h2 className="text-xl font-bold text-white">No tienes rutinas todavía</h2>
+            <h2 className="text-xl font-bold text-white">{t("No tienes rutinas todavía")}</h2>
             <p className="text-xs sm:text-sm text-[#A1A1AA] mt-1.5 mb-6">
-              Comienza creando tu primera rutina de entrenamiento para empezar a registrar series, pesos y descansos.
+              {t("Comienza creando tu primera rutina de entrenamiento para empezar a registrar series, pesos y descansos.")}
             </p>
             <div className="flex items-center justify-center">
               <button
@@ -115,7 +116,7 @@ export const RoutineList: React.FC = () => {
                 onClick={onCreateRoutine}
                 className="min-h-[48px] px-6 text-sm font-extrabold rounded-2xl bg-[#00FF87] text-black hover:bg-[#00e57a] transition-all shadow-[0_0_20px_rgba(0,255,135,0.35)] active:scale-[0.97]"
               >
-                + Crear Mi Primera Rutina
+                {t("+ Crear Mi Primera Rutina")}
               </button>
             </div>
           </div>
@@ -163,13 +164,13 @@ export const RoutineList: React.FC = () => {
                             <div className="mb-2">
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider bg-[#00FF87]/15 text-[#00FF87] border border-[#00FF87]/30 shadow-[0_0_10px_rgba(0,255,135,0.2)]">
                                 <span className="w-1.5 h-1.5 rounded-full bg-[#00FF87] animate-ping" />
-                                En Curso ({completedSessionSets}/{totalSets} series)
+                                {t("En Curso (")}{completedSessionSets}/{totalSets} {t("series)")}
                               </span>
                             </div>
                           )}
 
                           <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight truncate group-hover:text-[#00FF87] transition-colors">
-                            {routine.name || 'Rutina sin título'}
+                            {routine.name || t("Rutina sin título")}
                           </h2>
                           {routine.notes && (
                             <p className="text-xs sm:text-sm text-[#A1A1AA] mt-1 line-clamp-2 leading-relaxed">
@@ -181,7 +182,7 @@ export const RoutineList: React.FC = () => {
                         {/* Estimated Time Badge */}
                         <div
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 border border-white/10 text-white text-xs font-mono font-bold shrink-0 shadow-inner"
-                          title="Tiempo estimado total"
+                          title={t("Tiempo estimado total")}
                         >
                           <Clock className="w-3.5 h-3.5 text-[#00FF87]" />
                           <span>~{formatSecondsToTime(totalSeconds)}</span>
@@ -192,12 +193,12 @@ export const RoutineList: React.FC = () => {
                       <div className="mt-4 flex items-center gap-3 text-xs text-[#A1A1AA] font-semibold">
                         <span className="flex items-center gap-1 text-white">
                           <Dumbbell className="w-3.5 h-3.5 text-[#00FF87]" />
-                          {exerciseCount} {exerciseCount === 1 ? 'ejercicio' : 'ejercicios'}
+                          {exerciseCount} {exerciseCount === 1 ? t("ejercicio") : t("ejercicios")}
                         </span>
                         <span>·</span>
                         <span className="flex items-center gap-1 text-white">
                           <Layers className="w-3.5 h-3.5 text-[#00E5FF]" />
-                          {totalSets} {totalSets === 1 ? 'serie' : 'series'}
+                          {totalSets} {totalSets === 1 ? t("serie") : t("series")}
                         </span>
                       </div>
 
@@ -242,8 +243,8 @@ export const RoutineList: React.FC = () => {
                             onDuplicateRoutine(routine.id);
                           }}
                           className="min-h-[44px] min-w-[44px] p-2.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-xl transition-all active:scale-[0.97] flex items-center justify-center"
-                          title="Duplicar rutina"
-                          aria-label="Duplicar rutina"
+                          title={t("Duplicar rutina")}
+                          aria-label={t("Duplicar rutina")}
                         >
                           <Copy className="w-4 h-4" />
                         </button>
@@ -256,8 +257,8 @@ export const RoutineList: React.FC = () => {
                             onDeleteRoutine(routine.id);
                           }}
                           className="min-h-[44px] min-w-[44px] p-2.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all active:scale-[0.97] flex items-center justify-center"
-                          title="Eliminar rutina"
-                          aria-label="Eliminar rutina"
+                          title={t("Eliminar rutina")}
+                          aria-label={t("Eliminar rutina")}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -273,19 +274,19 @@ export const RoutineList: React.FC = () => {
                         }}
                         aria-label={
                           isSessionActive
-                            ? `Continuar ${routine.name || 'rutina'}`
-                            : `Ver rutina ${routine.name || ''}`.trim()
+                            ? `${t('Continuar')} ${routine.name || t('rutina')}`
+                            : `${t('Ver rutina')} ${routine.name || ''}`.trim()
                         }
                         className="inline-flex items-center gap-1.5 min-h-[44px] px-2 text-xs font-bold text-[#A1A1AA] group-hover:text-[#00FF87] transition-colors active:scale-[0.97]"
                       >
                         {isSessionActive ? (
                           <span className="inline-flex items-center gap-1.5 text-xs font-black text-[#00FF87]">
                             <span className="w-1.5 h-1.5 rounded-full bg-[#00FF87] animate-ping" />
-                            Continuar
+                            {t("Continuar")}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-xs font-bold text-zinc-400 group-hover:text-[#00FF87] transition-colors">
-                            <span>Ver rutina</span>
+                            <span>{t("Ver rutina")}</span>
                             <Play className="w-3 h-3 fill-current ml-0.5" />
                           </span>
                         )}

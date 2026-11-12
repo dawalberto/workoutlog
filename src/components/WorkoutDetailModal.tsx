@@ -1,3 +1,6 @@
+import { currentLocale } from '../utils/i18n';
+import { displayedWeightUnit } from '../utils/i18n';
+import { t } from '../utils/i18n';
 import React from 'react';
 import { Trophy, Clock, CheckCircle2, Dumbbell, X, Trash2, Calendar } from 'lucide-react';
 import { WorkoutHistoryLog } from '../types';
@@ -20,13 +23,13 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
   if (!log) return null;
 
   const handleDelete = () => {
-    if (window.confirm(`¿Seguro que deseas eliminar este registro de "${log.routineName}" del historial?`)) {
+    if (window.confirm(t("¿Seguro que deseas eliminar este registro de \"{0}\" del historial?", log.routineName))) {
       onDelete(log.id);
       onClose();
     }
   };
 
-  const formattedDate = new Date(log.completedAt || log.endTime).toLocaleDateString('es-ES', {
+  const formattedDate = new Date(log.completedAt || log.endTime).toLocaleDateString(currentLocale(), {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -60,7 +63,7 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
         const restSec = cat.defaultRestSeconds || 90;
         const m = Math.floor(restSec / 60);
         const s = restSec % 60;
-        return `${totalSets ?? 3}s x ${reps}r · ${weight}kg - ${m}:${s < 10 ? '0' : ''}${s}⏱️`;
+        return `${totalSets ?? 3}s x ${reps}r · ${weight}${displayedWeightUnit()} - ${m}:${s < 10 ? '0' : ''}${s}⏱️`;
       }
     }
 
@@ -85,7 +88,7 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
             </div>
             <div className="min-w-0">
               <span className="text-[11px] font-black text-[#00FF87] uppercase tracking-wider block">
-                Sesión completada
+                {t("Sesión completada")}
               </span>
               <h3 className="text-lg sm:text-xl font-black text-white tracking-tight truncate">
                 {log.routineName}
@@ -100,7 +103,7 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
             type="button"
             onClick={onClose}
             className="p-2 text-zinc-400 hover:text-white rounded-xl hover:bg-white/[0.08] transition-colors shrink-0"
-            aria-label="Cerrar"
+            aria-label={t("Cerrar")}
           >
             <X className="w-5 h-5" />
           </button>
@@ -111,26 +114,26 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
           <div className="bg-black/30 border border-[#00FF87]/20 rounded-2xl p-3.5 text-center">
             <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-[#00FF87] uppercase tracking-wider mb-1">
               <Clock className="w-4 h-4 text-[#00FF87]" />
-              <span>Duración</span>
+              <span>{t("Duración")}</span>
             </div>
             <span className="text-xl sm:text-2xl font-black text-white font-mono block">
               {formatDetailedDuration(log.durationSeconds)}
             </span>
-            <span className="text-[11px] text-zinc-400 font-medium">tiempo invertido</span>
+            <span className="text-[11px] text-zinc-400 font-medium">{t("tiempo invertido")}</span>
           </div>
 
           <div className="bg-black/30 border border-white/[0.08] rounded-2xl p-3.5 text-center">
             <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-zinc-300 uppercase tracking-wider mb-1">
               <CheckCircle2 className="w-4 h-4 text-[#00FF87]" />
-              <span>Progreso</span>
+              <span>{t("Progreso")}</span>
             </div>
             <span className="text-xl sm:text-2xl font-black text-white block">
               {log.completedSetsCount}/{log.totalSetsCount ?? '—'}
             </span>
             <span className="text-[11px] text-[#00FF87] font-extrabold">
               {log.completionPercentage === null
-                ? 'Progreso desconocido'
-                : `${log.completionPercentage}% series hechas`}
+                ? t("Progreso desconocido")
+                : t("{0}% series hechas", log.completionPercentage)}
             </span>
           </div>
         </div>
@@ -138,7 +141,7 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
         {/* Exercise breakdown */}
         <div className="flex-1 overflow-y-auto mb-4 pr-1">
           <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-            <Dumbbell className="w-3.5 h-3.5 text-[#00FF87]" /> Desglose por ejercicio
+            <Dumbbell className="w-3.5 h-3.5 text-[#00FF87]" /> {t("Desglose por ejercicio")}
           </h4>
 
           <div className="space-y-2">
@@ -159,7 +162,7 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
                         {ex.name}
                       </span>
                       {ex.isOptional && (
-                        <span className="inline-flex rounded-full border border-white/10 px-2 py-0.5 text-xs font-bold text-[#00E5FF]">Opcional</span>
+                        <span className="inline-flex rounded-full border border-white/10 px-2 py-0.5 text-xs font-bold text-[#00E5FF]">{t("Opcional")}</span>
                       )}
                       <RmBadge rmLogs={rmLogs} exerciseName={ex.name} size="xs" />
                       {onOpenDiary && (
@@ -180,7 +183,7 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
                       <div className="mt-0.5">
                         <span
                           className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-mono font-semibold bg-zinc-900 text-zinc-300 border border-white/10 whitespace-nowrap shadow-inner"
-                          title="Resumen: series x repeticiones · peso - descanso"
+                          title={t("Resumen: series x repeticiones · peso - descanso")}
                         >
                           {badgeText}
                         </span>
@@ -199,8 +202,8 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
                       }`}
                     >
                       {ex.totalSets === null
-                        ? `${ex.completedSets} / — series (total desconocido)`
-                        : `${ex.completedSets} / ${ex.totalSets} series`}
+                        ? t("{0} / — series (total desconocido)", ex.completedSets)
+                        : t("{0} / {1} series", ex.completedSets, ex.totalSets)}
                     </span>
                     {isExComplete && <CheckCircle2 className="w-4 h-4 text-[#00FF87] shrink-0" />}
                   </div>
@@ -218,7 +221,7 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
             className="inline-flex items-center gap-1.5 px-3.5 py-2.5 min-h-[44px] text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition-colors active:scale-95"
           >
             <Trash2 className="w-4 h-4" />
-            <span>Eliminar log</span>
+            <span>{t("Eliminar log")}</span>
           </button>
 
           <button
@@ -226,7 +229,7 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
             onClick={onClose}
             className="px-6 py-2.5 min-h-[48px] text-xs sm:text-sm font-extrabold text-black bg-[#00FF87] hover:bg-[#00e57a] rounded-xl transition-all shadow-[0_0_15px_rgba(0,255,135,0.3)] active:scale-[0.97]"
           >
-            Aceptar
+            {t("Aceptar")}
           </button>
         </div>
       </div>
