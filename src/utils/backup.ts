@@ -443,6 +443,7 @@ function sanitizeRoutines(items: unknown[]): Routine[] {
               imageUrl: typeof exObj?.imageUrl === 'string' ? exObj.imageUrl : undefined,
               videoUrl: typeof exObj?.videoUrl === 'string' ? exObj.videoUrl : undefined,
               notes: typeof exObj?.notes === 'string' ? exObj.notes : undefined,
+              isOptional: exObj?.isOptional === true,
               sets: Array.isArray(exObj?.sets)
                 ? exObj.sets.map((s, sIdx) => {
                     const sObj = s as Record<string, unknown>;

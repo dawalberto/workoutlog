@@ -249,6 +249,21 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
           )}
         </div>
 
+        {isExecutionMode && exercise.isOptional && (
+          <span className="mt-3 inline-flex rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-[#00E5FF]">Opcional</span>
+        )}
+        {!isExecutionMode && (
+          <label className="mt-3 flex min-h-[48px] cursor-pointer items-center gap-3 rounded-xl border border-white/10 px-3 text-sm font-bold text-white">
+            <input
+              type="checkbox"
+              checked={exercise.isOptional ?? false}
+              onChange={(event) => onUpdateExercise({ ...exercise, isOptional: event.target.checked })}
+              className="h-5 w-5 accent-[#00FF87]"
+            />
+            <span>Ejercicio opcional <span className="font-normal text-[#A1A1AA]">· No cuenta para el progreso</span></span>
+          </label>
+        )}
+
         {/* Media Inputs in Edit Mode */}
         {!isExecutionMode && showImageInput && (
           <div className="mt-3 pt-3 border-t border-white/[0.06] flex items-center gap-2.5">

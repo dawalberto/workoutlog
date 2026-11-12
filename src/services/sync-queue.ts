@@ -372,6 +372,7 @@ function flattenRoutines(value: unknown): SyncRecord[] {
             notes: exercise.notes,
             image_url: exercise.imageUrl,
             video_url: exercise.videoUrl,
+            is_optional: exercise.isOptional ?? false,
             position: exercisePosition,
           }),
         ),
@@ -772,6 +773,7 @@ function applyRoutineExerciseChange(value: unknown, change: SyncRemoteChange): R
       notes: nullableString(change.record, 'notes', current?.notes),
       imageUrl: nullableString(change.record, 'image_url', current?.imageUrl),
       videoUrl: nullableString(change.record, 'video_url', current?.videoUrl),
+      isOptional: typeof change.record.is_optional === 'boolean' ? change.record.is_optional : current?.isOptional ?? false,
       sets: current?.sets ?? [],
     };
     return {

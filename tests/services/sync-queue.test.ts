@@ -36,6 +36,19 @@ function operation(
 }
 
 describe('sync queue ordering', () => {
+  it('syncs optional exercise choices in both directions', () => {
+    const routine = { id: 'routine', name: 'Rutina', createdAt: '', updatedAt: '', exercises: [
+      { id: 'exercise', name: 'Press', isOptional: true, sets: [] },
+    ] };
+    const changes = diffSyncCollection('routines', undefined, [routine]);
+    expect(changes.find((item) => item.table === 'routine_exercises')?.record.is_optional).toBe(true);
+    const pulled = applyRemoteSyncChange([{ ...routine, exercises: [] }], {
+      table: 'routine_exercises', id: 'exercise', revision: '1', deletedAt: null,
+      record: { id: 'exercise', routine_id: 'routine', name: 'Press', position: 0, is_optional: true },
+    }) as typeof routine[];
+    expect(pulled[0].exercises[0].isOptional).toBe(true);
+  });
+
   it('drops a remote history exercise when its parent history is missing', () => {
     const record = {
       history_id: 'missing-history',

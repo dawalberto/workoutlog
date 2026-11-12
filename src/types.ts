@@ -9,6 +9,7 @@ export interface WorkoutSet {
 export interface Exercise {
   id: string;
   definitionId?: string;
+  isOptional?: boolean;
   name: string;
   category?: string;
   categories?: string[];

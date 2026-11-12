@@ -17,8 +17,9 @@ export function getRoutineViewProgress(
   sessionCompletedSetIds: string[] = [],
 ): RoutineViewProgress {
   const completedSetIds = new Set(sessionCompletedSetIds);
-  const totalSetsCount = routine.exercises.reduce((total, exercise) => total + exercise.sets.length, 0);
-  const completedSetsCount = routine.exercises.reduce(
+  const requiredExercises = routine.exercises.filter((exercise) => !exercise.isOptional);
+  const totalSetsCount = requiredExercises.reduce((total, exercise) => total + exercise.sets.length, 0);
+  const completedSetsCount = requiredExercises.reduce(
     (total, exercise) => total + exercise.sets.filter((set) => completedSetIds.has(set.id)).length,
     0,
   );

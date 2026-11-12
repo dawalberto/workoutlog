@@ -199,14 +199,14 @@ isOneToOne: false
                   ]
                 },"routine_exercises": {
                   Row: {
-                    "categories": (string)[] | null,"category": string | null,"created_at": string,"definition_id": string | null,"deleted_at": string | null,"id": string,"image_url": string | null,"name": string,"notes": string | null,"position": number,"routine_id": string,"server_revision": number,"server_updated_at": string,"updated_at": string,"user_id": string,"video_url": string | null
+                    "categories": (string)[] | null,"category": string | null,"created_at": string,"definition_id": string | null,"deleted_at": string | null,"id": string,"image_url": string | null,"is_optional": boolean | null,"name": string,"notes": string | null,"position": number,"routine_id": string,"server_revision": number,"server_updated_at": string,"updated_at": string,"user_id": string,"video_url": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "categories"?: (string)[] | null,"category"?: string | null,"created_at"?: string,"definition_id"?: string | null,"deleted_at"?: string | null,"id": string,"image_url"?: string | null,"name": string,"notes"?: string | null,"position": number,"routine_id": string,"server_revision"?: number,"server_updated_at"?: string,"updated_at"?: string,"user_id": string,"video_url"?: string | null
+                    "categories"?: (string)[] | null,"category"?: string | null,"created_at"?: string,"definition_id"?: string | null,"deleted_at"?: string | null,"id": string,"image_url"?: string | null,"is_optional"?: boolean | null,"name": string,"notes"?: string | null,"position": number,"routine_id": string,"server_revision"?: number,"server_updated_at"?: string,"updated_at"?: string,"user_id": string,"video_url"?: string | null
                   }
                   Update: {
-                    "categories"?: (string)[] | null,"category"?: string | null,"created_at"?: string,"definition_id"?: string | null,"deleted_at"?: string | null,"id"?: string,"image_url"?: string | null,"name"?: string,"notes"?: string | null,"position"?: number,"routine_id"?: string,"server_revision"?: number,"server_updated_at"?: string,"updated_at"?: string,"user_id"?: string,"video_url"?: string | null
+                    "categories"?: (string)[] | null,"category"?: string | null,"created_at"?: string,"definition_id"?: string | null,"deleted_at"?: string | null,"id"?: string,"image_url"?: string | null,"is_optional"?: boolean | null,"name"?: string,"notes"?: string | null,"position"?: number,"routine_id"?: string,"server_revision"?: number,"server_updated_at"?: string,"updated_at"?: string,"user_id"?: string,"video_url"?: string | null
                   }
                   Relationships: [
                     {
