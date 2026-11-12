@@ -124,6 +124,24 @@ describe('App shell composition', () => {
     expect(renderApp()).not.toContain('id="floating-mini-rest-timer"');
   });
 
+  it('uses the compact rest timer outside a routine and while editing it', () => {
+    seedAppStore({ routines: [guestRoutine] });
+    appStore.getState().startRestTimer({
+      exerciseName: 'Sentadilla',
+      initialSeconds: 60,
+      key: 22,
+      routineId: guestRoutine.id,
+      setNumber: 1,
+      targetEndTime: Date.now() + 60_000,
+    });
+
+    expect(renderApp()).toContain('id="floating-mini-rest-timer"');
+    appStore.getState().selectRoutine(guestRoutine.id, 'execute');
+    expect(renderApp()).toContain('id="floating-rest-timer"');
+    appStore.getState().selectRoutine(guestRoutine.id, 'edit');
+    expect(renderApp()).toContain('id="floating-mini-rest-timer"');
+  });
+
   it('renders cleanup pending and invokes the registered cleanup control on retry', () => {
     const retryLocalCleanup = vi.fn(async () => false);
     const controls: AccountControls = {
