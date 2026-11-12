@@ -192,9 +192,9 @@ describe('all-sets-complete finish prompt', () => {
   it('describes pending optional sets and celebrates extra effort', () => {
     const props = { isOpen: true, onDismiss: vi.fn(), onConfirm: vi.fn() };
     expect(renderToStaticMarkup(<AllSetsCompleteFinishModal {...props} pendingOptionalSetsCount={1} />))
-      .toContain('queda 1 serie opcional por hacer');
+      .toContain('¿Te animas a hacer la serie opcional?');
     expect(renderToStaticMarkup(<AllSetsCompleteFinishModal {...props} pendingOptionalSetsCount={2} />))
-      .toContain('quedan 2 series opcionales por hacer');
+      .toContain('¿Te animas a hacer las 2 series opcionales?');
     expect(renderToStaticMarkup(<AllSetsCompleteFinishModal {...props} hasCompletedOptionalSets />))
       .toContain('Hoy has hecho un esfuerzo extra');
   });

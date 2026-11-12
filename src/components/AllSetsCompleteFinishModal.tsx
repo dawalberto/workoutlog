@@ -44,7 +44,7 @@ export const AllSetsCompleteFinishModal: React.FC<AllSetsCompleteFinishModalProp
                 {hasCompletedOptionalSets
                   ? '¡Has completado también todas las series opcionales! Hoy has hecho un esfuerzo extra.'
                   : pendingOptionalSetsCount > 0
-                    ? `Has completado todas las series obligatorias. Te ${pendingOptionalSetsCount === 1 ? 'queda 1 serie opcional' : `quedan ${pendingOptionalSetsCount} series opcionales`} por hacer.`
+                    ? `Has completado todas las series obligatorias. ¿Te animas a hacer ${pendingOptionalSetsCount === 1 ? 'la serie opcional' : `las ${pendingOptionalSetsCount} series opcionales`}?`
                     : 'Has completado todas las series.'}
               </p>
             </div>
