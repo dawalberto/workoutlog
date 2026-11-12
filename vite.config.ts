@@ -18,13 +18,12 @@ export default defineConfig(() => {
           'pwa-192x192.png',
           'pwa-512x512.png',
           'pwa-maskable-512x512.png',
-          'manifest.webmanifest',
         ],
         manifest: {
           id: '/workoutlog/',
           name: 'RepNami – Planificador de Rutinas',
           short_name: 'RepNami',
-          description: 'Planificador y ejecutor de rutinas de entrenamiento minimalista con cálculo de tiempos, cronómetro de descansos y catálogo de ejercicios.',
+          description: 'Registra series, repeticiones y pesos, organiza tus rutinas de gimnasio y sigue tu progreso con RepNami. Gratis, instalable y disponible sin conexión.',
           theme_color: '#09090b',
           background_color: '#09090b',
           display: 'standalone',
@@ -32,6 +31,7 @@ export default defineConfig(() => {
           start_url: './',
           scope: './',
           lang: 'es',
+          categories: ['fitness', 'health', 'sports'],
           icons: [
             {
               src: 'pwa-192x192.png',

@@ -138,3 +138,7 @@ To add a photo: drop a 1:1 file named in kebab-case English (for example `bulgar
 ### Exercise duration estimates
 
 An exercise's estimate uses its historical mean after three complete executions in the same routine with the same ordered set repetitions and weights. Otherwise it uses the existing repetition-and-rest estimate. Each complete measurement spans the first checked set through the last checked set, plus the last set's configured rest. Unchecking a set retains the first check time; incomplete and legacy partial sessions do not yield measurements. Measurements are stored with workout history, included in backups, and synced; deleting a history entry also removes its measurement. Changing a configuration selects another cohort, so restoring a previous configuration restores its measurements. Routine estimates use the same exercise estimates plus the existing transition allowance.
+
+## Public search document
+
+The static HTML contains public product guidance outside the React root, so it remains readable without JavaScript and after app startup. It uses an explicit Spanish language attribute independently of the app language preference. Metadata, sitemap, manifest ownership, and Search Console follow-up are documented in [Public search presence](../standards/seo.md).
