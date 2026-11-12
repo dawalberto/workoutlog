@@ -1,3 +1,4 @@
+import { t } from '../utils/i18n';
 import React from 'react';
 import { BarChart3 } from 'lucide-react';
 import { useAnalyticsPreference } from '../hooks/shell/useAnalyticsPreference';
@@ -9,16 +10,16 @@ export const AnalyticsPreferenceControl: React.FC = () => {
   return (
     <div
       className="mx-3 mb-3 rounded-2xl border border-white/10 bg-[#121214] p-3"
-      aria-label="Estadísticas de uso"
+      aria-label={t("Estadísticas de uso")}
     >
       <div className="flex items-start gap-3">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/5 bg-zinc-900 text-zinc-400">
           <BarChart3 className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-bold text-white">Estadísticas de uso</div>
+          <div className="text-sm font-bold text-white">{t("Estadísticas de uso")}</div>
           <p className="mt-0.5 text-[11px] leading-4 text-zinc-500">
-            Google Analytics anónimo. Puedes cambiarlo cuando quieras.
+            {t("Google Analytics anónimo. Puedes cambiarlo cuando quieras.")}
           </p>
         </div>
       </div>
@@ -29,14 +30,14 @@ export const AnalyticsPreferenceControl: React.FC = () => {
             onClick={onDisable}
             className="min-h-[48px] rounded-xl border border-white/10 bg-[#242428] px-3 text-xs font-bold text-white transition-all active:scale-[0.97]"
           >
-            Rechazar
+            {t("Rechazar")}
           </button>
           <button
             type="button"
             onClick={onEnable}
             className="min-h-[48px] rounded-xl bg-[#00FF87] px-3 text-xs font-extrabold text-black transition-all active:scale-[0.97]"
           >
-            Aceptar
+            {t("Aceptar")}
           </button>
         </div>
       ) : (
@@ -51,7 +52,7 @@ export const AnalyticsPreferenceControl: React.FC = () => {
               : 'border-white/10 bg-[#242428] text-zinc-300'
           }`}
         >
-          <span>{enabled ? 'Activadas' : 'Desactivadas'}</span>
+          <span>{enabled ? t("Activadas") : t("Desactivadas")}</span>
           <span
             aria-hidden="true"
             className={`relative h-6 w-10 rounded-full ${

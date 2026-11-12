@@ -1,3 +1,4 @@
+import { t } from '../utils/i18n';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -37,10 +38,10 @@ const ActiveWorkoutBanner: React.FC<ActiveWorkoutBannerProps> = ({
       <div className="flex items-center gap-2.5 min-w-0">
         <span className="w-2.5 h-2.5 rounded-full bg-[#00FF87] animate-ping shrink-0 shadow-[0_0_8px_#00FF87]" />
         <span className="font-extrabold text-white truncate">
-          Entrenamiento en curso: <span className="text-[#00FF87]">{routine.name}</span>
+          {t("Entrenamiento en curso:")} <span className="text-[#00FF87]">{routine.name}</span>
         </span>
         <span className="hidden sm:inline text-zinc-400 font-semibold">
-          ({completedCount}/{totalSets} series)
+          ({completedCount}/{totalSets} {t("series)")}
         </span>
         <span className="font-mono bg-zinc-900 border border-[#00FF87]/30 px-2.5 py-0.5 rounded-lg font-bold text-[#00FF87] shrink-0 text-xs shadow-inner">
           ⏱️ {formatWorkoutDuration(elapsed)}
@@ -50,11 +51,11 @@ const ActiveWorkoutBanner: React.FC<ActiveWorkoutBannerProps> = ({
         id="btn-return-to-active-routine"
         type="button"
         onClick={onOpenRoutine}
-        title="Volver a la rutina"
-        aria-label="Volver a la rutina"
+        title={t("Volver a la rutina")}
+        aria-label={t("Volver a la rutina")}
         className="shrink-0 px-3 py-1.5 bg-[#00FF87] text-black font-extrabold rounded-xl hover:bg-[#00e57a] active:scale-95 transition-all shadow-[0_0_15px_rgba(0,255,135,0.4)] flex items-center gap-1 text-xs"
       >
-        <span>Volver</span>
+        <span>{t("Volver")}</span>
         <ArrowRight className="w-3.5 h-3.5" />
       </button>
     </div>

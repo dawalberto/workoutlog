@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { t } from './utils/i18n';
 import { AppLoadingScreen } from './components/AppLoadingScreen';
 import { AppShell } from './components/AppShell';
 import { GlobalOverlays } from './components/GlobalOverlays';
@@ -13,6 +14,10 @@ import { selectIsInitialSyncSettled, selectIsStorageReady } from './store/select
 
 export default function App() {
   useAppBootstrap();
+  const language = useAppStore((state) => state.language);
+  const weightUnit = useAppStore((state) => state.weightUnit);
+  void language;
+  void weightUnit;
   const cleanupPending = useAppStore((state) => state.cleanupPending);
   const isLoading = useAppStore((state) => state.isLoading);
   const isSignedIn = useAppStore((state) => Boolean(state.user?.id));
@@ -36,7 +41,7 @@ export default function App() {
   if (isLoading || isSigningIn || isOwnerLoading || (isSigningOut && !isSignOutConfirmOpen)) {
     return (
       <AppLoadingScreen
-        message={isOwnerLoading || isSigningIn ? 'Cargando datos...' : undefined}
+        message={isOwnerLoading || isSigningIn ? t('Cargando datos...') : undefined}
       />
     );
   }

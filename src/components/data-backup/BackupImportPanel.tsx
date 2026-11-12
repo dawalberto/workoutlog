@@ -1,3 +1,4 @@
+import { t } from '../../utils/i18n';
 import React from 'react';
 import {
   AlertTriangle,
@@ -43,16 +44,16 @@ export const BackupImportPanel: React.FC<BackupImportPanelProps> = ({
           <Upload className="w-6 h-6 text-[#00FF87]" />
         </div>
         <h4 className="text-sm font-bold text-white mt-3">
-          Selecciona o arrastra tu archivo JSON
+          {t("Selecciona o arrastra tu archivo JSON")}
         </h4>
         <p className="text-xs text-zinc-400 mt-1 max-w-xs mx-auto">
-          Acepta copias de RepNami y WorkoutLog con ejercicios, rutinas, RMs, historial o diario.
+          {t("Acepta copias de RepNami y WorkoutLog con ejercicios, rutinas, RMs, historial o diario.")}
         </p>
         <button
           type="button"
           className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 text-white shadow-md active:scale-95 transition-all"
         >
-          Examinar archivo
+          {t("Examinar archivo")}
         </button>
       </div>
     ) : (
@@ -69,13 +70,13 @@ export const BackupImportPanel: React.FC<BackupImportPanelProps> = ({
               <div className="flex items-center gap-2 mt-0.5 text-[11px] text-zinc-400 flex-wrap">
                 {state.parsedData.hasExercises && (
                   <span className="text-[#00FF87] font-semibold">
-                    {state.parsedData.catalog.length} ejercicios
+                    {state.parsedData.catalog.length} {t("ejercicios")}
                   </span>
                 )}
                 {state.parsedData.hasExercises && (state.parsedData.hasRoutines || state.parsedData.hasRmLogs || state.parsedData.hasHistory || state.parsedData.hasDiary) && <span>•</span>}
                 {state.parsedData.hasRoutines && (
                   <span className="text-blue-400 font-semibold">
-                    {state.parsedData.routines.length} rutinas
+                    {state.parsedData.routines.length} {t("rutinas")}
                   </span>
                 )}
                 {state.parsedData.hasRoutines && (state.parsedData.hasRmLogs || state.parsedData.hasHistory || state.parsedData.hasDiary) && <span>•</span>}
@@ -87,13 +88,13 @@ export const BackupImportPanel: React.FC<BackupImportPanelProps> = ({
                 {state.parsedData.hasRmLogs && (state.parsedData.hasHistory || state.parsedData.hasDiary) && <span>•</span>}
                 {state.parsedData.hasHistory && (
                   <span className="text-purple-400 font-semibold">
-                    {state.parsedData.workoutHistory.length} sesiones
+                    {state.parsedData.workoutHistory.length} {t("sesiones")}
                   </span>
                 )}
                 {state.parsedData.hasHistory && state.parsedData.hasDiary && <span>•</span>}
                 {state.parsedData.hasDiary && (
                   <span className="text-teal-400 font-semibold">
-                    {state.parsedData.exerciseDiary.reduce((sum, diary) => sum + (diary.entries?.length || 0), 0)} notas diario ({state.parsedData.exerciseDiary.length} ejercicios)
+                    {state.parsedData.exerciseDiary.reduce((sum, diary) => sum + (diary.entries?.length || 0), 0)} {t("notas diario (")}{state.parsedData.exerciseDiary.length} {t("ejercicios)")}
                   </span>
                 )}
               </div>
@@ -104,7 +105,7 @@ export const BackupImportPanel: React.FC<BackupImportPanelProps> = ({
             type="button"
             onClick={actions.onResetFile}
             className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/[0.08] text-xs font-medium"
-            title="Cambiar archivo"
+            title={t("Cambiar archivo")}
           >
             <RefreshCw className="w-3.5 h-3.5" />
           </button>
@@ -112,7 +113,7 @@ export const BackupImportPanel: React.FC<BackupImportPanelProps> = ({
 
         <div className="space-y-3">
           <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider block">
-            Método de importación
+            {t("Método de importación")}
           </label>
 
           <label
@@ -135,14 +136,14 @@ export const BackupImportPanel: React.FC<BackupImportPanelProps> = ({
             <div className="space-y-1 min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-white">
-                  Combinar con los datos actuales
+                  {t("Combinar con los datos actuales")}
                 </span>
                 <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-[#00FF87]/20 text-[#00FF87] border border-[#00FF87]/30">
-                  Recomendado
+                  {t("Recomendado")}
                 </span>
               </div>
               <p className="text-[11px] text-zinc-400 leading-snug">
-                Añade los nuevos datos a tu biblioteca y rutinas sin perder lo que ya tienes guardado.
+                {t("Añade los nuevos datos a tu biblioteca y rutinas sin perder lo que ya tienes guardado.")}
               </p>
 
               {state.importMode === 'merge' && (
@@ -160,15 +161,15 @@ export const BackupImportPanel: React.FC<BackupImportPanelProps> = ({
                     />
                     <div className="text-[11px] leading-snug">
                       <span className="font-semibold text-white block">
-                        Si un ejercicio ya existe, sobrescribirlo con el del archivo
+                        {t("Si un ejercicio ya existe, sobrescribirlo con el del archivo")}
                       </span>
                       <span className="text-zinc-400 block mt-0.5">
                         {state.replaceDuplicateExercises
-                          ? 'Se actualizarán las notas, imagen o vídeos tanto en la biblioteca como en tus rutinas con la versión importada (conservando tus series grabadas).'
-                          : 'Se conservará intacto el ejercicio que ya tienes guardado en la app.'}
+                          ? t("Se actualizarán las notas, imagen o vídeos tanto en la biblioteca como en tus rutinas con la versión importada (conservando tus series grabadas).")
+                          : t("Se conservará intacto el ejercicio que ya tienes guardado en la app.")}
                       </span>
                       <span className="text-[10px] text-zinc-500 block mt-0.5 italic">
-                        * Detectado por título (sin distinguir mayúsculas ni acentos). Las series y cargas de tus rutinas siempre se conservan.
+                        {t("* Detectado por título (sin distinguir mayúsculas ni acentos). Las series y cargas de tus rutinas siempre se conservan.")}
                       </span>
                     </div>
                   </label>
@@ -197,12 +198,12 @@ export const BackupImportPanel: React.FC<BackupImportPanelProps> = ({
             <div className="space-y-1 min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
                 <span className="text-xs font-bold text-white">
-                  Sobrescribir toda la información actual de la app
+                  {t("Sobrescribir toda la información actual de la app")}
                 </span>
                 <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
               </div>
               <p className="text-[11px] text-zinc-400 leading-snug">
-                Reemplaza por completo tu biblioteca de ejercicios y rutinas actuales por los datos contenidos en el archivo.
+                {t("Reemplaza por completo tu biblioteca de ejercicios y rutinas actuales por los datos contenidos en el archivo.")}
               </p>
             </div>
           </label>
@@ -220,7 +221,7 @@ export const BackupImportPanel: React.FC<BackupImportPanelProps> = ({
     <div className="flex items-center gap-2 p-3 bg-black/25 rounded-xl border border-white/[0.06] text-[11px] text-zinc-400">
       <Info className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
       <span>
-        Los datos importados se guardan localmente en tu base de datos IndexedDB de forma segura.
+        {t("Los datos importados se guardan localmente en tu base de datos IndexedDB de forma segura.")}
       </span>
     </div>
   </div>

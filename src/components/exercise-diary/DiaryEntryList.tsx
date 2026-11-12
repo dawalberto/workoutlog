@@ -1,3 +1,4 @@
+import { t } from '../../utils/i18n';
 import React from 'react';
 import { BookOpen, Plus } from 'lucide-react';
 import type { FlattenedDiaryEntry } from '../../utils/diaryCalculations';
@@ -30,12 +31,12 @@ export const DiaryEntryList: React.FC<DiaryEntryListProps> = ({
           <BookOpen className="w-7 h-7 text-[#00FF87]" />
         </div>
         <h3 className="text-base font-bold text-white mb-1">
-          No hay registros en el diario
+          {t("No hay registros en el diario")}
         </h3>
         <p className="text-xs sm:text-sm text-zinc-400 max-w-md mx-auto mb-4">
           {hasActiveFilters
-            ? 'No se encontraron notas que coincidan con los filtros seleccionados.'
-            : 'Empieza a registrar tus entrenamientos, sensaciones y notas técnicas para cada ejercicio.'}
+            ? t("No se encontraron notas que coincidan con los filtros seleccionados.")
+            : t("Empieza a registrar tus entrenamientos, sensaciones y notas técnicas para cada ejercicio.")}
         </p>
         {hasCatalog && (
           <button
@@ -44,7 +45,7 @@ export const DiaryEntryList: React.FC<DiaryEntryListProps> = ({
             className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#00FF87] hover:bg-[#00e57a] text-black text-xs sm:text-sm font-extrabold shadow-[0_0_15px_rgba(0,255,135,0.3)] transition-all active:scale-[0.97]"
           >
             <Plus className="w-4 h-4 text-black stroke-[2.5]" />
-            <span>Añadir primer registro</span>
+            <span>{t("Añadir primer registro")}</span>
           </button>
         )}
       </div>

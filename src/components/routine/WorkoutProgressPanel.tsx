@@ -1,3 +1,4 @@
+import { t } from '../../utils/i18n';
 import React, { useEffect, useRef, useState } from 'react';
 import { Clock, Flag, Play, RotateCcw } from 'lucide-react';
 import { formatWorkoutDuration } from '../../utils/timeCalculations';
@@ -68,7 +69,7 @@ export const WorkoutProgressPanel: React.FC<WorkoutProgressPanelProps> = ({ elap
     <div className="mt-6 pt-5 border-t border-white/[0.08]">
       <div className="flex items-center justify-between text-xs font-semibold mb-2 flex-wrap gap-2">
         <span className="text-[#A1A1AA]">
-          Progreso: <strong className="text-white font-black">{completedSetsCount}</strong> de {totalSetsCount} series completadas
+          Progreso: <strong className="text-white font-black">{completedSetsCount}</strong> {t("de")} {totalSetsCount} {t("series completadas")}
         </span>
 
         <div className="flex items-center gap-2 sm:gap-3">
@@ -76,14 +77,14 @@ export const WorkoutProgressPanel: React.FC<WorkoutProgressPanelProps> = ({ elap
             <div
               id="workout-live-stopwatch"
               className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-zinc-900 border border-[#00FF87]/30 text-[#00FF87] font-mono font-black text-xs shadow-inner"
-              title="Tiempo transcurrido desde el inicio de la rutina"
+              title={t("Tiempo transcurrido desde el inicio de la rutina")}
             >
               <span className="w-2 h-2 rounded-full bg-[#00FF87] animate-ping" />
               <Clock className="w-3.5 h-3.5" />
               <span>{formatWorkoutDuration(elapsedSeconds)}</span>
             </div>
           ) : (
-            <span className="text-[11px] text-zinc-500 italic">No iniciada</span>
+            <span className="text-[11px] text-zinc-500 italic">{t("No iniciada")}</span>
           )}
           <span className="text-[#00FF87] font-black text-sm">{completionPercentage}%</span>
         </div>
@@ -103,7 +104,7 @@ export const WorkoutProgressPanel: React.FC<WorkoutProgressPanelProps> = ({ elap
           <>
             <div className="text-xs text-[#A1A1AA] flex items-center gap-2">
               <Play className="w-4 h-4 text-[#00FF87] shrink-0" />
-              <span>Pulsa iniciar o marca cualquier serie para comenzar el entrenamiento.</span>
+              <span>{t("Pulsa iniciar o marca cualquier serie para comenzar el entrenamiento.")}</span>
             </div>
             <button
               id="btn-start-workout-session"
@@ -112,14 +113,14 @@ export const WorkoutProgressPanel: React.FC<WorkoutProgressPanelProps> = ({ elap
               className="min-h-[48px] w-full inline-flex items-center justify-center gap-2 px-6 text-sm font-extrabold rounded-2xl bg-[#00FF87] hover:bg-[#00e57a] text-black shadow-[0_0_20px_rgba(0,255,135,0.35)] transition-all active:scale-[0.97]"
             >
               <Play className="w-4 h-4 fill-current" />
-              <span>Iniciar Rutina</span>
+              <span>{t("Iniciar Rutina")}</span>
             </button>
           </>
         ) : (
           <>
             <div className="flex items-center gap-2 text-xs">
               <span className="w-2.5 h-2.5 rounded-full bg-[#00FF87] animate-ping shrink-0 shadow-[0_0_8px_#00FF87]" />
-              <span className="font-extrabold text-white">Entrenamiento en Curso</span>
+              <span className="font-extrabold text-white">{t("Entrenamiento en Curso")}</span>
               <span className="text-[#00FF87] font-mono font-bold">
                 ({formatWorkoutDuration(elapsedSeconds)})
               </span>
@@ -131,10 +132,10 @@ export const WorkoutProgressPanel: React.FC<WorkoutProgressPanelProps> = ({ elap
                 type="button"
                 onClick={onResetSession}
                 className="min-h-[44px] inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-400 hover:text-white px-3 py-2 rounded-xl bg-zinc-800/60 hover:bg-zinc-800 border border-white/5 transition-colors active:scale-[0.97]"
-                title="Reiniciar progreso"
+                title={t("Reiniciar progreso")}
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reiniciar</span>
+                <span>{t("Reiniciar")}</span>
               </button>
 
               <button
@@ -144,7 +145,7 @@ export const WorkoutProgressPanel: React.FC<WorkoutProgressPanelProps> = ({ elap
                 className="min-h-[48px] inline-flex items-center gap-2 px-5 text-sm font-extrabold rounded-2xl bg-[#00E5FF] hover:bg-[#00cbe2] text-black shadow-[0_0_20px_rgba(0,229,255,0.3)] transition-all active:scale-[0.97]"
               >
                 <Flag className="w-4 h-4 stroke-[2.5]" />
-                <span>Finalizar Rutina</span>
+                <span>{t("Finalizar Rutina")}</span>
               </button>
             </div>
           </>

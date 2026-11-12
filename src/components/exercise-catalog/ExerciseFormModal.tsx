@@ -1,3 +1,4 @@
+import { t } from '../../utils/i18n';
 import React from 'react';
 import { Dumbbell, X } from 'lucide-react';
 import type { ExerciseDefinition } from '../../types';
@@ -33,7 +34,7 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
               <Dumbbell className="w-5 h-5" />
             </span>
             <h2 className="text-base sm:text-lg font-black text-white truncate">
-              {editingExercise ? 'Editar Ejercicio' : 'Nuevo Ejercicio'}
+              {editingExercise ? t("Editar Ejercicio") : t("Nuevo Ejercicio")}
             </h2>
           </div>
           <button
@@ -49,14 +50,14 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
           {/* Exercise Name */}
           <div>
             <label className="block text-xs font-extrabold text-zinc-300 uppercase tracking-wider mb-1.5">
-              Nombre del Ejercicio *
+              {t("Nombre del Ejercicio *")}
             </label>
             <input
               type="text"
               required
               value={form.name}
               onChange={(e) => form.setName(e.target.value)}
-              placeholder="ej. Press de Banca Plano, Sentadilla..."
+              placeholder={t("ej. Press de Banca Plano, Sentadilla...")}
               className="w-full min-h-[48px] px-4 text-sm font-bold rounded-2xl border border-white/10 bg-zinc-900 text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/20 shadow-inner"
             />
           </div>
@@ -64,7 +65,7 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
           {/* Category */}
           <div>
             <label className="block text-xs font-extrabold text-zinc-300 uppercase tracking-wider mb-1.5">
-              Grupos Musculares
+              {t("Grupos Musculares")}
             </label>
             <div className="flex flex-wrap gap-2">
               {['Pecho', 'Espalda', 'Pierna', 'Hombro', 'Brazos', 'Core', 'Otro'].map((cat) => {
@@ -102,13 +103,13 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
           {/* Video URL */}
           <div>
             <label className="block text-xs font-extrabold text-zinc-300 uppercase tracking-wider mb-1.5">
-              URL de Video
+              {t("URL de Video")}
             </label>
             <input
               type="url"
               value={form.videoUrl}
               onChange={(e) => form.setVideoUrl(e.target.value)}
-              placeholder="https://www.youtube.com/watch?v=..."
+              placeholder={t("https://www.youtube.com/watch?v=...")}
               className="w-full min-h-[48px] px-4 text-xs rounded-2xl border border-white/10 bg-zinc-900 text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#00FF87]"
             />
           </div>
@@ -116,13 +117,13 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
           {/* Notes */}
           <div>
             <label className="block text-xs font-extrabold text-zinc-300 uppercase tracking-wider mb-1.5">
-              Notas de Técnica
+              {t("Notas de Técnica")}
             </label>
             <textarea
               rows={2}
               value={form.notes}
               onChange={(e) => form.setNotes(e.target.value)}
-              placeholder="Instrucciones sobre postura, agarre o tempo..."
+              placeholder={t("Instrucciones sobre postura, agarre o tempo...")}
               className="w-full p-3 text-xs rounded-2xl border border-white/10 bg-zinc-900 text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#00FF87]"
             />
           </div>
@@ -130,11 +131,11 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
           {/* Preconfigured Defaults */}
           <div className="p-4 rounded-2xl bg-zinc-900 border border-white/[0.08]">
             <span className="block text-xs font-extrabold text-white uppercase tracking-wider mb-3">
-              Valores Por Defecto
+              {t("Valores Por Defecto")}
             </span>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div>
-                <label className="block text-[10px] font-bold text-zinc-400 mb-1">Nº Series</label>
+                <label className="block text-[10px] font-bold text-zinc-400 mb-1">{t("Nº Series")}</label>
                 <input
                   type="number"
                   inputMode="numeric"
@@ -148,7 +149,7 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-zinc-400 mb-1">Reps / Serie</label>
+                <label className="block text-[10px] font-bold text-zinc-400 mb-1">{t("Reps / Serie")}</label>
                 <input
                   type="number"
                   inputMode="numeric"
@@ -162,7 +163,7 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-zinc-400 mb-1">Peso (kg)</label>
+                <label className="block text-[10px] font-bold text-zinc-400 mb-1">{t("Peso (kg)")}</label>
                 <input
                   type="text"
                   inputMode="decimal"
@@ -200,13 +201,13 @@ export const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({
               onClick={onClose}
               className="min-h-[44px] px-4 text-xs font-bold text-zinc-400 hover:text-white rounded-xl transition-colors"
             >
-              Cancelar
+              {t("Cancelar")}
             </button>
             <button
               type="submit"
               className="min-h-[48px] px-6 text-xs font-extrabold bg-[#00FF87] hover:bg-[#00e57a] text-black rounded-2xl shadow-[0_0_15px_rgba(0,255,135,0.35)] transition-all active:scale-[0.97]"
             >
-              {editingExercise ? 'Guardar Cambios' : 'Crear en Biblioteca'}
+              {editingExercise ? t("Guardar Cambios") : t("Crear en Biblioteca")}
             </button>
           </div>
         </form>

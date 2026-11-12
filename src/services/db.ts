@@ -50,6 +50,7 @@ export const DEVICE_KEY_PREFIX = 'device:' as const;
 
 export const DEVICE_KEYS = {
   ANALYTICS_CONSENT: 'device:analytics_consent_v1',
+  PREFERENCES: 'device:preferences_v1',
 } as const;
 
 function assertDeviceStorageKey(key: string): void {

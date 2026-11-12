@@ -821,6 +821,7 @@ describe('IndexedDB storage', () => {
 
   it('keeps device analytics consent across guest and owner cleanup', async () => {
     await storage.setDeviceStoredItem(storage.DEVICE_KEYS.ANALYTICS_CONSENT, 'granted');
+    await storage.setDeviceStoredItem(storage.DEVICE_KEYS.PREFERENCES, { language: 'fr', weightUnit: 'lb' });
     await storage.setScopedStoredItem(storage.DB_KEYS.STARTER_DATA_FLAG, true);
     await storage.setScopedStoredItem(
       storage.DB_KEYS.STARTER_DATA_FLAG,
@@ -833,6 +834,8 @@ describe('IndexedDB storage', () => {
 
     expect(await storage.getDeviceStoredItem(storage.DEVICE_KEYS.ANALYTICS_CONSENT, 'unknown'))
       .toBe('granted');
+    expect(await storage.getDeviceStoredItem(storage.DEVICE_KEYS.PREFERENCES, null))
+      .toEqual({ language: 'fr', weightUnit: 'lb' });
     expect(() => {
       void storage.setDeviceStoredItem('analytics_consent', 'denied');
     }).toThrow('Device storage keys must start with "device:".');

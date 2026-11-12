@@ -1,3 +1,4 @@
+import { t } from '../utils/i18n';
 import React from 'react';
 import { CheckCircle2, Flag, X } from 'lucide-react';
 
@@ -38,14 +39,14 @@ export const AllSetsCompleteFinishModal: React.FC<AllSetsCompleteFinishModalProp
             </div>
             <div>
               <h2 id="all-sets-complete-title" className="text-lg font-black text-white tracking-tight">
-                Rutina completada
+                {t("Rutina completada")}
               </h2>
               <p className="text-sm text-zinc-400">
                 {hasCompletedOptionalSets
-                  ? '¡Has completado también todas las series opcionales! Hoy has hecho un esfuerzo extra.'
+                  ? t("¡Has completado también todas las series opcionales! Hoy has hecho un esfuerzo extra.")
                   : pendingOptionalSetsCount > 0
-                    ? `Has completado todas las series obligatorias. ¿Te animas a hacer ${pendingOptionalSetsCount === 1 ? 'la serie opcional' : `las ${pendingOptionalSetsCount} series opcionales`}?`
-                    : 'Has completado todas las series.'}
+                    ? t('Has completado todas las series obligatorias. ¿Te animas a hacer {0}?', pendingOptionalSetsCount === 1 ? t('la serie opcional') : t('las {0} series opcionales', pendingOptionalSetsCount))
+                    : t("Has completado todas las series.")}
               </p>
             </div>
           </div>
@@ -53,7 +54,7 @@ export const AllSetsCompleteFinishModal: React.FC<AllSetsCompleteFinishModalProp
             id="btn-dismiss-all-sets-complete"
             type="button"
             onClick={onDismiss}
-            aria-label="Seguir entrenando"
+            aria-label={t("Seguir entrenando")}
             className="min-h-[48px] min-w-[48px] inline-flex items-center justify-center text-zinc-400 hover:text-white rounded-xl hover:bg-white/[0.08] transition-colors active:scale-[0.97]"
           >
             <X className="w-5 h-5" />
@@ -61,7 +62,7 @@ export const AllSetsCompleteFinishModal: React.FC<AllSetsCompleteFinishModalProp
         </div>
 
         <p className="text-sm text-zinc-300 leading-relaxed mb-6">
-          ¿Quieres finalizar el entrenamiento y guardar el resumen de esta rutina?
+          {t("¿Quieres finalizar el entrenamiento y guardar el resumen de esta rutina?")}
         </p>
 
         <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
@@ -70,7 +71,7 @@ export const AllSetsCompleteFinishModal: React.FC<AllSetsCompleteFinishModalProp
             onClick={onDismiss}
             className="w-full sm:w-auto px-4 py-2.5 min-h-[48px] text-sm font-semibold text-zinc-300 hover:text-white rounded-xl hover:bg-white/[0.06] transition-colors active:scale-[0.97]"
           >
-            Seguir entrenando
+            {t("Seguir entrenando")}
           </button>
           <button
             id="btn-confirm-all-sets-complete"
@@ -79,7 +80,7 @@ export const AllSetsCompleteFinishModal: React.FC<AllSetsCompleteFinishModalProp
             className="w-full sm:w-auto px-5 py-2.5 min-h-[48px] text-sm font-extrabold text-black bg-[#00FF87] hover:bg-[#00e57a] rounded-xl transition-all shadow-[0_0_15px_rgba(0,255,135,0.3)] active:scale-[0.97] flex items-center justify-center gap-2"
           >
             <Flag className="w-4 h-4 text-black stroke-[2.5]" />
-            Finalizar rutina
+            {t("Finalizar rutina")}
           </button>
         </div>
       </div>

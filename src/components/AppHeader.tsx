@@ -1,3 +1,4 @@
+import { t } from '../utils/i18n';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -30,7 +31,7 @@ export const AppHeader: React.FC = () => {
             type="button"
             onClick={() => onSelectTab(AppTab.ROUTINES)}
             className="flex items-center gap-2.5 text-left group focus:outline-none"
-            title="RepNami - Rutinas"
+            title={`RepNami - ${t("Rutinas")}`}
             aria-label="RepNami"
           >
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-zinc-900 border border-white/10 flex items-center justify-center shadow-[0_0_15px_rgba(0,255,135,0.15)] group-hover:border-[#00FF87]/40 group-hover:shadow-[0_0_20px_rgba(0,255,135,0.3)] transition-all duration-200 active:scale-95">
@@ -39,9 +40,6 @@ export const AppHeader: React.FC = () => {
             <div>
               <span className="text-sm sm:text-base font-black tracking-tight text-white block leading-tight">
                 REP<span className="text-[#00FF87]">NAMI</span>
-              </span>
-              <span className="text-[10px] font-semibold text-zinc-400 block tracking-wider uppercase">
-                Performance
               </span>
             </div>
           </button>
@@ -58,7 +56,7 @@ export const AppHeader: React.FC = () => {
                   : 'text-zinc-400 hover:text-white'
               }`}
             >
-              <span>Rutinas</span>
+              <span>{t("Rutinas")}</span>
               <span
                 className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
                   activeTab === AppTab.ROUTINES ? 'bg-black/20 text-black' : 'bg-zinc-800 text-zinc-400'
@@ -78,7 +76,7 @@ export const AppHeader: React.FC = () => {
                   : 'text-zinc-400 hover:text-white'
               }`}
             >
-              <span>Ejercicios</span>
+              <span>{t("Ejercicios")}</span>
               <span
                 className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
                   activeTab === AppTab.EXERCISES ? 'bg-black/20 text-black' : 'bg-zinc-800 text-zinc-400'
@@ -96,8 +94,8 @@ export const AppHeader: React.FC = () => {
               type="button"
               onClick={onOpenMenu}
               className="w-10 h-10 rounded-2xl border border-white/10 bg-zinc-900/90 text-zinc-300 hover:text-white hover:border-[#00FF87]/40 hover:bg-zinc-800 flex items-center justify-center transition-all active:scale-95 shadow-md"
-              title="Menú principal"
-              aria-label="Menú principal"
+              title={t("Menú principal")}
+              aria-label={t("Menú principal")}
             >
               <Menu className="w-5 h-5" />
             </button>

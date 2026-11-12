@@ -1,3 +1,4 @@
+import { t } from '../utils/i18n';
 import React, { useState } from 'react';
 import { Download, Share, PlusSquare, X } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
@@ -19,10 +20,10 @@ export const PWAInstallButton: React.FC = () => {
         type="button"
         onClick={install}
         className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] text-xs font-extrabold rounded-xl bg-[#00FF87] hover:bg-[#00e57a] text-black shadow-[0_0_12px_rgba(0,255,135,0.3)] transition-all active:scale-95 shrink-0"
-        title="Instalar RepNami como aplicación"
+        title={t("Instalar RepNami como aplicación")}
       >
         <Download className="w-3.5 h-3.5 stroke-[2.5]" />
-        <span>Instalar App</span>
+        <span>{t("Instalar App")}</span>
       </button>
     );
   }
@@ -36,10 +37,10 @@ export const PWAInstallButton: React.FC = () => {
           type="button"
           onClick={() => setShowIOSGuide(true)}
           className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] text-xs font-extrabold rounded-xl border border-white/10 bg-white/[0.08] hover:bg-[#00FF87] hover:border-transparent text-white hover:text-black shadow-sm transition-all active:scale-95 shrink-0"
-          title="Instalar en iPhone o iPad"
+          title={t("Instalar en iPhone o iPad")}
         >
           <Download className="w-3.5 h-3.5" />
-          <span>Instalar en iPhone</span>
+          <span>{t("Instalar en iPhone")}</span>
         </button>
 
         {showIOSGuide && (
@@ -50,7 +51,7 @@ export const PWAInstallButton: React.FC = () => {
                   <span className="w-8 h-8 rounded-xl bg-[#00FF87]/15 border border-[#00FF87]/30 text-[#00FF87] flex items-center justify-center">
                     <Download className="w-4 h-4 text-[#00FF87]" />
                   </span>
-                  <h3 className="text-sm font-black text-white">Instalar en iPhone / iPad</h3>
+                  <h3 className="text-sm font-black text-white">{t("Instalar en iPhone / iPad")}</h3>
                 </div>
                 <button
                   type="button"
@@ -67,8 +68,8 @@ export const PWAInstallButton: React.FC = () => {
                     <Share className="w-3.5 h-3.5 text-blue-400" />
                   </div>
                   <div>
-                    <strong className="text-white font-bold block">1. Pulsa Compartir</strong>
-                    <span className="text-zinc-400">Toca el botón Compartir en la barra inferior de Safari.</span>
+                    <strong className="text-white font-bold block">{t("1. Pulsa Compartir")}</strong>
+                    <span className="text-zinc-400">{t("Toca el botón Compartir en la barra inferior de Safari.")}</span>
                   </div>
                 </div>
 
@@ -77,8 +78,8 @@ export const PWAInstallButton: React.FC = () => {
                     <PlusSquare className="w-3.5 h-3.5 text-[#00FF87]" />
                   </div>
                   <div>
-                    <strong className="text-white font-bold block">2. Añadir a pantalla de inicio</strong>
-                    <span className="text-zinc-400">Desliza hacia abajo y pulsa en &quot;Añadir a pantalla de inicio&quot;.</span>
+                    <strong className="text-white font-bold block">{t("2. Añadir a pantalla de inicio")}</strong>
+                    <span className="text-zinc-400">{t("Desliza hacia abajo y pulsa en &quot;Añadir a pantalla de inicio&quot;.")}</span>
                   </div>
                 </div>
               </div>
@@ -88,7 +89,7 @@ export const PWAInstallButton: React.FC = () => {
                 onClick={() => setShowIOSGuide(false)}
                 className="mt-4 w-full min-h-[44px] rounded-xl bg-[#00FF87] hover:bg-[#00e57a] text-black font-extrabold text-xs transition active:scale-[0.97] shadow-[0_0_15px_rgba(0,255,135,0.3)]"
               >
-                Entendido
+                {t("Entendido")}
               </button>
             </div>
           </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { SettingsView } from './SettingsView';
 import { AppTab } from '../types';
 import { useTabContent } from '../hooks/shell/useTabContent';
 import { ExerciseCatalog } from './ExerciseCatalog';
@@ -12,7 +13,9 @@ export const TabContent: React.FC = () => {
     activeTab,
   } = useTabContent();
 
-  return activeTab === AppTab.ROUTINES ? (
+  return activeTab === AppTab.SETTINGS ? (
+    <SettingsView />
+  ) : activeTab === AppTab.ROUTINES ? (
     <RoutineList />
   ) : activeTab === AppTab.EXERCISES ? (
     <ExerciseCatalog />

@@ -43,6 +43,7 @@ const TAB_PAGES: Record<AppTab, { path: string; title: string }> = {
   [AppTab.RMS]: { path: '/workoutlog/rms', title: 'RMs' },
   [AppTab.HISTORY]: { path: '/workoutlog/history', title: 'Historial' },
   [AppTab.DIARY]: { path: '/workoutlog/diary', title: 'Diario' },
+  [AppTab.SETTINGS]: { path: '/workoutlog/settings', title: 'Ajustes' },
 };
 
 export function parseMeasurementId(value: string | undefined): string | null {

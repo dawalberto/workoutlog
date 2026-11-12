@@ -1,3 +1,4 @@
+import { t } from '../../utils/i18n';
 import React from 'react';
 import { Plus, Trophy, X } from 'lucide-react';
 import type { ExerciseRmLog } from '../../types';
@@ -34,7 +35,7 @@ export const QuickRmRecordModal: React.FC<QuickRmRecordModalProps> = ({
           </div>
           <div>
             <h3 className="text-base sm:text-lg font-black text-white tracking-tight">
-              Nuevo registro de RM
+              {t("Nuevo registro de RM")}
             </h3>
             <p className="text-xs text-[#A1A1AA] font-semibold">{target.exerciseName}</p>
           </div>
@@ -51,7 +52,7 @@ export const QuickRmRecordModal: React.FC<QuickRmRecordModalProps> = ({
       <div className="space-y-3.5 mb-5">
         <div>
           <label className="block text-xs font-bold text-[#A1A1AA] uppercase tracking-wide mb-1">
-            Tipo de marca
+            {t("Tipo de marca")}
           </label>
           <RmMetricSelector
             value={form.metric}
@@ -62,7 +63,7 @@ export const QuickRmRecordModal: React.FC<QuickRmRecordModalProps> = ({
 
         <div>
           <label className="block text-xs font-bold text-[#A1A1AA] uppercase tracking-wide mb-1">
-            {form.metric === 'reps' ? 'Repeticiones máximas *' : 'Peso Máximo (kg) *'}
+            {form.metric === 'reps' ? t("Repeticiones máximas *") : t("Peso Máximo (kg) *")}
           </label>
           <div className="relative">
             <input
@@ -70,7 +71,7 @@ export const QuickRmRecordModal: React.FC<QuickRmRecordModalProps> = ({
               inputMode={form.metric === 'reps' ? 'numeric' : 'decimal'}
               pattern="[0-9]*[.,]?[0-9]*"
               min="0"
-              placeholder={form.metric === 'reps' ? 'Ej: 120' : 'Ej: 100'}
+              placeholder={form.metric === 'reps' ? t("Ej: 120") : t("Ej: 100")}
               value={form.weight}
               onChange={(e) => form.setWeight(e.target.value)}
               onBlur={(e) => {
@@ -88,7 +89,7 @@ export const QuickRmRecordModal: React.FC<QuickRmRecordModalProps> = ({
 
         <div>
           <label className="block text-xs font-bold text-[#A1A1AA] uppercase tracking-wide mb-1">
-            Fecha *
+            {t("Fecha *")}
           </label>
           <input
             type="date"
@@ -100,11 +101,11 @@ export const QuickRmRecordModal: React.FC<QuickRmRecordModalProps> = ({
 
         <div>
           <label className="block text-xs font-bold text-[#A1A1AA] uppercase tracking-wide mb-1">
-            Notas / Observaciones (opcional)
+            {t("Notas / Observaciones (opcional)")}
           </label>
           <input
             type="text"
-            placeholder="Ej: Nueva barra, RPE 10, técnica perfecta..."
+            placeholder={t("Ej: Nueva barra, RPE 10, técnica perfecta...")}
             value={form.notes}
             onChange={(e) => form.setNotes(e.target.value)}
             className="w-full min-h-[48px] px-3.5 py-2 text-xs rounded-xl border border-white/10 bg-zinc-900 text-white focus:outline-none focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/20"
@@ -118,7 +119,7 @@ export const QuickRmRecordModal: React.FC<QuickRmRecordModalProps> = ({
           onClick={onClose}
           className="px-4 min-h-[48px] text-xs sm:text-sm font-semibold text-zinc-400 hover:text-white rounded-xl"
         >
-          Cancelar
+          {t("Cancelar")}
         </button>
         <button
           id="btn-submit-quick-rm"
@@ -126,7 +127,7 @@ export const QuickRmRecordModal: React.FC<QuickRmRecordModalProps> = ({
           onClick={form.handleSubmit}
           className="px-5 min-h-[48px] text-xs sm:text-sm font-extrabold text-black bg-[#00FF87] hover:bg-[#00e57a] rounded-xl shadow-[0_0_20px_rgba(0,255,135,0.35)] transition-all active:scale-[0.97] flex items-center gap-1.5"
         >
-          <Plus className="w-4 h-4 stroke-[3]" /> Guardar RM
+          <Plus className="w-4 h-4 stroke-[3]" /> {t("Guardar RM")}
         </button>
       </div>
     </div>

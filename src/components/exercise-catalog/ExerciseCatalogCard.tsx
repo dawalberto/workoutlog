@@ -1,3 +1,4 @@
+import { t } from '../../utils/i18n';
 import React from 'react';
 import { Clock, Edit3, Eye, Layers, Trash2, Video } from 'lucide-react';
 import type { ExerciseDefinition } from '../../types';
@@ -47,7 +48,7 @@ export const ExerciseCatalogCard: React.FC<ExerciseCatalogCardProps> = ({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="px-2 py-0.5 rounded-lg text-[10px] font-black bg-zinc-800 text-zinc-300 border border-white/5 uppercase tracking-wider">
-              {formatExerciseCategories(ex) || 'General'}
+              {formatExerciseCategories(ex) || t("General")}
             </span>
             <RmBadge rmLogs={rmLogs} exerciseName={ex.name} exerciseId={ex.id} estimatedSets={[{ weight: ex.defaultWeight ?? 0, reps: ex.defaultReps || 10 }]} />
           </div>
@@ -65,15 +66,15 @@ export const ExerciseCatalogCard: React.FC<ExerciseCatalogCardProps> = ({
       {/* Preconfigured defaults */}
       <div className="mt-4 pt-3 border-t border-white/[0.06] flex items-center gap-3 text-xs text-[#A1A1AA] font-semibold">
         <span className="inline-flex items-center gap-1 text-white">
-          <Layers className="w-3.5 h-3.5 text-[#00E5FF]" /> {ex.defaultSetsCount || 3}s
+          <Layers className="w-3.5 h-3.5 text-[#00E5FF]" /> {ex.defaultSetsCount || 3}{t("s")}
         </span>
         <span>·</span>
-        <span>{ex.defaultReps || 10} reps</span>
+        <span>{ex.defaultReps || 10} {t("reps")}</span>
         <span>·</span>
-        <span>{ex.defaultWeight || 0} kg</span>
+        <span>{ex.defaultWeight || 0} {t("kg")}</span>
         <span>·</span>
         <span className="inline-flex items-center gap-1 font-mono">
-          <Clock className="w-3.5 h-3.5 text-[#00FF87]" /> {ex.defaultRestSeconds || 60}s
+          <Clock className="w-3.5 h-3.5 text-[#00FF87]" /> {ex.defaultRestSeconds || 60}{t("s")}
         </span>
       </div>
     </div>
@@ -82,7 +83,7 @@ export const ExerciseCatalogCard: React.FC<ExerciseCatalogCardProps> = ({
     <div className="mt-4 pt-3 border-t border-white/[0.06] flex items-center justify-between gap-2">
       <span className="inline-flex items-center gap-1 text-xs font-bold text-[#00FF87] group-hover:underline">
         <Eye className="w-3.5 h-3.5" />
-        <span>Ver detalle</span>
+        <span>{t("Ver detalle")}</span>
       </span>
 
       <div className="flex items-center gap-1.5">
@@ -94,10 +95,10 @@ export const ExerciseCatalogCard: React.FC<ExerciseCatalogCardProps> = ({
             onEdit(ex);
           }}
           className="min-h-[40px] px-3 inline-flex items-center gap-1 text-xs font-bold rounded-xl text-zinc-300 bg-zinc-800 hover:bg-zinc-700 hover:text-white transition-colors active:scale-95"
-          title="Editar ejercicio"
+          title={t("Editar ejercicio")}
         >
           <Edit3 className="w-3.5 h-3.5" />
-          <span>Editar</span>
+          <span>{t("Editar")}</span>
         </button>
 
         <button
@@ -108,7 +109,7 @@ export const ExerciseCatalogCard: React.FC<ExerciseCatalogCardProps> = ({
             onDelete(ex.id, ex.name);
           }}
           className="min-h-[40px] min-w-[40px] p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors active:scale-95 flex items-center justify-center"
-          title="Eliminar de la biblioteca"
+          title={t("Eliminar de la biblioteca")}
         >
           <Trash2 className="w-4 h-4" />
         </button>

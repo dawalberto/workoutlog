@@ -1,3 +1,4 @@
+import { t } from '../../utils/i18n';
 import React from 'react';
 import {
   BookOpen,
@@ -32,7 +33,7 @@ export const BackupExportPanel: React.FC<BackupExportPanelProps> = ({
     )}
 
     <p className="text-xs text-zinc-400 leading-relaxed">
-      Descarga un archivo JSON con tus datos para guardarlo como copia de seguridad en tu dispositivo o transferirlo a otro navegador o móvil.
+      {t("Descarga un archivo JSON con tus datos para guardarlo como copia de seguridad en tu dispositivo o transferirlo a otro navegador o móvil.")}
     </p>
 
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-1">
@@ -43,14 +44,14 @@ export const BackupExportPanel: React.FC<BackupExportPanelProps> = ({
               <Flame className="w-4 h-4 text-orange-400 fill-current" />
             </span>
             <span className="text-[11px] font-extrabold text-orange-400 bg-orange-500/15 px-2 py-0.5 rounded-full border border-orange-500/30">
-              {data.routines.length} rutinas
+              {data.routines.length} {t("rutinas")}
             </span>
           </div>
           <h3 className="text-sm font-bold text-white mt-2.5">
-            Solo Rutinas
+            {t("Solo Rutinas")}
           </h3>
           <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-            Todas tus rutinas con sus series, descansos y ejercicios asociados.
+            {t("Todas tus rutinas con sus series, descansos y ejercicios asociados.")}
           </p>
         </div>
 
@@ -61,7 +62,7 @@ export const BackupExportPanel: React.FC<BackupExportPanelProps> = ({
           className="mt-4 w-full min-h-[44px] inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold rounded-xl border border-white/10 bg-white/[0.06] hover:bg-white/[0.12] text-white transition active:scale-[0.97]"
         >
           <Download className="w-3.5 h-3.5" />
-          <span>Descargar Rutinas</span>
+          <span>{t("Descargar Rutinas")}</span>
         </button>
       </div>
 
@@ -72,14 +73,14 @@ export const BackupExportPanel: React.FC<BackupExportPanelProps> = ({
               <Dumbbell className="w-4 h-4 text-cyan-400" />
             </span>
             <span className="text-[11px] font-extrabold text-cyan-400 bg-cyan-500/15 px-2 py-0.5 rounded-full border border-cyan-500/30">
-              {data.catalog.length} ejerc.
+              {data.catalog.length} {t("ejerc.")}
             </span>
           </div>
           <h3 className="text-sm font-bold text-white mt-2.5">
-            Solo Ejercicios
+            {t("Solo Ejercicios")}
           </h3>
           <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-            Catálogo y biblioteca con sus fotos, vídeos y valores base.
+            {t("Catálogo y biblioteca con sus fotos, vídeos y valores base.")}
           </p>
         </div>
 
@@ -90,7 +91,7 @@ export const BackupExportPanel: React.FC<BackupExportPanelProps> = ({
           className="mt-4 w-full min-h-[44px] inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold rounded-xl border border-white/10 bg-white/[0.06] hover:bg-white/[0.12] text-white transition active:scale-[0.97]"
         >
           <Download className="w-3.5 h-3.5" />
-          <span>Descargar Ejercicios</span>
+          <span>{t("Descargar Ejercicios")}</span>
         </button>
       </div>
 
@@ -105,10 +106,10 @@ export const BackupExportPanel: React.FC<BackupExportPanelProps> = ({
             </span>
           </div>
           <h3 className="text-sm font-bold text-white mt-2.5">
-            Solo Registro de RMs
+            {t("Solo Registro de RMs")}
           </h3>
           <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-            Historial completo de marcas personales (1RM) por ejercicio.
+            {t("Historial completo de marcas personales (1RM) por ejercicio.")}
           </p>
         </div>
 
@@ -119,7 +120,7 @@ export const BackupExportPanel: React.FC<BackupExportPanelProps> = ({
           className="mt-4 w-full min-h-[44px] inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold rounded-xl border border-white/10 bg-white/[0.06] hover:bg-white/[0.12] text-white transition active:scale-[0.97]"
         >
           <Download className="w-3.5 h-3.5" />
-          <span>Descargar RMs</span>
+          <span>{t("Descargar RMs")}</span>
         </button>
       </div>
 
@@ -130,14 +131,14 @@ export const BackupExportPanel: React.FC<BackupExportPanelProps> = ({
               <Calendar className="w-4 h-4 text-blue-400" />
             </span>
             <span className="text-[11px] font-extrabold text-blue-400 bg-blue-500/15 px-2 py-0.5 rounded-full border border-blue-500/30">
-              {data.workoutHistory.length} sesiones
+              {data.workoutHistory.length} {t("sesiones")}
             </span>
           </div>
           <h3 className="text-sm font-bold text-white mt-2.5">
-            Solo Historial
+            {t("Solo Historial")}
           </h3>
           <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-            Registro de todas las sesiones de rutinas completadas.
+            {t("Registro de todas las sesiones de rutinas completadas.")}
           </p>
         </div>
 
@@ -148,7 +149,7 @@ export const BackupExportPanel: React.FC<BackupExportPanelProps> = ({
           className="mt-4 w-full min-h-[44px] inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold rounded-xl border border-white/10 bg-white/[0.06] hover:bg-white/[0.12] text-white transition active:scale-[0.97]"
         >
           <Download className="w-3.5 h-3.5" />
-          <span>Descargar Historial</span>
+          <span>{t("Descargar Historial")}</span>
         </button>
       </div>
 
@@ -159,14 +160,14 @@ export const BackupExportPanel: React.FC<BackupExportPanelProps> = ({
               <BookOpen className="w-4 h-4 text-teal-400" />
             </span>
             <span className="text-[11px] font-extrabold text-teal-400 bg-teal-500/15 px-2 py-0.5 rounded-full border border-teal-500/30">
-              {data.exerciseDiary.reduce((sum, diary) => sum + (diary.entries?.length || 0), 0)} notas
+              {data.exerciseDiary.reduce((sum, diary) => sum + (diary.entries?.length || 0), 0)} {t("notas")}
             </span>
           </div>
           <h3 className="text-sm font-bold text-white mt-2.5">
-            Solo Diario de Ejercicios
+            {t("Solo Diario de Ejercicios")}
           </h3>
           <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-            Todas tus anotaciones personales, sensaciones y detalles técnicos.
+            {t("Todas tus anotaciones personales, sensaciones y detalles técnicos.")}
           </p>
         </div>
 
@@ -177,7 +178,7 @@ export const BackupExportPanel: React.FC<BackupExportPanelProps> = ({
           className="mt-4 w-full min-h-[44px] inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold rounded-xl border border-white/10 bg-white/[0.06] hover:bg-white/[0.12] text-white transition active:scale-[0.97]"
         >
           <Download className="w-3.5 h-3.5" />
-          <span>Descargar Diario</span>
+          <span>{t("Descargar Diario")}</span>
         </button>
       </div>
 
@@ -188,14 +189,14 @@ export const BackupExportPanel: React.FC<BackupExportPanelProps> = ({
               <Layers className="w-4 h-4" />
             </span>
             <span className="text-[11px] font-black text-black bg-[#00FF87] px-2.5 py-0.5 rounded-full">
-              Completa
+              {t("Completa")}
             </span>
           </div>
           <h3 className="text-sm font-extrabold text-white mt-2.5">
-            Todo el contenido de la App
+            {t("Todo el contenido de la App")}
           </h3>
           <p className="text-xs text-zinc-300 mt-1 leading-relaxed">
-            {data.catalog.length} ejercicios, {data.routines.length} rutinas, {data.rmLogs.length} RMs, {data.workoutHistory.length} sesiones y {data.exerciseDiary.reduce((sum, diary) => sum + (diary.entries?.length || 0), 0)} notas del diario.
+            {data.catalog.length} {t("ejercicios,")} {data.routines.length} {t("rutinas,")} {data.rmLogs.length} {t("RMs,")} {data.workoutHistory.length} {t("sesiones y")} {data.exerciseDiary.reduce((sum, diary) => sum + (diary.entries?.length || 0), 0)} {t("notas del diario.")}
           </p>
         </div>
 
@@ -206,7 +207,7 @@ export const BackupExportPanel: React.FC<BackupExportPanelProps> = ({
           className="mt-4 w-full min-h-[48px] inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-extrabold rounded-xl bg-[#00FF87] hover:bg-[#00e57a] text-black transition active:scale-[0.97] shadow-[0_0_15px_rgba(0,255,135,0.3)]"
         >
           <Download className="w-4 h-4 stroke-[2.5]" />
-          <span>Descargar Todo (.json)</span>
+          <span>{t("Descargar Todo (.json)")}</span>
         </button>
       </div>
     </div>

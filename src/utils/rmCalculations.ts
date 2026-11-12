@@ -1,3 +1,5 @@
+import { currentLocale } from './i18n';
+import { displayedWeightUnit } from './i18n';
 import { ExerciseRmLog, RmMetric, RmRecord } from '../types';
 import { normalizeExerciseTitle } from './backup';
 
@@ -13,7 +15,7 @@ export function getRmRecordMetric(record: RmRecord): RmMetric {
  * Returns the display unit for a metric (e.g. "kg" or "reps").
  */
 export function getRmMetricUnit(metric: RmMetric): string {
-  return metric === 'reps' ? 'reps' : 'kg';
+  return metric === 'reps' ? 'reps' : displayedWeightUnit();
 }
 
 /**
@@ -99,7 +101,7 @@ export function formatRmDate(dateString: string): string {
     const [year, month, day] = dateString.split('-').map(Number);
     if (year && month && day) {
       const date = new Date(year, month - 1, day);
-      return date.toLocaleDateString('es-ES', {
+      return date.toLocaleDateString(currentLocale(), {
         day: 'numeric',
         month: 'short',
         year: 'numeric',

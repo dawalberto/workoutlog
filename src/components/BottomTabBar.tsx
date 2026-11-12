@@ -1,3 +1,4 @@
+import { t } from '../utils/i18n';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -22,35 +23,35 @@ export const BottomTabBar: React.FC = () => {
     {
       id: 'tab-nav-routines',
       tab: AppTab.ROUTINES,
-      label: 'Rutinas',
+      label: t('Rutinas'),
       icon: Flame,
       count: routinesCount,
     },
     {
       id: 'tab-nav-catalog',
       tab: AppTab.EXERCISES,
-      label: 'Ejercicios',
+      label: t('Ejercicios'),
       icon: Dumbbell,
       count: catalogCount,
     },
     {
       id: 'tab-nav-rms',
       tab: AppTab.RMS,
-      label: 'RMs',
+      label: t('RMs'),
       icon: Trophy,
       count: rmCount,
     },
     {
       id: 'tab-nav-history',
       tab: AppTab.HISTORY,
-      label: 'Historial',
+      label: t('Historial'),
       icon: Calendar,
       count: historyCount,
     },
     {
       id: 'tab-nav-diary',
       tab: AppTab.DIARY,
-      label: 'Diario',
+      label: t('Diario'),
       icon: BookOpen,
       count: diaryCount,
     },
@@ -59,7 +60,7 @@ export const BottomTabBar: React.FC = () => {
   return (
     <nav
       id="bottom-tab-bar"
-      aria-label="Navegación principal"
+      aria-label={t("Navegación principal")}
       className="fixed bottom-0 left-0 right-0 z-40 bg-[#121214]/90 backdrop-blur-xl border-t border-white/[0.08] shadow-[0_-8px_30px_rgba(0,0,0,0.8)] pb-[env(safe-area-inset-bottom,0px)]"
     >
       <div className="max-w-lg mx-auto px-2">

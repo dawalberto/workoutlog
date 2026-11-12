@@ -1,3 +1,4 @@
+import { t } from '../utils/i18n';
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Play, Pause, X, Plus, Bell, RotateCcw, GripVertical } from 'lucide-react';
 import Draggable, {
@@ -134,8 +135,8 @@ const RestTimerBarContent: React.FC<RestTimerBarContentProps> = ({ timer }) => {
 
   const dragHandle = (
     <div
-      aria-label="Mover temporizador"
-      title="Mover temporizador"
+      aria-label={t("Mover temporizador")}
+      title={t("Mover temporizador")}
       className="rest-timer-drag-handle min-h-[48px] min-w-[48px] inline-flex items-center justify-center rounded-xl text-current opacity-70 cursor-grab active:cursor-grabbing touch-none"
     >
       <GripVertical className="w-5 h-5" aria-hidden="true" />
@@ -399,7 +400,7 @@ const RestTimerBarContent: React.FC<RestTimerBarContentProps> = ({ timer }) => {
                 hasFinished ? 'text-black' : 'text-[#00FF87]'
               }`}
             >
-              {hasFinished ? '¡Listo!' : 'Descanso'}
+              {hasFinished ? t("¡Listo!") : t("Descanso")}
             </span>
             <span
               className={`text-base sm:text-lg font-black font-mono tracking-tight ${
@@ -433,10 +434,10 @@ const RestTimerBarContent: React.FC<RestTimerBarContentProps> = ({ timer }) => {
                   ? 'bg-black text-white hover:bg-zinc-900'
                   : 'bg-[#00FF87] text-black hover:bg-[#00e57a] shadow-[0_0_10px_rgba(0,255,135,0.3)]'
               }`}
-              title="Volver a la rutina"
+              title={t("Volver a la rutina")}
             >
               <RotateCcw className="w-3 h-3 stroke-[2.5]" />
-              <span>Volver</span>
+              <span>{t("Volver")}</span>
             </button>
           )}
 
@@ -445,7 +446,7 @@ const RestTimerBarContent: React.FC<RestTimerBarContentProps> = ({ timer }) => {
             id="btn-mini-close-timer"
             type="button"
             onClick={onClose}
-            aria-label="Cerrar temporizador"
+            aria-label={t("Cerrar temporizador")}
             className={`min-h-[48px] min-w-[48px] p-1 rounded-full transition-colors active:scale-95 shrink-0 ${
               hasFinished ? 'text-black/70 hover:text-black hover:bg-black/10' : 'text-zinc-400 hover:text-white hover:bg-white/10'
             }`}
@@ -482,7 +483,7 @@ const RestTimerBarContent: React.FC<RestTimerBarContentProps> = ({ timer }) => {
             />
             <div className="truncate flex items-center gap-2 min-w-0">
               <span className={`text-[11px] font-black tracking-wider uppercase shrink-0 ${hasFinished ? 'text-black' : 'text-[#00FF87]'}`}>
-                {hasFinished ? '¡Tiempo terminado!' : 'Descanso en curso'}
+                {hasFinished ? t("¡Tiempo terminado!") : t("Descanso en curso")}
               </span>
               {exerciseName && (
                 <span className={`text-xs truncate font-semibold ${hasFinished ? 'text-black/80' : 'text-[#A1A1AA]'}`}>
@@ -503,9 +504,9 @@ const RestTimerBarContent: React.FC<RestTimerBarContentProps> = ({ timer }) => {
                     ? 'bg-black text-white hover:bg-zinc-900 shadow-sm'
                     : 'bg-[#00FF87]/20 text-[#00FF87] hover:bg-[#00FF87]/30 border border-[#00FF87]/30'
                 }`}
-                title="Volver a la rutina"
+                title={t("Volver a la rutina")}
               >
-                <span>Volver</span>
+                <span>{t("Volver")}</span>
               </button>
             )}
 
@@ -513,7 +514,7 @@ const RestTimerBarContent: React.FC<RestTimerBarContentProps> = ({ timer }) => {
               id="btn-close-rest-timer"
               type="button"
               onClick={onClose}
-              aria-label="Cerrar temporizador"
+              aria-label={t("Cerrar temporizador")}
               className={`min-h-[48px] min-w-[48px] p-1.5 rounded-xl transition-colors active:scale-95 ${
                 hasFinished ? 'text-black/70 hover:text-black hover:bg-black/10' : 'text-zinc-400 hover:text-white hover:bg-white/10'
               }`}
@@ -536,7 +537,7 @@ const RestTimerBarContent: React.FC<RestTimerBarContentProps> = ({ timer }) => {
             </span>
             {hasFinished && (
               <span className="hidden xs:inline-flex items-center gap-1 text-[11px] font-extrabold text-black bg-black/15 px-2.5 py-1 rounded-full truncate">
-                <Bell className="w-3.5 h-3.5 shrink-0" /> ¡A por la siguiente!
+                <Bell className="w-3.5 h-3.5 shrink-0" /> {t("¡A por la siguiente!")}
               </span>
             )}
           </div>
@@ -553,7 +554,7 @@ const RestTimerBarContent: React.FC<RestTimerBarContentProps> = ({ timer }) => {
                   : 'bg-zinc-800 hover:bg-zinc-700 text-white border border-white/10'
               }`}
             >
-              <Plus className="w-3.5 h-3.5" /> 30s
+              <Plus className="w-3.5 h-3.5" /> {t("30s")}
             </button>
 
             {!hasFinished && (
@@ -562,8 +563,8 @@ const RestTimerBarContent: React.FC<RestTimerBarContentProps> = ({ timer }) => {
                 type="button"
                 onClick={togglePause}
                 className="min-h-[48px] min-w-[48px] p-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white border border-white/10 transition-all active:scale-95 flex items-center justify-center shrink-0"
-                title={isPaused ? 'Continuar' : 'Pausar'}
-                aria-label={isPaused ? 'Continuar descanso' : 'Pausar descanso'}
+                title={isPaused ? t("Continuar") : t("Pausar")}
+                aria-label={isPaused ? t("Continuar descanso") : t("Pausar descanso")}
               >
                 {isPaused ? (
                   <Play className="w-4 h-4 fill-current text-[#00FF87]" />
@@ -583,7 +584,7 @@ const RestTimerBarContent: React.FC<RestTimerBarContentProps> = ({ timer }) => {
                   : 'bg-[#00FF87] hover:bg-[#00e57a] text-black shadow-[0_0_15px_rgba(0,255,135,0.4)]'
               }`}
             >
-              {hasFinished ? 'Listo' : 'Saltar'}
+              {hasFinished ? t("Listo") : t("Saltar")}
             </button>
           </div>
         </div>

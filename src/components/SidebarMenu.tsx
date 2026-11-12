@@ -1,10 +1,11 @@
+import { t } from '../utils/i18n';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import React from 'react';
-import { Flame, Dumbbell, Trophy, Calendar, BookOpen, ArrowDownUp, X, ChevronRight } from 'lucide-react';
+import { Flame, Dumbbell, Trophy, Calendar, BookOpen, X, Settings } from 'lucide-react';
 import { AppTab } from '../types';
 import { AnalyticsPreferenceControl } from './AnalyticsPreferenceControl';
 import { PWAInstallButton } from './PWAInstallButton';
@@ -31,7 +32,6 @@ export const SidebarMenu: React.FC = () => {
     onSignIn,
     onSignOut,
     handleNav,
-    handleBackup,
   } = useSidebarMenu();
   if (!isOpen) return null;
 
@@ -68,7 +68,7 @@ export const SidebarMenu: React.FC = () => {
               type="button"
               onClick={onClose}
               className="p-2 text-zinc-400 hover:text-white rounded-xl hover:bg-zinc-800 transition-colors"
-              aria-label="Cerrar menú"
+              aria-label={t("Cerrar menú")}
             >
               <X className="w-5 h-5" />
             </button>
@@ -77,7 +77,7 @@ export const SidebarMenu: React.FC = () => {
           {/* Navigation Links */}
           <div className="p-3 sm:p-4 space-y-1.5">
             <div className="text-[10px] font-black text-zinc-500 uppercase tracking-widest px-3 py-1.5">
-              Vistas Principales
+              {t("Vistas Principales")}
             </div>
 
             {/* Rutinas */}
@@ -102,9 +102,9 @@ export const SidebarMenu: React.FC = () => {
                   <Flame className="w-4 h-4 fill-current" />
                 </div>
                 <div>
-                  <div className="text-sm font-bold">Rutinas</div>
+                  <div className="text-sm font-bold">{t("Rutinas")}</div>
                   <div className="text-[11px] text-zinc-500 font-normal">
-                    Planificador y sesiones
+                    {t("Planificador y sesiones")}
                   </div>
                 </div>
               </div>
@@ -141,9 +141,9 @@ export const SidebarMenu: React.FC = () => {
                   <Dumbbell className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="text-sm font-bold">Biblioteca de Ejercicios</div>
+                  <div className="text-sm font-bold">{t("Biblioteca de Ejercicios")}</div>
                   <div className="text-[11px] text-zinc-500 font-normal">
-                    Catálogo y técnica
+                    {t("Catálogo y técnica")}
                   </div>
                 </div>
               </div>
@@ -180,9 +180,9 @@ export const SidebarMenu: React.FC = () => {
                   <Trophy className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="text-sm font-bold">Registro de RMs</div>
+                  <div className="text-sm font-bold">{t("Registro de RMs")}</div>
                   <div className="text-[11px] text-zinc-500 font-normal">
-                    Pesos máximos (1RM) e histórico
+                    {t("Pesos máximos (1RM) e histórico")}
                   </div>
                 </div>
               </div>
@@ -219,9 +219,9 @@ export const SidebarMenu: React.FC = () => {
                   <Calendar className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="text-sm font-bold">Historial</div>
+                  <div className="text-sm font-bold">{t("Historial")}</div>
                   <div className="text-[11px] text-zinc-500 font-normal">
-                    Sesiones completadas
+                    {t("Sesiones completadas")}
                   </div>
                 </div>
               </div>
@@ -258,9 +258,9 @@ export const SidebarMenu: React.FC = () => {
                   <BookOpen className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="text-sm font-bold">Diario de Ejercicios</div>
+                  <div className="text-sm font-bold">{t("Diario de Ejercicios")}</div>
                   <div className="text-[11px] text-zinc-500 font-normal">
-                    Notas, sensaciones y marcas
+                    {t("Notas, sensaciones y marcas")}
                   </div>
                 </div>
               </div>
@@ -277,38 +277,23 @@ export const SidebarMenu: React.FC = () => {
 
             <div className="pt-4 pb-1">
               <div className="text-[10px] font-black text-zinc-500 uppercase tracking-widest px-3 py-1">
-                Herramientas y Datos
+                {t("Herramientas y Datos")}
               </div>
             </div>
 
-            {/* Copia de Seguridad */}
-            <button
-              id="sidebar-link-backup"
-              type="button"
-              onClick={handleBackup}
-              className="w-full flex items-center justify-between p-3 rounded-2xl text-left text-zinc-300 hover:bg-zinc-900 hover:text-white font-semibold transition-all active:scale-[0.98]"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-zinc-900 text-zinc-400 border border-white/5 flex items-center justify-center">
-                  <ArrowDownUp className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="text-sm font-bold">Copia de Seguridad</div>
-                  <div className="text-[11px] text-zinc-500 font-normal">
-                    Importar / Exportar JSON
-                  </div>
-                </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-zinc-500" />
+            <button type="button" id="sidebar-link-settings" onClick={() => handleNav(AppTab.SETTINGS)} className="flex min-h-[48px] w-full items-center gap-3 rounded-2xl p-3 text-left font-semibold text-zinc-300 transition-all hover:bg-zinc-900 hover:text-white active:scale-[0.97]">
+              <Settings className="h-5 w-5" />
+              <span>{t('Ajustes')}</span>
             </button>
+
           </div>
 
           <section
-            aria-label="Cuenta"
+            aria-label={t("Cuenta")}
             className="mx-3 mb-3 rounded-2xl border border-white/10 bg-[#121214] p-3"
           >
             <div className="flex items-center justify-between gap-2">
-              <h2 className="text-sm font-bold text-white">Cuenta</h2>
+              <h2 className="text-sm font-bold text-white">{t("Cuenta")}</h2>
               <span
                 className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
                   isSyncEnabled
@@ -316,17 +301,17 @@ export const SidebarMenu: React.FC = () => {
                   : 'bg-zinc-800 text-zinc-300'
                 }`}
               >
-                {isSyncEnabled ? 'Sincronización activa' : 'Solo local'}
+                {isSyncEnabled ? t("Sincronización activa") : t("Solo local")}
               </span>
             </div>
             <p className="mt-1 break-all text-[11px] text-zinc-400">
               {userEmail ??
                 (isAuthenticated
-                ? 'Sesión iniciada'
-                : 'Sesión sin iniciar; tus datos siguen en este dispositivo.')}
+                ? t("Sesión iniciada")
+                : t("Sesión sin iniciar; tus datos siguen en este dispositivo."))}
             </p>
             {isSyncEligibilityLoading && isAuthenticated && (
-              <p className="mt-1 text-[11px] text-zinc-500">Comprobando la sincronización…</p>
+              <p className="mt-1 text-[11px] text-zinc-500">{t("Comprobando la sincronización…")}</p>
             )}
             {error && (
               <p role="alert" className="mt-2 text-[11px] text-red-300">
@@ -340,12 +325,12 @@ export const SidebarMenu: React.FC = () => {
               className="mt-2 min-h-[48px] w-full rounded-xl bg-[#00FF87] px-3 py-2 text-xs font-black text-black transition-all hover:brightness-110 active:scale-[0.97] disabled:cursor-wait disabled:opacity-60"
             >
               {isSigningOut
-                ? 'Cerrando sesión…'
+                ? t("Cerrando sesión…")
                 : isSigningIn
-                ? 'Conectando…'
+                ? t("Conectando…")
                 : isAuthenticated
-                ? 'Cerrar sesión'
-                : 'Continuar con Google'}
+                ? t("Cerrar sesión")
+                : t("Continuar con Google")}
             </button>
           </section>
           <AnalyticsPreferenceControl />
@@ -359,7 +344,7 @@ export const SidebarMenu: React.FC = () => {
               aria-hidden="true"
               className={`h-1.5 w-1.5 rounded-full ${isOnline ? 'bg-[#00FF87]' : 'bg-amber-400'}`}
             />
-            {isOnline ? 'En línea' : 'Sin conexión'}
+            {isOnline ? t("En línea") : t("Sin conexión")}
           </span>
         </div>
       </div>

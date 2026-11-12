@@ -1,3 +1,4 @@
+import { t } from '../utils/i18n';
 import React from 'react';
 import {
   X,
@@ -60,10 +61,10 @@ export const ReorderExercisesModal: React.FC<ReorderExercisesModalProps> = ({
             </div>
             <div>
               <h3 className="text-base sm:text-lg font-black text-white">
-                Ordenar Ejercicios
+                {t("Ordenar Ejercicios")}
               </h3>
               <p className="text-xs text-zinc-400">
-                Arrastra o selecciona la posición para organizar tu rutina
+                {t("Arrastra o selecciona la posición para organizar tu rutina")}
               </p>
             </div>
           </div>
@@ -81,7 +82,7 @@ export const ReorderExercisesModal: React.FC<ReorderExercisesModalProps> = ({
         <div className="p-3 sm:p-5 overflow-y-auto flex-1 space-y-2">
           {items.length === 0 ? (
             <p className="text-sm text-zinc-400 text-center py-8">
-              No hay ejercicios en esta rutina para ordenar.
+              {t("No hay ejercicios en esta rutina para ordenar.")}
             </p>
           ) : (
             items.map((ex, index) => {
@@ -114,7 +115,7 @@ export const ReorderExercisesModal: React.FC<ReorderExercisesModalProps> = ({
                   {/* Drag Handle (Supports Mouse Drag & Mobile Touch Drag) */}
                   <div
                     className="cursor-grab active:cursor-grabbing text-zinc-400 hover:text-white p-2 -m-1 shrink-0 touch-none select-none"
-                    title="Mantén pulsado y arrastra para reordenar"
+                    title={t("Mantén pulsado y arrastra para reordenar")}
                     onTouchStart={() => {
                       setTouchActiveIndex(index);
                       setTouchOverIndex(index);
@@ -130,11 +131,11 @@ export const ReorderExercisesModal: React.FC<ReorderExercisesModalProps> = ({
                   <div className="relative shrink-0">
                     <select
                       id={`select-reorder-pos-${ex.id}`}
-                      aria-label={`Posición para ${ex.name}`}
+                      aria-label={t("Posición para {0}", ex.name)}
                       value={index + 1}
                       onChange={(e) => moveToPosition(index, Number(e.target.value))}
                       className="appearance-none cursor-pointer w-8 h-8 rounded-lg text-xs font-black text-center bg-white/[0.08] text-white hover:bg-[#00FF87] hover:text-black focus:ring-2 focus:ring-[#00FF87] transition-all border border-white/10"
-                      title="Selecciona la posición deseada"
+                      title={t("Selecciona la posición deseada")}
                     >
                       {items.map((_, i) => (
                         <option key={i} value={i + 1} className="bg-[#1C1C1E] text-white font-bold">
@@ -158,10 +159,10 @@ export const ReorderExercisesModal: React.FC<ReorderExercisesModalProps> = ({
                   {/* Exercise Title and Sets Info */}
                   <div className="min-w-0 flex-1">
                     <h4 className="text-xs sm:text-sm font-bold text-white truncate">
-                      {ex.name || 'Ejercicio sin nombre'}
+                      {ex.name || t("Ejercicio sin nombre")}
                     </h4>
                     <div className="flex items-center gap-2 text-[11px] text-zinc-400 mt-0.5">
-                      <span>{ex.sets.length} {ex.sets.length === 1 ? 'serie' : 'series'}</span>
+                      <span>{ex.sets.length} {ex.sets.length === 1 ? t("serie") : t("series")}</span>
                       {formatExerciseCategories(ex) && (
                         <>
                           <span>•</span>
@@ -177,7 +178,7 @@ export const ReorderExercisesModal: React.FC<ReorderExercisesModalProps> = ({
                       type="button"
                       disabled={index === 0}
                       onClick={() => move(index, index - 1)}
-                      title="Subir un puesto"
+                      title={t("Subir un puesto")}
                       className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg border border-white/10 bg-black/30 text-zinc-300 hover:bg-white/[0.08] hover:text-white disabled:opacity-20 disabled:pointer-events-none transition-colors"
                     >
                       <ChevronUp className="w-4 h-4" />
@@ -186,7 +187,7 @@ export const ReorderExercisesModal: React.FC<ReorderExercisesModalProps> = ({
                       type="button"
                       disabled={index === items.length - 1}
                       onClick={() => move(index, index + 1)}
-                      title="Bajar un puesto"
+                      title={t("Bajar un puesto")}
                       className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg border border-white/10 bg-black/30 text-zinc-300 hover:bg-white/[0.08] hover:text-white disabled:opacity-20 disabled:pointer-events-none transition-colors"
                     >
                       <ChevronDown className="w-4 h-4" />
@@ -205,7 +206,7 @@ export const ReorderExercisesModal: React.FC<ReorderExercisesModalProps> = ({
             onClick={reset}
             className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors"
           >
-            <RotateCcw className="w-3.5 h-3.5" /> Reestablecer
+            <RotateCcw className="w-3.5 h-3.5" /> {t("Reestablecer")}
           </button>
 
           <div className="flex items-center gap-2.5">
@@ -214,7 +215,7 @@ export const ReorderExercisesModal: React.FC<ReorderExercisesModalProps> = ({
               onClick={onClose}
               className="px-4 py-2.5 min-h-[44px] text-xs font-bold rounded-xl text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors"
             >
-              Cancelar
+              {t("Cancelar")}
             </button>
             <button
               id="btn-confirm-reorder"
@@ -225,7 +226,7 @@ export const ReorderExercisesModal: React.FC<ReorderExercisesModalProps> = ({
               }}
               className="inline-flex items-center gap-2 px-5 py-2.5 min-h-[44px] text-xs font-extrabold rounded-xl bg-[#00FF87] text-black hover:bg-[#00e57a] active:scale-[0.97] transition-all shadow-[0_0_12px_rgba(0,255,135,0.3)]"
             >
-              <Check className="w-4 h-4 stroke-[3]" /> Guardar Orden
+              <Check className="w-4 h-4 stroke-[3]" /> {t("Guardar Orden")}
             </button>
           </div>
         </div>

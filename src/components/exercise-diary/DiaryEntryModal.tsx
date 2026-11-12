@@ -1,3 +1,4 @@
+import { t } from '../../utils/i18n';
 import React from 'react';
 import { BookOpen, Check, X } from 'lucide-react';
 import type { ExerciseDefinition, ExerciseDiaryEntry } from '../../types';
@@ -41,10 +42,10 @@ export const DiaryEntryModal: React.FC<DiaryEntryModalProps> = ({
             </span>
             <div>
               <h2 className="text-base sm:text-lg font-black text-white">
-                {editingEntry ? 'Editar Registro del Diario' : 'Nuevo Registro en el Diario'}
+                {editingEntry ? t("Editar Registro del Diario") : t("Nuevo Registro en el Diario")}
               </h2>
               <span className="text-[11px] text-zinc-400 font-medium">
-                Añade tus observaciones y sensaciones
+                {t("Añade tus observaciones y sensaciones")}
               </span>
             </div>
           </div>
@@ -53,7 +54,7 @@ export const DiaryEntryModal: React.FC<DiaryEntryModalProps> = ({
             type="button"
             onClick={onClose}
             className="p-2 text-zinc-400 hover:text-white rounded-xl hover:bg-white/[0.08] transition-colors"
-            aria-label="Cerrar modal"
+            aria-label={t("Cerrar modal")}
           >
             <X className="w-5 h-5" />
           </button>
@@ -71,7 +72,7 @@ export const DiaryEntryModal: React.FC<DiaryEntryModalProps> = ({
             {/* Exercise Selector */}
             <div>
               <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider mb-1.5">
-                Ejercicio de la Biblioteca <span className="text-rose-500">*</span>
+                {t("Ejercicio de la Biblioteca")} <span className="text-rose-500">*</span>
               </label>
               <select
                 value={form.formExerciseName}
@@ -90,7 +91,7 @@ export const DiaryEntryModal: React.FC<DiaryEntryModalProps> = ({
             {/* Date Picker */}
             <div>
               <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider mb-1.5">
-                Fecha del Registro <span className="text-rose-500">*</span>
+                {t("Fecha del Registro")} <span className="text-rose-500">*</span>
               </label>
               <input
                 type="date"
@@ -104,7 +105,7 @@ export const DiaryEntryModal: React.FC<DiaryEntryModalProps> = ({
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
-                  Sensación en la sesión
+                  {t("Sensación en la sesión")}
                 </label>
                 {form.formFeeling && (
                   <button
@@ -112,7 +113,7 @@ export const DiaryEntryModal: React.FC<DiaryEntryModalProps> = ({
                     onClick={() => form.setFormFeeling(undefined)}
                     className="text-[11px] text-zinc-400 hover:text-white"
                   >
-                    Quitar sensación
+                    {t("Quitar sensación")}
                   </button>
                 )}
               </div>
@@ -128,7 +129,7 @@ export const DiaryEntryModal: React.FC<DiaryEntryModalProps> = ({
                   }`}
                 >
                   <span className="text-base">🟢</span>
-                  <span>Bien</span>
+                  <span>{t("Bien")}</span>
                 </button>
 
                 <button
@@ -141,7 +142,7 @@ export const DiaryEntryModal: React.FC<DiaryEntryModalProps> = ({
                   }`}
                 >
                   <span className="text-base">🟠</span>
-                  <span>Regular</span>
+                  <span>{t("Regular")}</span>
                 </button>
 
                 <button
@@ -154,7 +155,7 @@ export const DiaryEntryModal: React.FC<DiaryEntryModalProps> = ({
                   }`}
                 >
                   <span className="text-base">🔴</span>
-                  <span>Mal</span>
+                  <span>{t("Mal")}</span>
                 </button>
               </div>
             </div>
@@ -162,7 +163,7 @@ export const DiaryEntryModal: React.FC<DiaryEntryModalProps> = ({
             {/* Note / Journal Entry Textarea (Spacious & Comfortable) */}
             <div>
               <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider mb-1.5">
-                Nota y Observaciones <span className="text-rose-500">*</span>
+                {t("Nota y Observaciones")} <span className="text-rose-500">*</span>
               </label>
               <textarea
                 rows={6}
@@ -174,12 +175,12 @@ export const DiaryEntryModal: React.FC<DiaryEntryModalProps> = ({
                     onSave();
                   }
                 }}
-                placeholder="Ej: Hoy ha tocado en la parte de fuera 6s x 4r al 80% del RM y me he puesto 55kg y casi peto..."
+                placeholder={t("Ej: Hoy ha tocado en la parte de fuera 6s x 4r al 80% del RM y me he puesto 55kg y casi peto...")}
                 className="w-full p-3.5 text-xs sm:text-sm rounded-xl border border-white/10 bg-black/40 text-white focus:outline-none focus:border-[#00FF87] focus:ring-1 focus:ring-[#00FF87] resize-y min-h-[140px] leading-relaxed placeholder-zinc-500 transition-all selection:bg-[#00FF87]/20"
               />
               <div className="flex items-center justify-between text-[11px] text-zinc-500 mt-1">
-                <span>Espacio amplio para notas largas y técnicas</span>
-                <span>Ctrl + Enter para guardar</span>
+                <span>{t("Espacio amplio para notas largas y técnicas")}</span>
+                <span>{t("Ctrl + Enter para guardar")}</span>
               </div>
             </div>
           </div>
@@ -191,7 +192,7 @@ export const DiaryEntryModal: React.FC<DiaryEntryModalProps> = ({
               onClick={onClose}
               className="px-4 py-2.5 min-h-[44px] text-xs sm:text-sm font-semibold text-zinc-400 hover:text-white rounded-xl hover:bg-white/[0.06] transition-colors"
             >
-              Cancelar
+              {t("Cancelar")}
             </button>
 
             <button
@@ -199,7 +200,7 @@ export const DiaryEntryModal: React.FC<DiaryEntryModalProps> = ({
               className="px-5 py-2.5 min-h-[48px] text-xs sm:text-sm font-extrabold text-black bg-[#00FF87] hover:bg-[#00e57a] rounded-xl shadow-[0_0_15px_rgba(0,255,135,0.3)] transition-all active:scale-[0.97] flex items-center gap-2"
             >
               <Check className="w-4 h-4 text-black stroke-[3]" />
-              <span>{editingEntry ? 'Actualizar Registro' : 'Guardar en el Diario'}</span>
+              <span>{editingEntry ? t("Actualizar Registro") : t("Guardar en el Diario")}</span>
             </button>
           </div>
         </form>

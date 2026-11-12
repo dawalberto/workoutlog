@@ -1,3 +1,4 @@
+import { t } from '../../utils/i18n';
 import { useAppStore } from '../../store/appStore';
 import { selectActiveRoutine } from '../../store/selectors';
 import { formatExerciseSummary } from '../../utils/timeCalculations';
@@ -18,7 +19,7 @@ export function useWorkoutProgressPanel() {
     : null;
 
   const handleResetSession = () => {
-    if (!routine || !window.confirm('¿Reiniciar el progreso de la sesión actual?')) return;
+    if (!routine || !window.confirm(t("¿Reiniciar el progreso de la sesión actual?"))) return;
     resetSession(routine.id);
   };
 
