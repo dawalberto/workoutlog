@@ -50,6 +50,7 @@ export function getRoutineTotalSeconds(routine: Routine, measurements: readonly 
  */
 export function formatSecondsToTime(totalSeconds: number): string {
   if (!totalSeconds || totalSeconds <= 0) return '0s';
+  totalSeconds = Math.round(totalSeconds);
 
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);

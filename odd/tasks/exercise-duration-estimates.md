@@ -22,3 +22,7 @@ Implementation and compatibility checks complete locally: 351 Vitest tests, type
 
 ## Next step
 Deploy the migration before the frontend.
+
+## Follow-up: display whole seconds
+
+- [x] T5: Round displayed duration estimates to whole seconds, including minute and hour boundaries; retain precise stored measurements. Verified 353 Vitest tests, typecheck, and build.
