@@ -2,7 +2,7 @@
 
 How the AI context layer is organized, how agents should use it, and how to keep it current.
 
-Last verified: 2026-10-14
+Last verified: 2026-11-12
 
 ## How agents should load context
 
@@ -30,6 +30,7 @@ Last verified: 2026-10-14
 | [`.github/skills/workoutlog-testing/SKILL.md`](../.github/skills/workoutlog-testing/SKILL.md) | Writing tests the repo's way | Agents | Adding tests |
 | [`.github/skills/workoutlog-offline-sync/SKILL.md`](../.github/skills/workoutlog-offline-sync/SKILL.md) | Local-first storage and sync rules | Agents | Storage/offline/sync |
 | [`.github/skills/workoutlog-ui-style/SKILL.md`](../.github/skills/workoutlog-ui-style/SKILL.md) | Neon Bento design system | Agents | Any UI change |
+| [`.agents/skills/modern-web-guidance/SKILL.md`](../.agents/skills/modern-web-guidance/SKILL.md) | Upstream modern web platform guidance | Agents | HTML, CSS, browser APIs, accessibility, or client-side web behavior |
 | [`.github/agents/reviewer.agent.md`](../.github/agents/reviewer.agent.md) | Review persona/checklist | Copilot custom agents | Reviewing changes |
 | [`.github/agents/architect.agent.md`](../.github/agents/architect.agent.md) | Design/planning persona | same | Planning |
 | [`.github/agents/docs-keeper.agent.md`](../.github/agents/docs-keeper.agent.md) | Keeps docs and agent files current | same | After changes |
@@ -65,6 +66,9 @@ Globs overlap on purpose (for example `src/utils/backup.ts` gets both frontend a
 | `workoutlog-testing` | Tests, Vitest, pgTAP, fixtures, mocks |
 | `workoutlog-offline-sync` | Offline sync, IndexedDB, browser storage, cloud sync |
 | `workoutlog-ui-style` | UI, CSS, styling, component, layout, Neon Bento |
+| `modern-web-guidance` | HTML, CSS, browser APIs, accessibility, or client-side web behavior |
+
+The upstream Modern Web Guidance skill uses `pnpx` to search and retrieve guides. It requires network access to fetch the CLI when it is not cached. Project rules, including the dependency approval requirement, offline-first behavior, and browser compatibility, take precedence over upstream suggestions. The installed skill is sourced from [GoogleChrome/modern-web-guidance](https://github.com/GoogleChrome/modern-web-guidance) at commit `4dd968349e54ca45a05dd5c818fb035c9054b022`; update it deliberately when needed.
 
 Custom agents (`.github/agents/*.agent.md`): `reviewer` and `architect` are read-only (`tools: ["read", "search"]`); `docs-keeper` may also edit docs and agent files. Prompts (`.github/prompts/*.prompt.md`) take `${input:…}` variables: `new-feature` (`feature`, `featureName`), `review-pr` (`target`), `explain-module` (`module`).
 
