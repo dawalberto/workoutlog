@@ -2,21 +2,20 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
     <!-- Primary Title & Meta Description -->
-    <title>RepNami – Planificador y Ejecutor de Rutinas</title>
-    <meta name="description" content="RepNami: planifica y ejecuta tus rutinas de entrenamiento de fuerza y gimnasio. Control de series, repeticiones, pesos, cronómetro de descansos y catálogo de ejercicios." />
-    <meta name="keywords" content="workout log, planificador de rutinas, gimnasio, series y repeticiones, cronómetro descanso gimnasio, entrenamiento de fuerza, fitness app, pwa" />
+    <title>RepNami: app de rutinas de gimnasio y registro de entrenamientos</title>
+    <meta name="description" content="Registra series, repeticiones y pesos, organiza tus rutinas de gimnasio y sigue tu progreso con RepNami. Gratis, instalable y disponible sin conexión." />
     <meta name="author" content="Alberto" />
-    <meta name="robots" content="index, follow" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
     <link rel="canonical" href="https://dawalberto.github.io/workoutlog/" />
 
     <!-- Favicon & Touch Icons -->
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="alternate icon" type="image/png" href="favicon.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
-    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="sitemap" type="application/xml" href="/workoutlog/sitemap.xml" />
 
     <!-- Mobile & PWA Meta -->
     <meta name="theme-color" content="#09090b" />
@@ -27,17 +26,12 @@
     <meta name="application-name" content="RepNami" />
     <meta name="format-detection" content="telephone=no" />
 
-    <!-- Google Fonts: Semi-Brutalist Athletic Typography -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
-
     <!-- OpenGraph / Facebook / WhatsApp / LinkedIn -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="RepNami" />
     <meta property="og:url" content="https://dawalberto.github.io/workoutlog/" />
-    <meta property="og:title" content="RepNami – Planificador y Ejecutor de Rutinas" />
-    <meta property="og:description" content="Planifica y ejecuta tus rutinas de entrenamiento de fuerza y gimnasio. Gestión de series, pesos, descansos automáticos con cronómetro y catálogo de ejercicios." />
+    <meta property="og:title" content="RepNami: app de rutinas de gimnasio y registro de entrenamientos" />
+    <meta property="og:description" content="Registra series, repeticiones y pesos, organiza tus rutinas de gimnasio y sigue tu progreso con RepNami. Gratis, instalable y disponible sin conexión." />
     <meta property="og:image" content="https://dawalberto.github.io/workoutlog/og-image.png" />
     <meta property="og:image:secure_url" content="https://dawalberto.github.io/workoutlog/og-image.png" />
     <meta property="og:image:type" content="image/png" />
@@ -49,8 +43,8 @@
     <!-- Twitter / X Cards -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="https://dawalberto.github.io/workoutlog/" />
-    <meta name="twitter:title" content="RepNami – Planificador y Ejecutor de Rutinas" />
-    <meta name="twitter:description" content="Planifica y ejecuta tus rutinas de entrenamiento de fuerza y gimnasio. Gestión de series, pesos, descansos automáticos con cronómetro y catálogo de ejercicios." />
+    <meta name="twitter:title" content="RepNami: app de rutinas de gimnasio y registro de entrenamientos" />
+    <meta name="twitter:description" content="Registra series, repeticiones y pesos, organiza tus rutinas de gimnasio y sigue tu progreso con RepNami. Gratis, instalable y disponible sin conexión." />
     <meta name="twitter:image" content="https://dawalberto.github.io/workoutlog/og-image.png" />
     <meta name="twitter:image:alt" content="RepNami - Planificador de Rutinas de Entrenamiento" />
 
@@ -63,10 +57,13 @@
       "alternateName": "RepNami App",
       "url": "https://dawalberto.github.io/workoutlog/",
       "applicationCategory": "HealthAndFitnessApplication",
-      "operatingSystem": "All",
+      "operatingSystem": "Android, iOS, Windows, macOS, Linux",
       "browserRequirements": "Requires JavaScript. Requires HTML5.",
-      "description": "Planificador y ejecutor de rutinas de entrenamiento con gestión de series, cálculo de tiempos, cronómetro de descansos y catálogo de ejercicios.",
-      "screenshot": "https://dawalberto.github.io/workoutlog/og-image.png",
+      "description": "Registra series, repeticiones y pesos, organiza tus rutinas de gimnasio y sigue tu progreso con RepNami. Gratis, instalable y disponible sin conexión.",
+      "image": "https://dawalberto.github.io/workoutlog/og-image.png",
+      "@id": "https://dawalberto.github.io/workoutlog/#app",
+      "inLanguage": ["es", "en", "zh", "hi", "fr"],
+      "isAccessibleForFree": true,
       "offers": {
         "@type": "Offer",
         "price": "0",
@@ -84,7 +81,42 @@
     </script>
   </head>
   <body class="bg-[#0D0D0D] text-white antialiased selection:bg-[#00FF87] selection:text-black">
-    <div id="root"></div>
+    <div id="root">
+      <main lang="es" class="min-h-screen max-w-3xl mx-auto p-6 flex flex-col justify-center gap-4">
+        <h1 class="text-3xl font-black">RepNami: tu registro de entrenamientos de gimnasio</h1>
+        <p class="text-zinc-300">Organiza tus rutinas, registra series, repeticiones y pesos y consulta tu progreso. Gratis y con funcionamiento sin conexión después de la primera carga.</p>
+        <a href="#guia-repnami" class="inline-flex items-center min-h-[48px] text-[#00FF87] underline">Conoce cómo funciona RepNami</a>
+        <noscript><p>Activa JavaScript para usar el registro de entrenamientos. Puedes consultar la guía y las preguntas frecuentes a continuación sin activarlo.</p></noscript>
+      </main>
+    </div>
+    <!-- Public content stays available before and after the private app mounts. -->
+    <footer lang="es" id="guia-repnami" class="max-w-3xl mx-auto px-4 pt-8 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] text-zinc-300">
+      <h2 class="text-2xl font-black text-white">Tu diario de gimnasio, siempre contigo</h2>
+      <p class="mt-3 leading-relaxed">RepNami es una app gratuita para planificar rutinas de fuerza y registrar entrenamientos. Guarda tus series, repeticiones y pesos, controla los descansos y consulta el historial para comparar sesiones. Puedes usarla desde el navegador o instalarla en tu móvil.</p>
+      <details class="mt-5 rounded-2xl border border-white/10 bg-[#1C1C1E] p-4">
+        <summary class="min-h-[48px] cursor-pointer py-3 font-bold text-white">Cómo registrar un entrenamiento con RepNami</summary>
+        <ol class="list-decimal pl-6 space-y-3 leading-relaxed">
+          <li><strong>Crea tu rutina.</strong> Añade los ejercicios que vas a realizar y configura las series, repeticiones, pesos y descansos.</li>
+          <li><strong>Inicia el entrenamiento.</strong> Marca cada serie al terminarla y utiliza el temporizador para llevar el control de los descansos.</li>
+          <li><strong>Guarda la sesión.</strong> Al finalizar, revisa el resumen y conserva el entrenamiento en tu historial.</li>
+          <li><strong>Consulta tu progreso.</strong> Revisa sesiones anteriores, tus registros de repeticiones máximas (RM) y las notas del diario de ejercicios para preparar el siguiente entrenamiento.</li>
+        </ol>
+      </details>
+      <details class="mt-3 rounded-2xl border border-white/10 bg-[#1C1C1E] p-4">
+        <summary class="min-h-[48px] cursor-pointer py-3 font-bold text-white">¿Puedo usar la app sin cuenta y sin conexión?</summary>
+        <p class="leading-relaxed">Sí. Puedes empezar como invitado y guardar tus entrenamientos en este dispositivo, con un límite de rutinas para invitados. Abre la app una primera vez con conexión para que se descargue. Después podrás consultar y registrar entrenamientos sin internet; las imágenes externas y los servicios online necesitan conexión.</p>
+        <p class="mt-3 leading-relaxed">Si inicias sesión con Google, tus datos privados se sincronizan cuando hay conexión. Exporta periódicamente una copia de seguridad desde el menú: borrar los datos del navegador puede eliminar los registros locales.</p>
+      </details>
+      <details class="mt-3 rounded-2xl border border-white/10 bg-[#1C1C1E] p-4">
+        <summary class="min-h-[48px] cursor-pointer py-3 font-bold text-white">Cómo instalar RepNami en el móvil</summary>
+        <p class="leading-relaxed">En Android, abre la app en un navegador compatible y utiliza la opción de instalar del navegador o el aviso de instalación de RepNami. En iPhone o iPad, abre la web en Safari, toca Compartir y selecciona Añadir a pantalla de inicio. Las opciones dependen del navegador y su versión.</p>
+      </details>
+      <details class="mt-3 rounded-2xl border border-white/10 bg-[#1C1C1E] p-4">
+        <summary class="min-h-[48px] cursor-pointer py-3 font-bold text-white">¿Qué puedo personalizar?</summary>
+        <p class="leading-relaxed">Organiza tus rutinas y tu catálogo de ejercicios, guarda notas en el diario y consulta tus registros de RM. En Ajustes puedes elegir el idioma de la interfaz y utilizar kilogramos o libras. RepNami registra tu actividad; tú decides el contenido de tus entrenamientos.</p>
+      </details>
+      <a href="https://github.com/dawalberto/workoutlog" class="mt-4 inline-flex min-h-[48px] items-center text-[#00E5FF] underline underline-offset-4">Código fuente y documentación de RepNami</a>
+    </footer>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
