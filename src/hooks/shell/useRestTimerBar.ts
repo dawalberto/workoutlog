@@ -3,6 +3,7 @@ import { useAppStore } from '../../store/appStore';
 export function useRestTimerBar() {
   const activeRestTimer = useAppStore((state) => state.activeRestTimer);
   const activeRoutineId = useAppStore((state) => state.activeRoutineId);
+  const routineSubMode = useAppStore((state) => state.routineSubMode);
   const selectRoutine = useAppStore((state) => state.selectRoutine);
   const onClose = useAppStore((state) => state.closeRestTimer);
   const onPause = useAppStore((state) => state.pauseRestTimer);
@@ -19,7 +20,7 @@ export function useRestTimerBar() {
   return activeRestTimer
     ? {
       activeRestTimer,
-      isInsideActiveRoutine: Boolean(activeRoutineId),
+      isInsideActiveRoutine: Boolean(activeRoutineId) && routineSubMode === 'execute',
       onReturnToRoutine: () => selectRoutine(activeRestTimer.routineId, 'execute'),
       onClose,
       onPause,
