@@ -45,3 +45,11 @@ Allow an exercise in a routine to be marked optional, excluding its sets from ro
 - [x] `followup-checks`: Run frontend and database checks after the history sync change.
 
 - Follow-up verified: `pnpm test` (339 tests), `pnpm lint`, `pnpm build`, `pnpm db:reset`, `pnpm db:types`, `pnpm sync:contract:check`, `pnpm db:test` (214 assertions), and `pnpm db:lint` passed. Historical sessions created before this change do not contain an optional-status snapshot. Deploy both migrations before the frontend.
+
+## Follow-up: optional set completion prompts
+
+- [x] `prompt-transitions`: Prompt after required sets and again when all optional sets are completed during an active session.
+- [x] `prompt-copy`: Explain remaining optional sets and celebrate the extra effort when all are complete.
+- [x] `prompt-verification`: Cover dismissal, transition, empty and already-completed cases; run frontend checks.
+
+- Prompt follow-up verified: `pnpm test` (342 tests), `pnpm lint`, and `pnpm build` passed; the build emitted the existing chunk-size warning.

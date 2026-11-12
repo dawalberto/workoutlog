@@ -3,12 +3,16 @@ import { CheckCircle2, Flag, X } from 'lucide-react';
 
 interface AllSetsCompleteFinishModalProps {
   isOpen: boolean;
+  pendingOptionalSetsCount?: number;
+  hasCompletedOptionalSets?: boolean;
   onDismiss: () => void;
   onConfirm: () => void;
 }
 
 export const AllSetsCompleteFinishModal: React.FC<AllSetsCompleteFinishModalProps> = ({
   isOpen,
+  pendingOptionalSetsCount = 0,
+  hasCompletedOptionalSets = false,
   onDismiss,
   onConfirm,
 }) => {
@@ -36,7 +40,13 @@ export const AllSetsCompleteFinishModal: React.FC<AllSetsCompleteFinishModalProp
               <h2 id="all-sets-complete-title" className="text-lg font-black text-white tracking-tight">
                 Rutina completada
               </h2>
-              <p className="text-sm text-zinc-400">Has completado todas las series.</p>
+              <p className="text-sm text-zinc-400">
+                {hasCompletedOptionalSets
+                  ? '¡Has completado también todas las series opcionales! Hoy has hecho un esfuerzo extra.'
+                  : pendingOptionalSetsCount > 0
+                    ? `Has completado todas las series obligatorias. Te ${pendingOptionalSetsCount === 1 ? 'queda 1 serie opcional' : `quedan ${pendingOptionalSetsCount} series opcionales`} por hacer.`
+                    : 'Has completado todas las series.'}
+              </p>
             </div>
           </div>
           <button
