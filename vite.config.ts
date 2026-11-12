@@ -22,8 +22,8 @@ export default defineConfig(() => {
         ],
         manifest: {
           id: '/workoutlog/',
-          name: 'WorkoutLog – Planificador de Rutinas',
-          short_name: 'WorkoutLog',
+          name: 'RepNami – Planificador de Rutinas',
+          short_name: 'RepNami',
           description: 'Planificador y ejecutor de rutinas de entrenamiento minimalista con cálculo de tiempos, cronómetro de descansos y catálogo de ejercicios.',
           theme_color: '#09090b',
           background_color: '#09090b',

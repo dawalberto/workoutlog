@@ -56,7 +56,7 @@ export const PWAInstallBanner: React.FC = () => {
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <h4 className="text-xs font-bold text-white tracking-tight leading-tight">
-                    Instalar WorkoutLog
+                    Instalar RepNami
                   </h4>
                   <span className="px-1.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-emerald-500/20 text-emerald-400">
                     App
@@ -111,7 +111,7 @@ export const PWAInstallBanner: React.FC = () => {
                   <Flame className="w-4 h-4 text-emerald-400 fill-current" />
                 </span>
                 <div>
-                  <h3 className="text-sm font-bold text-zinc-900 leading-tight">Instalar WorkoutLog</h3>
+                  <h3 className="text-sm font-bold text-zinc-900 leading-tight">Instalar RepNami</h3>
                   <span className="text-[11px] text-zinc-500">
                     {isIOS ? 'En iPhone / iPad (Safari)' : 'En Android / Navegador'}
                   </span>

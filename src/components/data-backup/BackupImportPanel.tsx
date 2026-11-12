@@ -46,7 +46,7 @@ export const BackupImportPanel: React.FC<BackupImportPanelProps> = ({
           Selecciona o arrastra tu archivo JSON
         </h4>
         <p className="text-xs text-zinc-400 mt-1 max-w-xs mx-auto">
-          Acepta copias de WorkoutLog con ejercicios, rutinas, RMs, historial o diario.
+          Acepta copias de RepNami y WorkoutLog con ejercicios, rutinas, RMs, historial o diario.
         </p>
         <button
           type="button"

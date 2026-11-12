@@ -11,7 +11,7 @@ interface AppLoadingScreenProps {
 }
 
 export const AppLoadingScreen: React.FC<AppLoadingScreenProps> = ({
-  message = 'Iniciando WorkoutLog...',
+  message = 'Iniciando RepNami...',
 }) => {
   return (
     <div className="min-h-screen bg-[#0D0D0D] flex items-center justify-center p-4">

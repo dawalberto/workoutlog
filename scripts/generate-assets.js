@@ -46,7 +46,7 @@ const ogImageSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height=
   </g>
 
   <!-- Typography -->
-  <text x="400" y="275" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="78" fill="#ffffff" letter-spacing="-2">WorkoutLog</text>
+  <text x="400" y="275" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="78" fill="#ffffff" letter-spacing="-2">Rep<tspan fill="#00FF87">Nami</tspan></text>
   <text x="400" y="340" font-family="system-ui, -apple-system, sans-serif" font-weight="600" font-size="30" fill="#34d399">Planificador &amp; Ejecutor de Rutinas</text>
   <text x="400" y="390" font-family="system-ui, -apple-system, sans-serif" font-weight="400" font-size="22" fill="#a1a1aa">Series • Repeticiones • Pesos • Temporizador de Descanso • PWA Offline</text>
 

@@ -169,10 +169,10 @@ describe('App shell composition', () => {
 
   it('shows the loading screen only while signing out without an open confirmation', () => {
     seedAppStore({ isSigningOut: true, isSignOutConfirmOpen: false });
-    expect(renderApp()).toContain('Iniciando WorkoutLog...');
+    expect(renderApp()).toContain('Iniciando RepNami...');
 
     seedAppStore({ isSignOutConfirmOpen: true });
-    expect(renderApp()).not.toContain('Iniciando WorkoutLog...');
+    expect(renderApp()).not.toContain('Iniciando RepNami...');
     expect(renderApp()).toContain('¿Cerrar sesión?');
   });
 
@@ -302,7 +302,7 @@ describe('App shell composition', () => {
 
     const markup = renderApp();
     expect(markup).not.toContain('Cargando datos...');
-    expect(markup).not.toContain('Iniciando WorkoutLog...');
+    expect(markup).not.toContain('Iniciando RepNami...');
     expect(markup).toContain('id="routine-list-page"');
   });
 

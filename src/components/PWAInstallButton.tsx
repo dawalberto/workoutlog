@@ -19,7 +19,7 @@ export const PWAInstallButton: React.FC = () => {
         type="button"
         onClick={install}
         className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] text-xs font-extrabold rounded-xl bg-[#00FF87] hover:bg-[#00e57a] text-black shadow-[0_0_12px_rgba(0,255,135,0.3)] transition-all active:scale-95 shrink-0"
-        title="Instalar WorkoutLog como aplicación"
+        title="Instalar RepNami como aplicación"
       >
         <Download className="w-3.5 h-3.5 stroke-[2.5]" />
         <span>Instalar App</span>

@@ -55,7 +55,7 @@ export const SidebarMenu: React.FC = () => {
               </span>
               <div>
                 <span className="text-base font-black tracking-tight text-white block leading-tight">
-                  WORKOUT<span className="text-[#00FF87]">LOG</span>
+                  REP<span className="text-[#00FF87]">NAMI</span>
                 </span>
                 <span className="text-[10px] text-zinc-400 font-semibold tracking-wider uppercase">
                   Performance Gym

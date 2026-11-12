@@ -30,15 +30,15 @@ export const AppHeader: React.FC = () => {
             type="button"
             onClick={() => onSelectTab(AppTab.ROUTINES)}
             className="flex items-center gap-2.5 text-left group focus:outline-none"
-            title="WorkoutLog - Rutinas"
-            aria-label="WorkoutLog"
+            title="RepNami - Rutinas"
+            aria-label="RepNami"
           >
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-zinc-900 border border-white/10 flex items-center justify-center shadow-[0_0_15px_rgba(0,255,135,0.15)] group-hover:border-[#00FF87]/40 group-hover:shadow-[0_0_20px_rgba(0,255,135,0.3)] transition-all duration-200 active:scale-95">
               <Flame className="w-5 h-5 text-[#00FF87] fill-current drop-shadow-[0_0_8px_rgba(0,255,135,0.6)]" />
             </div>
             <div>
               <span className="text-sm sm:text-base font-black tracking-tight text-white block leading-tight">
-                WORKOUT<span className="text-[#00FF87]">LOG</span>
+                REP<span className="text-[#00FF87]">NAMI</span>
               </span>
               <span className="text-[10px] font-semibold text-zinc-400 block tracking-wider uppercase">
                 Performance

@@ -17,7 +17,7 @@ export const RestPushPrompt: React.FC = () => {
   if (restPush.permission === 'denied') {
     return (
       <p className="px-2 text-center text-xs leading-5 text-zinc-300">
-        Activa las notificaciones de WorkoutLog en los ajustes del móvil
+        Activa las notificaciones de RepNami en los ajustes del móvil
       </p>
     );
   }
