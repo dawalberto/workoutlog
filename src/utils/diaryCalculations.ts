@@ -1,3 +1,4 @@
+import { currentLocale, t } from './i18n';
 import { ExerciseDefinition, ExerciseDiary, ExerciseDiaryEntry, DiaryFeeling } from '../types';
 import { normalizeExerciseTitle } from './backup';
 import { getExerciseCategories, sameExerciseCategories } from './exerciseCategories';
@@ -31,11 +32,11 @@ export function formatDiaryDateDisplay(dateString: string): { formatted: string;
       month: 'short',
       day: 'numeric',
     };
-    const formatted = d.toLocaleDateString('es-ES', options);
+    const formatted = d.toLocaleDateString(currentLocale(), options);
 
     return {
       formatted: formatted.charAt(0).toUpperCase() + formatted.slice(1),
-      tag: isToday ? 'Hoy' : isYesterday ? 'Ayer' : null,
+      tag: isToday ? t('Hoy') : isYesterday ? t('Ayer') : null,
     };
   } catch {
     return { formatted: dateString, tag: null };

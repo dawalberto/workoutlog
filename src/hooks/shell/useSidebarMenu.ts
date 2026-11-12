@@ -5,8 +5,8 @@ export function useSidebarMenu() {
   const isOpen = useAppStore((state) => state.isMenuOpen);
   const onClose = useAppStore((state) => state.closeMenu);
   const activeTab = useAppStore((state) => state.activeTab);
+  const closeRoutine = useAppStore((state) => state.closeRoutine);
   const onSelectTab = useAppStore((state) => state.setActiveTab);
-  const onOpenBackup = useAppStore((state) => state.openBackupModal);
   const user = useAppStore((state) => state.user);
   const isSyncEnabled = useAppStore((state) => state.isSyncEnabled);
   const isSyncEligibilityLoading = useAppStore((state) => state.isSyncEligibilityLoading);
@@ -19,11 +19,8 @@ export function useSidebarMenu() {
   const counts = useTabCounts();
 
   const handleNav = (tab: Parameters<typeof onSelectTab>[0]) => {
+    closeRoutine();
     onSelectTab(tab);
-    onClose();
-  };
-  const handleBackup = () => {
-    onOpenBackup();
     onClose();
   };
   const onSignOut = async () => {
@@ -50,6 +47,5 @@ export function useSidebarMenu() {
     onSignIn,
     onSignOut,
     handleNav,
-    handleBackup,
   };
 }

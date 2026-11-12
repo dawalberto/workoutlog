@@ -1,3 +1,4 @@
+import { t } from '../../utils/i18n';
 import React from 'react';
 import {
   ArrowRight,
@@ -41,15 +42,14 @@ export const RmExerciseList: React.FC<RmExerciseListProps> = ({
       <div>
         <div className="flex items-center gap-2 mb-1">
           <h1 className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-widest text-[#00FF87]">
-            <Trophy className="w-3.5 h-3.5" /> Registro de RMs
+            <Trophy className="w-3.5 h-3.5" /> {t("Registro de RMs")}
           </h1>
           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#00FF87]/15 text-[#00FF87] border border-[#00FF87]/30">
-            {rmLogs.length} ejercicios
+            {rmLogs.length} {t("ejercicios")}
           </span>
         </div>
         <p className="text-xs sm:text-sm text-[#A1A1AA] mt-0.5">
-          Historial de tus mejores marcas: peso máximo o número de repeticiones en ejercicios de tu
-          biblioteca.
+          {t("Historial de tus mejores marcas: peso máximo o número de repeticiones en ejercicios de tu biblioteca.")}
         </p>
       </div>
 
@@ -61,7 +61,7 @@ export const RmExerciseList: React.FC<RmExerciseListProps> = ({
           className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 min-h-[48px] rounded-2xl bg-[#00FF87] hover:bg-[#00e57a] text-black font-extrabold text-sm shadow-[0_0_20px_rgba(0,255,135,0.35)] transition-all active:scale-[0.97]"
         >
           <Plus className="w-4 h-4 stroke-[3]" />
-          <span>Añadir Ejercicio</span>
+          <span>{t("Añadir Ejercicio")}</span>
         </button>
       </div>
     </div>
@@ -75,7 +75,7 @@ export const RmExerciseList: React.FC<RmExerciseListProps> = ({
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar por ejercicio o grupo muscular..."
+            placeholder={t("Buscar por ejercicio o grupo muscular...")}
             className="w-full min-h-[48px] pl-11 pr-10 py-2.5 text-sm rounded-2xl border border-white/10 bg-[#1C1C1E] text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/20 transition-all shadow-inner"
           />
           {searchTerm && (
@@ -97,11 +97,10 @@ export const RmExerciseList: React.FC<RmExerciseListProps> = ({
           <Trophy className="w-8 h-8" />
         </div>
         <h2 className="text-lg font-bold text-white mb-1">
-          Aún no tienes ejercicios con RM registrado
+          {t("Aún no tienes ejercicios con RM registrado")}
         </h2>
         <p className="text-xs sm:text-sm text-[#A1A1AA] max-w-md mx-auto mb-6 leading-relaxed">
-          Lleva el control de tus marcas personales: peso máximo o repeticiones. Selecciona cualquier
-          ejercicio de tu biblioteca y anota tus progresos a lo largo del tiempo.
+          {t("Lleva el control de tus marcas personales: peso máximo o repeticiones. Selecciona cualquier ejercicio de tu biblioteca y anota tus progresos a lo largo del tiempo.")}
         </p>
 
         {catalog.length > 0 ? (
@@ -112,19 +111,19 @@ export const RmExerciseList: React.FC<RmExerciseListProps> = ({
             className="inline-flex items-center gap-2 px-6 min-h-[48px] rounded-2xl bg-[#00FF87] hover:bg-[#00e57a] text-black font-extrabold text-sm shadow-[0_0_20px_rgba(0,255,135,0.35)] transition-all active:scale-[0.97]"
           >
             <Plus className="w-4 h-4 stroke-[3]" />
-            <span>Añadir primer ejercicio</span>
+            <span>{t("Añadir primer ejercicio")}</span>
           </button>
         ) : (
           <div className="space-y-3">
             <p className="text-xs text-amber-300 font-semibold bg-amber-500/10 p-3 rounded-xl max-w-sm mx-auto border border-amber-500/30">
-              Tu biblioteca de ejercicios está vacía. Añade ejercicios primero en la Biblioteca para poder registrar su RM.
+              {t("Tu biblioteca de ejercicios está vacía. Añade ejercicios primero en la Biblioteca para poder registrar su RM.")}
             </p>
             <button
               type="button"
               onClick={actions.onGoToCatalog}
               className="inline-flex items-center gap-2 px-5 min-h-[44px] rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs border border-white/10 transition-all active:scale-95"
             >
-              <span>Ir a la Biblioteca</span>
+              <span>{t("Ir a la Biblioteca")}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -134,14 +133,14 @@ export const RmExerciseList: React.FC<RmExerciseListProps> = ({
       <div className="text-center py-12 px-4 rounded-2xl bg-[#1C1C1E] border border-white/[0.08]">
         <Search className="w-8 h-8 text-zinc-500 mx-auto mb-2" />
         <p className="text-sm font-semibold text-zinc-300">
-          No se encontraron ejercicios que coincidan con &quot;{searchTerm}&quot;
+          {t("No se encontraron ejercicios que coincidan con &quot;")}{searchTerm}{t("&quot;")}
         </p>
         <button
           type="button"
           onClick={() => setSearchTerm('')}
           className="mt-3 text-xs text-[#00FF87] font-bold hover:underline"
         >
-          Limpiar búsqueda
+          {t("Limpiar búsqueda")}
         </button>
       </div>
     ) : (
@@ -183,7 +182,7 @@ export const RmExerciseList: React.FC<RmExerciseListProps> = ({
                           </span>
                         )}
                         <span className="text-[11px] text-[#A1A1AA] font-medium">
-                          {log.records.length} {log.records.length === 1 ? 'registro' : 'registros'}
+                          {log.records.length} {log.records.length === 1 ? t("registro") : t("registros")}
                         </span>
                       </div>
                       <h2 className="text-base sm:text-lg font-black text-white tracking-tight truncate">
@@ -195,7 +194,7 @@ export const RmExerciseList: React.FC<RmExerciseListProps> = ({
                   <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/[0.06]">
                     <div className="bg-zinc-900/80 border border-[#00FF87]/30 rounded-xl px-3 py-1.5 text-center min-w-[90px] shadow-inner">
                       <span className="block text-[10px] font-bold text-[#00FF87] uppercase tracking-wide">
-                        Último RM
+                        {t("Último RM")}
                       </span>
                       <span className="text-base sm:text-lg font-black text-white font-mono">
                         {latestRecord ? formatRmRecordValue(latestRecord) : '--'}
@@ -210,7 +209,7 @@ export const RmExerciseList: React.FC<RmExerciseListProps> = ({
                     <div className="bg-zinc-900/80 border border-[#00E5FF]/30 rounded-xl px-3 py-1.5 text-center min-w-[90px] hidden xs:block shadow-inner">
                       <div className="flex items-center justify-center gap-1 text-[10px] font-bold text-[#00E5FF] uppercase tracking-wide">
                         <Sparkles className="w-3 h-3 text-[#00E5FF]" />
-                        <span>Récord Max</span>
+                        <span>{t("Récord Max")}</span>
                       </div>
                       <span className="text-base sm:text-lg font-black text-white font-mono">
                         {highestRecord ? formatRmRecordValue(highestRecord) : '--'}
@@ -228,10 +227,10 @@ export const RmExerciseList: React.FC<RmExerciseListProps> = ({
                         type="button"
                         onClick={openQuickLog}
                         className="px-3 min-h-[44px] rounded-xl bg-[#00FF87] hover:bg-[#00e57a] text-black font-extrabold text-xs transition-all active:scale-[0.97] flex items-center gap-1 shadow-[0_0_15px_rgba(0,255,135,0.25)]"
-                        title="Añadir nuevo registro rápido"
+                        title={t("Añadir nuevo registro rápido")}
                       >
                         <Plus className="w-3.5 h-3.5 stroke-[3]" />
-                        <span className="hidden sm:inline">Nuevo RM</span>
+                        <span className="hidden sm:inline">{t("Nuevo RM")}</span>
                       </button>
 
                       <button
@@ -243,8 +242,8 @@ export const RmExerciseList: React.FC<RmExerciseListProps> = ({
                             ? 'bg-zinc-800 text-white border-white/20'
                             : 'bg-zinc-900 text-zinc-400 border-white/10 hover:text-white hover:border-white/20'
                         }`}
-                        title={isExpanded ? 'Ocultar historial' : 'Ver historial'}
-                        aria-label={isExpanded ? 'Ocultar historial' : 'Ver historial'}
+                        title={isExpanded ? t("Ocultar historial") : t("Ver historial")}
+                        aria-label={isExpanded ? t("Ocultar historial") : t("Ver historial")}
                       >
                         {isExpanded ? (
                           <ChevronUp className="w-4 h-4" />
@@ -258,8 +257,8 @@ export const RmExerciseList: React.FC<RmExerciseListProps> = ({
                         type="button"
                         onClick={() => actions.handleDeleteExercise(log.id, log.exerciseName)}
                         className="min-h-[44px] min-w-[44px] p-2.5 rounded-xl border border-red-500/20 bg-zinc-900 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all active:scale-95 flex items-center justify-center"
-                        title="Eliminar ejercicio de RMs"
-                        aria-label="Eliminar ejercicio de RMs"
+                        title={t("Eliminar ejercicio de RMs")}
+                        aria-label={t("Eliminar ejercicio de RMs")}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

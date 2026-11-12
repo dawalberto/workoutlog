@@ -8,7 +8,7 @@ Last verified: 2026-11-04
 
 - React 19 + Vite 8 + Tailwind CSS v4, TypeScript, PWA via `vite-plugin-pwa`.
 - **No router.** State lives in the Zustand store ([`src/store/`](../../src/store/)); components read it through `useAppStore` selectors and per-component hooks. Persistence and sync are lifecycle adapters; do not add React context or another global state mechanism ([ADR 0009](../decisions/0009-zustand-app-store.md)).
-- UI copy is hardcoded Spanish; code and comments are English. No i18n library.
+- UI translations are bundled in `src/data/translations.json` and selected through the device preferences in the Zustand store. User-authored content is not translated.
 
 ## Folder structure
 
@@ -34,6 +34,7 @@ Last verified: 2026-11-04
 - [`BottomTabBar`](../../src/components/BottomTabBar.tsx) renders the tabs ("Rutinas", "Ejercicios", "RMs", "Historial", "Diario").
 - Selecting a routine replaces the tab content with [`RoutineView`](../../src/components/RoutineView.tsx), in edit ("Editar") or execute ("Entrenar") mode.
 - [`TabContent`](../../src/components/TabContent.tsx) selects the active view; [`AppShell`](../../src/components/AppShell.tsx) composes navigation and shell UI, and [`GlobalOverlays`](../../src/components/GlobalOverlays.tsx) mounts app-wide overlays.
+- The sidebar opens Settings for the interface language, the kg/lb weight label, and backup import/export. Device preferences are stored in IndexedDB independently of account sync and backups; changing the unit changes labels without converting values. An explicit language choice persists, otherwise the browser preference is used with a Spanish fallback.
 - `App.tsx` has readiness gates and no router. Auth and sign-out orchestration are published by lifecycle adapters and store actions. While signed in and online, the gate keeps `Cargando datos...` until sync eligibility resolves and the first cloud sync pass for the owner settles, so transferred guest data never renders before the account's server collections; offline, sync-disabled, and sync-error outcomes release the gate.
 - `GlobalOverlays` includes `SidebarMenu`, `RmRecordAlertModal`, `WorkoutSummaryModal`, `DataBackupModal`, `RestTimerBar`, `ToastNotification`, `SignOutConfirmDialog`, and `AnalyticsConsentBanner`.
 - There are no URLs per screen; browser back/forward does not navigate tabs.

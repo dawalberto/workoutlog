@@ -1,3 +1,4 @@
+import { t } from '../../utils/i18n';
 import type { StateCreator } from 'zustand/vanilla';
 import type { ExerciseDefinition, Routine, RoutineSubMode } from '../../types';
 import {
@@ -88,7 +89,7 @@ export const createRoutineSlice: StateCreator<AppState, [], [], RoutineSlice> =
       set((current) => ({ routines: [cloned, ...current.routines] }));
     },
     deleteRoutine: (routineId) => {
-      if (!window.confirm('¿Seguro que deseas eliminar esta rutina?')) return;
+      if (!window.confirm(t("¿Seguro que deseas eliminar esta rutina?"))) return;
 
       set((state) => ({
         routines: state.routines.filter((routine) => routine.id !== routineId),
@@ -153,7 +154,7 @@ export const createRoutineSlice: StateCreator<AppState, [], [], RoutineSlice> =
 
       if (updatedRoutinesCount > 0) {
         get().notify(
-          `"${exercise.name}" actualizado en biblioteca y en ${updatedRoutinesCount} rutina${updatedRoutinesCount > 1 ? 's' : ''}`,
+          t("\"{0}\" actualizado en biblioteca y en {1} rutina{2}", exercise.name, updatedRoutinesCount, updatedRoutinesCount > 1 ? 's' : ''),
         );
       }
     },

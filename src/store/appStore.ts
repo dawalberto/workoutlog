@@ -1,3 +1,4 @@
+import { createPreferencesSlice, type PreferencesSlice } from './slices/preferencesSlice';
 import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 import { createAccountSlice, type AccountSlice } from './slices/accountSlice';
@@ -13,6 +14,7 @@ import { createRestPushSlice, type RestPushSlice } from './slices/restPushSlice'
 import { createAnalyticsSlice, type AnalyticsSlice } from './slices/analyticsSlice';
 
 export type AppState =
+  & PreferencesSlice
   & DataSlice
   & UiSlice
   & RestTimerSlice
@@ -27,6 +29,7 @@ export type AppState =
 
 export const createAppStore = (initial?: Partial<AppState>) =>
   createStore<AppState>()((...args) => ({
+    ...createPreferencesSlice(...args),
     ...createDataSlice(...args),
     ...createUiSlice(...args),
     ...createRestTimerSlice(...args),

@@ -1,3 +1,4 @@
+import { t } from '../utils/i18n';
 import React from 'react';
 import { BookOpen } from 'lucide-react';
 import { ExerciseDiary } from '../types';
@@ -31,8 +32,8 @@ export const DiaryButton: React.FC<DiaryButtonProps> = ({
   };
 
   const tooltip = hasEntries
-    ? `Diario: ${count} ${count === 1 ? 'registro' : 'registros'} guardados (clic para ver)`
-    : 'Añadir primer registro al diario de este ejercicio';
+    ? t('Diario: {0} {1} guardados (clic para ver)', count, count === 1 ? t('registro') : t('registros'))
+    : t('Añadir primer registro al diario de este ejercicio');
 
   if (variant === 'icon') {
     return (
@@ -62,7 +63,7 @@ export const DiaryButton: React.FC<DiaryButtonProps> = ({
       } ${className}`}
     >
       <BookOpen className="w-3.5 h-3.5" />
-      <span>Diario</span>
+      <span>{t("Diario")}</span>
     </button>
   );
 };

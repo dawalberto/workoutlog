@@ -1,3 +1,4 @@
+import { t } from '../utils/i18n';
 import { useEffect, useMemo, useState } from 'react';
 import type {
   DiaryFeeling,
@@ -168,12 +169,12 @@ export function useExerciseDiary() {
     if (e) e.preventDefault();
 
     if (!formExerciseName.trim()) {
-      setFormError('Debes seleccionar un ejercicio de tu biblioteca.');
+      setFormError(t("Debes seleccionar un ejercicio de tu biblioteca."));
       return;
     }
 
     if (!formNote.trim()) {
-      setFormError('La nota no puede estar vacía.');
+      setFormError(t("La nota no puede estar vacía."));
       return;
     }
 
@@ -259,7 +260,7 @@ export function useExerciseDiary() {
   };
 
   const handleDeleteEntry = (diaryId: string, entryId: string, exerciseName: string) => {
-    if (!window.confirm(`¿Seguro que deseas eliminar este registro del diario de "${exerciseName}"?`)) {
+    if (!window.confirm(t("¿Seguro que deseas eliminar este registro del diario de \"{0}\"?", exerciseName))) {
       return;
     }
 

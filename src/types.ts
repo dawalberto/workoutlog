@@ -49,6 +49,7 @@ export enum AppTab {
   RMS = 'rms',
   HISTORY = 'history',
   DIARY = 'diary',
+  SETTINGS = 'settings',
 }
 
 export type DiaryFeeling = 'good' | 'neutral' | 'bad';

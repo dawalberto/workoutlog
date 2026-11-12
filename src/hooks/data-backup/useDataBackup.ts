@@ -1,3 +1,4 @@
+import { t } from '../../utils/i18n';
 import { useRef, useState } from 'react';
 import type {
   ExerciseDefinition,
@@ -136,7 +137,7 @@ export function useDataBackup() {
     });
     trackBackup(ANALYTICS_EVENTS.BACKUP_EXPORT, 'routines');
     setExportSuccessMessage(
-      `Se han exportado ${routines.length} rutinas y ${associatedCatalog.length} ejercicios asociados.`
+      t("Se han exportado {0} rutinas y {1} ejercicios asociados.", routines.length, associatedCatalog.length)
     );
     setTimeout(() => setExportSuccessMessage(null), 4000);
   };
@@ -151,7 +152,7 @@ export function useDataBackup() {
       catalog,
     });
     trackBackup(ANALYTICS_EVENTS.BACKUP_EXPORT, 'exercises');
-    setExportSuccessMessage(`Se han exportado ${catalog.length} ejercicios.`);
+    setExportSuccessMessage(t("Se han exportado {0} ejercicios.", catalog.length));
     setTimeout(() => setExportSuccessMessage(null), 4000);
   };
 
@@ -165,7 +166,7 @@ export function useDataBackup() {
       rmLogs,
     });
     trackBackup(ANALYTICS_EVENTS.BACKUP_EXPORT, 'rms');
-    setExportSuccessMessage(`Se han exportado ${rmLogs.length} ejercicios de RMs.`);
+    setExportSuccessMessage(t("Se han exportado {0} ejercicios de RMs.", rmLogs.length));
     setTimeout(() => setExportSuccessMessage(null), 4000);
   };
 
@@ -195,7 +196,7 @@ export function useDataBackup() {
     const totalEntries = exerciseDiary.reduce((sum, diary) => sum + (diary.entries?.length || 0), 0);
     trackBackup(ANALYTICS_EVENTS.BACKUP_EXPORT, 'diary');
     setExportSuccessMessage(
-      `Se han exportado ${totalEntries} registros del diario (${exerciseDiary.length} ejercicios).`
+      t("Se han exportado {0} registros del diario ({1} ejercicios).", totalEntries, exerciseDiary.length)
     );
     setTimeout(() => setExportSuccessMessage(null), 4000);
   };
@@ -216,7 +217,7 @@ export function useDataBackup() {
     const totalDiaryEntries = exerciseDiary.reduce((sum, diary) => sum + (diary.entries?.length || 0), 0);
     trackBackup(ANALYTICS_EVENTS.BACKUP_EXPORT, 'all');
     setExportSuccessMessage(
-      `Se han exportado ${catalog.length} ejercicios, ${routines.length} rutinas, ${rmLogs.length} RMs, ${workoutHistory.length} sesiones y ${totalDiaryEntries} notas del diario.`
+      t("Se han exportado {0} ejercicios, {1} rutinas, {2} RMs, {3} sesiones y {4} notas del diario.", catalog.length, routines.length, rmLogs.length, workoutHistory.length, totalDiaryEntries)
     );
     setTimeout(() => setExportSuccessMessage(null), 4000);
   };
@@ -236,13 +237,13 @@ export function useDataBackup() {
         const text = event.target?.result as string;
         const result = parseImportedData(text);
         if (!result.hasExercises && !result.hasRoutines && !result.hasRmLogs && !result.hasHistory && !result.hasDiary) {
-          setParseError('No se encontraron ejercicios, rutinas, registros de RM, historial ni diario válidos en el archivo.');
+          setParseError(t("No se encontraron ejercicios, rutinas, registros de RM, historial ni diario válidos en el archivo."));
           return;
         }
         setParsedData(result);
       } catch (err) {
         console.error('JSON parse error', err);
-        setParseError('Error al leer el archivo JSON. Verifica que el archivo no esté corrupto.');
+        setParseError(t("Error al leer el archivo JSON. Verifica que el archivo no esté corrupto."));
       }
     };
     reader.onerror = () => setParseError('Error de lectura al cargar el archivo.');
@@ -332,7 +333,7 @@ export function useDataBackup() {
       }
     } catch (error) {
       console.error('Import processing error', error);
-      setParseError('Ocurrió un error inesperado al procesar los datos.');
+      setParseError(t("Ocurrió un error inesperado al procesar los datos."));
     } finally {
       setIsProcessing(false);
     }

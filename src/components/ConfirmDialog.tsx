@@ -1,3 +1,4 @@
+import { t } from '../utils/i18n';
 import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 
@@ -53,7 +54,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             onClick={onCancel}
             className="min-h-[48px] rounded-2xl border border-white/[0.08] bg-[#242428] px-5 text-sm font-bold text-white transition-all active:scale-[0.97]"
           >
-            Cancelar
+            {t("Cancelar")}
           </button>
           <button
             type="button"

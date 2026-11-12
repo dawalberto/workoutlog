@@ -1,3 +1,4 @@
+import { t } from '../utils/i18n';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -37,7 +38,7 @@ export const ToastNotification: React.FC = () => {
             className="mt-3 inline-flex items-center gap-2 min-h-[44px] px-4 rounded-xl bg-[#00FF87] hover:bg-[#00e57a] text-black font-extrabold text-xs shadow-[0_0_15px_rgba(0,255,135,0.35)] transition-all active:scale-[0.97] disabled:cursor-wait disabled:opacity-60"
           >
             <LogIn className="w-4 h-4 stroke-[2.5]" />
-            <span>{isSigningIn ? 'Iniciando sesión…' : 'Iniciar sesión'}</span>
+            <span>{isSigningIn ? t("Iniciando sesión…") : t("Iniciar sesión")}</span>
           </button>
         )}
       </div>
@@ -45,7 +46,7 @@ export const ToastNotification: React.FC = () => {
         type="button"
         onClick={onClose}
         className="p-1 text-zinc-400 hover:text-white rounded-lg transition-colors shrink-0"
-        aria-label="Cerrar notificación"
+        aria-label={t("Cerrar notificación")}
       >
         <X className="w-4 h-4" />
       </button>

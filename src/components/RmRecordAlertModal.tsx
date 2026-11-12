@@ -1,3 +1,4 @@
+import { t } from '../utils/i18n';
 import React, { useState, useEffect } from 'react';
 import { Trophy, Check, X, ArrowUpRight, Flame } from 'lucide-react';
 import { formatRmDate } from '../utils/rmCalculations';
@@ -49,7 +50,7 @@ export const RmRecordAlertModal: React.FC = () => {
             <div>
               <div className="flex items-center gap-1.5 text-[11px] font-black text-amber-400 uppercase tracking-wider">
                 <Flame className="w-3.5 h-3.5 fill-current text-amber-400" />
-                <span>Nuevo peso superior a tu RM</span>
+                <span>{t("Nuevo peso superior a tu RM")}</span>
               </div>
               <h3 className="text-lg sm:text-xl font-black text-white tracking-tight">
                 {exerciseName}
@@ -60,7 +61,7 @@ export const RmRecordAlertModal: React.FC = () => {
             type="button"
             onClick={onClose}
             className="p-2 text-zinc-400 hover:text-white rounded-xl hover:bg-white/[0.08] transition-colors"
-            aria-label="Cerrar aviso"
+            aria-label={t("Cerrar aviso")}
           >
             <X className="w-5 h-5" />
           </button>
@@ -69,14 +70,14 @@ export const RmRecordAlertModal: React.FC = () => {
         {/* Comparison card */}
         <div className="bg-black/30 border border-white/[0.08] rounded-2xl p-4 mb-4">
           <div className="flex items-center justify-between text-xs text-zinc-400 mb-2">
-            <span>Último RM registrado</span>
-            <span>Nuevo peso introducido</span>
+            <span>{t("Último RM registrado")}</span>
+            <span>{t("Nuevo peso introducido")}</span>
           </div>
 
           <div className="flex items-center justify-between">
             <div>
               <span className="text-xl sm:text-2xl font-black text-zinc-400 font-mono">
-                {previousRmWeight} kg
+                {previousRmWeight} {t("kg")}
               </span>
               {previousRmDate && (
                 <span className="block text-[11px] text-zinc-500 font-medium">
@@ -87,24 +88,23 @@ export const RmRecordAlertModal: React.FC = () => {
 
             <div className="flex items-center gap-1 text-[#00FF87] font-black text-xs bg-[#00FF87]/15 border border-[#00FF87]/30 px-2.5 py-1 rounded-lg">
               <ArrowUpRight className="w-4 h-4 stroke-[2.5]" />
-              <span>+{diffKg} kg</span>
+              <span>+{diffKg} {t("kg")}</span>
             </div>
 
             <div className="text-right">
               <span className="text-2xl sm:text-3xl font-black text-[#00FF87] font-mono">
-                {newWeight} kg
+                {newWeight} {t("kg")}
               </span>
               <span className="block text-[11px] text-[#00FF87] font-extrabold">
-                ¡Nuevo récord!
+                {t("¡Nuevo récord!")}
               </span>
             </div>
           </div>
         </div>
 
         <p className="text-xs sm:text-sm text-zinc-300 mb-5 leading-relaxed">
-          Has indicado un peso de <strong className="text-[#00FF87]">{newWeight} kg</strong> en{' '}
-          <strong className="text-white">{exerciseName}</strong>, el cual supera el último RM que
-          tenías registrado (<strong className="text-zinc-400">{previousRmWeight} kg</strong>).
+          {t("Has indicado un peso de")} <strong className="text-[#00FF87]">{newWeight} {t("kg")}</strong> {t("en")}{' '}
+          <strong className="text-white">{exerciseName}</strong>{t(", el cual supera el último RM que tenías registrado (")}<strong className="text-zinc-400">{previousRmWeight} {t("kg")}</strong>).
         </p>
 
         {/* Checkbox option (checked by default) */}
@@ -118,7 +118,7 @@ export const RmRecordAlertModal: React.FC = () => {
               className="mt-0.5 w-4 h-4 rounded accent-[#00FF87]"
             />
             <span className="text-xs font-semibold text-zinc-200 leading-snug">
-              Actualizar y añadir nuevo registro de RM con este peso (<strong>{newWeight} kg</strong>) a este ejercicio
+              {t("Actualizar y añadir nuevo registro de RM con este peso (")}<strong>{newWeight} {t("kg")}</strong>{t(") a este ejercicio")}
             </span>
           </label>
         </div>
@@ -130,7 +130,7 @@ export const RmRecordAlertModal: React.FC = () => {
             onClick={onClose}
             className="px-4 py-2.5 min-h-[44px] text-xs sm:text-sm font-semibold text-zinc-400 hover:text-white rounded-xl hover:bg-white/[0.06] transition-colors"
           >
-            Cancelar
+            {t("Cancelar")}
           </button>
 
           <button
@@ -140,7 +140,7 @@ export const RmRecordAlertModal: React.FC = () => {
             className="w-full sm:w-auto px-6 py-2.5 min-h-[48px] text-xs sm:text-sm font-extrabold text-black bg-[#00FF87] hover:bg-[#00e57a] rounded-xl transition-all shadow-[0_0_15px_rgba(0,255,135,0.3)] active:scale-[0.97] flex items-center justify-center gap-2"
           >
             <Check className="w-4 h-4 text-black stroke-[3]" />
-            <span>Aceptar</span>
+            <span>{t("Aceptar")}</span>
           </button>
         </div>
       </div>

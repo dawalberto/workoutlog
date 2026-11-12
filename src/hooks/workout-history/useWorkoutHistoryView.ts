@@ -1,3 +1,4 @@
+import { currentLocale } from '../../utils/i18n';
 import { useMemo, useState } from 'react';
 import type { WorkoutHistoryLog } from '../../types';
 import { AppTab } from '../../types';
@@ -68,7 +69,7 @@ export function useWorkoutHistoryView() {
 
     const [year, month, day] = dateKey.split('-').map(Number);
     const dateObj = new Date(year, month - 1, day);
-    const dateLabel = dateObj.toLocaleDateString('es-ES', {
+    const dateLabel = dateObj.toLocaleDateString(currentLocale(), {
       weekday: 'long',
       day: 'numeric',
       month: 'long',

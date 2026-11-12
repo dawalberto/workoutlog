@@ -1,3 +1,4 @@
+import { t } from '../utils/i18n';
 import React, { useState } from 'react';
 import { Clock } from 'lucide-react';
 import { TimeWheelPickerModal } from './TimeWheelPickerModal';
@@ -72,7 +73,7 @@ export const TimePickerField: React.FC<TimePickerFieldProps> = ({
             {formatted}
           </span>
           <span className="text-[10px] text-zinc-500 font-mono hidden sm:inline">
-            ({numSeconds}s)
+            ({numSeconds}{t("s)")}
           </span>
         </button>
 
@@ -81,7 +82,7 @@ export const TimePickerField: React.FC<TimePickerFieldProps> = ({
           initialSeconds={numSeconds}
           onClose={() => setIsOpen(false)}
           onConfirm={handleConfirm}
-          title={modalTitle || 'Tiempo de descanso del set'}
+          title={modalTitle || t("Tiempo de descanso del set")}
           subtitle={modalSubtitle || 'Gira las ruletas de minutos y segundos'}
           allowApplyToAll={allowApplyToAll}
         />
@@ -109,7 +110,7 @@ export const TimePickerField: React.FC<TimePickerFieldProps> = ({
             {formatted}
           </span>
           <span className="text-[10px] text-zinc-400 font-mono">
-            ({numSeconds}s)
+            ({numSeconds}{t("s)")}
           </span>
         </button>
 
@@ -118,7 +119,7 @@ export const TimePickerField: React.FC<TimePickerFieldProps> = ({
           initialSeconds={numSeconds}
           onClose={() => setIsOpen(false)}
           onConfirm={handleConfirm}
-          title={modalTitle || label || 'Tiempo de descanso'}
+          title={modalTitle || label || t("Tiempo de descanso")}
           subtitle={modalSubtitle || 'Gira las ruletas de minutos y segundos'}
           allowApplyToAll={allowApplyToAll}
         />
@@ -149,13 +150,13 @@ export const TimePickerField: React.FC<TimePickerFieldProps> = ({
                 {formatted} ⏱️
               </span>
               <span className="block text-[11px] text-zinc-400 font-medium">
-                {fullText} ({numSeconds} segundos)
+                {fullText} ({numSeconds} {t("segundos)")}
               </span>
             </div>
           </div>
 
           <span className="text-[11px] font-bold text-[#00FF87] bg-[#00FF87]/10 group-hover:bg-[#00FF87]/20 px-2.5 py-1 rounded-lg border border-[#00FF87]/20 transition-all shrink-0">
-            Modificar ruleta &rarr;
+            {t("Modificar ruleta &rarr;")}
           </span>
         </button>
       </div>
@@ -165,7 +166,7 @@ export const TimePickerField: React.FC<TimePickerFieldProps> = ({
         initialSeconds={numSeconds}
         onClose={() => setIsOpen(false)}
         onConfirm={handleConfirm}
-        title={modalTitle || label || 'Seleccionar tiempo'}
+        title={modalTitle || label || t("Seleccionar tiempo")}
         subtitle={modalSubtitle || 'Gira las ruletas estilo Apple para fijar el tiempo'}
         allowApplyToAll={allowApplyToAll}
       />

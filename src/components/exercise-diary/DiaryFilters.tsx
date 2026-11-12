@@ -1,3 +1,4 @@
+import { t } from '../../utils/i18n';
 import React from 'react';
 import {
   ArrowRight,
@@ -36,14 +37,14 @@ export const DiaryFilters: React.FC<DiaryFiltersProps> = ({
       <div>
         <div className="flex items-center gap-2 mb-1">
           <h1 className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-widest text-[#00FF87]">
-            <BookOpen className="w-3.5 h-3.5" /> Diario de Ejercicios
+            <BookOpen className="w-3.5 h-3.5" /> {t("Diario de Ejercicios")}
           </h1>
           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#00FF87]/15 text-[#00FF87] border border-[#00FF87]/30">
-            {totalEntriesCount} {totalEntriesCount === 1 ? 'registro' : 'registros'}
+            {totalEntriesCount} {totalEntriesCount === 1 ? t("registro") : t("registros")}
           </span>
         </div>
         <p className="text-xs sm:text-sm text-[#A1A1AA] mt-0.5">
-          Anota sensaciones, progresiones técnicas y detalles de tus levantamientos.
+          {t("Anota sensaciones, progresiones técnicas y detalles de tus levantamientos.")}
         </p>
       </div>
 
@@ -56,7 +57,7 @@ export const DiaryFilters: React.FC<DiaryFiltersProps> = ({
           className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 min-h-[48px] rounded-2xl bg-[#00FF87] hover:bg-[#00e57a] disabled:bg-zinc-800 disabled:text-zinc-600 text-black font-extrabold text-sm shadow-[0_0_20px_rgba(0,255,135,0.35)] active:scale-[0.97] transition-all"
         >
           <Plus className="w-4 h-4 stroke-[3]" />
-          <span>Nuevo Registro</span>
+          <span>{t("Nuevo Registro")}</span>
         </button>
       </div>
     </div>
@@ -66,17 +67,17 @@ export const DiaryFilters: React.FC<DiaryFiltersProps> = ({
       <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-center my-6">
         <Dumbbell className="w-6 h-6 text-amber-400 mx-auto mb-1.5" />
         <h3 className="text-sm font-bold text-amber-300 mb-0.5">
-          Tu biblioteca de ejercicios está vacía
+          {t("Tu biblioteca de ejercicios está vacía")}
         </h3>
         <p className="text-xs text-amber-200/80 max-w-md mx-auto mb-3">
-          Para registrar notas en el diario, primero debes añadir ejercicios a tu biblioteca.
+          {t("Para registrar notas en el diario, primero debes añadir ejercicios a tu biblioteca.")}
         </p>
         <button
           type="button"
           onClick={onGoToCatalog}
           className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white border border-white/10 transition-colors"
         >
-          Ir a la Biblioteca de Ejercicios <ArrowRight className="w-3.5 h-3.5" />
+          {t("Ir a la Biblioteca de Ejercicios")} <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
     )}
@@ -91,7 +92,7 @@ export const DiaryFilters: React.FC<DiaryFiltersProps> = ({
             type="text"
             value={filters.searchQuery}
             onChange={(e) => filters.setSearchQuery(e.target.value)}
-            placeholder="Buscar en las notas, ejercicios o fechas..."
+            placeholder={t("Buscar en las notas, ejercicios o fechas...")}
             className="w-full min-h-[48px] pl-11 pr-10 py-2.5 text-sm rounded-2xl border border-white/10 bg-zinc-900/90 text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#00FF87] focus:ring-2 focus:ring-[#00FF87]/20 transition-all shadow-inner"
           />
           {filters.searchQuery && (
@@ -116,7 +117,7 @@ export const DiaryFilters: React.FC<DiaryFiltersProps> = ({
                 : 'text-zinc-400 hover:text-white'
             }`}
           >
-            Todos
+            {t("Todos")}
           </button>
           <button
             type="button"
@@ -126,10 +127,10 @@ export const DiaryFilters: React.FC<DiaryFiltersProps> = ({
                 ? 'bg-emerald-500 text-black shadow-[0_0_10px_rgba(16,185,129,0.4)]'
                 : 'text-zinc-400 hover:text-white'
             }`}
-            title="Filtrar por sensación: Bien"
+            title={t("Filtrar por sensación: Bien")}
           >
             <span>🟢</span>
-            <span className="hidden sm:inline">Bien</span>
+            <span className="hidden sm:inline">{t("Bien")}</span>
           </button>
           <button
             type="button"
@@ -139,10 +140,10 @@ export const DiaryFilters: React.FC<DiaryFiltersProps> = ({
                 ? 'bg-amber-400 text-black shadow-[0_0_10px_rgba(251,191,36,0.4)]'
                 : 'text-zinc-400 hover:text-white'
             }`}
-            title="Filtrar por sensación: Regular"
+            title={t("Filtrar por sensación: Regular")}
           >
             <span>🟠</span>
-            <span className="hidden sm:inline">Regular</span>
+            <span className="hidden sm:inline">{t("Regular")}</span>
           </button>
           <button
             type="button"
@@ -152,10 +153,10 @@ export const DiaryFilters: React.FC<DiaryFiltersProps> = ({
                 ? 'bg-rose-500 text-white shadow-[0_0_10px_rgba(244,63,94,0.4)]'
                 : 'text-zinc-400 hover:text-white'
             }`}
-            title="Filtrar por sensación: Mal"
+            title={t("Filtrar por sensación: Mal")}
           >
             <span>🔴</span>
-            <span className="hidden sm:inline">Mal</span>
+            <span className="hidden sm:inline">{t("Mal")}</span>
           </button>
         </div>
       </div>
@@ -171,7 +172,7 @@ export const DiaryFilters: React.FC<DiaryFiltersProps> = ({
               : 'bg-zinc-900 text-zinc-400 hover:text-white border border-white/10'
           }`}
         >
-          <span>Todos los ejercicios</span>
+          <span>{t("Todos los ejercicios")}</span>
           <span
             className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
               filters.selectedExerciseName === 'ALL'
