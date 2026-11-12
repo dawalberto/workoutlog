@@ -38,7 +38,7 @@ const expectedTables = [
   },
   {
     name: 'active_workout_sessions',
-    writableColumns: ['routine_id', 'started_at', 'created_at', 'updated_at'],
+    writableColumns: ['routine_id', 'started_at', 'created_at', 'updated_at', 'exercise_timings'],
     identity: ['routine_id'],
   },
   {
@@ -73,7 +73,7 @@ const expectedTables = [
     name: 'workout_history_exercises',
     writableColumns: [
       'history_id', 'position', 'exercise_name', 'exercises_completed',
-      'sets_completed', 'sets_total', 'is_optional', 'created_at', 'updated_at',
+      'sets_completed', 'sets_total', 'is_optional', 'created_at', 'updated_at', 'duration_measurement',
     ],
     identity: ['history_id', 'position'],
   },
@@ -95,7 +95,7 @@ const expectedTables = [
 
 describe('sync contract', () => {
   it('lists all twelve tables in pull order with the exact writable columns and identities', () => {
-    expect(SYNC_CONTRACT_VERSION).toBe(5);
+    expect(SYNC_CONTRACT_VERSION).toBe(6);
     expect(
       SYNC_CONTRACT_TABLES.map(({ name, writableColumns, identity }) => ({
         name,
@@ -121,7 +121,7 @@ describe('sync contract', () => {
     const snapshot = getSyncContractSnapshot();
 
     expect(JSON.parse(JSON.stringify(snapshot))).toEqual({
-      version: 5,
+      version: 6,
       tables: expectedTables,
     });
   });

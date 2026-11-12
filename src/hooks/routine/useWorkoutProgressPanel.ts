@@ -3,6 +3,7 @@ import { selectActiveRoutine } from '../../store/selectors';
 import { formatExerciseSummary } from '../../utils/timeCalculations';
 import { getRoutineViewProgress } from '../../utils/routineView';
 import type { WorkoutCompletionSummary } from '../../types';
+import { completedExerciseMeasurement } from '../../utils/exerciseDuration';
 
 export function useWorkoutProgressPanel() {
   const routine = useAppStore(selectActiveRoutine);
@@ -35,6 +36,7 @@ export function useWorkoutProgressPanel() {
       totalSetsCount: progress?.totalSetsCount ?? 0,
       completionPercentage: progress?.completionPercentage ?? 0,
       exercisesSummary: routine.exercises.map((exercise) => ({
+        durationMeasurement: completedExerciseMeasurement(exercise, session),
         name: exercise.name,
         isOptional: exercise.isOptional ?? false,
         completedSets: exercise.sets.filter((set) =>

@@ -7,6 +7,7 @@ import {
   getExerciseTotalSeconds,
 } from '../../utils/timeCalculations';
 import { parseWeightInput } from '../../utils/weightInput';
+import { measurementsFromHistory } from '../../utils/exerciseDuration';
 
 export function useExerciseCard(
   exerciseId: string,
@@ -20,6 +21,8 @@ export function useExerciseCard(
     routine ? state.activeSessions[routine.id] : undefined,
   );
   const subMode = useAppStore((state) => state.routineSubMode);
+  const history = useAppStore((state) => state.workoutHistory);
+  const measurements = useMemo(() => measurementsFromHistory(history), [history]);
   const rmLogs = useAppStore((state) => state.rmLogs);
   const exerciseDiary = useAppStore((state) => state.exerciseDiary);
   const saveRoutine = useAppStore((state) => state.saveRoutine);
@@ -44,7 +47,7 @@ export function useExerciseCard(
   );
   const isCollapsed = propIsCollapsed !== undefined ? propIsCollapsed : localCollapsed;
   const handleToggleCollapse = onToggleCollapse ?? (() => setLocalCollapsed(!localCollapsed));
-  const totalExerciseSeconds = exercise ? getExerciseTotalSeconds(exercise) : 0;
+  const totalExerciseSeconds = exercise ? getExerciseTotalSeconds(exercise, routine?.id, measurements) : 0;
   const summaryText = exercise ? formatExerciseSummary(exercise.sets) : '';
 
   const updateExercise = (updatedExercise: Exercise) => {

@@ -1,3 +1,5 @@
+import { useMemo } from 'react';
+import { measurementsFromHistory } from '../../utils/exerciseDuration';
 import { useAppStore } from '../../store/appStore';
 import { selectActiveRoutine } from '../../store/selectors';
 import { getRoutineTotalSeconds } from '../../utils/timeCalculations';
@@ -5,6 +7,8 @@ import { getRoutineViewProgress } from '../../utils/routineView';
 
 export function useRoutineHeader() {
   const routine = useAppStore(selectActiveRoutine);
+  const history = useAppStore((state) => state.workoutHistory);
+  const measurements = useMemo(() => measurementsFromHistory(history), [history]);
   const session = useAppStore((state) =>
     routine ? state.activeSessions[routine.id] : undefined,
   );
@@ -25,7 +29,7 @@ export function useRoutineHeader() {
   return {
     routine,
     session,
-    totalWorkoutSeconds: routine ? getRoutineTotalSeconds(routine) : 0,
+    totalWorkoutSeconds: routine ? getRoutineTotalSeconds(routine, measurements) : 0,
     allExercisesCompleted: progress?.allExercisesCompleted ?? false,
     onBack,
     onModeChange,

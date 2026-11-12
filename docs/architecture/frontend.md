@@ -133,3 +133,7 @@ To add a photo: drop a 1:1 file named in kebab-case English (for example `bulgar
 - [Testing strategy](../standards/testing-strategy.md)
 - [ADR 0006 – App state in hooks, no router](../decisions/0006-app-state-in-hooks-no-router.md)
 - [UI style skill](../../.github/skills/workoutlog-ui-style/SKILL.md)
+
+### Exercise duration estimates
+
+An exercise's estimate uses its historical mean after three complete executions in the same routine with the same ordered set repetitions and weights. Otherwise it uses the existing repetition-and-rest estimate. Each complete measurement spans the first checked set through the last checked set, plus the last set's configured rest. Unchecking a set retains the first check time; incomplete and legacy partial sessions do not yield measurements. Measurements are stored with workout history, included in backups, and synced; deleting a history entry also removes its measurement. Changing a configuration selects another cohort, so restoring a previous configuration restores its measurements. Routine estimates use the same exercise estimates plus the existing transition allowance.

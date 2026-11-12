@@ -84,6 +84,7 @@ async function setupExerciseCard() {
     }],
     activeRoutineId: 'routine',
     activeSessions: {},
+    workoutHistory: [],
     routineSubMode: 'edit',
     rmLogs: [],
     exerciseDiary: [],
