@@ -13,12 +13,19 @@ function findButton(node: ReactNode): React.ReactElement<{ id?: string; onClick?
 }
 
 afterEach(() => {
+  vi.unstubAllGlobals();
   vi.doUnmock('../src/store/appStore');
   vi.resetModules();
 });
 
 it('opens the backup modal from the settings button', async () => {
+  const guide = { removeAttribute: vi.fn(), setAttribute: vi.fn() };
+  vi.stubGlobal('document', { getElementById: vi.fn(() => guide) });
   const openBackupModal = vi.fn();
+  vi.doMock('react', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('react')>()),
+    useEffect: (effect: () => void | (() => void)) => { effect(); },
+  }));
   vi.doMock('../src/store/appStore', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../src/store/appStore')>();
     const state = { ...actual.appStore.getState(), openBackupModal };
@@ -29,4 +36,5 @@ it('opens the backup modal from the settings button', async () => {
   expect(button).toBeDefined();
   button?.props.onClick?.();
   expect(openBackupModal).toHaveBeenCalledOnce();
+  expect(guide.removeAttribute).toHaveBeenCalledWith('hidden');
 });
