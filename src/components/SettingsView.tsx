@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ArrowDownUp, ChevronRight } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
 import { t } from '../utils/i18n';
@@ -9,6 +9,11 @@ const languageNames: Record<Language, string> = {
 };
 
 export const SettingsView: React.FC = () => {
+  useEffect(() => {
+    const guide = document.getElementById('guia-repnami');
+    guide?.removeAttribute('hidden');
+    return () => guide?.setAttribute('hidden', '');
+  }, []);
   const preferencesReady = useAppStore((state) => state.preferencesReady);
   const language = useAppStore((state) => state.language);
   const weightUnit = useAppStore((state) => state.weightUnit);
