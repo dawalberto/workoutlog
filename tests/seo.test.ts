@@ -41,6 +41,7 @@ describe('public search document', () => {
   it('serves public content outside the React root with its own language', () => {
     const footer = html.slice(html.indexOf('<footer'), html.indexOf('</footer>'));
     expect(footer).toContain('lang="es"');
+    expect(footer).toContain('hidden');
     expect(footer).toContain('id="guia-repnami"');
     expect(footer).toContain('series, repeticiones y pesos');
     expect(footer).toContain('sin conexión');
